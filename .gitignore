@@ -1,0 +1,26 @@
+# Dependencies
+**/node_modules/
+
+# Encore generated artifacts
+**/.encore/
+**/encore.gen/
+**/encore.gen.go
+**/encore.gen.cue
+
+# Bun / Node
+**/.bun/
+**/bun.lockb
+
+# Build outputs
+**/dist/
+**/build/
+
+# OS
+.DS_Store
+
+**/node_modules/**
+**/.encore/**
+**/encore.gen/**
+**/.bun/**
+**/dist/**
+**/.DS_Store
