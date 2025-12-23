@@ -3,7 +3,7 @@ import { Header, Gateway } from "encore.dev/api";
 import { secret } from "encore.dev/config";
 import { createClerkClient } from "@clerk/backend";
 
-const clerkSecretKeyProd = secret("clerkSecretKeyProd");
+const clerkSecretKeyProd = secret("ClerkSecretKeyProd");
 const clerkClient = createClerkClient({ secretKey: clerkSecretKeyProd() });
 
 interface AuthParams {
