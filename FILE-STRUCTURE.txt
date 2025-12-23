@@ -1,0 +1,41 @@
+Pulse-v4.1.6.1/
+│
+├── README.md                                    # Main overview and getting started
+├── SETUP-SUMMARY.md                             # Quick summary of what's created
+│
+├── lambda/                                      # AWS Lambda Functions
+│   ├── market-data/
+│   │   └── index.py                            # Market data handler (340 lines)
+│   └── trading-ops/
+│       └── index.py                            # Trading operations handler (430 lines)
+│
+├── infra/                                       # Infrastructure Configuration
+│   └── bedrock/
+│       ├── README.md                           # Bedrock setup overview
+│       ├── DEPLOYMENT.md                       # Step-by-step deployment guide (600+ lines)
+│       ├── SETUP-CHECKLIST.md                  # Interactive checklist
+│       ├── QUICK-REFERENCE.md                  # Quick commands and tips
+│       ├── agent-instructions.txt              # System prompt (450 lines)
+│       ├── guardrails-config.json              # Content filters (200 lines)
+│       ├── deploy-lambda.sh                    # Deployment script (executable)
+│       └── action-groups/
+│           ├── market-data-openapi.yaml        # GetMarketData API schema (200 lines)
+│           └── trading-ops-openapi.yaml        # TradingOperations API schema (280 lines)
+│
+├── knowledge-base/                              # AI Knowledge Base Documents
+│   ├── strategies/
+│   │   ├── 40-40-club.md                      # Momentum strategy guide (450 lines)
+│   │   └── vix-fixer-22.md                    # Mean reversion strategy (550 lines)
+│   ├── risk-management/
+│   │   └── position-sizing.md                 # Risk management guide (600 lines)
+│   ├── trading-psychology/
+│   │   └── discipline-and-emotions.md         # Psychology guide (700 lines)
+│   └── platform/
+│       └── pulse-overview.md                  # Platform docs (400 lines)
+│
+└── backend/                                     # Encore Backend Integration
+    └── ai/
+        ├── bedrock_agent.ts                    # Bedrock client (400 lines)
+        └── package.json                        # NPM dependencies
+
+TOTAL: 20 files created
