@@ -1,6 +1,6 @@
 # Pulse Frontend
 
-Next.js 14 App Router frontend for Pulse - Integrated Trading Environment.
+Vite + React frontend for Pulse - Integrated Trading Environment.
 
 ## Setup
 
@@ -12,14 +12,10 @@ npm install
 2. Create `.env.local` file:
 ```env
 # Clerk Authentication
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
-CLERK_SECRET_KEY=sk_test_...
+VITE_CLERK_PUBLISHABLE_KEY=pk_live_...
 
 # Backend API
-NEXT_PUBLIC_API_URL=http://localhost:8080
-
-# AI Provider (for Price chat)
-ANTHROPIC_API_KEY=sk-ant-...
+VITE_API_URL=https://pulse-api-withered-dust-1394.fly.dev
 ```
 
 3. Run development server:
@@ -29,18 +25,21 @@ npm run dev
 
 ## Project Structure
 
-- `app/` - Next.js App Router pages and API routes
-- `components/` - React components organized by feature
-  - `layout/` - AppShell, HeaderBar, LayoutManager
-  - `navigation/` - NavRail, NavSidebar
-  - `tape/` - The Tape news feed
-  - `price/` - Price AI chat interface
-  - `riskflow/` - RiskFlow KPI dashboard
-  - `journal/` - Journal calendar and day details
-  - `econ/` - Econ Calendar with TradingView iframe
-- `lib/` - Utilities and API client
-- `types/` - TypeScript type definitions
-- `hooks/` - React hooks
+- `src/` - Source code
+  - `components/` - React components organized by feature
+    - `layout/` - AppShell, HeaderBar, LayoutManager
+    - `navigation/` - NavRail, NavSidebar
+    - `tape/` - The Tape news feed
+    - `price/` - Price AI chat interface
+    - `riskflow/` - RiskFlow KPI dashboard
+    - `journal/` - Journal calendar and day details
+    - `econ/` - Econ Calendar with TradingView iframe
+  - `lib/` - Utilities and API client
+  - `types/` - TypeScript type definitions
+  - `hooks/` - React hooks
+  - `pages/` - Sign-in/Sign-up pages
+- `public/` - Static assets
+- `index.html` - Entry HTML file
 
 ## Features
 
@@ -52,15 +51,21 @@ npm run dev
 - **Journal** - P&L calendar and day detail modal
 - **Econ Calendar** - TradingView integration with interpretation
 
+## Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `VITE_CLERK_PUBLISHABLE_KEY` | Clerk authentication key |
+| `VITE_API_URL` | Backend API URL |
+
 ## Deployment
 
 Deploy to Vercel:
 
 1. Connect your repository to Vercel
-2. Set environment variables in Vercel dashboard
-3. Deploy
-
-The project includes `vercel.json` for deployment configuration.
+2. Set Root Directory to `frontend`
+3. Set environment variables in Vercel dashboard
+4. Deploy
 
 ## Build
 
@@ -68,4 +73,4 @@ The project includes `vercel.json` for deployment configuration.
 npm run build
 ```
 
-Note: Build requires all environment variables to be set.
+Output will be in the `dist/` directory.
