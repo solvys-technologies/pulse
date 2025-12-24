@@ -185,7 +185,7 @@ git push origin v.2.23.4
 
 1. **Do NOT modify frontend UI elements** — User hasn't seen the migrated version yet. Only connect APIs.
 
-2. **Reference Phase 3 Plan** — Use `PHASE-III-BACKEND-DEPLOY.md` as guardrails and objectives.
+2. **Reference Phase 3 Plan** — Use `docs/phases/PHASE-III-BACKEND-DEPLOY.md` as guardrails and objectives.
 
 3. **API Documentation** — Verify all integrations match official documentation:
    - Clerk: https://clerk.com/docs
