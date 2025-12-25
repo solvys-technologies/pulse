@@ -1,4 +1,5 @@
 import { useAuth } from "@clerk/clerk-react";
+import { useMemo } from "react";
 import type {
   Account,
   BrokerAccount,
@@ -11,22 +12,53 @@ import type {
   Notification
 } from "./api-types";
 
+// Define Order and Contract types locally since they're not in api-types yet
+interface Order {
+  id: number;
+  accountId: number;
+  contractId?: string;
+  symbol: string;
+  side: string;
+  orderType: string;
+  size: number;
+  limitPrice?: number;
+  stopPrice?: number;
+  status: string;
+  filledSize: number;
+  avgFillPrice?: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface Contract {
+  id: number;
+  name: string;
+  symbol: string;
+  description: string;
+  tickSize: number;
+  tickValue: number;
+  active: boolean;
+}
+
 // Get API URL from environment
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+// Default to localhost:8080 for local dev (matches backend-hono default port)
+// Production should set VITE_API_URL to Fly.io URL: https://pulse-api-withered-dust-1394.fly.dev
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 class ApiClient {
   private baseUrl: string;
+  private getAuthToken?: () => Promise<string | null>;
 
-  constructor(baseUrl: string) {
+  constructor(baseUrl: string, getAuthToken?: () => Promise<string | null>) {
     this.baseUrl = baseUrl;
+    this.getAuthToken = getAuthToken;
   }
 
   private async getAuthHeaders(): Promise<Record<string, string>> {
-    const { getToken, isSignedIn } = useAuth();
-    if (!isSignedIn) return {};
-
+    if (!this.getAuthToken) return {};
+    
     try {
-      const token = await getToken();
+      const token = await this.getAuthToken();
       return token ? { 'Authorization': `Bearer ${token}` } : {};
     } catch {
       return {};
@@ -37,21 +69,32 @@ class ApiClient {
     const headers = await this.getAuthHeaders();
     const url = `${this.baseUrl}${endpoint}`;
 
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...headers,
-        ...options.headers,
-      },
-    });
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          ...headers,
+          ...options.headers,
+        },
+      });
 
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`API Error ${response.status}: ${error}`);
+      if (!response.ok) {
+        const error = await response.text();
+        const errorMessage = `API Error ${response.status}: ${error}`;
+        console.error(`[API] ${options.method || 'GET'} ${endpoint} failed:`, errorMessage);
+        throw new Error(errorMessage);
+      }
+
+      return response.json();
+    } catch (error) {
+      // Log network errors for debugging
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        console.error(`[API] Network error connecting to ${url}:`, error);
+        throw new Error(`Failed to connect to backend at ${this.baseUrl}. Is the server running?`);
+      }
+      throw error;
     }
-
-    return response.json();
   }
 
   // Namespaced services to match component expectations
@@ -87,7 +130,7 @@ class ApiClient {
       body: JSON.stringify(data),
     }),
     getContracts: (symbol: string): Promise<{ contracts: Contract[] }> => this.request(`/projectx/contracts/${symbol}`),
-    uplinkProjectX: (): Promise<{ success: boolean }> => this.request('/projectx/uplink', {
+    uplinkProjectX: (): Promise<{ success: boolean; message: string }> => this.request('/projectx/uplink', {
       method: 'POST',
     }),
   };
@@ -273,11 +316,25 @@ class ApiClient {
   }
 }
 
-// Create singleton instance
+// Create base singleton instance (for use outside React components)
 const backend = new ApiClient(API_URL);
 
 export function useBackend() {
-  return backend;
+  const { getToken, isSignedIn } = useAuth();
+  
+  // Memoize the client instance with auth token getter
+  return useMemo(() => {
+    const getAuthToken = async (): Promise<string | null> => {
+      if (!isSignedIn) return null;
+      try {
+        return await getToken();
+      } catch {
+        return null;
+      }
+    };
+    
+    return new ApiClient(API_URL, getAuthToken);
+  }, [getToken, isSignedIn]);
 }
 
 export default backend;
