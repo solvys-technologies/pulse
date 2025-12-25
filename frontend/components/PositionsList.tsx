@@ -58,17 +58,17 @@ export default function PositionsList() {
               
               <div className="flex justify-between text-[9px]">
                 <span className="text-zinc-500">Size: {position.size}</span>
-                <span className="text-zinc-500">Entry: ${position.entryPrice.toLocaleString()}</span>
+                <span className="text-zinc-500">Entry: ${position.entryPrice?.toLocaleString() || '0'}</span>
               </div>
-              
+
               <div className="flex justify-between items-center pt-1 border-t border-zinc-900/50">
                 <span className="text-[9px] text-zinc-600">P&L</span>
                 <div className="text-right">
                   <div className={`text-xs font-mono font-bold ${isProfit ? "text-[#00FF85]" : "text-[#FF4040]"}`}>
-                    {isProfit ? "+" : ""}{position.pnl.toFixed(2)}
+                    {isProfit ? "+" : ""}{(position.pnl || 0).toFixed(2)}
                   </div>
                   <div className={`text-[8px] ${isProfit ? "text-[#00FF85]/70" : "text-[#FF4040]/70"}`}>
-                    {isProfit ? "+" : ""}{position.pnlPercentage.toFixed(2)}%
+                    {isProfit ? "+" : ""}{(position.pnlPercentage || 0).toFixed(2)}%
                   </div>
                 </div>
               </div>

@@ -51,7 +51,7 @@ function convertNewsToFeedItem(newsItem: NewsItem): FeedItemType | null {
   }
 
   let classification: 'Cyclical' | 'Countercyclical' | 'Neutral' = 'Neutral';
-  const category = newsItem.category.toLowerCase();
+  const category = (newsItem.category || '').toLowerCase();
   if (category.includes('fed') || category.includes('economic') || category.includes('political') || category.includes('geopolitical')) {
     classification = 'Countercyclical';
   } else if (category.includes('earning') || category.includes('corporate') || category.includes('technical')) {
@@ -97,7 +97,7 @@ export function MinimalFeedSection({
     const fetchNews = async () => {
       try {
         const response = await backend.news.list({ limit: 20 });
-        const convertedItems = response.items
+        const convertedItems = (response.news || [])
           .map(convertNewsToFeedItem)
           .filter((item): item is FeedItemType => item !== null);
         setFeedItems(convertedItems);

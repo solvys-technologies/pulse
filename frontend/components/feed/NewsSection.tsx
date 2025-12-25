@@ -27,7 +27,7 @@ export function NewsSection() {
     const fetchNews = async () => {
       try {
         const response = await backend.news.list({ limit: 50 });
-        setNewsItems(response.items);
+        setNewsItems(response.news || []);
       } catch (err) {
         console.error('Failed to fetch news:', err);
       } finally {
@@ -89,11 +89,11 @@ export function NewsSection() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-xs font-semibold text-[#FFC038]">{item.source}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded ${item.impact === 'high' ? 'bg-red-500/20 text-red-400' :
-                      item.impact === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                    <span className={`text-xs px-2 py-0.5 rounded ${(item.impact || 'low') === 'high' ? 'bg-red-500/20 text-red-400' :
+                      (item.impact || 'low') === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
                         'bg-blue-500/20 text-blue-400'
                       }`}>
-                      {item.impact.toUpperCase()}
+                      {(item.impact || 'low').toUpperCase()}
                     </span>
                     <span className="text-xs text-gray-500">{item.category}</span>
                   </div>

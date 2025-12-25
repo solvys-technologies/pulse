@@ -58,7 +58,7 @@ function convertNewsToFeedItem(newsItem: NewsItem): FeedItemType | null {
 
   // Determine classification based on category
   let classification: 'Cyclical' | 'Countercyclical' | 'Neutral' = 'Neutral';
-  const category = newsItem.category.toLowerCase();
+  const category = (newsItem.category || '').toLowerCase();
   if (category.includes('fed') || category.includes('economic') || category.includes('political') || category.includes('geopolitical')) {
     classification = 'Countercyclical';
   } else if (category.includes('earning') || category.includes('corporate') || category.includes('technical')) {
@@ -95,7 +95,7 @@ export function FeedSection() {
         // so we don't need to trigger API calls here - just load from DB
         const response = await backend.news.list({ limit: 50 });
         // Filter out null items (raw/unprocessed data)
-        const convertedItems = response.items
+        const convertedItems = (response.news || [])
           .map(convertNewsToFeedItem)
           .filter((item): item is FeedItemType => item !== null);
         setFeedItems(convertedItems);
@@ -110,7 +110,7 @@ export function FeedSection() {
       try {
         const response = await backend.news.list({ limit: 50 });
         // Filter out null items (raw/unprocessed data)
-        const convertedItems = response.items
+        const convertedItems = (response.news || [])
           .map(convertNewsToFeedItem)
           .filter((item): item is FeedItemType => item !== null);
         setFeedItems(convertedItems);

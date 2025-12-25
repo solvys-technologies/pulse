@@ -1,12 +1,12 @@
 import { defineConfig } from 'vite'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
-import { fileURLToPath, URL } from 'node:url'
+import { resolve } from 'path'
 
 export default defineConfig({
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./', import.meta.url)),
+      '@': resolve(__dirname, './'),
     },
   },
   plugins: [tailwindcss(), react()],
@@ -15,8 +15,8 @@ export default defineConfig({
     minify: false,
     rollupOptions: {
       input: {
-        main: fileURLToPath(new URL('./index.html', import.meta.url)),
-        'mini-widget': fileURLToPath(new URL('./mini-widget.html', import.meta.url)),
+        main: resolve(__dirname, 'index.html'),
+        'mini-widget': resolve(__dirname, 'mini-widget.html'),
       },
     },
   },

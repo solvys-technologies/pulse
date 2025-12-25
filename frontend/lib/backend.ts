@@ -1,4 +1,15 @@
 import { useAuth } from "@clerk/clerk-react";
+import type {
+  Account,
+  BrokerAccount,
+  Trade,
+  Position,
+  ERSession,
+  OvertradingStatus,
+  NewsItem,
+  SystemEvent,
+  Notification
+} from "./api-types";
 
 // Get API URL from environment
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -58,6 +69,10 @@ class ApiClient {
       method: 'PATCH',
       body: JSON.stringify(data),
     }),
+    updateProjectXCredentials: (data: { username: string; apiKey: string }) => this.request('/projectx/sync', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
   };
 
   readonly projectx = {
@@ -72,6 +87,9 @@ class ApiClient {
       body: JSON.stringify(data),
     }),
     getContracts: (symbol: string) => this.request(`/projectx/contracts/${symbol}`),
+    uplinkProjectX: () => this.request('/projectx/uplink', {
+      method: 'POST',
+    }),
   };
 
   readonly trading = {
@@ -101,6 +119,9 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+    seedPositions: () => this.request('/trading/seed', {
+      method: 'POST',
+    }),
   };
 
   readonly ai = {
@@ -112,6 +133,9 @@ class ApiClient {
       method: 'POST',
     }),
     generateDailyRecap: () => this.request('/ai/daily-recap', {
+      method: 'POST',
+    }),
+    generateNTNReport: () => this.request('/ai/ntn-report', {
       method: 'POST',
     }),
     listConversations: () => this.request('/ai/conversations'),

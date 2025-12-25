@@ -48,10 +48,11 @@ export function FloatingWidget({ vix, ivScore, layoutOption = 'movable', onClose
     const fetchLatestNews = async () => {
       try {
         const response = await backend.news.list({ limit: 5 });
-        if (response.items.length > 0) {
+        const newsItems = response.news || [];
+        if (newsItems.length > 0) {
           const newItems: NewsNotification[] = [];
-          
-          for (const item of response.items) {
+
+          for (const item of newsItems) {
             const newsId = item.id?.toString() || `${item.title}-${item.publishedAt}`;
             if (!seenNewsIds.current.has(newsId)) {
               seenNewsIds.current.add(newsId);

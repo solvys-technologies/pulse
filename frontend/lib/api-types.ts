@@ -110,6 +110,7 @@ export interface Notification {
   metadata?: any;
   read: boolean;
   createdAt: Date;
+  severity?: 'info' | 'warning' | 'success' | 'error';
 }
 
 export interface Contract {
