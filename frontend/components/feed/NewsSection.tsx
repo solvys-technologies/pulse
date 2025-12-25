@@ -91,7 +91,7 @@ export function NewsSection() {
                     <span className="text-xs font-semibold text-[#FFC038]">{item.source}</span>
                     <span className={`text-xs px-2 py-0.5 rounded ${(item.impact || 'low') === 'high' ? 'bg-red-500/20 text-red-400' :
                       (item.impact || 'low') === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                        'bg-blue-500/20 text-blue-400'
+                        'bg-[#FFC038]/20 text-[#FFC038]'
                       }`}>
                       {(item.impact || 'low').toUpperCase()}
                     </span>

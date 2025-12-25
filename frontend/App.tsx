@@ -96,12 +96,16 @@ export default function App() {
   // Get Clerk publishable key from environment or use production key as fallback
   const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || 'pk_live_Y2xlcmsuc29sdnlzLmlvJA';
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+  const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development';
+  const isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
 
   // Log configuration for debugging
   console.log('[Pulse] App initializing...', {
     hasClerkKey: !!clerkKey,
     apiUrl,
     env: import.meta.env.MODE,
+    isDevelopment,
+    isLocalhost,
   });
 
   if (!clerkKey) {
@@ -115,9 +119,19 @@ export default function App() {
     );
   }
 
+  // Show warning if using production key on localhost
+  if (isLocalhost && clerkKey.startsWith('pk_live_')) {
+    console.warn('[Pulse] WARNING: Using production Clerk key on localhost. Clerk may not initialize properly.');
+    console.warn('[Pulse] For local development, use a development key (pk_test_...) or configure Clerk to allow localhost.');
+  }
+
   return (
     <ErrorBoundary>
-      <ClerkProvider publishableKey={clerkKey}>
+      <ClerkProvider 
+        publishableKey={clerkKey}
+        afterSignInUrl="/"
+        afterSignUpUrl="/"
+      >
         <AppInner />
       </ClerkProvider>
     </ErrorBoundary>

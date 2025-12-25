@@ -13,9 +13,9 @@ type ClerkBrowser = {
 /**
  * Wait for Clerk to be fully loaded
  */
-async function waitForClerk(maxWait = 5000): Promise<ClerkBrowser | null> {
+async function waitForClerk(maxWait = 5000): Promise<ClerkBrowser | undefined> {
   if (typeof window === 'undefined') {
-    return null;
+    return undefined;
   }
 
   const startTime = Date.now();
@@ -23,7 +23,7 @@ async function waitForClerk(maxWait = 5000): Promise<ClerkBrowser | null> {
 
   while (Date.now() - startTime < maxWait) {
     const clerk = (window as unknown as { Clerk?: ClerkBrowser }).Clerk;
-    
+
     if (clerk) {
       // Check if session exists - if it does, Clerk is ready
       if (clerk.session) {
@@ -31,12 +31,12 @@ async function waitForClerk(maxWait = 5000): Promise<ClerkBrowser | null> {
       }
       // If Clerk exists but no session yet, keep waiting
     }
-    
+
     await new Promise(resolve => setTimeout(resolve, checkInterval));
   }
 
   // Return whatever Clerk we have, even if session isn't ready
-  return (window as unknown as { Clerk?: ClerkBrowser }).Clerk || null;
+  return (window as unknown as { Clerk?: ClerkBrowser }).Clerk;
 }
 
 /**

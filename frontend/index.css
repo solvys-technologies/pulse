@@ -125,7 +125,11 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-[#050500] text-foreground;
+    background-color: #050500;
+  }
+  html {
+    background-color: #050500;
   }
 }
 
