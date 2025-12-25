@@ -51,7 +51,7 @@ function convertNewsToFeedItem(newsItem: NewsItem): FeedItemType | null {
   }
 
   let classification: 'Cyclical' | 'Countercyclical' | 'Neutral' = 'Neutral';
-  const category = newsItem.category.toLowerCase();
+  const category = (newsItem.category || '').toLowerCase();
   if (category.includes('fed') || category.includes('economic') || category.includes('political') || category.includes('geopolitical')) {
     classification = 'Countercyclical';
   } else if (category.includes('earning') || category.includes('corporate') || category.includes('technical')) {
@@ -97,20 +97,21 @@ export function MinimalFeedSection({
     const fetchNews = async () => {
       try {
         const response = await backend.news.list({ limit: 20 });
-        const convertedItems = response.items
+        const convertedItems = (response.news || [])
           .map(convertNewsToFeedItem)
           .filter((item): item is FeedItemType => item !== null);
         setFeedItems(convertedItems);
         
         // Calculate unread count
-        if (response.items.length > 0) {
-          const latestId = typeof response.items[0].id === 'number' ? response.items[0].id : parseInt(response.items[0].id.toString());
+        const newsItems = response.news || [];
+        if (newsItems.length > 0) {
+          const latestId = typeof newsItems[0].id === 'number' ? newsItems[0].id : parseInt(newsItems[0].id.toString());
           if (lastSeenNewsId === null) {
             lastSeenNewsId = latestId;
             setUnreadCount(0);
           } else {
             // Count items newer than last seen
-            const unread = response.items.filter(item => {
+            const unread = newsItems.filter((item: NewsItem) => {
               const itemId = typeof item.id === 'number' ? item.id : parseInt(item.id.toString());
               return itemId > lastSeenNewsId!;
             }).length;

@@ -23,14 +23,14 @@ export default function NewsFeed() {
   const loadNews = async () => {
     try {
       const data = await backend.news.list({ limit: 20 });
-      setNews(data.news);
+      setNews(data.news || []);
     } catch (error: any) {
       console.error('Failed to load news:', error);
       if (error.code === "not_found" || error.code === "unauthenticated") {
         try {
           await backend.news.sync();
           const newData = await backend.news.list({ limit: 20 });
-          setNews(newData.news);
+          setNews(newData.news || []);
         } catch (seedError) {
           console.error('Failed to sync news:', seedError);
         }
@@ -125,9 +125,9 @@ export default function NewsFeed() {
                 <div className="flex items-start justify-between gap-3 mb-2">
                   <h3 className="text-sm font-medium text-white leading-tight">{item.title}</h3>
                   <div className="flex items-center gap-2">
-                    <IVScoreCard score={item.ivScore} />
-                    <span className={`text-[9px] px-2 py-0.5 rounded uppercase tracking-wider whitespace-nowrap ${getImpactColor(item.impact)}`}>
-                      {item.impact}
+                    <IVScoreCard score={item.ivScore ?? 0} />
+                    <span className={`text-[9px] px-2 py-0.5 rounded uppercase tracking-wider whitespace-nowrap ${getImpactColor(item.impact || 'low')}`}>
+                      {item.impact || 'low'}
                     </span>
                   </div>
                 </div>

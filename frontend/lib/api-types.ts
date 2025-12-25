@@ -12,6 +12,10 @@ export interface Account {
   tradingEnabled?: boolean;
   autoTrade?: boolean;
   riskManagement?: any;
+  contractsPerTrade?: number;
+  projectxUsername?: string;
+  dailyTarget?: number;
+  dailyLossLimit?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -110,6 +114,7 @@ export interface Notification {
   metadata?: any;
   read: boolean;
   createdAt: Date;
+  severity?: 'info' | 'warning' | 'success' | 'error';
 }
 
 export interface Contract {
