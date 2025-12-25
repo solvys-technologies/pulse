@@ -1,20 +1,31 @@
 import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
 import path from 'path'
+import tailwindcss from '@tailwindcss/vite'
+import react from '@vitejs/plugin-react'
 
-// https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
-  server: {
-    host: true,
-    port: 3000
-  },
-  build: {
-    outDir: 'dist'
-  },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src')
-    }
-  }
+      '@': path.resolve(__dirname),
+      '~backend/client': path.resolve(__dirname, './client'),
+      '~backend': path.resolve(__dirname, '../backend'),
+    },
+  },
+  plugins: [tailwindcss(), react()],
+  mode: "development",
+  build: {
+    minify: false,
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+        'mini-widget': path.resolve(__dirname, 'mini-widget.html'),
+      },
+    },
+  },
+  // Configure for Electron
+  base: './',
+  server: {
+    // Allow Electron to connect
+    cors: true,
+  },
 })
