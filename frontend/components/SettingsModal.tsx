@@ -71,8 +71,8 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
           <div className="space-y-3">
             <h3 className="text-xs font-medium text-zinc-400 uppercase tracking-wider">ProjectX Connection</h3>
             <div className="bg-[#140a00] rounded-lg p-4 space-y-4">
-              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-                <h4 className="text-sm font-medium text-blue-400 mb-2">Configure ProjectX Credentials</h4>
+              <div className="bg-[#FFC038]/10 border border-[#FFC038]/20 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-[#FFC038] mb-2">Configure ProjectX Credentials</h4>
                 <p className="text-xs text-zinc-400 mb-3">
                   This terminal trades exclusively on ProjectX (TopStepX) prop firm accounts. 
                   Configure your ProjectX credentials in Leap Settings (sidebar) to enable trading.
