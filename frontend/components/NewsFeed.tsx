@@ -119,15 +119,15 @@ export default function NewsFeed() {
             className="bg-[#0a0a00] border border-zinc-900 rounded-lg p-4 hover:border-zinc-800 transition-colors"
           >
             <div className="flex items-start gap-3">
-              {getImpactIcon(item.impact)}
+              {getImpactIcon(item.impact || 'low')}
               
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-3 mb-2">
                   <h3 className="text-sm font-medium text-white leading-tight">{item.title}</h3>
                   <div className="flex items-center gap-2">
-                    <IVScoreCard score={item.ivScore} />
-                    <span className={`text-[9px] px-2 py-0.5 rounded uppercase tracking-wider whitespace-nowrap ${getImpactColor(item.impact)}`}>
-                      {item.impact}
+                    <IVScoreCard score={item.ivScore || 0} />
+                    <span className={`text-[9px] px-2 py-0.5 rounded uppercase tracking-wider whitespace-nowrap ${getImpactColor(item.impact || 'low')}`}>
+                      {item.impact || 'low'}
                     </span>
                   </div>
                 </div>

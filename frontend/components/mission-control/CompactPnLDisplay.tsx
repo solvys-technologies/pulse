@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useBackend } from '../../lib/backend';
-import type { BrokerAccount } from '~backend/projectx/list_accounts';
+import type { ProjectXAccount } from '../../../types/api';
+type BrokerAccount = ProjectXAccount;
 
 interface CompactPnLDisplayProps {
   showAccount?: boolean;
@@ -27,7 +28,7 @@ export function CompactPnLDisplay({ showAccount = true }: CompactPnLDisplayProps
           const result = await backend.projectx.listAccounts();
           if (result.accounts.length > 0) {
             // Use the first account or the one marked as active
-            setSelectedAccount(result.accounts[0]);
+            setSelectedAccount(result.accounts[0] as BrokerAccount);
           }
         }
       } catch (err) {

@@ -82,4 +82,14 @@ export interface ProjectXAccount {
   accountId: string;
   accountName: string;
   balance?: number;
+  provider?: string;
+  isPaper?: boolean;
+}
+
+export interface BrokerAccount {
+  accountId: string;
+  accountName: string;
+  balance?: number;
+  provider?: string;
+  isPaper?: boolean;
 }

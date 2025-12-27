@@ -2,7 +2,8 @@ import { useSettings } from '../../contexts/SettingsContext';
 import { useState, useEffect } from 'react';
 import { useBackend } from '../../lib/backend';
 import { TestTradeButton } from './TestTradeButton';
-import type { BrokerAccount } from '~backend/projectx/list_accounts';
+import type { ProjectXAccount } from '../../../types/api';
+type BrokerAccount = ProjectXAccount;
 import { Radio } from 'lucide-react';
 
 interface AccountTrackerWidgetProps {

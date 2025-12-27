@@ -19,6 +19,7 @@ export interface Account {
   tradingEnabled?: boolean;
   autoTrade?: boolean;
   riskManagement?: boolean;
+  algoEnabled?: boolean;
   topstepxUsername?: string;
   topstepxApiKey?: string;
   selectedSymbol?: string;
@@ -83,6 +84,8 @@ export interface ProjectXAccount {
   accountId: string;
   accountName: string;
   balance?: number;
+  provider?: string;
+  isPaper?: boolean;
 }
 
 export interface ProjectXAccountsResponse {
@@ -110,6 +113,7 @@ export class AccountService {
       tradingEnabled: false,
       autoTrade: false,
       riskManagement: false,
+      algoEnabled: false, // Backend doesn't return this
     };
   }
 
@@ -252,10 +256,10 @@ export class TradingService {
     console.warn('Position seed endpoint not available in Hono backend');
   }
 
-  async toggleAlgo(data: any): Promise<{ success: boolean; message: string }> {
+  async toggleAlgo(data: any): Promise<{ success: boolean; message: string; algoEnabled?: boolean }> {
     // Stub - backend doesn't have this endpoint
     console.warn('Toggle algo endpoint not available in Hono backend');
-    return { success: false, message: 'Not implemented' };
+    return { success: false, message: 'Not implemented', algoEnabled: false };
   }
 
   async fireTestTrade(data: any): Promise<{ success: boolean; message: string }> {
@@ -277,6 +281,8 @@ export class ProjectXService {
         accountId: acc.accountId?.toString() || acc.id?.toString() || '',
         accountName: acc.accountName || '',
         balance: acc.balance,
+        provider: acc.provider || 'projectx',
+        isPaper: acc.isPaper || false,
       })),
     };
   }
