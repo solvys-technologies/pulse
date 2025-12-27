@@ -20,6 +20,10 @@ import { AlgoStatusWidget } from '../mission-control/AlgoStatusWidget';
 import { PanelNotificationWidget } from './PanelNotificationWidget';
 import { MinimalERMeter } from '../MinimalERMeter';
 
+// Development mode: bypass Clerk authentication
+const DEV_MODE = import.meta.env.DEV || import.meta.env.MODE === 'development';
+const BYPASS_AUTH = DEV_MODE && (import.meta.env.VITE_BYPASS_AUTH === 'true' || !import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
+
 type NavTab = 'feed' | 'analysis' | 'news';
 type LayoutOption = 'movable' | 'tickers-only' | 'combined';
 
@@ -27,7 +31,8 @@ interface MainLayoutProps {
   onSettingsClick: () => void;
 }
 
-export function MainLayout({ onSettingsClick }: MainLayoutProps) {
+// Inner component that doesn't use Clerk hooks directly
+function MainLayoutInner({ onSettingsClick, signOut }: MainLayoutProps & { signOut?: () => Promise<void> }) {
   const [activeTab, setActiveTab] = useState<NavTab>('feed');
   const [missionControlCollapsed, setMissionControlCollapsed] = useState(false);
   const [tapeCollapsed, setTapeCollapsed] = useState(false);
@@ -47,7 +52,7 @@ export function MainLayout({ onSettingsClick }: MainLayoutProps) {
   const [combinedPanelErScore, setCombinedPanelErScore] = useState(0);
   const [combinedPanelPnl, setCombinedPanelPnl] = useState(0);
   const [combinedPanelAlgoEnabled, setCombinedPanelAlgoEnabled] = useState(false);
-  const { signOut } = useClerk();
+  
   const backend = useBackend();
 
   // Reset layout when TopStepX is toggled
@@ -99,14 +104,9 @@ export function MainLayout({ onSettingsClick }: MainLayoutProps) {
   useEffect(() => {
     const fetchVIX = async () => {
       try {
-        const newsClient = (backend as any).news;
-        const baseClient = (newsClient as any).baseClient;
-        const response = await baseClient.callTypedAPI('/news/fetch-vix', { method: 'GET', body: undefined });
-        if (response.ok) {
-          const data = await response.json();
-          if (data && typeof data.value === 'number') {
-            setVix(data.value);
-          }
+        const data = await backend.news.fetchVIX();
+        if (data && typeof data.value === 'number') {
+          setVix(data.value);
         }
       } catch (error) {
         console.error('[VIX] Failed to fetch VIX:', error);
@@ -131,7 +131,7 @@ export function MainLayout({ onSettingsClick }: MainLayoutProps) {
       try {
         const account = await backend.account.get();
         setCombinedPanelPnl(account.dailyPnl);
-        setCombinedPanelAlgoEnabled(account.algoEnabled);
+        setCombinedPanelAlgoEnabled(account.autoTrade || false);
       } catch (err) {
         console.error('Failed to fetch account:', err);
       }
@@ -169,6 +169,10 @@ export function MainLayout({ onSettingsClick }: MainLayoutProps) {
   };
 
   const handleLogout = async () => {
+    if (!signOut) {
+      console.warn('Logout not available in dev mode');
+      return;
+    }
     try {
       await signOut();
       // Clerk will automatically redirect to sign-in page
@@ -438,4 +442,23 @@ export function MainLayout({ onSettingsClick }: MainLayoutProps) {
       </div>
     </div>
   );
+}
+
+// Wrapper component that uses Clerk (only rendered when ClerkProvider is available)
+function MainLayoutWithClerk({ onSettingsClick }: MainLayoutProps) {
+  const clerk = useClerk();
+  return <MainLayoutInner onSettingsClick={onSettingsClick} signOut={clerk.signOut} />;
+}
+
+// Wrapper component for dev mode without Clerk
+function MainLayoutWithoutClerk({ onSettingsClick }: MainLayoutProps) {
+  return <MainLayoutInner onSettingsClick={onSettingsClick} signOut={undefined} />;
+}
+
+// Main export that chooses the right implementation
+export function MainLayout({ onSettingsClick }: MainLayoutProps) {
+  if (BYPASS_AUTH) {
+    return <MainLayoutWithoutClerk onSettingsClick={onSettingsClick} />;
+  }
+  return <MainLayoutWithClerk onSettingsClick={onSettingsClick} />;
 }
