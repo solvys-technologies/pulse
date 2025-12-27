@@ -1,0 +1,308 @@
+/**
+ * API Service Wrappers for Hono Backend
+ * 
+ * These services provide a compatible interface to replace the Encore client.
+ * Update the endpoint paths to match your Hono backend routes.
+ */
+
+import ApiClient from "./apiClient";
+
+// Type definitions (update these to match your Hono backend response types)
+export interface Account {
+  id: string;
+  userId: string;
+  balance: number;
+  dailyPnl: number;
+  dailyTarget?: number;
+  dailyLossLimit?: number;
+  tier?: 'free' | 'pulse' | 'pulse_plus' | 'pulse_pro';
+  tradingEnabled?: boolean;
+  autoTrade?: boolean;
+  riskManagement?: boolean;
+}
+
+export interface NewsItem {
+  id: string;
+  title: string;
+  content: string;
+  source: string;
+  url?: string;
+  publishedAt: Date;
+  impact?: 'high' | 'medium' | 'low';
+  symbols?: string[];
+}
+
+export interface NewsListResponse {
+  items: NewsItem[];
+  total?: number;
+}
+
+export interface ChatResponse {
+  message: string;
+  conversationId: string;
+  tiltWarning?: {
+    detected: boolean;
+    message?: string;
+  };
+}
+
+export interface NTNReport {
+  report: {
+    content: string;
+  };
+}
+
+export interface Position {
+  id: string;
+  symbol: string;
+  quantity: number;
+  entryPrice: number;
+  currentPrice: number;
+  pnl: number;
+  side: 'long' | 'short';
+}
+
+export interface PositionsResponse {
+  positions: Position[];
+}
+
+export interface ProjectXAccount {
+  accountId: string;
+  accountName: string;
+  balance?: number;
+}
+
+export interface ProjectXAccountsResponse {
+  accounts: ProjectXAccount[];
+}
+
+export interface UplinkResponse {
+  success: boolean;
+  message: string;
+}
+
+// Account Service
+export class AccountService {
+  constructor(private client: ApiClient) {}
+
+  async get(): Promise<Account> {
+    const response = await this.client.get<any>('/account');
+    // Transform backend response to match frontend expectations
+    return {
+      id: response.id?.toString() || '',
+      userId: '', // Backend doesn't return userId
+      balance: response.balance || 0,
+      dailyPnl: 0, // Backend doesn't return this
+      tier: 'free', // Backend doesn't return tier
+      tradingEnabled: false,
+      autoTrade: false,
+      riskManagement: false,
+    };
+  }
+
+  async create(data: { initialBalance?: number }): Promise<Account> {
+    // Stub - backend doesn't have POST /account
+    console.warn('Account creation endpoint not available in Hono backend');
+    return this.get();
+  }
+
+  async updateSettings(data: Partial<Account>): Promise<Account> {
+    // Stub - backend doesn't have this endpoint
+    console.warn('Account settings update endpoint not available in Hono backend');
+    return this.get();
+  }
+
+  async updateTier(data: { tier: Account['tier'] }): Promise<Account> {
+    // Stub - backend doesn't have this endpoint
+    console.warn('Account tier update endpoint not available in Hono backend');
+    return this.get();
+  }
+}
+
+// News Service
+export class NewsService {
+  constructor(private client: ApiClient) {}
+
+  async list(params?: { limit?: number; offset?: number }): Promise<NewsListResponse> {
+    const query = new URLSearchParams();
+    if (params?.limit) query.append('limit', params.limit.toString());
+    if (params?.offset) query.append('offset', params.offset.toString());
+    
+    const queryString = query.toString();
+    const endpoint = `/news/feed${queryString ? `?${queryString}` : ''}`;
+    const response = await this.client.get<{ articles: any[] }>(endpoint);
+    // Transform backend response to match frontend expectations
+    return {
+      items: response.articles.map(article => ({
+        id: article.id?.toString() || '',
+        title: article.title || '',
+        content: article.summary || '',
+        source: article.source || '',
+        url: article.url,
+        publishedAt: article.publishedAt || new Date(),
+        impact: article.ivImpact ? (article.ivImpact > 7 ? 'high' : article.ivImpact > 4 ? 'medium' : 'low') : undefined,
+        symbols: article.symbols || [],
+      })),
+      total: response.articles.length,
+    };
+  }
+
+  async seed(): Promise<void> {
+    // Stub - backend doesn't have this endpoint
+    console.warn('News seed endpoint not available in Hono backend');
+  }
+
+  async fetchVIX(): Promise<{ value: number }> {
+    return this.client.get<{ value: number }>('/market/vix');
+  }
+}
+
+// AI Service
+export class AIService {
+  constructor(private client: ApiClient) {}
+
+  async chat(data: { message: string; conversationId?: string }): Promise<ChatResponse> {
+    // Stub - backend doesn't have this endpoint yet
+    console.warn('AI chat endpoint not available in Hono backend');
+    return {
+      message: 'AI chat is not yet implemented in the Hono backend. Please check back later.',
+      conversationId: data.conversationId || '',
+    };
+  }
+
+  async generateNTNReport(): Promise<NTNReport> {
+    // Stub - backend doesn't have this endpoint yet
+    console.warn('NTN report endpoint not available in Hono backend');
+    return {
+      report: {
+        content: 'NTN report generation is not yet implemented in the Hono backend.',
+      },
+    };
+  }
+}
+
+// Trading Service
+export class TradingService {
+  constructor(private client: ApiClient) {}
+
+  async listPositions(): Promise<PositionsResponse> {
+    const response = await this.client.get<{ positions: any[] }>('/trading/positions');
+    // Transform backend response to match frontend expectations
+    return {
+      positions: response.positions.map(pos => ({
+        id: pos.id?.toString() || '',
+        symbol: pos.symbol || '',
+        quantity: pos.size || 0,
+        entryPrice: pos.entryPrice || 0,
+        currentPrice: pos.entryPrice || 0, // Backend doesn't return current price
+        pnl: pos.pnl || 0,
+        side: pos.side === 'buy' || pos.side === 'long' ? 'long' : 'short',
+      })),
+    };
+  }
+
+  async seedPositions(): Promise<void> {
+    // Stub - backend doesn't have this endpoint
+    console.warn('Position seed endpoint not available in Hono backend');
+  }
+}
+
+// ProjectX Service
+export class ProjectXService {
+  constructor(private client: ApiClient) {}
+
+  async listAccounts(): Promise<ProjectXAccountsResponse> {
+    const response = await this.client.get<{ accounts: any[] }>('/projectx/accounts');
+    // Transform backend response to match frontend expectations
+    return {
+      accounts: response.accounts.map(acc => ({
+        accountId: acc.accountId?.toString() || acc.id?.toString() || '',
+        accountName: acc.accountName || '',
+        balance: acc.balance,
+      })),
+    };
+  }
+
+  async uplinkProjectX(): Promise<UplinkResponse> {
+    // Stub - backend doesn't have this endpoint
+    console.warn('ProjectX uplink endpoint not available in Hono backend');
+    return {
+      success: false,
+      message: 'Uplink endpoint not available',
+    };
+  }
+
+  async syncProjectXAccounts(): Promise<void> {
+    return this.client.post('/projectx/sync', {});
+  }
+}
+
+// Notifications Service
+export class NotificationsService {
+  constructor(private client: ApiClient) {}
+
+  async list(): Promise<any[]> {
+    const response = await this.client.get<{ notifications: any[] }>('/notifications');
+    return response.notifications || [];
+  }
+
+  async markRead(notificationId: string): Promise<void> {
+    // Stub - backend doesn't have this endpoint
+    console.warn('Notification mark read endpoint not available in Hono backend');
+  }
+}
+
+// ER Service (Emotional Resonance)
+export class ERService {
+  constructor(private client: ApiClient) {}
+
+  async getSessions(): Promise<any[]> {
+    // Backend uses /er/date/:date pattern instead of /er/sessions
+    // Return empty array for now - frontend should use date-specific endpoints
+    console.warn('ER sessions endpoint not available. Use /er/date/:date instead.');
+    return [];
+  }
+
+  async saveSession(data: any): Promise<any> {
+    // Stub - backend doesn't have this endpoint
+    console.warn('ER session save endpoint not available in Hono backend');
+    return {};
+  }
+}
+
+// Events Service
+export class EventsService {
+  constructor(private client: ApiClient) {}
+
+  async list(): Promise<any[]> {
+    // Stub - backend doesn't have this endpoint
+    console.warn('Events endpoint not available in Hono backend');
+    return [];
+  }
+}
+
+// Main Backend Client Interface
+export interface BackendClient {
+  account: AccountService;
+  news: NewsService;
+  ai: AIService;
+  trading: TradingService;
+  projectx: ProjectXService;
+  notifications: NotificationsService;
+  er: ERService;
+  events: EventsService;
+}
+
+// Create backend client from API client
+export function createBackendClient(client: ApiClient): BackendClient {
+  return {
+    account: new AccountService(client),
+    news: new NewsService(client),
+    ai: new AIService(client),
+    trading: new TradingService(client),
+    projectx: new ProjectXService(client),
+    notifications: new NotificationsService(client),
+    er: new ERService(client),
+    events: new EventsService(client),
+  };
+}

@@ -144,18 +144,7 @@ export function TopHeader({
   useEffect(() => {
     const fetchVIX = async () => {
       try {
-        // Use the proper endpoint through the news client
-        const newsClient = (backend as any).news;
-        const baseClient = (newsClient as any).baseClient;
-        const response = await baseClient.callTypedAPI('/news/fetch-vix', { method: 'GET', body: undefined });
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`[VIX] API error: ${response.status} - ${errorText}`);
-          return;
-        }
-        
-        const data = await response.json();
+        const data = await backend.news.fetchVIX();
         if (data && typeof data.value === 'number') {
           console.log(`[VIX] Successfully fetched: ${data.value}`);
           setVix(data.value);
