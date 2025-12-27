@@ -71,7 +71,7 @@ export function AlgoStatusWidget() {
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Cpu className="w-4 h-4 text-[#FFC038]" />
-          <h3 className="text-sm font-semibold text-[#FFC038]">Autopilot</h3>
+          <h3 className="text-sm font-semibold text-[#FFC038]">Trading Models</h3>
         </div>
         <button
           onClick={handleToggleAlgo}
