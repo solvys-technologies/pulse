@@ -724,6 +724,8 @@ export default function ChatInterface() {
           
           {/* Input box - multi-line textarea with paragraph styling */}
           <textarea
+            id="chat-message-input"
+            name="chat-message"
             ref={textareaRef}
             value={input}
             onChange={(e) => {
