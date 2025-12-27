@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { IVScoreCard } from '../IVScoreCard';
 import { EmotionalResonanceMonitor } from '../mission-control/EmotionalResonanceMonitor';
 import { CompactERMonitor } from '../mission-control/CompactERMonitor';
-import { AutopilotStatusLight } from '../mission-control/AutopilotStatusLight';
 import { CompactPnLDisplay } from '../mission-control/CompactPnLDisplay';
 import { useBackend } from '../../lib/backend';
 import type { NewsItem } from '~backend/news/list';
@@ -173,7 +172,7 @@ export function FloatingWidget({ vix, ivScore, layoutOption = 'movable', onClose
         </div>
       )}
 
-      {/* Tickers-Only Expanded Panel - Shows ER Monitor, Autopilot Status, P&L */}
+      {/* Tickers-Only Expanded Panel - Shows ER Monitor, P&L */}
       {layoutOption === 'tickers-only' && (
         <div
           className="backdrop-blur-3xl bg-gradient-to-br from-[#0a0a00]/50 via-[#0a0a00]/40 to-[#0a0a00]/30 border border-[#FFC038]/30 rounded-2xl p-3 w-80 shadow-2xl"
@@ -189,11 +188,6 @@ export function FloatingWidget({ vix, ivScore, layoutOption = 'movable', onClose
               <span className="text-[10px] text-[#FFC038] font-semibold">PsychAssist</span>
             </div>
             <CompactERMonitor onERScoreChange={setErScore} />
-          </div>
-
-          {/* Autopilot Status */}
-          <div className="mb-3 pb-3 border-b border-[#FFC038]/20">
-            <AutopilotStatusLight />
           </div>
 
           {/* P&L and Account */}
