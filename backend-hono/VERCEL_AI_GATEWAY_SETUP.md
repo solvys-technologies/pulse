@@ -38,8 +38,11 @@ VERCEL_AI_GATEWAY_API_KEY=your_gateway_api_key_here
 The following models are configured to work with Vercel AI Gateway:
 
 - **Anthropic Claude Opus 4.5**: `anthropic/claude-opus-4-20250514`
+- **Anthropic Claude Sonnet 4.5**: `anthropic/claude-3-5-sonnet-20241022`
 - **XAI Grok 4**: `xai/grok-4`
 - **XAI Grok Vision 1212**: `xai/grok-2-1212`
+
+**Fallback Order**: When Opus and Grok are available, the system uses a 3-tier fallback: Opus → Grok → Sonnet 4.5
 
 ## How It Works
 
