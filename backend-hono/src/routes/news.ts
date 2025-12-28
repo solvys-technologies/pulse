@@ -271,9 +271,115 @@ newsRoutes.get('/breaking', async (c) => {
 // POST /news/seed - Seed news data (for development)
 newsRoutes.post('/seed', async (c) => {
   try {
+    // Sample news data for development
+    const sampleNews = [
+      {
+        title: "Fed Signals Potential Rate Cuts Amid Economic Uncertainty",
+        summary: "Federal Reserve officials indicated potential interest rate reductions as inflation shows signs of cooling, though labor market remains strong.",
+        source: "Reuters",
+        url: "https://example.com/fed-rate-cuts",
+        sentiment: 0.3,
+        iv_impact: 0.7,
+        symbols: ["SPY", "QQQ", "ES"],
+        is_breaking: false,
+      },
+      {
+        title: "Tech Earnings Beat Expectations, AI Demand Drives Growth",
+        summary: "Major technology companies reported stronger-than-expected quarterly earnings, with artificial intelligence investments showing significant returns.",
+        source: "Bloomberg",
+        url: "https://example.com/tech-earnings",
+        sentiment: 0.8,
+        iv_impact: 0.4,
+        symbols: ["AAPL", "GOOGL", "MSFT", "NVDA"],
+        is_breaking: true,
+      },
+      {
+        title: "Oil Prices Surge on Middle East Tensions",
+        summary: "Crude oil futures climbed over 3% following reports of escalated geopolitical tensions in the Middle East region.",
+        source: "WSJ",
+        url: "https://example.com/oil-prices-surge",
+        sentiment: -0.6,
+        iv_impact: 0.9,
+        symbols: ["USO", "XLE", "WTI"],
+        is_breaking: true,
+      },
+      {
+        title: "Bitcoin Tests $100K Resistance Level",
+        summary: "Cryptocurrency markets show renewed strength as institutional adoption increases and regulatory clarity improves.",
+        source: "CoinDesk",
+        url: "https://example.com/bitcoin-100k",
+        sentiment: 0.5,
+        iv_impact: 0.6,
+        symbols: ["BTC", "ETH"],
+        is_breaking: false,
+      },
+      {
+        title: "Retail Sales Data Shows Consumer Resilience",
+        summary: "Monthly retail sales figures exceeded expectations, indicating continued consumer spending power despite inflationary pressures.",
+        source: "CNBC",
+        url: "https://example.com/retail-sales",
+        sentiment: 0.4,
+        iv_impact: 0.3,
+        symbols: ["XRT", "AMZN", "WMT"],
+        is_breaking: false,
+      },
+      {
+        title: "European Markets React to ECB Policy Shift",
+        summary: "European Central Bank surprised markets with a more dovish stance than expected, leading to broad-based equity gains.",
+        source: "FT",
+        url: "https://example.com/ecb-policy",
+        sentiment: 0.6,
+        iv_impact: 0.5,
+        symbols: ["EFA", "EWG"],
+        is_breaking: false,
+      },
+      {
+        title: "VIX Spikes on Market Volatility Concerns",
+        summary: "Fear index rises sharply as investors react to mixed economic signals and geopolitical developments.",
+        source: "MarketWatch",
+        url: "https://example.com/vix-spike",
+        sentiment: -0.7,
+        iv_impact: 1.0,
+        symbols: ["VXX", "SPY", "ES"],
+        is_breaking: false,
+      },
+      {
+        title: "Semiconductor Sector Shows Recovery Signs",
+        summary: "Chip makers report improved outlook as inventory corrections near completion and demand from AI and cloud computing grows.",
+        source: "Seeking Alpha",
+        url: "https://example.com/semiconductor-recovery",
+        sentiment: 0.7,
+        iv_impact: 0.4,
+        symbols: ["SOXX", "NVDA", "AMD", "TSM"],
+        is_breaking: false,
+      }
+    ];
+
+    // Insert sample news articles
+    for (const article of sampleNews) {
+      await sql`
+        INSERT INTO news_articles (
+          title, summary, source, url, published_at,
+          sentiment, iv_impact, symbols, is_breaking
+        ) VALUES (
+          ${article.title},
+          ${article.summary},
+          ${article.source},
+          ${article.url},
+          NOW() - INTERVAL '${Math.floor(Math.random() * 24)} hours',
+          ${article.sentiment},
+          ${article.iv_impact},
+          ${article.symbols},
+          ${article.is_breaking}
+        )
+        ON CONFLICT (url) DO NOTHING
+      `;
+    }
+
     return c.json({
       success: true,
-      message: 'News seeding initiated',
+      message: 'News data seeded successfully',
+      count: sampleNews.length,
     });
   } catch (error) {
     console.error('Failed to seed news:', error);
