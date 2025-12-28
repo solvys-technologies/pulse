@@ -1,7 +1,6 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { sql } from '../db/index.js';
-import { getCurrentVIX } from '../services/scoring-service.js';
 
 const marketRoutes = new Hono();
 
@@ -75,55 +74,34 @@ marketRoutes.get('/bars/:symbol', async (c) => {
   }
 });
 
-// GET /market/vix - Get VIX data from Google Finance
+// GET /market/vix - Get VIX data (simplified - no external service dependency)
 marketRoutes.get('/vix', async (c) => {
   try {
-    // Try to get live VIX data from Google Finance
-    const vixData = await getCurrentVIX();
+    // Try to get from database first
+    const [vix] = await sql`
+      SELECT value, timestamp
+      FROM market_indicators
+      WHERE indicator_type = 'VIX'
+      ORDER BY timestamp DESC
+      LIMIT 1
+    `;
 
-    // Also store in database for caching/historical purposes
-    try {
-      await sql`
-        INSERT INTO market_indicators (symbol, indicator_type, value, timestamp)
-        VALUES ('VIX', 'VIX', ${vixData.value}, ${vixData.timestamp})
-        ON CONFLICT (symbol, indicator_type, timestamp)
-        DO NOTHING
-      `;
-    } catch (dbError) {
-      // Don't fail the request if database insert fails
-      console.warn('Failed to cache VIX in database:', dbError);
+    if (vix) {
+      return c.json({
+        value: vix.value,
+        timestamp: vix.timestamp,
+        source: 'database',
+      });
     }
 
+    // Fallback to default value
     return c.json({
-      value: vixData.value,
-      timestamp: vixData.timestamp,
-      source: vixData.source,
+      value: 15.0,
+      timestamp: new Date().toISOString(),
+      source: 'default_fallback',
     });
   } catch (error) {
-    console.error('Failed to get VIX from Google Finance:', error);
-
-    // Fallback: try to get from database
-    try {
-      const [vix] = await sql`
-        SELECT value, timestamp
-        FROM market_indicators
-        WHERE indicator_type = 'VIX'
-        ORDER BY timestamp DESC
-        LIMIT 1
-      `;
-
-      if (vix) {
-        return c.json({
-          value: vix.value,
-          timestamp: vix.timestamp,
-          source: 'database_fallback',
-        });
-      }
-    } catch (dbError) {
-      console.error('Database fallback also failed:', dbError);
-    }
-
-    // Final fallback
+    console.error('Failed to get VIX:', error);
     return c.json({
       value: 15.0,
       timestamp: new Date().toISOString(),

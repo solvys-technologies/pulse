@@ -49,10 +49,7 @@ const protectedRoutes = [
   '/api/econ',
   '/api/notifications',
   '/api/events',
-  '/api/iv-scoring',
-  '/api/twitter',
-  '/api/ai',
-  '/api/autopilot'
+  '/api/ai'
 ];
 
 protectedRoutes.forEach(route => {

@@ -4,22 +4,12 @@
  */
 
 import { Hono } from 'hono';
-import * as scoringHandlers from './handlers/scoring.js';
 import * as conversationHandlers from './handlers/conversations.js';
 import * as chatHandlers from './handlers/chat.js';
-import * as quickPulseHandlers from './handlers/quick-pulse.js';
 import * as threatHandlers from './handlers/threat.js';
 import * as blindSpotHandlers from './handlers/blind-spots.js';
-import * as legacyHandlers from './handlers/legacy.js';
 
 const aiRoutes = new Hono();
-
-// IV Scoring Endpoints
-aiRoutes.post('/score', scoringHandlers.handleCalculateScore);
-aiRoutes.get('/score', scoringHandlers.handleGetScore);
-aiRoutes.get('/score/current', scoringHandlers.handleGetCurrentScore);
-aiRoutes.get('/score/history', scoringHandlers.handleGetScoreHistory);
-aiRoutes.get('/vix', scoringHandlers.handleGetVIX);
 
 // Conversation Endpoints
 aiRoutes.get('/conversations', conversationHandlers.handleListConversations);
@@ -29,10 +19,6 @@ aiRoutes.delete('/conversations/:id', conversationHandlers.handleDeleteConversat
 
 // Chat Endpoint (main streaming endpoint)
 aiRoutes.post('/chat', chatHandlers.handleChat);
-
-// Quick Pulse Endpoints
-aiRoutes.post('/quick-pulse', quickPulseHandlers.handleQuickPulse);
-aiRoutes.get('/quick-pulse/cached', quickPulseHandlers.handleGetCachedPulse);
 
 // Threat History Endpoints
 aiRoutes.get('/threat-history', threatHandlers.handleGetThreatHistory);
@@ -61,10 +47,31 @@ aiRoutes.post('/ntn-report', async (c) => {
   }
 });
 
-// Legacy Endpoints (for frontend compatibility)
-aiRoutes.get('/user-settings', legacyHandlers.handleGetUserSettings);
-aiRoutes.get('/get-conversation', legacyHandlers.handleGetConversation);
-aiRoutes.post('/check-tape', legacyHandlers.handleCheckTape);
-aiRoutes.post('/generate-daily-recap', legacyHandlers.handleGenerateDailyRecap);
+// Legacy endpoints - simplified stubs
+aiRoutes.get('/user-settings', async (c) => {
+  return c.json({
+    usualTradesPerDuration: 10,
+    durationWindow: '24h',
+    selectedInstrument: null,
+  });
+});
+
+aiRoutes.get('/get-conversation', async (c) => {
+  return c.json({ error: 'Use /ai/conversations/:id instead' }, 400);
+});
+
+aiRoutes.post('/check-tape', async (c) => {
+  return c.json({
+    message: 'Tape check feature is temporarily unavailable.',
+    insights: [],
+  });
+});
+
+aiRoutes.post('/generate-daily-recap', async (c) => {
+  return c.json({
+    message: 'Daily recap feature is temporarily unavailable.',
+    recap: '',
+  });
+});
 
 export { aiRoutes };
