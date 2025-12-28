@@ -203,6 +203,39 @@ export class EventsService {
   }
 }
 
+// Twitter Service
+export class TwitterService {
+  constructor(private client: ApiClient) {}
+
+  async getMarketSentiment(symbols?: string[], hoursBack?: number): Promise<any> {
+    const params = new URLSearchParams();
+    if (symbols) params.append('symbols', symbols.join(','));
+    if (hoursBack) params.append('hoursBack', hoursBack.toString());
+
+    const queryString = params.toString();
+    const endpoint = `/api/twitter/sentiment${queryString ? `?${queryString}` : ''}`;
+    return this.client.get(endpoint);
+  }
+
+  async searchTweets(query: string, limit?: number): Promise<any> {
+    const params = new URLSearchParams();
+    params.append('query', query);
+    if (limit) params.append('limit', limit.toString());
+
+    return this.client.get(`/api/twitter/search?${params.toString()}`);
+  }
+
+  async getInfluentialTweets(accounts?: string[], limit?: number): Promise<any> {
+    const params = new URLSearchParams();
+    if (accounts) params.append('accounts', accounts.join(','));
+    if (limit) params.append('limit', limit.toString());
+
+    const queryString = params.toString();
+    const endpoint = `/api/twitter/influential${queryString ? `?${queryString}` : ''}`;
+    return this.client.get(endpoint);
+  }
+}
+
 // Main Backend Client Interface
 export interface BackendClient {
   account: AccountService;
@@ -213,6 +246,7 @@ export interface BackendClient {
   notifications: NotificationsService;
   er: ERService;
   events: EventsService;
+  twitter: TwitterService;
 }
 
 // Create backend client from API client
@@ -226,5 +260,6 @@ export function createBackendClient(client: ApiClient): BackendClient {
     notifications: new NotificationsService(client),
     er: new ERService(client),
     events: new EventsService(client),
+    twitter: new TwitterService(client),
   };
 }

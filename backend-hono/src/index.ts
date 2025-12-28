@@ -38,7 +38,7 @@ app.get('/', (c) => {
   });
 });
 
-// Register specific protected routes individually
+// Apply auth middleware only to protected routes
 const protectedRoutes = [
   '/api/account',
   '/api/projectx',
@@ -50,11 +50,11 @@ const protectedRoutes = [
   '/api/notifications',
   '/api/events',
   '/api/iv-scoring',
+  '/api/twitter',
   '/api/ai',
   '/api/autopilot'
 ];
 
-// Apply auth middleware only to protected routes
 protectedRoutes.forEach(route => {
   app.use(`${route}/*`, authMiddleware);
 });
