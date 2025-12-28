@@ -112,6 +112,18 @@ Promise.all([
 ])
   .then(([_, { fetched, stored }]) => {
     logger.info({ fetched, stored }, 'News feed initialized on startup');
+
+    // Schedule background refresh every 5 minutes
+    setInterval(async () => {
+      try {
+        logger.info('Starting background news refresh...');
+        // Refresh 15 items to keep feed fresh
+        const result = await fetchAndStoreNews(15);
+        logger.info({ fetched: result.fetched, stored: result.stored }, 'Background news refresh complete');
+      } catch (err) {
+        logger.error({ err }, 'Background news refresh failed');
+      }
+    }, 5 * 60 * 1000); // 5 minutes
   })
   .catch((err) => {
     logger.error({ err }, 'Failed to initialize news feed on startup');
