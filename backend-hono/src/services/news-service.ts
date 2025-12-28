@@ -6,7 +6,10 @@
  */
 
 import { sql } from '../db/index.js';
-import { nitterClient, Tweet, FINANCIAL_ACCOUNTS } from './nitter-client.js';
+import { nitterClient } from './nitter-client.js';
+import { xClient, Tweet, FINANCIAL_ACCOUNTS } from './x-client.js';
+import { fetchAllPolymarketOdds, checkSignificantChanges, PolymarketOdds } from './polymarket-service.js';
+import { fetchGeneralNews, FMPArticle } from './fmp-service.js';
 
 export interface NewsArticle {
     id: string;
@@ -112,43 +115,170 @@ function tweetToArticle(tweet: Tweet): Omit<NewsArticle, 'id'> {
     };
 }
 
+
+
+// ... existing interfaces ...
+
 /**
- * Fetch fresh news from Nitter and store in database
+ * Startup initialization to prefetch Polymarket odds and populate feed
+ * Generates 5-10 initial "odds" notifications as requested
+ */
+export async function initializePolymarketFeed() {
+    console.log('Initializing Polymarket Odds Prefetch...');
+    try {
+        const odds = await fetchAllPolymarketOdds();
+        console.log(`Fetched ${odds.length} Polymarket markets for initialization.`);
+
+        // Take top 10 markets to populate the feed immediately
+        const initialArticles: Omit<NewsArticle, 'id'>[] = odds.slice(0, 10).map(m => ({
+            title: `PREDICTION ODDS SNAPSHOT: ${m.question}`,
+            summary: `Current Market Odds: Yes ${(m.yesOdds * 100).toFixed(1)}% | No ${(m.noOdds * 100).toFixed(1)}%`,
+            content: `Initial market snapshot for ${m.marketType}. Link: https://polymarket.com/event/${m.slug}`,
+            source: 'Polymarket',
+            url: `https://polymarket.com/event/${m.slug}`,
+            publishedAt: new Date().toISOString(),
+            sentiment: m.yesOdds > 0.6 ? 0.5 : (m.yesOdds < 0.4 ? -0.5 : 0),
+            ivImpact: 0.1,
+            symbols: ['MACRO'],
+            isBreaking: false,
+            macroLevel: 'medium',
+            priceBrainSentiment: 'Neutral',
+            priceBrainClassification: 'Cyclical',
+            impliedPoints: null,
+            instrument: null,
+            authorHandle: 'Polymarket'
+        }));
+
+        await storeArticles(initialArticles);
+        console.log(`Stored ${initialArticles.length} initial Polymarket items.`);
+
+    } catch (e) {
+        console.error('Failed to prefetch Polymarket odds:', e);
+    }
+}
+
+/**
+ * Helper to store articles in the database
+ */
+async function storeArticles(articles: Omit<NewsArticle, 'id'>[]): Promise<number> {
+    let stored = 0;
+    for (const article of articles) {
+        try {
+            await sql`
+      INSERT INTO news_articles (
+        title, summary, content, source, url, published_at,
+        sentiment, iv_impact, symbols, is_breaking, macro_level,
+        price_brain_sentiment, price_brain_classification, implied_points,
+        instrument, author_handle
+      ) VALUES (
+        ${article.title}, ${article.summary}, ${article.content}, ${article.source},
+        ${article.url}, ${article.publishedAt}::timestamptz,
+        ${article.sentiment}, ${article.ivImpact}, ${article.symbols},
+        ${article.isBreaking}, ${article.macroLevel},
+        ${article.priceBrainSentiment}, ${article.priceBrainClassification},
+        ${article.impliedPoints}, ${article.instrument}, ${article.authorHandle}
+      )
+      ON CONFLICT (url) DO UPDATE SET
+        is_breaking = EXCLUDED.is_breaking,
+        updated_at = NOW()
+    `;
+            stored++;
+        } catch (err) {
+            if (!(err instanceof Error) || !err.message.includes('duplicate')) {
+                console.warn('Failed to store article:', err);
+            }
+        }
+    }
+    return stored;
+}
+
+/**
+ * Fetch fresh news from multiple sources and store in database
+ * Priority:
+ * 1. Official X API (Speed + Reliability)
+ * 2. Polymarket Signals (Macro/Sentiment)
+ * 3. FMP News (Tertiary Fallback)
  */
 export async function fetchAndStoreNews(limit: number = 15): Promise<{ fetched: number; stored: number }> {
     try {
-        const tweets = await nitterClient.fetchAllFinancialNews(Math.ceil(limit / FINANCIAL_ACCOUNTS.length));
-        const articles = tweets.slice(0, limit).map(tweetToArticle);
-        let stored = 0;
+        let articles: Omit<NewsArticle, 'id'>[] = [];
 
-        for (const article of articles) {
-            try {
-                await sql`
-          INSERT INTO news_articles (
-            title, summary, content, source, url, published_at,
-            sentiment, iv_impact, symbols, is_breaking, macro_level,
-            price_brain_sentiment, price_brain_classification, implied_points,
-            instrument, author_handle
-          ) VALUES (
-            ${article.title}, ${article.summary}, ${article.content}, ${article.source},
-            ${article.url}, ${article.publishedAt}::timestamptz,
-            ${article.sentiment}, ${article.ivImpact}, ${article.symbols},
-            ${article.isBreaking}, ${article.macroLevel},
-            ${article.priceBrainSentiment}, ${article.priceBrainClassification},
-            ${article.impliedPoints}, ${article.instrument}, ${article.authorHandle}
-          )
-          ON CONFLICT (url) DO UPDATE SET
-            is_breaking = EXCLUDED.is_breaking,
-            updated_at = NOW()
-        `;
-                stored++;
-            } catch (err) {
-                // Ignore duplicate errors
-                if (!(err instanceof Error) || !err.message.includes('duplicate')) {
-                    console.warn('Failed to store article:', err);
+        // 1. Fetch X API (Primary)
+        try {
+            const xTweets = await xClient.fetchAllFinancialNews(Math.ceil(limit / FINANCIAL_ACCOUNTS.length));
+            if (xTweets.length > 0) {
+                articles.push(...xTweets.map(tweetToArticle));
+            } else {
+                // Fallback to Nitter if X API fails/rate-limited
+                console.warn('X API yielded no results, trying Nitter fallback...');
+                const nitterTweets = await nitterClient.fetchAllFinancialNews(Math.ceil(limit / FINANCIAL_ACCOUNTS.length));
+                articles.push(...nitterTweets.map(tweetToArticle));
+            }
+        } catch (e) {
+            console.error('X Source failed:', e);
+        }
+
+        // 2. Fetch Polymarket Signals (Secondary)
+        try {
+            const polyOdds = await fetchAllPolymarketOdds();
+            for (const odds of polyOdds) {
+                const { hasChange, changePercentage, previousOdds } = await checkSignificantChanges(odds);
+                if (hasChange) {
+                    // Create a specialized news article for the signal
+                    const signalArticle: Omit<NewsArticle, 'id'> = {
+                        title: `ODDS ALERT: ${odds.question}`,
+                        summary: `${odds.question} probability shifted by ${changePercentage.toFixed(1)}% to ${(odds.yesOdds * 100).toFixed(1)}%.`,
+                        content: `Polymarket crowd sentiment shift. Previous: ${(previousOdds * 100).toFixed(1)}%, Current: ${(odds.yesOdds * 100).toFixed(1)}%. Market: ${odds.marketType}`,
+                        source: 'Polymarket',
+                        url: `https://polymarket.com/event/${odds.slug}`,
+                        publishedAt: new Date().toISOString(),
+                        sentiment: odds.yesOdds > 0.6 ? 0.8 : (odds.yesOdds < 0.4 ? -0.8 : 0), // Simple heuristic
+                        ivImpact: changePercentage > 10 ? 0.9 : 0.4,
+                        symbols: ['MACRO'],
+                        isBreaking: changePercentage > 10,
+                        macroLevel: changePercentage > 10 ? 'critical' : 'high',
+                        priceBrainSentiment: odds.yesOdds > 0.5 ? 'Bullish' : 'Bearish', // Context dependent really
+                        priceBrainClassification: 'Counter-cyclical',
+                        impliedPoints: null,
+                        instrument: null,
+                        authorHandle: 'Polymarket'
+                    };
+                    articles.push(signalArticle);
                 }
             }
+        } catch (e) {
+            console.error('Polymarket fetch failed:', e);
         }
+
+        // 3. Fetch FMP (Tertiary) if we need more volume
+        if (articles.length < limit) {
+            try {
+                const fmpNews = await fetchGeneralNews(limit - articles.length);
+                const fmpArticles = fmpNews.map((n: FMPArticle) => ({
+                    title: n.title,
+                    summary: n.text ? n.text.substring(0, 300) + '...' : n.title,
+                    content: n.text,
+                    source: 'FMP',
+                    url: n.url,
+                    publishedAt: n.publishedDate,
+                    sentiment: 0,
+                    ivImpact: 0.1,
+                    symbols: [n.symbol],
+                    isBreaking: false,
+                    macroLevel: 'low',
+                    priceBrainSentiment: 'Neutral',
+                    priceBrainClassification: 'Cyclical',
+                    impliedPoints: null,
+                    instrument: null,
+                    authorHandle: n.site
+                }));
+                articles.push(...fmpArticles);
+            } catch (e) {
+                console.error('FMP fetch failed:', e);
+            }
+        }
+
+        const stored = await storeArticles(articles);
         return { fetched: articles.length, stored };
     } catch (error) {
         console.error('Failed to fetch news:', error);

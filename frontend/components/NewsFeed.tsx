@@ -14,7 +14,7 @@ export default function NewsFeed() {
   const [isLoading, setIsLoading] = useState(false);
   const prevSymbolRef = useRef<string | null>(null);
 
-  const availableSymbols = ['MNQ', 'ES', 'NQ', 'YM', 'RTY'];
+  const availableSymbols = ['MNQ', 'ES', 'NQ', 'YM', 'RTY', 'Polymarket'];
 
   // Extract base symbol from contract name (e.g., "/MNQ" -> "MNQ")
   const getBaseSymbol = (symbol: string) => {
@@ -108,10 +108,13 @@ export default function NewsFeed() {
 
   const filteredRiskFlow = selectedSymbols.length > 0
     ? riskflow.filter(item =>
-      selectedSymbols.some(symbol =>
-        item.title.toLowerCase().includes(symbol.toLowerCase()) ||
-        item.content?.toLowerCase().includes(symbol.toLowerCase())
-      )
+      selectedSymbols.some(symbol => {
+        if (symbol === 'Polymarket') {
+          return item.source === 'Polymarket';
+        }
+        return item.title.toLowerCase().includes(symbol.toLowerCase()) ||
+          item.content?.toLowerCase().includes(symbol.toLowerCase())
+      })
     )
     : riskflow;
 
@@ -154,7 +157,18 @@ export default function NewsFeed() {
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-3 mb-2">
-                    <h3 className="text-sm font-medium text-white leading-tight">{item.title}</h3>
+                    {item.url ? (
+                      <a
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-medium text-white leading-tight hover:underline hover:text-blue-400 transition-colors"
+                      >
+                        {item.title}
+                      </a>
+                    ) : (
+                      <h3 className="text-sm font-medium text-white leading-tight">{item.title}</h3>
+                    )}
                     <div className="flex items-center gap-2">
                       <IVScoreCard score={item.ivScore || 0} />
                       <span className={`text-[9px] px-2 py-0.5 rounded uppercase tracking-wider whitespace-nowrap ${getImpactColor(item.impact || 'low')}`}>
@@ -167,8 +181,16 @@ export default function NewsFeed() {
                     <p className="text-xs text-zinc-400 mb-3 line-clamp-2">{item.content}</p>
                   )}
 
-                  <div className="flex items-center gap-3 text-[9px] text-zinc-600">
-                    <span className="text-[#FFC038]/60">{item.category || ''}</span>
+                  <div className="flex items-center gap-3 text-[9px] text-zinc-600 mt-2">
+                    <span className="px-1.5 py-0.5 rounded bg-zinc-800/50 text-zinc-400 border border-zinc-800">
+                      {item.source}
+                    </span>
+                    {item.category && (
+                      <>
+                        <span>•</span>
+                        <span className="text-[#FFC038]/60">{item.category}</span>
+                      </>
+                    )}
                     <span>•</span>
                     <span>{formatDate(item.publishedAt)}</span>
                   </div>
