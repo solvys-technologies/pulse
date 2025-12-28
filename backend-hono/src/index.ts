@@ -55,6 +55,22 @@ const protectedRoutes = [
 ];
 
 // Apply auth middleware only to protected routes
+const protectedRoutes = [
+  '/api/account',
+  '/api/projectx',
+  '/api/trading',
+  '/api/news',
+  '/api/journal',
+  '/api/er',
+  '/api/econ',
+  '/api/notifications',
+  '/api/events',
+  '/api/iv-scoring',
+  '/api/twitter',
+  '/api/ai',
+  '/api/autopilot'
+];
+
 protectedRoutes.forEach(route => {
   app.use(`${route}/*`, authMiddleware);
 });

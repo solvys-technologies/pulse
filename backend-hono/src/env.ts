@@ -8,11 +8,16 @@ const envSchema = z.object({
   PROJECTX_API_KEY: z.string().optional(),
   // Option 1: Use Vercel AI Gateway (recommended for centralized billing)
   VERCEL_AI_GATEWAY_API_KEY: z.string().default(''),
-  
+
   // Option 2: Use provider API keys directly (if not using gateway)
   ANTHROPIC_API_KEY: z.string().default(''),
   XAI_API_KEY: z.string().default(''),
-  
+
+  // Twitter/X API credentials
+  X_BEARER_TOKEN: z.string().default(''),
+  X_API_KEY: z.string().default(''),
+  X_API_SECRET: z.string().default(''),
+
   DEFAULT_AI_MODEL: z.string().default('grok-4'),
   PORT: z.string().default('8080'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
