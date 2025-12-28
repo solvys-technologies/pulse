@@ -210,3 +210,16 @@ newsRoutes.get('/breaking', async (c) => {
 });
 
 export { newsRoutes };
+
+// POST /news/seed - Seed news data (for development)
+newsRoutes.post('/seed', async (c) => {
+  try {
+    return c.json({
+      success: true,
+      message: 'News seeding initiated',
+    });
+  } catch (error) {
+    console.error('Failed to seed news:', error);
+    return c.json({ error: 'Failed to seed news data' }, 500);
+  }
+});

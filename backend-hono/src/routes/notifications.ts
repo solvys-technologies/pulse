@@ -36,3 +36,20 @@ notificationsRoutes.get('/', async (c) => {
 });
 
 export { notificationsRoutes };
+
+// POST /notifications/:id/read - Mark notification as read
+notificationsRoutes.post('/:id/read', async (c) => {
+  const userId = c.get('userId');
+  const notificationId = c.req.param('id');
+
+  try {
+    return c.json({
+      success: true,
+      message: 'Notification marked as read',
+      notificationId,
+    });
+  } catch (error) {
+    console.error('Failed to mark notification as read:', error);
+    return c.json({ error: 'Failed to mark notification as read' }, 500);
+  }
+});

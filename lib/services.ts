@@ -121,7 +121,7 @@ export class NewsService {
   }
 
   async fetchVIX(): Promise<{ value: number }> {
-    return this.client.get<{ value: number }>('/api/news/vix');
+    return this.client.get<{ value: number }>('/api/market/vix');
   }
 }
 

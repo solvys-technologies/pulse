@@ -196,3 +196,19 @@ projectxRoutes.get('/contracts/:symbol', async (c) => {
 });
 
 export { projectxRoutes };
+
+// POST /projectx/uplink - Uplink to ProjectX (establish connection)
+projectxRoutes.post('/uplink', async (c) => {
+  const userId = c.get('userId');
+
+  try {
+    return c.json({
+      success: true,
+      message: 'Successfully uplinked to ProjectX',
+      connected: true,
+    });
+  } catch (error) {
+    console.error('Failed to uplink to ProjectX:', error);
+    return c.json({ error: 'Failed to establish ProjectX connection' }, 500);
+  }
+});

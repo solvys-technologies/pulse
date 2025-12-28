@@ -50,3 +50,20 @@ aiRoutes.post('/check-tape', legacyHandlers.handleCheckTape);
 aiRoutes.post('/generate-daily-recap', legacyHandlers.handleGenerateDailyRecap);
 
 export { aiRoutes };
+// POST /ai/ntn-report - Generate NTN (Non-Trading News) report
+aiRoutes.post('/ntn-report', async (c) => {
+  const userId = c.get('userId');
+
+  try {
+    return c.json({
+      report: {
+        content: 'NTN Report: Market analysis and insights would be generated here.',
+        generatedAt: new Date().toISOString(),
+        userId,
+      }
+    });
+  } catch (error) {
+    console.error('Failed to generate NTN report:', error);
+    return c.json({ error: 'Failed to generate NTN report' }, 500);
+  }
+});
