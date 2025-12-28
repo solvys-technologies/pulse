@@ -169,7 +169,7 @@ export default function ChatInterface() {
     setMessages: setUseChatMessages,
   } = useChat({
     transport: new DefaultChatTransport({
-      api: `${API_BASE_URL}/ai/chat`,
+      api: `${API_BASE_URL}/api/ai/chat`,
       fetch: fetchWithAuth,
     }),
     onFinish: (message) => {
@@ -730,8 +730,8 @@ export default function ChatInterface() {
                       setShowModelSelector(false);
                     }}
                     className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg transition-colors ${selectedModel === model.id
-                        ? 'bg-[#FFC038]/10 text-[#FFC038]'
-                        : 'text-zinc-300 hover:bg-zinc-800'
+                      ? 'bg-[#FFC038]/10 text-[#FFC038]'
+                      : 'text-zinc-300 hover:bg-zinc-800'
                       }`}
                   >
                     <div className="flex flex-col items-start">
@@ -739,8 +739,8 @@ export default function ChatInterface() {
                       <span className="text-xs text-zinc-500">{model.description}</span>
                     </div>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${model.level === 'Complex Reasoning' ? 'bg-purple-500/20 text-purple-400' :
-                        model.level === 'Moderate Reasoning' ? 'bg-blue-500/20 text-blue-400' :
-                          'bg-green-500/20 text-green-400'
+                      model.level === 'Moderate Reasoning' ? 'bg-blue-500/20 text-blue-400' :
+                        'bg-green-500/20 text-green-400'
                       }`}>
                       {model.level.split(' ')[0]}
                     </span>
