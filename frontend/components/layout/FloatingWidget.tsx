@@ -25,7 +25,7 @@ export function FloatingWidget({ vix, ivScore, layoutOption = 'movable', onClose
   const backend = useBackend();
   const [erScore, setErScore] = useState<number>(0);
   const [showERCard, setShowERCard] = useState(false);
-  const [notifications, setNotifications] = useState<NewsNotification[]>([]);
+  const [notifications, setNotifications] = useState<RiskFlowNotification[]>([]);
   const [isHoveringNotifications, setIsHoveringNotifications] = useState(false);
   const seenNewsIds = useRef<Set<string>>(new Set());
   const notificationTimeouts = useRef<Map<string, NodeJS.Timeout>>(new Map());
@@ -48,13 +48,13 @@ export function FloatingWidget({ vix, ivScore, layoutOption = 'movable', onClose
       try {
         const response = await backend.riskflow.list({ limit: 5 });
         if (response.items.length > 0) {
-          const newItems: NewsNotification[] = [];
+          const newItems: RiskFlowNotification[] = [];
           
           for (const item of response.items) {
             const newsId = item.id?.toString() || `${item.title}-${item.publishedAt}`;
             if (!seenNewsIds.current.has(newsId)) {
               seenNewsIds.current.add(newsId);
-              const notification: NewsNotification = {
+              const notification: RiskFlowNotification = {
                 ...item,
                 notificationId: `${newsId}-${Date.now()}`,
               };
