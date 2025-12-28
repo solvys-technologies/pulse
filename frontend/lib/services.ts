@@ -178,10 +178,11 @@ export class AccountService {
 export class RiskFlowService {
   constructor(private client: ApiClient) { }
 
-  async list(params?: { limit?: number; offset?: number }): Promise<RiskFlowListResponse> {
+  async list(params?: { limit?: number; offset?: number; symbol?: string }): Promise<RiskFlowListResponse> {
     const query = new URLSearchParams();
     if (params?.limit) query.append('limit', params.limit.toString());
     if (params?.offset) query.append('offset', params.offset.toString());
+    if (params?.symbol) query.append('symbol', params.symbol);
 
     const queryString = query.toString();
     const endpoint = `/api/riskflow/feed${queryString ? `?${queryString}` : ''}`;
