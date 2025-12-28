@@ -90,7 +90,7 @@ export interface UplinkResponse {
 
 // Account Service
 export class AccountService {
-  constructor(private client: ApiClient) {}
+  constructor(private client: ApiClient) { }
 
   async get(): Promise<Account> {
     const response = await this.client.get<any>('/api/account');
@@ -103,7 +103,7 @@ export class AccountService {
       // If tier endpoint fails, default to free
       console.warn('Failed to get tier, defaulting to free:', error);
     }
-    
+
     // Transform backend response to match frontend expectations
     return {
       id: response.id?.toString() || '',
@@ -129,7 +129,7 @@ export class AccountService {
       // If tier endpoint fails, default to free
       console.warn('Failed to get tier, defaulting to free:', error);
     }
-    
+
     // Transform backend response to match frontend expectations
     return {
       id: response.id?.toString() || '',
@@ -176,20 +176,20 @@ export class AccountService {
 
 // RiskFlow Service
 export class RiskFlowService {
-  constructor(private client: ApiClient) {}
+  constructor(private client: ApiClient) { }
 
   async list(params?: { limit?: number; offset?: number }): Promise<RiskFlowListResponse> {
     const query = new URLSearchParams();
     if (params?.limit) query.append('limit', params.limit.toString());
     if (params?.offset) query.append('offset', params.offset.toString());
-    
+
     const queryString = query.toString();
     const endpoint = `/api/riskflow/feed${queryString ? `?${queryString}` : ''}`;
     try {
       const response = await this.client.get<{ articles?: any[] }>(endpoint);
       // Handle both response formats: { articles: [...] } or { items: [...] }
       const articles = response.articles || (response as any).items || [];
-      
+
       // Transform backend response to match frontend expectations
       return {
         items: (Array.isArray(articles) ? articles : []).map(article => ({
@@ -199,10 +199,10 @@ export class RiskFlowService {
           source: article.source || '',
           url: article.url,
           publishedAt: article.publishedAt || article.published_at || new Date(),
-          impact: article.ivImpact || article.iv_impact 
-            ? (article.ivImpact || article.iv_impact) > 7 ? 'high' 
-              : (article.ivImpact || article.iv_impact) > 4 ? 'medium' 
-              : 'low' 
+          impact: article.ivImpact || article.iv_impact
+            ? (article.ivImpact || article.iv_impact) > 7 ? 'high'
+              : (article.ivImpact || article.iv_impact) > 4 ? 'medium'
+                : 'low'
             : undefined,
           symbols: article.symbols || [],
           sentiment: article.sentiment,
@@ -237,7 +237,7 @@ export class RiskFlowService {
 
 // AI Service
 export class AIService {
-  constructor(private client: ApiClient) {}
+  constructor(private client: ApiClient) { }
 
   async chat(data: { message: string; conversationId?: string }): Promise<ChatResponse> {
     try {
@@ -245,7 +245,7 @@ export class AIService {
         message: data.message,
         conversationId: data.conversationId,
       });
-      
+
       return response;
     } catch (error: any) {
       console.error('AI chat error:', error);
@@ -288,7 +288,7 @@ export class AIService {
 
 // Trading Service
 export class TradingService {
-  constructor(private client: ApiClient) {}
+  constructor(private client: ApiClient) { }
 
   async listPositions(): Promise<PositionsResponse> {
     const response = await this.client.get<{ positions: any[] }>('/api/trading/positions');
@@ -330,7 +330,7 @@ export class TradingService {
 
 // ProjectX Service
 export class ProjectXService {
-  constructor(private client: ApiClient) {}
+  constructor(private client: ApiClient) { }
 
   async listAccounts(): Promise<ProjectXAccountsResponse> {
     const response = await this.client.get<{ accounts: any[] }>('/api/projectx/accounts');
@@ -362,7 +362,7 @@ export class ProjectXService {
 
 // Notifications Service
 export class NotificationsService {
-  constructor(private client: ApiClient) {}
+  constructor(private client: ApiClient) { }
 
   async list(): Promise<any[]> {
     const response = await this.client.get<{ notifications: any[] }>('/notifications');
@@ -377,7 +377,7 @@ export class NotificationsService {
 
 // ER Service (Emotional Resonance)
 export class ERService {
-  constructor(private client: ApiClient) {}
+  constructor(private client: ApiClient) { }
 
   async getSessions(): Promise<any[]> {
     // Backend uses /er/date/:date pattern instead of /er/sessions
@@ -410,7 +410,7 @@ export class ERService {
 
 // Events Service
 export class EventsService {
-  constructor(private client: ApiClient) {}
+  constructor(private client: ApiClient) { }
 
   async list(): Promise<any[]> {
     // Stub - backend doesn't have this endpoint
@@ -426,7 +426,7 @@ export class EventsService {
 
 // Polymarket Service
 export class PolymarketService {
-  constructor(private client: ApiClient) {}
+  constructor(private client: ApiClient) { }
 
   async getOdds(): Promise<{ success: boolean; data: { odds: any[] } }> {
     return this.client.get('/api/polymarket/odds');
@@ -436,7 +436,7 @@ export class PolymarketService {
     const params = new URLSearchParams();
     if (limit) params.append('limit', limit.toString());
     if (marketType) params.append('marketType', marketType);
-    
+
     const queryString = params.toString();
     const endpoint = `/api/polymarket/updates${queryString ? `?${queryString}` : ''}`;
     return this.client.get(endpoint);

@@ -76,9 +76,17 @@ const createAccountSchema = z.object({
 
 accountRoutes.post('/', async (c) => {
   const userId = c.get('userId');
+  
+  // Auth middleware guarantees userId exists, but add defensive check
+  if (!userId) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
 
   try {
-    const body = await c.req.json().catch(() => ({}));
+    const body = await c.req.json().catch((err) => {
+      console.error('Failed to parse request body:', err);
+      return {};
+    });
     const result = createAccountSchema.safeParse(body);
 
     if (!result.success) {

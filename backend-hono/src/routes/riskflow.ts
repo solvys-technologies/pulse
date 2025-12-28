@@ -28,7 +28,7 @@ riskflowRoutes.get('/', async (c) => {
           macro_level, price_brain_sentiment, price_brain_classification,
           implied_points, instrument, author_handle
         FROM news_articles
-        WHERE ${symbol} = ANY(symbols)
+        WHERE ${symbol} = ANY(symbols) -- Safe: postgres-js parameterizes ${symbol}
         ORDER BY macro_level DESC NULLS LAST, published_at DESC
         LIMIT ${limit} OFFSET ${offset}
       `;
@@ -79,7 +79,7 @@ riskflowRoutes.get('/', async (c) => {
 const feedSchema = z.object({
   limit: z.coerce.number().min(1).max(100).default(20),
   offset: z.coerce.number().min(0).default(0),
-  symbol: z.string().optional(),
+  symbol: z.string().max(20).regex(/^[A-Z0-9\/]+$/i).optional(), // Validate symbol format (alphanumeric, max 20 chars)
 });
 
 riskflowRoutes.get('/feed', async (c) => {
@@ -105,7 +105,7 @@ riskflowRoutes.get('/feed', async (c) => {
           macro_level, price_brain_sentiment, price_brain_classification,
           implied_points, instrument, author_handle
         FROM news_articles
-        WHERE ${symbol} = ANY(symbols)
+        WHERE ${symbol} = ANY(symbols) -- Safe: postgres-js parameterizes ${symbol}
         ORDER BY macro_level DESC NULLS LAST, published_at DESC
         LIMIT ${limit} OFFSET ${offset}
       `;
