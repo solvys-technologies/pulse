@@ -154,7 +154,7 @@ export default function ChatInterface() {
     setMessages: setUseChatMessages,
   } = useChat({
     transport: new DefaultChatTransport({
-      api: `${API_BASE_URL}/ai/chat`,
+      api: `${API_BASE_URL}/api/ai/chat`,
       fetch: fetchWithAuth,
     }),
     onFinish: (message) => {

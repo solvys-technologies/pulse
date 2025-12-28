@@ -16,14 +16,14 @@ export function useChatWithAuth(conversationId: string | undefined, setConversat
   const fetchWithAuth = useCallback(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const token = await getToken();
     const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
-    
+
     const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
-    
+
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...(init?.headers as Record<string, string> || {}),
     };
-    
+
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
@@ -62,7 +62,7 @@ export function useChatWithAuth(conversationId: string | undefined, setConversat
     setMessages: setUseChatMessages,
   } = useChat({
     transport: new DefaultChatTransport({
-      api: `${API_BASE_URL}/ai/chat`,
+      api: `${API_BASE_URL}/api/ai/chat`,
       fetch: fetchWithAuth,
       prepareSendMessagesRequest: ({ messages, id }) => {
         const lastMessage = messages[messages.length - 1];
@@ -70,7 +70,7 @@ export function useChatWithAuth(conversationId: string | undefined, setConversat
           ?.filter((part: any) => part.type === 'text')
           .map((part: any) => part.text)
           .join('') || '';
-        
+
         return {
           body: {
             messages: messages.map((msg) => ({
