@@ -224,3 +224,37 @@ erRoutes.post('/sessions', async (c) => {
 });
 
 export { erRoutes };
+
+// GET /er/sessions - Get ER sessions
+erRoutes.get('/sessions', async (c) => {
+  const userId = c.get('userId');
+  const limit = parseInt(c.req.query('limit') || '50', 10);
+  const offset = parseInt(c.req.query('offset') || '0', 10);
+
+  try {
+    const sessions = await sql`
+      SELECT
+        id,
+        session_id as "sessionId",
+        final_score as "finalScore",
+        time_in_tilt_seconds as "timeInTiltSeconds",
+        infraction_count as "infractionCount",
+        session_duration_seconds as "sessionDurationSeconds",
+        max_tilt_score as "maxTiltScore",
+        max_tilt_time as "maxTiltTime",
+        created_at as "createdAt"
+      FROM er_sessions
+      WHERE user_id = ${userId}
+      ORDER BY created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+
+    return c.json({
+      sessions: sessions || [],
+      total: sessions.length,
+    });
+  } catch (error) {
+    console.error('Failed to get ER sessions:', error);
+    return c.json({ error: 'Failed to get ER sessions' }, 500);
+  }
+});

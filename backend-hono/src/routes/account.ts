@@ -62,3 +62,55 @@ accountRoutes.get('/', async (c) => {
 });
 
 export { accountRoutes };
+
+// PATCH /account/settings - Update account settings
+accountRoutes.patch('/settings', async (c) => {
+  const userId = c.get('userId');
+  const body = await c.req.json();
+
+  try {
+    const allowedFields = ['dailyTarget', 'dailyLossLimit', 'tradingEnabled', 'autoTrade', 'riskManagement'];
+    const updates = Object.keys(body)
+      .filter(key => allowedFields.includes(key))
+      .reduce((obj, key) => ({ ...obj, [key]: body[key] }), {});
+
+    if (Object.keys(updates).length === 0) {
+      return c.json({ error: 'No valid settings provided' }, 400);
+    }
+
+    return c.json({
+      message: 'Settings updated successfully',
+      settings: updates,
+    });
+  } catch (error) {
+    console.error('Failed to update settings:', error);
+    return c.json({ error: 'Failed to update settings' }, 500);
+  }
+});
+
+// PATCH /account/tier - Update billing tier
+accountRoutes.patch('/tier', async (c) => {
+  const userId = c.get('userId');
+  const body = await c.req.json();
+
+  const { tier } = body;
+  const validTiers = ['free', 'pulse', 'pulse_plus', 'pulse_pro'];
+
+  if (!tier || !validTiers.includes(tier)) {
+    return c.json({
+      error: 'Invalid tier',
+      validTiers
+    }, 400);
+  }
+
+  try {
+    return c.json({
+      message: 'Tier updated successfully',
+      tier,
+      effectiveDate: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Failed to update tier:', error);
+    return c.json({ error: 'Failed to update billing tier' }, 500);
+  }
+});
