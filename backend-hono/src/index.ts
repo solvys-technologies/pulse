@@ -38,22 +38,6 @@ app.get('/', (c) => {
   });
 });
 
-// Register specific protected routes individually
-const protectedRoutes = [
-  '/api/account',
-  '/api/projectx',
-  '/api/trading',
-  '/api/news',
-  '/api/journal',
-  '/api/er',
-  '/api/econ',
-  '/api/notifications',
-  '/api/events',
-  '/api/iv-scoring',
-  '/api/ai',
-  '/api/autopilot'
-];
-
 // Apply auth middleware only to protected routes
 const protectedRoutes = [
   '/api/account',
