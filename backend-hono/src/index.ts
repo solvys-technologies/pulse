@@ -38,15 +38,31 @@ app.get('/', (c) => {
   });
 });
 
-const protectedApp = new Hono();
-// Apply CORS to protected routes as well (redundant but ensures headers are set)
-protectedApp.use('*', corsMiddleware);
-protectedApp.use('*', authMiddleware);
-registerRoutes(protectedApp, false); // Don't include public routes in protected app
+// Register specific protected routes individually
+const protectedRoutes = [
+  '/api/account',
+  '/api/projectx',
+  '/api/trading',
+  '/api/news',
+  '/api/journal',
+  '/api/er',
+  '/api/econ',
+  '/api/notifications',
+  '/api/events',
+  '/api/iv-scoring',
+  '/api/ai',
+  '/api/autopilot'
+];
 
-app.route('/', protectedApp);
+// Apply auth middleware only to protected routes
+protectedRoutes.forEach(route => {
+  app.use(`${route}/*`, authMiddleware);
+});
 
-// Register public market routes (AFTER protected routes to avoid override)
+// Register all routes (this will include both protected and public routes)
+registerRoutes(app, true);
+
+// Re-register market routes to ensure they're public (no auth)
 app.route('/api/market', marketRoutes);
 
 app.onError((err, c) => {
