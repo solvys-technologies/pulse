@@ -6,6 +6,7 @@ import { authMiddleware } from './middleware/auth.js';
 import { corsMiddleware } from './middleware/cors.js';
 import { loggerMiddleware, logger } from './middleware/logger.js';
 import { registerRoutes } from './routes/index.js';
+import { marketRoutes } from './routes/market.js';
 
 const app = new Hono();
 
@@ -37,13 +38,32 @@ app.get('/', (c) => {
   });
 });
 
-const protectedApp = new Hono();
-// Apply CORS to protected routes as well (redundant but ensures headers are set)
-protectedApp.use('*', corsMiddleware);
-protectedApp.use('*', authMiddleware);
-registerRoutes(protectedApp);
+// Register specific protected routes individually
+const protectedRoutes = [
+  '/api/account',
+  '/api/projectx',
+  '/api/trading',
+  '/api/news',
+  '/api/journal',
+  '/api/er',
+  '/api/econ',
+  '/api/notifications',
+  '/api/events',
+  '/api/iv-scoring',
+  '/api/ai',
+  '/api/autopilot'
+];
 
-app.route('/', protectedApp);
+// Apply auth middleware only to protected routes
+protectedRoutes.forEach(route => {
+  app.use(`${route}/*`, authMiddleware);
+});
+
+// Register all routes (this will include both protected and public routes)
+registerRoutes(app, true);
+
+// Re-register market routes to ensure they're public (no auth)
+app.route('/api/market', marketRoutes);
 
 app.onError((err, c) => {
   logger.error({ err }, 'Unhandled error');
