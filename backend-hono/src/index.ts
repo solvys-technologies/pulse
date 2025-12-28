@@ -38,9 +38,6 @@ app.get('/', (c) => {
   });
 });
 
-// Register public market routes (before auth middleware)
-app.route('/api/market', marketRoutes);
-
 const protectedApp = new Hono();
 // Apply CORS to protected routes as well (redundant but ensures headers are set)
 protectedApp.use('*', corsMiddleware);
@@ -48,6 +45,9 @@ protectedApp.use('*', authMiddleware);
 registerRoutes(protectedApp, false); // Don't include public routes in protected app
 
 app.route('/', protectedApp);
+
+// Register public market routes (AFTER protected routes to avoid override)
+app.route('/api/market', marketRoutes);
 
 app.onError((err, c) => {
   logger.error({ err }, 'Unhandled error');
