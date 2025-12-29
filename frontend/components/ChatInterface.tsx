@@ -104,7 +104,6 @@ export default function ChatInterface() {
     sendMessage,
     status,
     setMessages: setUseChatMessages,
-    isLoading,
     setIsStreaming,
   } = useChatWithAuth(conversationId, setConversationId);
 
