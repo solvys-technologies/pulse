@@ -27,44 +27,44 @@ export function useVersionCheck() {
       return;
     }
 
-    // Only check version once per mount
+    // Only check version when user is signed in
+    if (!isSignedIn) {
+      hasCheckedRef.current = false; // Reset when signed out
+      return;
+    }
+
+    // Only check version once per mount when signed in
     if (hasCheckedRef.current) {
       return;
     }
 
     const storedVersion = localStorage.getItem(VERSION_STORAGE_KEY);
-    const checkFlag = localStorage.getItem(VERSION_CHECK_FLAG_KEY);
     
-    // If version has changed and user is signed in, sign out to force re-authentication
-    if (isSignedIn && storedVersion && storedVersion !== APP_VERSION) {
-      // Only sign out once per version change (check flag prevents loop)
-      if (checkFlag !== APP_VERSION) {
-        console.log('[VersionCheck] App version changed. Signing out to force re-authentication.', {
-          oldVersion: storedVersion,
-          newVersion: APP_VERSION,
+    // If version has changed, sign out to force re-authentication
+    if (storedVersion && storedVersion !== APP_VERSION) {
+      console.log('[VersionCheck] App version changed. Signing out to force re-authentication.', {
+        oldVersion: storedVersion,
+        newVersion: APP_VERSION,
+      });
+      
+      // Store the new version BEFORE signing out to prevent loop
+      localStorage.setItem(VERSION_STORAGE_KEY, APP_VERSION);
+      hasCheckedRef.current = true;
+      
+      // Sign out from Clerk
+      if (clerk.signOut) {
+        clerk.signOut().catch((error) => {
+          console.error('[VersionCheck] Error signing out:', error);
         });
-        
-        // Store the new version and set flag BEFORE signing out to prevent loop
-        localStorage.setItem(VERSION_STORAGE_KEY, APP_VERSION);
-        localStorage.setItem(VERSION_CHECK_FLAG_KEY, APP_VERSION);
-        hasCheckedRef.current = true;
-        
-        // Sign out from Clerk
-        if (clerk.signOut) {
-          clerk.signOut().catch((error) => {
-            console.error('[VersionCheck] Error signing out:', error);
-          });
-        }
       }
-    } else if (isSignedIn && !storedVersion) {
+    } else if (!storedVersion) {
       // First time or version not set - store current version
       localStorage.setItem(VERSION_STORAGE_KEY, APP_VERSION);
-      localStorage.setItem(VERSION_CHECK_FLAG_KEY, APP_VERSION);
       hasCheckedRef.current = true;
       console.log('[VersionCheck] Storing app version:', APP_VERSION);
-    } else if (!isSignedIn && storedVersion === APP_VERSION) {
-      // User signed out and version matches - clear the check flag so they can sign in
-      localStorage.removeItem(VERSION_CHECK_FLAG_KEY);
+    } else {
+      // Version matches - mark as checked
+      hasCheckedRef.current = true;
     }
   }, [clerk, isSignedIn]);
 }
