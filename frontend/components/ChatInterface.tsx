@@ -317,7 +317,7 @@ export default function ChatInterface() {
     setShowSuggestions(false);
     setThinkingText(THINKING_TERMS[0]);
     setIsStreamingState(true);
-
+    setIsStreaming(true);
     // Send message using useChat's sendMessage
     sendMessage({ text: messageText });
     
