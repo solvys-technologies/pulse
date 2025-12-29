@@ -240,13 +240,15 @@ export class RiskFlowService {
 export class AIService {
   constructor(private client: ApiClient) { }
 
-  async chat(data: { message: string; conversationId?: string }): Promise<ChatResponse> {
+  /**
+   * Send a chat message (non-streaming legacy wrapper, prefer Vercel AI SDK directly)
+   */
+  async chat(data: { message: string; conversationId?: string; messages?: any[] }): Promise<any> {
     try {
-      const response = await this.client.post<ChatResponse>('/api/ai/chat', {
-        message: data.message,
-        conversationId: data.conversationId,
-      });
+      // If messages array is provided (Vercel SDK format), pass it through
+      const payload = data.messages ? { messages: data.messages, conversationId: data.conversationId } : { messages: [{ role: 'user', content: data.message }], conversationId: data.conversationId };
 
+      const response = await this.client.post('/api/ai/chat', payload);
       return response;
     } catch (error: any) {
       console.error('AI chat error:', error);
@@ -255,12 +257,23 @@ export class AIService {
   }
 
   async listConversations(): Promise<any[]> {
-    return this.client.get<{ conversations: any[] }>('/api/ai/conversations').then(r => r.conversations || []);
+    try {
+      return this.client.get<{ conversations: any[] }>('/api/ai/conversations').then(r => r.conversations || []);
+    } catch (error) {
+      console.warn('listConversations endpoint not ready');
+      return [];
+    }
   }
 
   async getConversation(id: string): Promise<any> {
-    const response = await this.client.get<any>(`/api/ai/conversations/${id}`);
-    return response;
+    return this.client.get<any>(`/api/ai/conversations/${id}`);
+  }
+
+  /**
+   * Quick Pulse: Analyze a chart screenshot
+   */
+  async quickPulse(image: string, algoState: any): Promise<any> {
+    return this.client.post('/api/ai/quick-pulse', { image, algoState });
   }
 
   async checkTape(): Promise<any> {

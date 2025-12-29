@@ -11,6 +11,7 @@ const envSchema = z.object({
   VERCEL_AI_GATEWAY_API_KEY: z.string().default(''),
 
   // Option 2: Use provider API keys directly (if not using gateway)
+  OPENROUTER_API_KEY: z.string().default(''),
   ANTHROPIC_API_KEY: z.string().default(''),
   XAI_API_KEY: z.string().default(''),
   GROQ_API_KEY: z.string().default(''),
