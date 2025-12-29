@@ -19,6 +19,7 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
+  cancelled?: boolean;
 }
 
 interface TiltWarning {
@@ -139,6 +140,7 @@ export default function ChatInterface() {
         role: msg.role === 'user' ? 'user' : 'assistant',
         content: content,
         timestamp: msg.createdAt || new Date(),
+        cancelled: msg.cancelled || false, // Preserve cancelled flag
       };
     });
 
@@ -355,13 +357,35 @@ export default function ChatInterface() {
     setIsStreamingState(false);
     setIsStreaming(false);
     
-    // Remove any partial assistant message that was being streamed
+    // Remove any partial assistant message and add a cancelled indicator
     setUseChatMessages((prev: any[]) => {
-      // Remove the last message if it's an incomplete assistant message
       const lastMessage = prev[prev.length - 1];
+      
+      // If there's an incomplete assistant message, replace it with a cancelled message
       if (lastMessage && lastMessage.role === 'assistant' && status === 'streaming') {
-        return prev.slice(0, -1);
+        const cancelledMessage: any = {
+          id: `cancelled-${Date.now()}`,
+          role: 'assistant',
+          content: 'This message was cancelled',
+          createdAt: new Date(),
+          cancelled: true, // Flag to mark as cancelled
+        };
+        return [...prev.slice(0, -1), cancelledMessage];
       }
+      
+      // If no partial message, just add a cancelled indicator after the last user message
+      const lastUserMessage = [...prev].reverse().find((msg: any) => msg.role === 'user');
+      if (lastUserMessage) {
+        const cancelledMessage: any = {
+          id: `cancelled-${Date.now()}`,
+          role: 'assistant',
+          content: 'This message was cancelled',
+          createdAt: new Date(),
+          cancelled: true,
+        };
+        return [...prev, cancelledMessage];
+      }
+      
       return prev;
     });
     
@@ -691,21 +715,29 @@ ${kpiSection}
                   max-w-[80%] rounded-xl p-4 backdrop-blur-md
                   ${message.role === "user"
                     ? "bg-[#FFC038]/10 border border-[#FFC038]/20"
+                    : message.cancelled
+                    ? "bg-white/2 border border-white/5 opacity-50"
                     : "bg-white/5 border border-white/10"
                   }
                 `}
               >
                 {message.role === "assistant" ? (
-                  <div className="text-sm text-zinc-300 mb-2 max-w-none">
-                    <MessageRenderer
-                      content={message.content}
-                      onRenderWidget={(widget: any) => null}
-                    />
+                  <div className={`text-sm mb-2 max-w-none ${message.cancelled ? "text-zinc-500 italic" : "text-zinc-300"}`}>
+                    {message.cancelled ? (
+                      <p className="text-xs">{message.content}</p>
+                    ) : (
+                      <MessageRenderer
+                        content={message.content}
+                        onRenderWidget={(widget: any) => null}
+                      />
+                    )}
                   </div>
                 ) : (
                   <p className="text-sm text-zinc-300 mb-2 whitespace-pre-wrap">{message.content}</p>
                 )}
-                <span className="text-[9px] text-zinc-600 font-mono">{formatTime(message.timestamp)}</span>
+                <span className={`text-[9px] font-mono ${message.cancelled ? "text-zinc-700" : "text-zinc-600"}`}>
+                  {formatTime(message.timestamp)}
+                </span>
               </div>
             </div>
           ))}

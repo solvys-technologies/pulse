@@ -91,7 +91,10 @@ export const authMiddleware = createMiddleware(async (c, next) => {
     return c.json({ error: 'Unauthorized: Missing or invalid token' }, 401);
   }
 
-  const token = authHeader.replace('Bearer ', '');
+  let token = authHeader.replace('Bearer ', '').trim();
+  
+  // Sanitize token - remove any whitespace, newlines, or extra characters
+  token = token.replace(/\s+/g, '');
 
   try {
     // #region agent log - hypothesis C
@@ -118,32 +121,55 @@ export const authMiddleware = createMiddleware(async (c, next) => {
     console.log(`[AUTH] Verifying token for ${c.req.path}, CLERK_SECRET_KEY prefix: ${env.CLERK_SECRET_KEY?.substring(0, 15)}...`);
     console.log(`[AUTH] Token preview (first 50 chars): ${token.substring(0, 50)}...`);
 
+    // Validate token format before verification
+    const tokenParts = token.split('.');
+    if (tokenParts.length !== 3) {
+      console.error('[AUTH] Invalid JWT format - token does not have 3 parts:', {
+        partsCount: tokenParts.length,
+        tokenLength: token.length,
+        tokenPreview: token.substring(0, 100),
+      });
+      return c.json({ error: 'Unauthorized: Invalid token format. JWT consists of three parts separated by dots.' }, 401);
+    }
+
     // Try to decode token header/payload without verification to see what's in it
     try {
-      const tokenParts = token.split('.');
-      if (tokenParts.length === 3) {
-        const header = JSON.parse(Buffer.from(tokenParts[0], 'base64url').toString());
-        const payload = JSON.parse(Buffer.from(tokenParts[1], 'base64url').toString());
-        console.log(`[AUTH] Token header:`, header);
-        console.log(`[AUTH] Token payload (unverified):`, {
-          sub: payload.sub,
-          exp: payload.exp,
-          iat: payload.iat,
-          iss: payload.iss,
-          aud: payload.aud,
-          expDate: payload.exp ? new Date(payload.exp * 1000).toISOString() : null,
-          now: new Date().toISOString(),
-          isExpired: payload.exp ? Date.now() > payload.exp * 1000 : null,
-        });
-      }
+      const header = JSON.parse(Buffer.from(tokenParts[0], 'base64url').toString());
+      const payload = JSON.parse(Buffer.from(tokenParts[1], 'base64url').toString());
+      console.log(`[AUTH] Token header:`, header);
+      console.log(`[AUTH] Token payload (unverified):`, {
+        sub: payload.sub,
+        exp: payload.exp,
+        iat: payload.iat,
+        iss: payload.iss,
+        aud: payload.aud,
+        expDate: payload.exp ? new Date(payload.exp * 1000).toISOString() : null,
+        now: new Date().toISOString(),
+        isExpired: payload.exp ? Date.now() > payload.exp * 1000 : null,
+        template: payload.template || 'none', // Check if template is in payload
+      });
     } catch (decodeError) {
       console.warn('[AUTH] Could not decode token (this is okay, verification will handle it):', decodeError);
     }
 
     // In @clerk/backend v1.x, verifyToken returns the JWT claims directly
-    const payload = await verifyToken(token, {
-      secretKey: env.CLERK_SECRET_KEY,
-    });
+    // For template tokens, verifyToken should still work with the same secret key
+    let payload;
+    try {
+      payload = await verifyToken(token, {
+        secretKey: env.CLERK_SECRET_KEY,
+      });
+    } catch (verifyError) {
+      const errorMessage = verifyError instanceof Error ? verifyError.message : 'Unknown error';
+      console.error('[AUTH] verifyToken threw an error:', {
+        error: errorMessage,
+        errorName: verifyError instanceof Error ? verifyError.name : undefined,
+        tokenLength: token.length,
+        tokenParts: tokenParts.length,
+        secretKeyPrefix: env.CLERK_SECRET_KEY?.substring(0, 15),
+      });
+      throw verifyError; // Re-throw to be caught by outer catch block
+    }
 
     console.log(`[AUTH] verifyToken result:`, {
       hasPayload: !!payload,
@@ -212,13 +238,27 @@ export const authMiddleware = createMiddleware(async (c, next) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     const errorStack = error instanceof Error ? error.stack : undefined;
+    const errorName = error instanceof Error ? error.name : undefined;
+    
+    // Check for specific Clerk error types
+    const isExpiredError = errorMessage.includes('expired') || errorMessage.includes('ExpiredToken') || errorMessage.includes('jwt expired');
+    const isInvalidError = errorMessage.includes('invalid') || errorMessage.includes('InvalidToken') || errorMessage.includes('jwt malformed');
+    const isFormatError = errorMessage.includes('three parts') || errorMessage.includes('JWT format');
     
     console.error('[AUTH] Token verification error:', {
       message: errorMessage,
+      name: errorName,
       stack: errorStack,
       path: c.req.path,
       method: c.req.method,
       hasSecretKey: !!env.CLERK_SECRET_KEY,
+      secretKeyPrefix: env.CLERK_SECRET_KEY?.substring(0, 15),
+      tokenLength: token.length,
+      tokenParts: token.split('.').length,
+      tokenPreview: token.substring(0, 50) + '...',
+      isExpiredError,
+      isInvalidError,
+      isFormatError,
     });
     
     // #region agent log - hypothesis C
@@ -228,7 +268,15 @@ export const authMiddleware = createMiddleware(async (c, next) => {
       body: JSON.stringify({
         location: 'auth.ts:error',
         message: 'Token verification exception',
-        data: { error: errorMessage, method: c.req.method, path: c.req.path },
+        data: { 
+          error: errorMessage,
+          errorName,
+          isExpiredError,
+          isInvalidError,
+          isFormatError,
+          method: c.req.method, 
+          path: c.req.path 
+        },
         timestamp: Date.now(),
         sessionId: 'debug-session',
         runId: 'initial',
@@ -238,10 +286,13 @@ export const authMiddleware = createMiddleware(async (c, next) => {
     // #endregion
     
     // Provide more specific error messages
-    if (errorMessage.includes('expired') || errorMessage.includes('ExpiredToken')) {
-      return c.json({ error: 'Unauthorized: Token expired. Please refresh your session.' }, 401);
+    if (isFormatError) {
+      return c.json({ error: `Unauthorized: Invalid token format. ${errorMessage}` }, 401);
     }
-    if (errorMessage.includes('invalid') || errorMessage.includes('InvalidToken')) {
+    if (isExpiredError) {
+      return c.json({ error: 'Unauthorized: Token expired. Please refresh the page and sign in again.' }, 401);
+    }
+    if (isInvalidError) {
       return c.json({ error: 'Unauthorized: Invalid token format or signature.' }, 401);
     }
     
