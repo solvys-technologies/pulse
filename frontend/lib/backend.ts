@@ -3,9 +3,9 @@ import { useMemo } from "react";
 import ApiClient from "./apiClient";
 import { createBackendClient, type BackendClient } from "./services";
 
-// Development mode: bypass Clerk authentication
+// Development mode: bypass Clerk authentication ONLY when explicitly enabled
 const DEV_MODE = import.meta.env.DEV || import.meta.env.MODE === 'development';
-const BYPASS_AUTH = DEV_MODE && (import.meta.env.VITE_BYPASS_AUTH === 'true' || !import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
+const BYPASS_AUTH = DEV_MODE && import.meta.env.VITE_BYPASS_AUTH === 'true';
 
 // Create base API client
 const baseApiClient = new ApiClient();

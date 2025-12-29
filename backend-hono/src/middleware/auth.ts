@@ -9,6 +9,30 @@ declare module 'hono' {
 }
 
 export const authMiddleware = createMiddleware(async (c, next) => {
+  // Skip auth for development mode if BYPASS_AUTH is enabled
+  if (env.NODE_ENV === 'development' && process.env.BYPASS_AUTH === 'true') {
+    // #region agent log - hypothesis A
+    fetch('http://127.0.0.1:7244/ingest/fbebf980-5e49-4327-9406-872372234680', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: 'auth.ts:bypass-dev',
+        message: 'Development auth bypass enabled',
+        data: { method: c.req.method, path: c.req.path },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'initial',
+        hypothesisId: 'A'
+      })
+    }).catch(() => {});
+    // #endregion
+
+    // Set a mock user ID for development
+    c.set('userId', 'dev-user-12345');
+    await next();
+    return;
+  }
+
   // Skip auth for OPTIONS requests (CORS preflight)
   if (c.req.method === 'OPTIONS') {
     // #region agent log - hypothesis A

@@ -4,7 +4,7 @@
  */
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { ArrowRight, Paperclip, Image, FileText, Link2, AlertTriangle, TrendingUp, History, X, Pin, Archive, Edit2, MoreVertical } from "lucide-react";
-import { useChat } from "@ai-sdk/react";
+import { useChatWithAuth } from "./chat/hooks/useChatWithAuth";
 import { useAuth } from "@clerk/clerk-react";
 import { useBackend } from "../lib/backend";
 import { healingBowlPlayer } from "../utils/healingBowlSounds";
@@ -13,7 +13,6 @@ import ReactMarkdown from "react-markdown";
 import { MessageRenderer } from "./chat/MessageRenderer";
 import QuickPulseModal from "./analysis/QuickPulseModal";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 interface Message {
   id: string;
@@ -102,27 +101,17 @@ export default function ChatInterface() {
   const [input, setInput] = useState("");
 
   // Track loading state manually
-  const [isStreaming, setIsStreaming] = useState(false);
+  const [isStreaming, setIsStreamingState] = useState(false);
   const [showQuickPulseModal, setShowQuickPulseModal] = useState(false);
 
-  const useChatOptions = useMemo(() => ({
-    api: `${API_BASE_URL}/api/ai/chat`,
-    onFinish: (message: any) => {
-      setIsStreaming(false);
-      console.log('Message finished:', message);
-    },
-    onError: (error: any) => {
-      setIsStreaming(false);
-      console.error('Chat error:', error);
-    },
-  }), [conversationId]);
-
+  // Use useChatWithAuth hook for streaming chat with proper auth and message handling
   const {
     messages: useChatMessages,
     sendMessage,
     status,
     setMessages: setUseChatMessages,
-  } = useChat(useChatOptions) as any;
+    setIsStreaming,
+  } = useChatWithAuth(conversationId, setConversationId);
 
   const isLoading = isStreaming || status === 'streaming' || status === 'submitted';
 
@@ -321,7 +310,7 @@ export default function ChatInterface() {
 
     setShowSuggestions(false);
     setThinkingText(THINKING_TERMS[0]);
-    setIsStreaming(true);
+    setIsStreamingState(true);
 
     try {
       const token = await getToken();

@@ -9,13 +9,13 @@ import { NotificationContainer } from './components/NotificationToast';
 import { dark } from '@clerk/themes';
 // ERProvider removed - using component-based ER monitoring for stability
 
-// Development mode: bypass Clerk authentication for local development
+// Development mode: bypass Clerk authentication ONLY when explicitly enabled
 const DEV_MODE = import.meta.env.DEV || import.meta.env.MODE === 'development';
-const BYPASS_AUTH = DEV_MODE && (import.meta.env.VITE_BYPASS_AUTH === 'true' || !import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
+const BYPASS_AUTH = DEV_MODE && import.meta.env.VITE_BYPASS_AUTH === 'true';
 
 // Debug logging
 if (DEV_MODE) {
-  console.log('[DEV MODE] Bypass Auth:', BYPASS_AUTH, 'DEV:', import.meta.env.DEV, 'MODE:', import.meta.env.MODE);
+  console.log('[DEV MODE] Bypass Auth:', BYPASS_AUTH, 'DEV:', import.meta.env.DEV, 'MODE:', import.meta.env.MODE, 'VITE_BYPASS_AUTH:', import.meta.env.VITE_BYPASS_AUTH);
 }
 
 function AppInner() {
