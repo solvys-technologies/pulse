@@ -20,6 +20,8 @@ const envSchema = z.object({
   X_BEARER_TOKEN: z.string().default(''),
   X_API_KEY: z.string().default(''),
   X_API_SECRET: z.string().default(''),
+  X_ACCESS_TOKEN: z.string().default(''),
+  X_ACCESS_TOKEN_SECRET: z.string().default(''),
 
   // Additional API keys
   FMP_API_KEY: z.string().default(''),

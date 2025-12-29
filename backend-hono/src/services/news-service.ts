@@ -22,7 +22,7 @@ export interface NewsArticle {
     ivImpact: number | null;
     symbols: string[];
     isBreaking: boolean;
-    macroLevel: string | null;
+    macroLevel: number | null;
     priceBrainSentiment: string | null;
     priceBrainClassification: string | null;
     impliedPoints: number | null;
@@ -30,12 +30,11 @@ export interface NewsArticle {
     authorHandle: string | null;
 }
 
-// Keywords for macro level classification
-const MACRO_LEVEL_KEYWORDS: Record<string, string[]> = {
-    'critical': ['fed', 'fomc', 'powell', 'rate decision', 'rate cut', 'rate hike', 'cpi', 'inflation', 'nfp', 'jobs report', 'gdp'],
-    'high': ['earnings', 'guidance', 'revenue', 'profit', 'tariff', 'sanction', 'war', 'strike'],
-    'medium': ['upgrade', 'downgrade', 'analyst', 'target', 'buyback', 'dividend'],
-    'low': [],
+// Keywords for macro level classification (1=low, 2=medium, 3=high, 4=critical)
+const MACRO_LEVEL_KEYWORDS: Record<number, string[]> = {
+    4: ['fed', 'fomc', 'powell', 'rate decision', 'rate cut', 'rate hike', 'cpi', 'inflation', 'nfp', 'jobs report', 'gdp'],
+    3: ['earnings', 'guidance', 'revenue', 'profit', 'tariff', 'sanction', 'war', 'strike'],
+    2: ['upgrade', 'downgrade', 'analyst', 'target', 'buyback', 'dividend'],
 };
 
 // Keywords for sentiment classification
@@ -54,14 +53,14 @@ const SYMBOL_KEYWORDS: Record<string, string[]> = {
     'ZB': ['bonds', 'treasury', 'yields', '10-year'],
 };
 
-function classifyMacroLevel(text: string): string {
+function classifyMacroLevel(text: string): number {
     const lowerText = text.toLowerCase();
-    for (const level of ['critical', 'high', 'medium'] as const) {
+    for (const level of [4, 3, 2] as const) {
         for (const keyword of MACRO_LEVEL_KEYWORDS[level]) {
             if (lowerText.includes(keyword)) return level;
         }
     }
-    return 'low';
+    return 1;
 }
 
 function classifySentiment(text: string): { score: number; label: string } {
@@ -92,7 +91,7 @@ function tweetToArticle(tweet: Tweet): Omit<NewsArticle, 'id'> {
     const sentiment = classifySentiment(tweet.text);
     const symbols = extractSymbols(tweet.text);
     const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
-    const isBreaking = (macroLevel === 'critical' || macroLevel === 'high') && tweet.createdAt.getTime() > tenMinutesAgo;
+    const isBreaking = macroLevel >= 3 && tweet.createdAt.getTime() > tenMinutesAgo;
 
     return {
         title: tweet.text.substring(0, 200),
@@ -107,7 +106,7 @@ function tweetToArticle(tweet: Tweet): Omit<NewsArticle, 'id'> {
         isBreaking,
         macroLevel,
         priceBrainSentiment: sentiment.label,
-        priceBrainClassification: macroLevel === 'critical' || macroLevel === 'high' ? 'Counter-cyclical' : 'Cyclical',
+        priceBrainClassification: macroLevel >= 3 ? 'Counter-cyclical' : 'Cyclical',
         impliedPoints: isBreaking ? (sentiment.score > 0 ? 5 : -5) : null,
         instrument: null,
         authorHandle: tweet.authorHandle,
@@ -140,7 +139,7 @@ export async function initializePolymarketFeed() {
             ivImpact: 0.1,
             symbols: ['MACRO'],
             isBreaking: false,
-            macroLevel: 'medium',
+            macroLevel: 2,
             priceBrainSentiment: 'Neutral',
             priceBrainClassification: 'Cyclical',
             impliedPoints: null,
@@ -206,7 +205,13 @@ export async function fetchAndStoreNews(limit: number = 15): Promise<{ fetched: 
         try {
             const xTweets = await xClient.fetchAllFinancialNews(Math.ceil(limit / FINANCIAL_ACCOUNTS.length));
             if (xTweets.length > 0) {
-                articles.push(...xTweets.map(tweetToArticle));
+                // Filter X API news: Only Level 3 (high) or Level 4 (critical) 
+                // This is a temporary measure due to the free plan limits.
+                const filteredArticles = xTweets
+                    .map(tweetToArticle)
+                    .filter(article => (article.macroLevel || 0) >= 3);
+
+                articles.push(...filteredArticles);
             }
         } catch (e) {
             console.error('X Source failed:', e);
@@ -230,7 +235,7 @@ export async function fetchAndStoreNews(limit: number = 15): Promise<{ fetched: 
                         ivImpact: changePercentage > 10 ? 0.9 : 0.4,
                         symbols: ['MACRO'],
                         isBreaking: changePercentage > 10,
-                        macroLevel: changePercentage > 10 ? 'critical' : 'high',
+                        macroLevel: changePercentage > 10 ? 4 : 3,
                         priceBrainSentiment: odds.yesOdds > 0.5 ? 'Bullish' : 'Bearish', // Context dependent really
                         priceBrainClassification: 'Counter-cyclical',
                         impliedPoints: null,
@@ -259,7 +264,7 @@ export async function fetchAndStoreNews(limit: number = 15): Promise<{ fetched: 
                     ivImpact: 0.1,
                     symbols: [n.symbol],
                     isBreaking: false,
-                    macroLevel: 'low',
+                    macroLevel: 1,
                     priceBrainSentiment: 'Neutral',
                     priceBrainClassification: 'Cyclical',
                     impliedPoints: null,
