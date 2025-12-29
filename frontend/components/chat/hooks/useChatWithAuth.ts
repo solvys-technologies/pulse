@@ -10,17 +10,38 @@ import { useAuth } from '@clerk/clerk-react';
 import { API_BASE_URL } from '../constants.js';
 
 export function useChatWithAuth(conversationId: string | undefined, setConversationId: (id: string) => void) {
-  const { getToken } = useAuth();
+  const { getToken, isSignedIn, userId } = useAuth();
   const [isStreaming, setIsStreaming] = useState(false);
+  
+  // Log auth state for debugging
+  if (!isSignedIn) {
+    console.warn('[useChatWithAuth] User is not signed in. Token requests will fail.');
+  }
 
   const fetchWithAuth = useCallback(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    const token = await getToken({ template: 'neon' });
+    // Try to get a fresh token - Clerk handles caching internally
+    let token = await getToken({ template: 'neon' });
+    
+    // If token is null, try getting it without template as fallback
+    if (!token) {
+      console.warn('[useChatWithAuth] No token with neon template, trying default token...');
+      token = await getToken();
+    }
     
     // Ensure token is available before making the request
     if (!token) {
       console.error('[useChatWithAuth] No authentication token available. User may need to sign in.');
       throw new Error('Authentication required. Please sign in to continue.');
     }
+    
+    // Log token info for debugging (first 20 chars only for security)
+    console.log('[useChatWithAuth] Token obtained:', {
+      hasToken: !!token,
+      tokenLength: token.length,
+      tokenPreview: token.substring(0, 20) + '...',
+      isSignedIn,
+      userId,
+    });
 
     const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
 
@@ -53,8 +74,24 @@ export function useChatWithAuth(conversationId: string | undefined, setConversat
 
     // Handle 401 Unauthorized responses
     if (response.status === 401) {
-      console.error('[useChatWithAuth] 401 Unauthorized - Token may be expired or invalid');
       const errorText = await response.text().catch(() => 'Unauthorized');
+      console.error('[useChatWithAuth] 401 Unauthorized - Token may be expired or invalid', {
+        errorText,
+        tokenLength: token.length,
+        // Try to decode token to check expiration (if it's a JWT)
+        tokenPreview: token.substring(0, 50) + '...',
+      });
+      
+      // If token might be expired, try to get a fresh one and retry once
+      try {
+        const freshToken = await getToken({ template: 'neon' });
+        if (freshToken && freshToken !== token) {
+          console.log('[useChatWithAuth] Got fresh token, but not retrying automatically. User may need to refresh page.');
+        }
+      } catch (e) {
+        console.error('[useChatWithAuth] Failed to get fresh token:', e);
+      }
+      
       throw new Error(`Authentication failed: ${errorText}`);
     }
 
@@ -71,6 +108,7 @@ export function useChatWithAuth(conversationId: string | undefined, setConversat
     sendMessage,
     status,
     setMessages: setUseChatMessages,
+    stop,
   } = useChat({
     transport: new DefaultChatTransport({
       api: `${API_BASE_URL}/api/ai/chat`,
@@ -113,5 +151,6 @@ export function useChatWithAuth(conversationId: string | undefined, setConversat
     setMessages: setUseChatMessages,
     isLoading,
     setIsStreaming,
+    stop,
   };
 }
