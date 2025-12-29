@@ -48,7 +48,7 @@ export const authMiddleware = createMiddleware(async (c, next) => {
         runId: 'initial',
         hypothesisId: 'A'
       })
-    }).catch(() => {});
+    }).catch(() => { });
     // #endregion
     await next();
     return;
@@ -69,7 +69,7 @@ export const authMiddleware = createMiddleware(async (c, next) => {
       runId: 'initial',
       hypothesisId: 'C'
     })
-  }).catch(() => {});
+  }).catch(() => { });
   // #endregion
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -86,7 +86,7 @@ export const authMiddleware = createMiddleware(async (c, next) => {
         runId: 'initial',
         hypothesisId: 'C'
       })
-    }).catch(() => {});
+    }).catch(() => { });
     // #endregion
     return c.json({ error: 'Unauthorized: Missing or invalid token' }, 401);
   }
@@ -107,14 +107,22 @@ export const authMiddleware = createMiddleware(async (c, next) => {
         runId: 'initial',
         hypothesisId: 'C'
       })
-    }).catch(() => {});
+    }).catch(() => { });
     // #endregion
 
-    const result = await verifyToken(token, {
+    console.log(`[AUTH] Verifying token for ${c.req.path}, CLERK_SECRET_KEY prefix: ${env.CLERK_SECRET_KEY?.substring(0, 15)}...`);
+
+    // In @clerk/backend v1.x, verifyToken returns the JWT claims directly
+    const payload = await verifyToken(token, {
       secretKey: env.CLERK_SECRET_KEY,
     });
 
-    if (!result || result.errors || !result.payload) {
+    console.log(`[AUTH] verifyToken result:`, {
+      hasPayload: !!payload,
+      sub: (payload as any)?.sub,
+    });
+
+    if (!payload || !payload.sub) {
       // #region agent log - hypothesis C
       fetch('http://127.0.0.1:7244/ingest/fbebf980-5e49-4327-9406-872372234680', {
         method: 'POST',
@@ -122,18 +130,18 @@ export const authMiddleware = createMiddleware(async (c, next) => {
         body: JSON.stringify({
           location: 'auth.ts:invalid-token',
           message: 'Token verification failed',
-          data: { hasResult: !!result, hasErrors: !!(result && result.errors), method: c.req.method, path: c.req.path },
+          data: { hasPayload: !!payload, method: c.req.method, path: c.req.path },
           timestamp: Date.now(),
           sessionId: 'debug-session',
           runId: 'initial',
           hypothesisId: 'C'
         })
-      }).catch(() => {});
+      }).catch(() => { });
       // #endregion
       return c.json({ error: 'Unauthorized: Invalid token' }, 401);
     }
 
-    const userId = (result.payload as { sub?: string }).sub;
+    const userId = payload.sub;
     if (!userId) {
       // #region agent log - hypothesis C
       fetch('http://127.0.0.1:7244/ingest/fbebf980-5e49-4327-9406-872372234680', {
@@ -148,7 +156,7 @@ export const authMiddleware = createMiddleware(async (c, next) => {
           runId: 'initial',
           hypothesisId: 'C'
         })
-      }).catch(() => {});
+      }).catch(() => { });
       // #endregion
       return c.json({ error: 'Unauthorized: Invalid token payload' }, 401);
     }
@@ -166,7 +174,7 @@ export const authMiddleware = createMiddleware(async (c, next) => {
         runId: 'initial',
         hypothesisId: 'C'
       })
-    }).catch(() => {});
+    }).catch(() => { });
     // #endregion
 
     c.set('userId', userId);
@@ -187,7 +195,7 @@ export const authMiddleware = createMiddleware(async (c, next) => {
         runId: 'initial',
         hypothesisId: 'C'
       })
-    }).catch(() => {});
+    }).catch(() => { });
     // #endregion
     return c.json({ error: 'Unauthorized: Token verification failed' }, 401);
   }

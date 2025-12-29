@@ -178,10 +178,11 @@ export class AccountService {
 export class RiskFlowService {
   constructor(private client: ApiClient) { }
 
-  async list(params?: { limit?: number; offset?: number }): Promise<RiskFlowListResponse> {
+  async list(params?: { limit?: number; offset?: number; symbol?: string }): Promise<RiskFlowListResponse> {
     const query = new URLSearchParams();
     if (params?.limit) query.append('limit', params.limit.toString());
     if (params?.offset) query.append('offset', params.offset.toString());
+    if (params?.symbol) query.append('symbol', params.symbol);
 
     const queryString = query.toString();
     const endpoint = `/api/riskflow/feed${queryString ? `?${queryString}` : ''}`;
@@ -239,13 +240,15 @@ export class RiskFlowService {
 export class AIService {
   constructor(private client: ApiClient) { }
 
-  async chat(data: { message: string; conversationId?: string }): Promise<ChatResponse> {
+  /**
+   * Send a chat message (non-streaming legacy wrapper, prefer Vercel AI SDK directly)
+   */
+  async chat(data: { message: string; conversationId?: string; messages?: any[] }): Promise<any> {
     try {
-      const response = await this.client.post<ChatResponse>('/api/ai/chat', {
-        message: data.message,
-        conversationId: data.conversationId,
-      });
+      // If messages array is provided (Vercel SDK format), pass it through
+      const payload = data.messages ? { messages: data.messages, conversationId: data.conversationId } : { messages: [{ role: 'user', content: data.message }], conversationId: data.conversationId };
 
+      const response = await this.client.post('/api/ai/chat', payload);
       return response;
     } catch (error: any) {
       console.error('AI chat error:', error);
@@ -254,25 +257,34 @@ export class AIService {
   }
 
   async listConversations(): Promise<any[]> {
-    return this.client.get<{ conversations: any[] }>('/api/ai/conversations').then(r => r.conversations || []);
+    try {
+      const response = await this.client.get<{ conversations: any[] }>('/api/ai/conversations');
+      return response.conversations || [];
+    } catch (error) {
+      console.warn('listConversations endpoint error:', error);
+      return [];
+    }
   }
 
-  async getConversation(data: { conversationId: string }): Promise<any> {
-    // Stub - backend doesn't have this endpoint yet
-    console.warn('AI get conversation endpoint not available in Hono backend');
-    return { messages: [] };
+  async getConversation(id: string): Promise<any> {
+    return this.client.get<any>(`/api/ai/conversations/${id}`);
   }
 
-  async checkTape(): Promise<{ message: string; insights: any[] }> {
-    // Stub - backend doesn't have this endpoint yet
-    console.warn('AI check tape endpoint not available in Hono backend');
-    return { message: 'Check tape not yet implemented', insights: [] };
+  /**
+   * Quick Pulse: Analyze a chart screenshot
+   */
+  async quickPulse(image: string, algoState: any): Promise<any> {
+    return this.client.post('/api/ai/quick-pulse', { image, algoState });
   }
 
-  async generateDailyRecap(): Promise<{ message: string; recap: string }> {
-    // Stub - backend doesn't have this endpoint yet
-    console.warn('AI daily recap endpoint not available in Hono backend');
-    return { message: 'Daily recap not yet implemented', recap: '' };
+  async checkTape(): Promise<any> {
+    const response = await this.client.post<any>('/api/ai/check-tape', {});
+    return response;
+  }
+
+  async generateDailyRecap(): Promise<any> {
+    const response = await this.client.post<any>('/api/ai/generate-daily-recap', {});
+    return response;
   }
 
   async generateNTNReport(): Promise<NTNReport> {
@@ -315,16 +327,14 @@ export class TradingService {
     console.warn('Position seed endpoint not available in Hono backend');
   }
 
-  async toggleAlgo(data: any): Promise<{ success: boolean; message: string; algoEnabled?: boolean }> {
-    // Stub - backend doesn't have this endpoint
-    console.warn('Toggle algo endpoint not available in Hono backend');
-    return { success: false, message: 'Not implemented', algoEnabled: false };
+  async toggleAlgo(data: any): Promise<any> {
+    const response = await this.client.post<any>('/api/trading/toggle-algo', data);
+    return response;
   }
 
-  async fireTestTrade(data: any): Promise<{ success: boolean; message: string }> {
-    // Stub - backend doesn't have this endpoint
-    console.warn('Test trade endpoint not available in Hono backend');
-    return { success: false, message: 'Not implemented' };
+  async fireTestTrade(data: any): Promise<any> {
+    const response = await this.client.post<any>('/api/trading/test-trade', data);
+    return response;
   }
 }
 
@@ -365,7 +375,7 @@ export class NotificationsService {
   constructor(private client: ApiClient) { }
 
   async list(): Promise<any[]> {
-    const response = await this.client.get<{ notifications: any[] }>('/notifications');
+    const response = await this.client.get<{ notifications: any[] }>('/api/notifications');
     return response.notifications || [];
   }
 

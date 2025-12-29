@@ -1,8 +1,5 @@
-import { config } from 'dotenv';
+import 'dotenv/config';
 import { z } from 'zod';
-
-// Load environment variables from .env file
-config();
 
 const envSchema = z.object({
   NEON_DATABASE_URL: z.string().optional(),
@@ -14,19 +11,22 @@ const envSchema = z.object({
   VERCEL_AI_GATEWAY_API_KEY: z.string().default(''),
 
   // Option 2: Use provider API keys directly (if not using gateway)
+  OPENROUTER_API_KEY: z.string().default(''),
   ANTHROPIC_API_KEY: z.string().default(''),
   XAI_API_KEY: z.string().default(''),
+  GROQ_API_KEY: z.string().default(''),
 
   // Twitter/X API credentials
   X_BEARER_TOKEN: z.string().default(''),
   X_API_KEY: z.string().default(''),
   X_API_SECRET: z.string().default(''),
+  X_ACCESS_TOKEN: z.string().default(''),
+  X_ACCESS_TOKEN_SECRET: z.string().default(''),
 
   // Additional API keys
   FMP_API_KEY: z.string().default(''),
   REDIS_URL: z.string().default(''),
   CLAUDE_API_KEY: z.string().default(''),
-  NITTER_BASE_URL: z.string().default('https://nitter.net'),
   POLYMARKET_API_KEY: z.string().default(''),
 
   DEFAULT_AI_MODEL: z.string().default('grok-4'),

@@ -7,6 +7,7 @@ import { corsMiddleware } from './middleware/cors.js';
 import { loggerMiddleware, logger } from './middleware/logger.js';
 import { registerRoutes } from './routes/index.js';
 import { marketRoutes } from './routes/market.js';
+import { fetchAndStoreNews, initializePolymarketFeed } from './services/news-service.js';
 
 const app = new Hono();
 
@@ -49,10 +50,8 @@ const protectedRoutes = [
   '/api/econ',
   '/api/notifications',
   '/api/events',
-  '/api/iv-scoring',
-  '/api/twitter',
   '/api/ai',
-  '/api/autopilot'
+  '/api/chat'
 ];
 
 protectedRoutes.forEach(route => {
@@ -66,6 +65,13 @@ registerRoutes(app, true);
 app.route('/api/market', marketRoutes);
 
 app.onError((err, c) => {
+  // Add CORS headers even on errors (safety net)
+  const origin = c.req.header('Origin');
+  if (origin && (origin.endsWith('.solvys.io') || origin.endsWith('.vercel.app'))) {
+    c.header('Access-Control-Allow-Origin', origin);
+    c.header('Access-Control-Allow-Credentials', 'true');
+  }
+
   logger.error({ err }, 'Unhandled error');
   return c.json(
     {
@@ -77,6 +83,13 @@ app.onError((err, c) => {
 });
 
 app.notFound((c) => {
+  // Add CORS headers to 404 responses
+  const origin = c.req.header('Origin');
+  if (origin && (origin.endsWith('.solvys.io') || origin.endsWith('.vercel.app'))) {
+    c.header('Access-Control-Allow-Origin', origin);
+    c.header('Access-Control-Allow-Credentials', 'true');
+  }
+
   return c.json({ error: 'Not found' }, 404);
 });
 
@@ -92,5 +105,29 @@ serve({
 });
 
 logger.info({ port, host }, `Server running at http://${host}:${port}`);
+
+// Initialize news feed on startup
+Promise.all([
+  initializePolymarketFeed(),
+  fetchAndStoreNews(15)
+])
+  .then(([_, { fetched, stored }]) => {
+    logger.info({ fetched, stored }, 'News feed initialized on startup');
+
+    // Schedule background refresh every 5 minutes
+    setInterval(async () => {
+      try {
+        logger.info('Starting background news refresh...');
+        // Refresh 15 items to keep feed fresh
+        const result = await fetchAndStoreNews(15);
+        logger.info({ fetched: result.fetched, stored: result.stored }, 'Background news refresh complete');
+      } catch (err) {
+        logger.error({ err }, 'Background news refresh failed');
+      }
+    }, 5 * 60 * 1000); // 5 minutes
+  })
+  .catch((err) => {
+    logger.error({ err }, 'Failed to initialize news feed on startup');
+  });
 
 export default app;

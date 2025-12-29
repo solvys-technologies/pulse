@@ -1,4 +1,8 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+/**
+ * ChatInterface Component
+ * v2.28.6 Refactor
+ */
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { ArrowRight, Paperclip, Image, FileText, Link2, AlertTriangle, TrendingUp, History, X, Pin, Archive, Edit2, MoreVertical } from "lucide-react";
 import { useChatWithAuth } from "./chat/hooks/useChatWithAuth";
 import { useAuth } from "@clerk/clerk-react";
@@ -6,6 +10,8 @@ import { useBackend } from "../lib/backend";
 import { healingBowlPlayer } from "../utils/healingBowlSounds";
 import { useSettings } from "../contexts/SettingsContext";
 import ReactMarkdown from "react-markdown";
+import { MessageRenderer } from "./chat/MessageRenderer";
+import QuickPulseModal from "./analysis/QuickPulseModal";
 
 
 interface Message {
@@ -77,7 +83,7 @@ interface ConversationSession {
 export default function ChatInterface() {
   const backend = useBackend();
   const { alertConfig } = useSettings();
-  const { getToken } = useAuth();
+  const { getToken, isSignedIn } = useAuth();
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [conversationId, setConversationId] = useState<string | undefined>();
@@ -94,9 +100,9 @@ export default function ChatInterface() {
   // Local input state for textarea
   const [input, setInput] = useState("");
 
-
   // Track loading state manually
   const [isStreaming, setIsStreamingState] = useState(false);
+  const [showQuickPulseModal, setShowQuickPulseModal] = useState(false);
 
   // Use useChatWithAuth hook for streaming chat with proper auth and message handling
   const {
@@ -110,20 +116,25 @@ export default function ChatInterface() {
   const isLoading = isStreaming || status === 'streaming' || status === 'submitted';
 
   // Convert useChat messages to our Message format for display
-  const messages: Message[] = useChatMessages
-    .filter((msg) => msg.role !== 'system') // Filter out system messages
-    .map((msg) => {
-      // Extract text content from parts array
-      const textParts = msg.parts
-        ?.filter((part: any) => part.type === 'text')
-        .map((part: any) => part.text)
-        .join('') || '';
-      
+  const messages: Message[] = (useChatMessages || [])
+    .filter((msg: any) => msg.role !== 'system')
+    .map((msg: any) => {
+      // Handle potential parts array if present (multi-modal) or fallback to content string
+      // The AI SDK Message type might have parts or content.
+      let content = msg.content;
+      if (msg.parts && Array.isArray(msg.parts)) {
+        const textParts = msg.parts
+          .filter((part: any) => part.type === 'text')
+          .map((part: any) => part.text)
+          .join('');
+        if (textParts) content = textParts;
+      }
+
       return {
         id: msg.id,
         role: msg.role === 'user' ? 'user' : 'assistant',
-        content: textParts,
-        timestamp: new Date(),
+        content: content,
+        timestamp: msg.createdAt || new Date(),
       };
     });
 
@@ -135,44 +146,37 @@ export default function ChatInterface() {
     scrollToBottom();
   }, [messages]);
 
-  // Auto-resize textarea when input changes
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
       textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
     }
   }, [input]);
-  
-  // Sync input with textarea value for useChat
+
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.value = input;
     }
   }, [input]);
 
-  // Sync healing bowl player with user's selected sound
   useEffect(() => {
     healingBowlPlayer.setSound(alertConfig.healingBowlSound);
   }, [alertConfig.healingBowlSound]);
 
-  // Animate thinking text - 2-3 seconds between words for faster feedback
   useEffect(() => {
     if (!isLoading) {
       setThinkingText("");
       return;
     }
-
     let currentIndex = 0;
     setThinkingText(THINKING_TERMS[0]);
     const interval = setInterval(() => {
       currentIndex = (currentIndex + 1) % THINKING_TERMS.length;
       setThinkingText(THINKING_TERMS[currentIndex]);
-    }, 2500); // 2.5 seconds between words
-
+    }, 2500);
     return () => clearInterval(interval);
   }, [isLoading]);
 
-  // Hide suggestions once user sends a message
   useEffect(() => {
     const hasUserMessages = messages.some((m) => m.role === "user");
     if (hasUserMessages) {
@@ -180,51 +184,45 @@ export default function ChatInterface() {
     }
   }, [messages]);
 
-  // Load conversation history with ER status and P&L
   const loadConversationHistory = async () => {
+    if (!isSignedIn) {
+      setConversations([]);
+      return;
+    }
     setLoadingHistory(true);
     try {
       const response = await backend.ai.listConversations();
-      // Enrich with ER status and P&L data
-      const conversations = Array.isArray(response) ? response : [];
+      const conversationsList = Array.isArray(response) ? response : [];
       const enrichedConversations = await Promise.all(
-        conversations.map(async (conv: any) => {
+        conversationsList.map(async (conv: any) => {
           const now = new Date();
           const convDate = new Date(conv.updatedAt);
           const hoursSinceUpdate = (now.getTime() - convDate.getTime()) / (1000 * 60 * 60);
           const isStale = hoursSinceUpdate > 24;
 
-          // Try to get ER status and P&L for this session
           let erStatus: "Stable" | "Tilt" | "Neutral" | undefined;
           let pnl: number | undefined;
-          
+
           try {
-            // Get ER sessions for the day of this conversation
             const erSessions = await backend.er.getERSessions();
             const convDay = new Date(conv.updatedAt).toDateString();
             const sessions = Array.isArray(erSessions) ? erSessions : [];
             const sessionForDay = sessions.find(
               (s: any) => new Date(s.sessionStart).toDateString() === convDay
             );
-            
             if (sessionForDay) {
               erStatus = sessionForDay.finalScore > 0.5 ? "Stable" : sessionForDay.finalScore < -0.5 ? "Tilt" : "Neutral";
             }
-
-            // Get P&L for the day
             const account = await backend.account.get();
-            // For now, we'll use daily_pnl as a proxy - in production, you'd want session-specific P&L
             pnl = account.dailyPnl;
-          } catch (error) {
-            // Silently fail - these are optional enrichments
-          }
+          } catch (error) { }
 
           return {
             ...conv,
             erStatus,
             pnl,
             isStale,
-            isArchived: false, // Default values - would be loaded from backend
+            isArchived: false,
             isPinned: false,
             customName: undefined,
           };
@@ -240,19 +238,19 @@ export default function ChatInterface() {
   };
 
   const handleArchiveConversation = (convId: string) => {
-    setConversations(prev => prev.map(c => 
+    setConversations(prev => prev.map(c =>
       c.conversationId === convId ? { ...c, isArchived: !c.isArchived } : c
     ));
   };
 
   const handlePinConversation = (convId: string) => {
-    setConversations(prev => prev.map(c => 
+    setConversations(prev => prev.map(c =>
       c.conversationId === convId ? { ...c, isPinned: !c.isPinned } : c
     ));
   };
 
   const handleRenameConversation = (convId: string, newName: string) => {
-    setConversations(prev => prev.map(c => 
+    setConversations(prev => prev.map(c =>
       c.conversationId === convId ? { ...c, customName: newName } : c
     ));
     setEditingConversationId(null);
@@ -260,8 +258,6 @@ export default function ChatInterface() {
   };
 
   const formatSessionTime = (date: Date) => {
-    // Calculate total time PsychAssist was used for the day
-    // For now, we'll use a placeholder - in production, calculate from session data
     return date.toLocaleTimeString("en-US", {
       hour: "2-digit",
       minute: "2-digit",
@@ -269,23 +265,20 @@ export default function ChatInterface() {
     });
   };
 
-  // Load a specific conversation
   const loadConversation = async (convId: string) => {
-    // Check if conversation is stale
     const conv = conversations.find(c => c.conversationId === convId);
     if (conv?.isStale) {
       alert("This chat thread has gone stale after 24 hours. You can view it, but cannot send new messages. Start a new chat to continue the conversation.");
-      // Still load it for viewing
     }
-    
+
     setShowHistory(false);
     try {
-      const response = await backend.ai.getConversation({ conversationId: convId });
-      // Convert backend messages to useChat format
+      const response = await backend.ai.getConversation(convId);
       const loadedMessages = (response.messages || []).map((msg: any, idx: number) => ({
         id: `${convId}-${idx}`,
         role: msg.role as "user" | "assistant",
         content: msg.content,
+        createdAt: new Date(),
       }));
       setUseChatMessages(loadedMessages);
       setConversationId(convId);
@@ -295,33 +288,48 @@ export default function ChatInterface() {
     }
   };
 
-  // Load history when component mounts
   useEffect(() => {
-    loadConversationHistory();
-  }, []);
+    if (isSignedIn) {
+      loadConversationHistory();
+    } else {
+      setConversations([]);
+    }
+  }, [isSignedIn]);
 
   const handleSend = async (customMessage?: string) => {
     const messageText = customMessage || input.trim();
     if (!messageText || isLoading) return;
 
-    // Check if current conversation is stale
     if (conversationId) {
       const conv = conversations.find(c => c.conversationId === conversationId);
       if (conv?.isStale) {
-        alert("This chat thread has gone stale after 24 hours. Please start a new chat to continue the conversation.");
+        alert("This chat thread has gone stale after 24 hours. You cannot send new messages in this thread.");
         return;
       }
     }
 
-    // Hide suggestions when user sends a message
     setShowSuggestions(false);
     setThinkingText(THINKING_TERMS[0]);
     setIsStreamingState(true);
 
-    // Send message using useChat's sendMessage
-    sendMessage({ text: messageText });
-    
-    // Clear input if not a custom message
+    try {
+      const token = await getToken();
+      await sendMessage({
+        text: messageText
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token || ''}`
+        },
+        body: {
+          conversationId
+        }
+      });
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      setIsStreaming(false);
+      alert('Failed to send message. Please try again.');
+    }
+
     if (!customMessage) {
       setInput("");
     }
@@ -329,12 +337,74 @@ export default function ChatInterface() {
 
   const handleCheckTape = async () => {
     setShowSuggestions(false);
-    sendMessage({ text: "Check the Tape" });
+    try {
+      const token = await getToken();
+      await sendMessage({
+        text: "Check the Tape"
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token || ''}`
+        },
+        body: { conversationId }
+      });
+    } catch (error) {
+      console.error('Failed to send check tape command:', error);
+    }
   };
 
   const handleDailyRecap = async () => {
     setShowSuggestions(false);
-    sendMessage({ text: "Generate daily recap" });
+    try {
+      const token = await getToken();
+      await sendMessage({
+        text: "Generate daily recap"
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token || ''}`
+        },
+        body: { conversationId }
+      });
+    } catch (error) {
+      console.error('Failed to send daily recap command:', error);
+    }
+  };
+
+  const handleQuickPulseComplete = async (result: any) => {
+    // Format the analysis result as a markdown message
+    const kpiSection = result.kpi ? `
+### Key Levels
+* **Entry 1:** ${result.kpi.entry1 || 'N/A'}
+* **Entry 2:** ${result.kpi.entry2 || 'N/A'}
+* **Stop:** ${result.kpi.stop || 'N/A'}
+* **Target:** ${result.kpi.target || 'N/A'}
+` : '';
+
+    const messageContent = `
+## ⚡ Quick Pulse Vision
+
+**Bias:** ${result.bias} ${result.confidence ? `(${result.confidence}%)` : ''}
+
+**Rationale:**
+${result.rationale}
+${kpiSection}
+    `.trim();
+
+    // Append as an assistant message
+    // Note: In a real app, you might want to send a 'user' message first saying "Here is a chart..." 
+    // but for now we just show the result.
+    // Actually, let's send a hidden user message or just the result. 
+    // Since sendMessage() sends to the API, we might not want to re-trigger the AI.
+    // useChat's sendMessage sends a message. setMessages updates local state.
+
+    // We want to just display it.
+    const newMessage: Message = {
+      id: Date.now().toString(),
+      role: 'assistant',
+      content: messageContent,
+      timestamp: new Date()
+    };
+
+    setUseChatMessages((prev: any[]) => [...prev, newMessage]);
   };
 
   const formatTime = (date: Date) => {
@@ -347,7 +417,7 @@ export default function ChatInterface() {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header with buttons - invisible/transparent */}
+      {/* Header with buttons */}
       <div className="bg-transparent">
         <div className="h-14 flex items-center justify-end px-6">
           <div className="flex items-center gap-3">
@@ -397,7 +467,7 @@ export default function ChatInterface() {
         </div>
       )}
 
-      {/* Conversation History Sidebar - Right side panel */}
+      {/* Conversation History Sidebar */}
       {showHistory && (
         <div className="absolute inset-0 z-50 flex justify-end">
           <div className="w-80 bg-[#0a0a00] border-l border-[#FFC038]/20 flex flex-col">
@@ -418,7 +488,6 @@ export default function ChatInterface() {
               ) : (
                 conversations
                   .sort((a, b) => {
-                    // Sort: pinned first, then by date
                     if (a.isPinned && !b.isPinned) return -1;
                     if (!a.isPinned && b.isPinned) return 1;
                     return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
@@ -436,9 +505,8 @@ export default function ChatInterface() {
                     return (
                       <div
                         key={conv.conversationId}
-                        className={`group relative w-full p-3 bg-zinc-900/50 border ${
-                          isStale ? "border-zinc-700/50 opacity-60" : "border-zinc-800"
-                        } hover:border-[#FFC038]/40 hover:bg-zinc-900 rounded-lg transition-all ${isStale ? "cursor-not-allowed" : ""}`}
+                        className={`group relative w-full p-3 bg-zinc-900/50 border ${isStale ? "border-zinc-700/50 opacity-60" : "border-zinc-800"
+                          } hover:border-[#FFC038]/40 hover:bg-zinc-900 rounded-lg transition-all ${isStale ? "cursor-not-allowed" : ""}`}
                       >
                         {isStale && (
                           <div className="text-xs text-amber-500 mb-2 font-medium">
@@ -550,7 +618,6 @@ export default function ChatInterface() {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-6 pb-8">
         <div className="max-w-3xl mx-auto space-y-4 mb-8">
-          {/* Suggestion Chips - shown in middle when no messages */}
           {showSuggestions && messages.length === 0 && (
             <div className="flex flex-col items-center justify-center min-h-[400px] gap-6">
               <div className="text-center">
@@ -592,20 +659,11 @@ export default function ChatInterface() {
                 `}
               >
                 {message.role === "assistant" ? (
-                  <div className="text-sm text-zinc-300 mb-2 prose prose-invert prose-sm max-w-none">
-                    <ReactMarkdown
-                      components={{
-                        p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-                        strong: ({ children }) => <strong className="font-semibold text-zinc-200">{children}</strong>,
-                        em: ({ children }) => <em className="italic">{children}</em>,
-                        u: ({ children }) => <u className="underline">{children}</u>,
-                        ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
-                        ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
-                        li: ({ children }) => <li className="text-zinc-300">{children}</li>,
-                      }}
-                    >
-                      {message.content}
-                    </ReactMarkdown>
+                  <div className="text-sm text-zinc-300 mb-2 max-w-none">
+                    <MessageRenderer
+                      content={message.content}
+                      onRenderWidget={(widget: any) => null}
+                    />
                   </div>
                 ) : (
                   <p className="text-sm text-zinc-300 mb-2 whitespace-pre-wrap">{message.content}</p>
@@ -616,7 +674,6 @@ export default function ChatInterface() {
           ))}
           {isLoading && (
             <div className="flex justify-start items-center gap-3">
-              {/* Radar pulsating graphic */}
               <div className="relative w-6 h-6">
                 <div className="absolute inset-0 rounded-full border-2 border-[#FFC038]/40 animate-ping"></div>
                 <div className="absolute inset-1 rounded-full border-2 border-[#FFC038]/60 animate-pulse"></div>
@@ -632,38 +689,31 @@ export default function ChatInterface() {
       {/* Input */}
       <div className="sticky bottom-0 pt-6 pb-4 px-4 bg-[#050500]/80 backdrop-blur-md">
         <div className="w-full max-w-3xl mx-auto flex gap-2 items-end">
-          {/* Attachment button - side by side with input, aligned to bottom */}
           <button
             onClick={() => setShowAttachMenu(!showAttachMenu)}
             className="relative flex items-center justify-center w-[42px] h-[42px] flex-shrink-0 hover:bg-white/10 rounded transition-colors z-10 self-end"
             type="button"
           >
             <Paperclip className="w-4 h-4 text-zinc-400 hover:text-[#FFC038] transition-colors" />
-            
+
             {showAttachMenu && (
               <div className="absolute bottom-full left-0 mb-2 bg-black/95 backdrop-blur-md border border-white/10 rounded-xl p-2 shadow-xl min-w-[200px] z-10">
                 <button
-                  onClick={() => {
-                    setShowAttachMenu(false);
-                  }}
+                  onClick={() => setShowAttachMenu(false)}
                   className="w-full flex items-center gap-3 px-3 py-2 text-sm text-zinc-300 hover:bg-[#FFC038]/10 rounded-lg transition-colors"
                 >
                   <Image className="w-4 h-4" />
                   <span>Photo/Video</span>
                 </button>
                 <button
-                  onClick={() => {
-                    setShowAttachMenu(false);
-                  }}
+                  onClick={() => setShowAttachMenu(false)}
                   className="w-full flex items-center gap-3 px-3 py-2 text-sm text-zinc-300 hover:bg-[#FFC038]/10 rounded-lg transition-colors"
                 >
                   <FileText className="w-4 h-4" />
                   <span>Document</span>
                 </button>
                 <button
-                  onClick={() => {
-                    setShowAttachMenu(false);
-                  }}
+                  onClick={() => setShowAttachMenu(false)}
                   className="w-full flex items-center gap-3 px-3 py-2 text-sm text-zinc-300 hover:bg-[#FFC038]/10 rounded-lg transition-colors"
                 >
                   <Link2 className="w-4 h-4" />
@@ -672,8 +722,7 @@ export default function ChatInterface() {
               </div>
             )}
           </button>
-          
-          {/* Input box - multi-line textarea with paragraph styling */}
+
           <textarea
             id="chat-message-input"
             name="chat-message"
@@ -681,7 +730,6 @@ export default function ChatInterface() {
             value={input}
             onChange={(e) => {
               setInput(e.target.value);
-              // Auto-resize textarea - grows on new lines
               const target = e.target as HTMLTextAreaElement;
               target.style.height = "auto";
               target.style.height = `${Math.min(target.scrollHeight, 200)}px`;
@@ -698,7 +746,6 @@ export default function ChatInterface() {
             className="flex-1 bg-white/5 backdrop-blur-sm border border-white/10 rounded-[18px] px-4 py-3 text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-[#FFC038]/40 focus:shadow-[0_0_12px_rgba(255,192,56,0.1)] disabled:opacity-50 transition-all resize-none overflow-y-auto min-h-[42px] max-h-[200px] leading-relaxed"
           />
 
-          {/* Send button - round with arrow, aligned to bottom */}
           <button
             onClick={(e) => {
               e.preventDefault();
@@ -712,6 +759,12 @@ export default function ChatInterface() {
           </button>
         </div>
       </div>
+
+      <QuickPulseModal
+        isOpen={showQuickPulseModal}
+        onClose={() => setShowQuickPulseModal(false)}
+        onAnalysisComplete={handleQuickPulseComplete}
+      />
     </div>
   );
 }
