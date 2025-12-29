@@ -1,14 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { ArrowRight, Paperclip, Image, FileText, Link2, AlertTriangle, TrendingUp, History, X, Pin, Archive, Edit2, MoreVertical } from "lucide-react";
-import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import { useChatWithAuth } from "./chat/hooks/useChatWithAuth";
 import { useAuth } from "@clerk/clerk-react";
 import { useBackend } from "../lib/backend";
 import { healingBowlPlayer } from "../utils/healingBowlSounds";
 import { useSettings } from "../contexts/SettingsContext";
 import ReactMarkdown from "react-markdown";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 interface Message {
   id: string;
@@ -96,75 +94,19 @@ export default function ChatInterface() {
   // Local input state for textarea
   const [input, setInput] = useState("");
 
-  // Custom fetch function for useChat with auth
-  const fetchWithAuth = useCallback(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    const token = await getToken();
-    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
-    
-    // If URL is relative, prepend API_BASE_URL
-    const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
-    
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...(init?.headers as Record<string, string> || {}),
-    };
-    
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    // Add conversationId to request body if available (per AI SDK best practices)
-    let body = init?.body;
-    if (body && conversationId) {
-      try {
-        const bodyObj = typeof body === 'string' ? JSON.parse(body) : body;
-        if (typeof bodyObj === 'object' && bodyObj !== null && Array.isArray(bodyObj.messages)) {
-          bodyObj.conversationId = conversationId;
-          body = JSON.stringify(bodyObj);
-        }
-      } catch (e) {
-        // Ignore parse errors
-      }
-    }
-
-    const response = await fetch(fullUrl, {
-      ...init,
-      headers: headers as HeadersInit,
-      body,
-    });
-
-    // Extract conversationId from response headers
-    const convId = response.headers.get('X-Conversation-Id');
-    if (convId) {
-      setConversationId(convId);
-    }
-
-    return response;
-  }, [getToken, conversationId, setConversationId]);
 
   // Track loading state manually
-  const [isStreaming, setIsStreaming] = useState(false);
+  const [isStreaming, setIsStreamingState] = useState(false);
 
-  // Use useChat hook for streaming chat (per video best practices)
+  // Use useChatWithAuth hook for streaming chat with proper auth and message handling
   const {
     messages: useChatMessages,
     sendMessage,
     status,
     setMessages: setUseChatMessages,
-  } = useChat({
-    transport: new DefaultChatTransport({
-      api: `${API_BASE_URL}/ai/chat`,
-      fetch: fetchWithAuth,
-    }),
-    onFinish: (message) => {
-      setIsStreaming(false);
-      console.log('Message finished:', message);
-    },
-    onError: (error) => {
-      setIsStreaming(false);
-      console.error('Chat error:', error);
-    },
-  });
+    isLoading,
+    setIsStreaming,
+  } = useChatWithAuth(conversationId, setConversationId);
 
   const isLoading = isStreaming || status === 'streaming' || status === 'submitted';
 
@@ -375,7 +317,7 @@ export default function ChatInterface() {
     // Hide suggestions when user sends a message
     setShowSuggestions(false);
     setThinkingText(THINKING_TERMS[0]);
-    setIsStreaming(true);
+    setIsStreamingState(true);
 
     // Send message using useChat's sendMessage
     sendMessage({ text: messageText });

@@ -11,6 +11,7 @@
 - **Always reference official API documentation** before implementing integrations—never assume
 - Build with **observability and error handling** as first-class citizens
 - Reduce cognitive load: provide plug-and-play outputs, avoid unnecessary clarifications
+- **MANDATORY: Follow SHIP Framework** for all tactical planning (see `knowledge-base/platform/ship-framework.md`)
 
 ## 🔄 **Deployment Workflow - CRITICAL RULE**
 
