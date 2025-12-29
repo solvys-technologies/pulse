@@ -14,7 +14,7 @@ export function useChatWithAuth(conversationId: string | undefined, setConversat
   const [isStreaming, setIsStreaming] = useState(false);
 
   const fetchWithAuth = useCallback(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    const token = await getToken();
+    const token = await getToken({ template: 'neon' });
     
     // Ensure token is available before making the request
     if (!token) {
