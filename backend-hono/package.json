@@ -23,7 +23,7 @@
     "@clerk/backend": "^1.27.0",
     "@hono/node-server": "^1.13.0",
     "@neondatabase/serverless": "^0.10.4",
-    "ai": "^3.4.33",
+    "ai": "6.0.3",
     "dotenv": "^17.2.3",
     "hono": "^4.6.0",
     "pino": "^9.6.0",
