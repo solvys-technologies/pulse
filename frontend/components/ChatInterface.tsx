@@ -116,12 +116,9 @@ export default function ChatInterface() {
 
   const {
     messages: useChatMessages,
-    append,
+    sendMessage,
     status,
     setMessages: setUseChatMessages,
-    input: chatInput,
-    handleInputChange,
-    handleSubmit
   } = useChat(useChatOptions) as any;
 
   const isLoading = isStreaming || status === 'streaming' || status === 'submitted';
@@ -317,9 +314,8 @@ export default function ChatInterface() {
 
     try {
       const token = await getToken();
-      await append({
-        role: 'user',
-        content: messageText
+      await sendMessage({
+        text: messageText
       }, {
         headers: {
           'Authorization': `Bearer ${token || ''}`
@@ -343,9 +339,8 @@ export default function ChatInterface() {
     setShowSuggestions(false);
     try {
       const token = await getToken();
-      await append({
-        role: 'user',
-        content: "Check the Tape"
+      await sendMessage({
+        text: "Check the Tape"
       }, {
         headers: {
           'Authorization': `Bearer ${token || ''}`
@@ -361,9 +356,8 @@ export default function ChatInterface() {
     setShowSuggestions(false);
     try {
       const token = await getToken();
-      await append({
-        role: 'user',
-        content: "Generate daily recap"
+      await sendMessage({
+        text: "Generate daily recap"
       }, {
         headers: {
           'Authorization': `Bearer ${token || ''}`
@@ -398,9 +392,9 @@ ${kpiSection}
     // Append as an assistant message
     // Note: In a real app, you might want to send a 'user' message first saying "Here is a chart..." 
     // but for now we just show the result.
-    // Actually, let's append a hidden user message or just the result. 
-    // Since append() sends to the API, we might not want to re-trigger the AI.
-    // useChat's append sends a message. setMessages updates local state.
+    // Actually, let's send a hidden user message or just the result. 
+    // Since sendMessage() sends to the API, we might not want to re-trigger the AI.
+    // useChat's sendMessage sends a message. setMessages updates local state.
 
     // We want to just display it.
     const newMessage: Message = {
