@@ -26,14 +26,11 @@ export function useChatWithAuth(conversationId: string | undefined, setConversat
   // Helper function to redirect to sign-in
   const redirectToSignIn = useCallback(() => {
     console.warn('[useChatWithAuth] Redirecting to sign-in page due to authentication failure.');
-    // Use Clerk's redirectToSignIn if available, otherwise reload the page
-    if (clerk.redirectToSignIn) {
-      clerk.redirectToSignIn();
-    } else {
-      // Fallback: reload the page which will show the SignedOut component
-      window.location.reload();
-    }
-  }, [clerk]);
+    // Instead of using clerk.redirectToSignIn() which may redirect to an external Clerk domain
+    // (causing NX domain errors), we'll just reload the page. The app's SignedOut component
+    // will automatically show the inline SignIn component that's already configured in App.tsx
+    window.location.reload();
+  }, []);
 
   const fetchWithAuth = useCallback(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     // Try to get a fresh token - Clerk handles caching internally
