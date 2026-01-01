@@ -231,6 +231,7 @@ export async function prefetchHighPriorityNews(): Promise<{ fetched: number; sto
         let allTweets: Tweet[] = [];
         
         // Fetch from high-priority accounts
+        // STRICT: Abort immediately on any authentication error
         for (const account of HIGH_PRIORITY_ACCOUNTS) {
             try {
                 // Fetch 15 tweets per account to ensure we get enough Level 3-4 items
@@ -239,22 +240,39 @@ export async function prefetchHighPriorityNews(): Promise<{ fetched: number; sto
                 logger.debug({ account, count: tweets.length }, 'Fetched tweets from high-priority account');
             } catch (error) {
                 const errorMessage = error instanceof Error ? error.message : String(error);
-                const isAuthError = errorMessage.includes('401') || errorMessage.includes('403') || errorMessage.includes('Authentication');
+                const errorStack = error instanceof Error ? error.stack : undefined;
+                
+                // Strict authentication error detection - multiple patterns
+                const isAuthError = 
+                    errorMessage.includes('401') || 
+                    errorMessage.includes('403') || 
+                    errorMessage.includes('Authentication') ||
+                    errorMessage.includes('Unauthorized') ||
+                    errorMessage.includes('Forbidden') ||
+                    errorMessage.includes('invalid_token') ||
+                    errorMessage.includes('token') && (errorMessage.includes('invalid') || errorMessage.includes('expired') || errorMessage.includes('not configured')) ||
+                    errorMessage.includes('X_BEARER_TOKEN') ||
+                    errorMessage.includes('Bearer token') ||
+                    (error instanceof Error && 'statusCode' in error && ((error as any).statusCode === 401 || (error as any).statusCode === 403));
                 
                 if (isAuthError) {
                     logger.error({ 
                         error: errorMessage,
+                        errorStack,
                         account,
-                        hint: 'X_BEARER_TOKEN authentication failed. Check Fly.io secrets.'
-                    }, 'X API authentication failed for high-priority account');
-                    // Don't continue with other accounts if auth is broken
+                        statusCode: (error as any)?.statusCode,
+                        errorData: (error as any)?.errorData,
+                        hint: 'X_BEARER_TOKEN authentication failed. Verify token is set correctly in Fly.io secrets and has proper permissions.'
+                    }, 'X API authentication failed - ABORTING prefetch');
+                    
+                    // STRICT: Immediately abort prefetch on auth error - don't try other accounts
                     throw error;
                 } else {
                     logger.error({ 
                         error: errorMessage,
-                        account,
-                        stack: error instanceof Error ? error.stack : undefined
-                    }, 'Failed to fetch from high-priority account');
+                        errorStack,
+                        account
+                    }, 'Failed to fetch from high-priority account (non-auth error - continuing)');
                     // Continue with other accounts on non-auth errors
                 }
             }
