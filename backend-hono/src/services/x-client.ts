@@ -202,19 +202,29 @@ class XClient {
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             const errorStack = error instanceof Error ? error.stack : undefined;
+            const errorLower = errorMessage.toLowerCase();
             
-            // Strict authentication error detection - multiple patterns
+            // Check for status code in error object first (most reliable)
+            const hasAuthStatusCode = (error as any)?.statusCode === 401 || (error as any)?.statusCode === 403;
+            
+            // Strict authentication error detection - case-insensitive with precise patterns
+            // Use word boundaries and specific patterns to avoid false positives
             const isAuthError = 
-                errorMessage.includes('401') || 
-                errorMessage.includes('403') || 
-                errorMessage.includes('Authentication') ||
-                errorMessage.includes('Unauthorized') ||
-                errorMessage.includes('Forbidden') ||
-                errorMessage.includes('invalid_token') ||
-                errorMessage.includes('token') && (errorMessage.includes('invalid') || errorMessage.includes('expired')) ||
-                errorMessage.includes('X_BEARER_TOKEN') ||
-                errorMessage.includes('Bearer token') ||
-                errorMessage.includes('not configured');
+                hasAuthStatusCode ||
+                // Status codes in error message (with word boundaries to avoid false positives like "14031")
+                /\b401\b/.test(errorMessage) || 
+                /\b403\b/.test(errorMessage) ||
+                // Case-insensitive auth-related keywords
+                errorLower.includes('authentication') ||
+                errorLower.includes('unauthorized') ||
+                errorLower.includes('forbidden') ||
+                errorLower.includes('invalid_token') ||
+                (errorLower.includes('token') && (errorLower.includes('invalid') || errorLower.includes('expired') || errorLower.includes('missing'))) ||
+                errorLower.includes('x_bearer_token') ||
+                errorLower.includes('bearer token') ||
+                errorLower.includes('not configured') ||
+                errorLower.includes('credentials') ||
+                errorLower.includes('authorization');
             
             console.error(`[XClient] Failed to fetch from X API for ${account}:`, {
                 account,
@@ -260,17 +270,68 @@ class XClient {
     }
 
     /**
-     * Fetch from all monitored accounts in parallel (with concurrency limit optional, but simplified here)
+     * Fetch from all monitored accounts in parallel
+     * Uses Promise.allSettled to handle auth errors gracefully - if any account has auth error, throws immediately
      */
     async fetchAllFinancialNews(limitPerAccount: number = 5): Promise<Tweet[]> {
         if (this.isRateLimited()) return [];
 
         const promises = FINANCIAL_ACCOUNTS.map(account =>
-            this.fetchAccountTweets(account, limitPerAccount)
+            this.fetchAccountTweets(account, limitPerAccount).catch(error => {
+                // Re-throw auth errors immediately to fail fast
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                const errorLower = errorMessage.toLowerCase();
+                const hasAuthStatusCode = (error as any)?.statusCode === 401 || (error as any)?.statusCode === 403;
+                const isAuthError = 
+                    hasAuthStatusCode ||
+                    /\b401\b/.test(errorMessage) || 
+                    /\b403\b/.test(errorMessage) ||
+                    errorLower.includes('authentication') ||
+                    errorLower.includes('unauthorized') ||
+                    errorLower.includes('forbidden') ||
+                    errorLower.includes('x_bearer_token') ||
+                    errorLower.includes('not configured');
+                
+                if (isAuthError) {
+                    throw error; // Re-throw auth errors to fail fast
+                }
+                // Return empty array for non-auth errors (graceful degradation)
+                console.warn(`[XClient] Non-auth error for ${account}, returning empty array:`, errorMessage);
+                return [];
+            })
         );
 
-        const results = await Promise.all(promises);
-        const allTweets = results.flat();
+        const results = await Promise.allSettled(promises);
+        
+        // Check if any promise was rejected due to auth error
+        for (const result of results) {
+            if (result.status === 'rejected') {
+                const error = result.reason;
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                const errorLower = errorMessage.toLowerCase();
+                const hasAuthStatusCode = (error as any)?.statusCode === 401 || (error as any)?.statusCode === 403;
+                const isAuthError = 
+                    hasAuthStatusCode ||
+                    /\b401\b/.test(errorMessage) || 
+                    /\b403\b/.test(errorMessage) ||
+                    errorLower.includes('authentication') ||
+                    errorLower.includes('unauthorized') ||
+                    errorLower.includes('forbidden') ||
+                    errorLower.includes('x_bearer_token') ||
+                    errorLower.includes('not configured');
+                
+                if (isAuthError) {
+                    // Auth error detected - throw immediately to fail fast
+                    throw error;
+                }
+            }
+        }
+        
+        // Extract successful results
+        const allTweets = results
+            .filter((r): r is PromiseFulfilledResult<Tweet[]> => r.status === 'fulfilled')
+            .map(r => r.value)
+            .flat();
 
         // Sort by newest first
         return allTweets.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());

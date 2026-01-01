@@ -241,19 +241,28 @@ export async function prefetchHighPriorityNews(): Promise<{ fetched: number; sto
             } catch (error) {
                 const errorMessage = error instanceof Error ? error.message : String(error);
                 const errorStack = error instanceof Error ? error.stack : undefined;
+                const errorLower = errorMessage.toLowerCase();
                 
-                // Strict authentication error detection - multiple patterns
+                // Strict authentication error detection - case-insensitive with precise patterns
+                // Check status code first (most reliable), then use word boundaries to avoid false positives
+                const hasAuthStatusCode = (error as any)?.statusCode === 401 || (error as any)?.statusCode === 403;
+                
                 const isAuthError = 
-                    errorMessage.includes('401') || 
-                    errorMessage.includes('403') || 
-                    errorMessage.includes('Authentication') ||
-                    errorMessage.includes('Unauthorized') ||
-                    errorMessage.includes('Forbidden') ||
-                    errorMessage.includes('invalid_token') ||
-                    errorMessage.includes('token') && (errorMessage.includes('invalid') || errorMessage.includes('expired') || errorMessage.includes('not configured')) ||
-                    errorMessage.includes('X_BEARER_TOKEN') ||
-                    errorMessage.includes('Bearer token') ||
-                    (error instanceof Error && 'statusCode' in error && ((error as any).statusCode === 401 || (error as any).statusCode === 403));
+                    hasAuthStatusCode ||
+                    // Status codes with word boundaries to avoid false positives (e.g., "14031" won't match)
+                    /\b401\b/.test(errorMessage) || 
+                    /\b403\b/.test(errorMessage) ||
+                    // Case-insensitive auth-related keywords
+                    errorLower.includes('authentication') ||
+                    errorLower.includes('unauthorized') ||
+                    errorLower.includes('forbidden') ||
+                    errorLower.includes('invalid_token') ||
+                    (errorLower.includes('token') && (errorLower.includes('invalid') || errorLower.includes('expired') || errorLower.includes('missing'))) ||
+                    errorLower.includes('x_bearer_token') ||
+                    errorLower.includes('bearer token') ||
+                    errorLower.includes('not configured') ||
+                    errorLower.includes('credentials') ||
+                    errorLower.includes('authorization');
                 
                 if (isAuthError) {
                     logger.error({ 
