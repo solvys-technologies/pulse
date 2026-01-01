@@ -369,9 +369,9 @@ export async function prefetchHighPriorityNews(): Promise<{ fetched: number; sto
         }
         
         // Convert to articles and filter for Level 3-4 only
-        const articles = allTweets
-            .map(tweetToArticle)
-            .filter(article => (article.macroLevel || 0) >= 3);
+        const articlePromises = allTweets.map(tweetToArticle);
+        const allArticles = await Promise.all(articlePromises);
+        const articles = allArticles.filter(article => (article.macroLevel || 0) >= 3);
         
         logger.info({ 
             totalTweets: allTweets.length, 
