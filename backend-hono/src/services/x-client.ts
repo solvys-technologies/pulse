@@ -20,10 +20,17 @@ export interface Tweet {
 // Financial news accounts to follow (migrated from Nitter client)
 export const FINANCIAL_ACCOUNTS = [
     'financialjuice', // Primary - Financial Juice
+    'insiderwire',    // Insider Wire
     'zaboradar',      // Walter Bloomberg
     'FirstSquawk',    // First Squawk
     'DeItaone',       // DeItaOne
     'unusual_whales', // Unusual Whales
+];
+
+// High-priority accounts for Level 3-4 prefetch
+export const HIGH_PRIORITY_ACCOUNTS = [
+    'financialjuice',
+    'insiderwire',
 ];
 
 class XClient {
@@ -67,8 +74,8 @@ class XClient {
         const baseDelay = 1000; // 1 second base delay
 
         try {
-            // Updated to use api.x.com instead of deprecated api.twitter.com
-            const url = `https://api.x.com/2/tweets/search/recent?query=${encodeURIComponent(query)}&max_results=${Math.min(limit, 100)}&tweet.fields=created_at,public_metrics,author_id`;
+            // X API v2 endpoint - api.twitter.com is still the correct endpoint
+            const url = `https://api.twitter.com/2/tweets/search/recent?query=${encodeURIComponent(query)}&max_results=${Math.min(limit, 100)}&tweet.fields=created_at,public_metrics,author_id`;
 
             console.log(`[XClient] Fetching tweets from ${account} (attempt ${retryCount + 1}/${maxRetries + 1})`);
 
