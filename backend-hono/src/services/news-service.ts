@@ -9,7 +9,7 @@ import { sql } from '../db/index.js';
 import { xClient, Tweet, FINANCIAL_ACCOUNTS, HIGH_PRIORITY_ACCOUNTS } from './x-client.js';
 import { fetchAllPolymarketOdds, checkSignificantChanges, PolymarketOdds, MARKET_MACRO_LEVELS } from './polymarket-service.js';
 import { fetchGeneralNews, FMPArticle } from './fmp-service.js';
-import { analyzeArticleWithPriceBrain, type ArticleInput } from './price-brain-service.js';
+import { analyzeArticleWithPriceBrain, type ArticleInput, type PriceBrainAnalysis } from './price-brain-service.js';
 import { logger } from '../middleware/logger.js';
 
 export type NewsCategory = 'Odds Shifts' | 'Macro' | 'Commentary';
@@ -204,18 +204,18 @@ export async function initializePolymarketFeed() {
                 title: `ODDS SHIFT: ${m.question}`,
                 summary: `${m.question} probability shifted by ${changePercentage.toFixed(1)}% to ${(m.yesOdds * 100).toFixed(1)}% (was ${(previousOdds * 100).toFixed(1)}%)`,
                 content: `Polymarket odds shift detected. Previous: ${(previousOdds * 100).toFixed(1)}%, Current: ${(m.yesOdds * 100).toFixed(1)}%. Market: ${m.marketType}`,
-                source: 'Polymarket',
-                url: `https://polymarket.com/event/${m.slug}`,
-                publishedAt: new Date().toISOString(),
-                sentiment: m.yesOdds > 0.6 ? 0.5 : (m.yesOdds < 0.4 ? -0.5 : 0),
+            source: 'Polymarket',
+            url: `https://polymarket.com/event/${m.slug}`,
+            publishedAt: new Date().toISOString(),
+            sentiment: m.yesOdds > 0.6 ? 0.5 : (m.yesOdds < 0.4 ? -0.5 : 0),
                 ivImpact: changePercentage > 10 ? 0.9 : 0.4,
-                symbols: ['MACRO'],
+            symbols: ['MACRO'],
                 isBreaking: changePercentage > 10,
                 macroLevel,
-                priceBrainSentiment: 'Neutral',
+            priceBrainSentiment: 'Neutral',
                 priceBrainClassification: 'Counter-cyclical',
-                impliedPoints: null,
-                instrument: null,
+            impliedPoints: null,
+            instrument: null,
                 authorHandle: 'Polymarket',
                 category: 'Odds Shifts'
             });
@@ -481,27 +481,27 @@ export async function fetchAndStoreNews(limit: number = 15): Promise<{ fetched: 
                 
                 const macroLevel = MARKET_MACRO_LEVELS[odds.marketType] || 2;
                 
-                // Create a specialized news article for the signal
-                const signalArticle: Omit<NewsArticle, 'id'> = {
+                    // Create a specialized news article for the signal
+                    const signalArticle: Omit<NewsArticle, 'id'> = {
                     title: `ODDS SHIFT: ${odds.question}`,
                     summary: `${odds.question} probability shifted by ${changePercentage.toFixed(1)}% to ${(odds.yesOdds * 100).toFixed(1)}% (was ${(previousOdds * 100).toFixed(1)}%)`,
-                    content: `Polymarket crowd sentiment shift. Previous: ${(previousOdds * 100).toFixed(1)}%, Current: ${(odds.yesOdds * 100).toFixed(1)}%. Market: ${odds.marketType}`,
-                    source: 'Polymarket',
-                    url: `https://polymarket.com/event/${odds.slug}`,
-                    publishedAt: new Date().toISOString(),
+                        content: `Polymarket crowd sentiment shift. Previous: ${(previousOdds * 100).toFixed(1)}%, Current: ${(odds.yesOdds * 100).toFixed(1)}%. Market: ${odds.marketType}`,
+                        source: 'Polymarket',
+                        url: `https://polymarket.com/event/${odds.slug}`,
+                        publishedAt: new Date().toISOString(),
                     sentiment: odds.yesOdds > 0.6 ? 0.8 : (odds.yesOdds < 0.4 ? -0.8 : 0),
-                    ivImpact: changePercentage > 10 ? 0.9 : 0.4,
-                    symbols: ['MACRO'],
-                    isBreaking: changePercentage > 10,
+                        ivImpact: changePercentage > 10 ? 0.9 : 0.4,
+                        symbols: ['MACRO'],
+                        isBreaking: changePercentage > 10,
                     macroLevel,
                     priceBrainSentiment: odds.yesOdds > 0.5 ? 'Bullish' : 'Bearish',
-                    priceBrainClassification: 'Counter-cyclical',
-                    impliedPoints: null,
-                    instrument: null,
+                        priceBrainClassification: 'Counter-cyclical',
+                        impliedPoints: null,
+                        instrument: null,
                     authorHandle: 'Polymarket',
                     category: 'Odds Shifts'
-                };
-                articles.push(signalArticle);
+                    };
+                    articles.push(signalArticle);
             }
         } catch (e) {
             logger.error({ error: e }, 'Polymarket fetch failed');
@@ -527,7 +527,8 @@ export async function fetchAndStoreNews(limit: number = 15): Promise<{ fetched: 
                     priceBrainClassification: 'Cyclical',
                     impliedPoints: null,
                     instrument: null,
-                    authorHandle: n.site
+                    authorHandle: n.site,
+                    category: 'Macro' as NewsCategory
                 }));
                 articles.push(...fmpArticles);
             } catch (e) {
