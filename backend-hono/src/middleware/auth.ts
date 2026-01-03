@@ -1,5 +1,10 @@
 import type { Context, Next } from 'hono';
-import { createRemoteJWKSet, importSPKI, jwtVerify } from 'jose';
+import {
+  createRemoteJWKSet,
+  decodeProtectedHeader,
+  importSPKI,
+  jwtVerify,
+} from 'jose';
 import { retryWithBackoff } from './auth-retry';
 
 class AuthConfigError extends Error {
@@ -32,19 +37,45 @@ const getBearerToken = (c: Context) => {
   return token.trim();
 };
 
+type JwksResolution = {
+  jwksUrl: string | null;
+  source: 'CLERK_JWKS_URL' | 'CLERK_JWT_ISSUER' | 'CLERK_ISSUER' | 'CLERK_DOMAIN' | 'none';
+};
+
+const normalizeIssuer = (issuer: string) => issuer.replace(/\/+$/, '');
+
+const buildJwksUrlFromIssuer = (issuer: string) => {
+  const normalized = normalizeIssuer(issuer);
+  if (normalized.startsWith('http://') || normalized.startsWith('https://')) {
+    return `${normalized}/.well-known/jwks.json`;
+  }
+  return `https://${normalized}/.well-known/jwks.json`;
+};
+
 /**
- * Derive JWKS URL from Clerk secret key if not explicitly set
+ * Derive JWKS URL from explicit config, issuer, or Clerk domain.
  * Format: https://<domain>/.well-known/jwks.json
- * Domain can be extracted from secret key or publishable key
  */
-const deriveJwksUrl = (): string | null => {
-  const secretKey = process.env.CLERK_SECRET_KEY;
+const deriveJwksUrl = (): JwksResolution => {
+  const explicitJwks = process.env.CLERK_JWKS_URL;
+  const issuer = process.env.CLERK_JWT_ISSUER || process.env.CLERK_ISSUER;
   const publishableKey = process.env.CLERK_PUBLISHABLE_KEY;
   const clerkDomain = process.env.CLERK_DOMAIN;
 
+  if (explicitJwks) {
+    return { jwksUrl: explicitJwks, source: 'CLERK_JWKS_URL' };
+  }
+
+  if (issuer) {
+    return {
+      jwksUrl: buildJwksUrlFromIssuer(issuer),
+      source: process.env.CLERK_JWT_ISSUER ? 'CLERK_JWT_ISSUER' : 'CLERK_ISSUER',
+    };
+  }
+
   // If domain is explicitly set, use it
   if (clerkDomain) {
-    return `https://${clerkDomain}/.well-known/jwks.json`;
+    return { jwksUrl: buildJwksUrlFromIssuer(clerkDomain), source: 'CLERK_DOMAIN' };
   }
 
   // Try to extract domain from publishable key (format: pk_test_... or pk_live_...)
@@ -55,17 +86,38 @@ const deriveJwksUrl = (): string | null => {
 
   // Clerk secret keys don't contain domain info directly
   // We need either CLERK_JWKS_URL, CLERK_DOMAIN, or CLERK_PUBLISHABLE_KEY with domain extraction
-  return null;
+  return { jwksUrl: null, source: 'none' };
 };
 
-const getVerifier = async () => {
-  let jwksUrl = process.env.CLERK_JWKS_URL;
+const isHmacAlg = (alg: string | null) => !!alg && alg.startsWith('HS');
+const isAsymmetricAlg = (alg: string | null) =>
+  !!alg && (alg.startsWith('RS') || alg.startsWith('PS') || alg.startsWith('ES'));
+
+const resolveJwtKeyAlg = (tokenAlg: string | null) =>
+  tokenAlg && /^(RS|PS|ES)\d{3}$/.test(tokenAlg) ? tokenAlg : 'RS256';
+
+const getVerifier = async (tokenAlg: string | null, jwks: JwksResolution) => {
+  const jwksUrl = jwks.jwksUrl;
   const jwtKey = process.env.CLERK_JWT_KEY;
   const secretKey = process.env.CLERK_SECRET_KEY;
+  const wantsHmac = isHmacAlg(tokenAlg);
+  const wantsAsymmetric = isAsymmetricAlg(tokenAlg);
 
-  // Try to derive JWKS URL if not explicitly set
-  if (!jwksUrl) {
-    jwksUrl = deriveJwksUrl();
+  if (wantsHmac) {
+    if (secretKey) {
+      warnMissingSecret();
+      return new TextEncoder().encode(secretKey);
+    }
+    throw new AuthConfigError('Missing CLERK_SECRET_KEY for HS256 tokens.');
+  }
+
+  if (wantsAsymmetric && !jwksUrl && !jwtKey) {
+    if (secretKey) {
+      warnMissingSecret();
+    }
+    throw new AuthConfigError(
+      'Missing Clerk JWT verification key. Set CLERK_JWKS_URL (or CLERK_JWT_ISSUER/CLERK_DOMAIN to derive it) or CLERK_JWT_KEY.',
+    );
   }
 
   // Prefer JWKS URL for template tokens (RS256)
@@ -81,7 +133,7 @@ const getVerifier = async () => {
   // Fallback to JWT public key
   if (jwtKey) {
     try {
-      return await importSPKI(jwtKey, 'RS256');
+      return await importSPKI(jwtKey, resolveJwtKeyAlg(tokenAlg));
     } catch (error) {
       console.error('[auth] Failed to import JWT key:', error);
       throw new AuthConfigError('Failed to import CLERK_JWT_KEY');
@@ -97,8 +149,18 @@ const getVerifier = async () => {
   }
 
   throw new AuthConfigError(
-    'Missing Clerk JWT verification key. Template tokens require CLERK_JWKS_URL or CLERK_JWT_KEY. CLERK_SECRET_KEY only works for HS256 tokens.',
+    'Missing Clerk JWT verification key. Set CLERK_JWKS_URL (or CLERK_JWT_ISSUER/CLERK_DOMAIN to derive it) or CLERK_JWT_KEY. CLERK_SECRET_KEY only works for HS256 tokens.',
   );
+};
+
+const getTokenAlgorithm = (token: string) => {
+  try {
+    const header = decodeProtectedHeader(token);
+    return typeof header.alg === 'string' ? header.alg : null;
+  } catch (error) {
+    console.warn('[auth] Failed to decode token header', error);
+    return null;
+  }
 };
 
 const shouldRetryAuthError = (error: unknown) => {
@@ -125,9 +187,11 @@ export const authMiddleware = async (c: Context, next: Next) => {
 
   const issuer = process.env.CLERK_JWT_ISSUER;
   const audience = process.env.CLERK_JWT_AUDIENCE;
+  const jwks = deriveJwksUrl();
+  const tokenAlg = getTokenAlgorithm(token);
 
   try {
-    const key = await getVerifier();
+    const key = await getVerifier(tokenAlg, jwks);
     const { payload } = await retryWithBackoff(
       async () =>
         jwtVerify(token, key, {
@@ -148,9 +212,12 @@ export const authMiddleware = async (c: Context, next: Next) => {
     console.error(`[auth] JWT verification failed: ${name}: ${message}`, {
       hasIssuer: !!issuer,
       hasAudience: !!audience,
-      hasJwksUrl: !!process.env.CLERK_JWKS_URL,
+      hasJwksUrl: !!jwks.jwksUrl,
+      jwksSource: jwks.source,
+      jwksUrl: jwks.jwksUrl ?? 'missing',
       hasJwtKey: !!process.env.CLERK_JWT_KEY,
       hasSecretKey: !!process.env.CLERK_SECRET_KEY,
+      tokenAlg: tokenAlg ?? 'unknown',
       tokenPreview: token ? `${token.substring(0, 20)}...` : 'missing',
     });
 
@@ -169,7 +236,7 @@ export const authMiddleware = async (c: Context, next: Next) => {
     const errorMessage = name === 'JWTExpired' 
       ? 'Token expired'
       : name === 'JWTInvalid' || name === 'JWSSignatureVerificationFailed'
-      ? 'Token verification failed. Ensure CLERK_JWKS_URL is set for template tokens.'
+      ? 'Token verification failed. Ensure CLERK_JWKS_URL (or CLERK_JWT_ISSUER/CLERK_DOMAIN) is set for template tokens.'
       : 'Invalid or expired token';
 
     return c.json({ 
