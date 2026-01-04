@@ -6,12 +6,11 @@
 import { useCallback, useState } from 'react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
-import { useAuth, useClerk } from '@clerk/clerk-react';
+import { useAuth } from '@clerk/clerk-react';
 import { API_BASE_URL } from '../constants.js';
 
 export function useChatWithAuth(conversationId: string | undefined, setConversationId: (id: string) => void) {
   const { getToken, isSignedIn, userId } = useAuth();
-  const clerk = useClerk();
   const [isStreaming, setIsStreaming] = useState(false);
   
   const MAX_RETRIES = 1;
@@ -20,28 +19,6 @@ export function useChatWithAuth(conversationId: string | undefined, setConversat
   if (!isSignedIn) {
     console.warn('[useChatWithAuth] User is not signed in. Token requests will fail.');
   }
-
-  // Helper function to redirect to sign-in
-  const redirectToSignIn = useCallback(async () => {
-    console.warn('[useChatWithAuth] Authentication failed. Signing out to allow re-authentication.');
-    // Sign out from Clerk first, which will trigger the SignedOut component
-    // to show the inline SignIn component that's already configured in App.tsx
-    // This ensures the user gets a fresh token when they sign in again
-    try {
-      if (clerk.signOut) {
-        await clerk.signOut();
-        // After signing out, the SignedOut component will automatically show
-        // No need to reload - Clerk will handle the UI update
-      } else {
-        // Fallback: reload the page
-        window.location.reload();
-      }
-    } catch (error) {
-      console.error('[useChatWithAuth] Error signing out:', error);
-      // Fallback: reload the page anyway
-      window.location.reload();
-    }
-  }, [clerk]);
 
   const fetchWithAuth = useCallback(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     // Per-request retry counter to prevent interference between concurrent requests
@@ -146,37 +123,26 @@ export function useChatWithAuth(conversationId: string | undefined, setConversat
               return retryResponse;
             } else {
               // Still 401 after retry - token refresh didn't help
-              console.error('[useChatWithAuth] Retry with fresh token still returned 401. Redirecting to sign-in.');
-              didRedirect = true;
-              redirectToSignIn();
+              console.error('[useChatWithAuth] Retry with fresh token still returned 401. Auto-logout disabled for debugging.');
               throw new Error(`Authentication failed: ${errorText}`);
             }
           } else if (!freshToken) {
             // Failed to get fresh token - user needs to sign in again
-            console.error('[useChatWithAuth] Failed to get fresh token, redirecting to login.');
-            didRedirect = true;
-            redirectToSignIn();
+            console.error('[useChatWithAuth] Failed to get fresh token. Auto-logout disabled for debugging.');
             throw new Error(`Authentication failed: Unable to refresh token. Please sign in again.`);
           } else {
             // Got same token - likely expired or invalid
-            console.warn('[useChatWithAuth] Got fresh token, but it\'s the same as the old one. Token may be expired. Redirecting to sign-in.');
-            didRedirect = true;
-            redirectToSignIn();
+            console.warn('[useChatWithAuth] Got fresh token, but it\'s the same as the old one. Token may be expired. Auto-logout disabled for debugging.');
             throw new Error(`Authentication failed: Token expired. Please sign in again.`);
           }
         } catch (refreshError) {
           // If refreshing token fails, user likely needs to log in again
           console.error('[useChatWithAuth] Failed to get fresh token:', refreshError);
-          if (!didRedirect) {
-            redirectToSignIn();
-          }
           throw new Error(`Authentication failed: Unable to refresh token. Please sign in again.`);
         }
       } else {
-        // Max retries exceeded - redirect to sign-in
-        console.error('[useChatWithAuth] Max retries exceeded. Redirecting to sign-in.');
-        didRedirect = true;
-        redirectToSignIn();
+        // Max retries exceeded - stop retrying
+        console.error('[useChatWithAuth] Max retries exceeded. Auto-logout disabled for debugging.');
         throw new Error(`Authentication failed: ${errorText}`);
       }
     }
@@ -187,7 +153,7 @@ export function useChatWithAuth(conversationId: string | undefined, setConversat
     }
 
     return response;
-  }, [getToken, conversationId, setConversationId, redirectToSignIn]);
+  }, [getToken, conversationId, setConversationId, isSignedIn, userId]);
 
   const {
     messages: useChatMessages,
