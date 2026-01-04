@@ -7,6 +7,13 @@ import { createAiChatRoutes } from './routes/ai-chat.js';
 
 const app = new Hono();
 
+try {
+  // Trigger a test error to verify Sentry captures events.
+  foo();
+} catch (error) {
+  Sentry.captureException(error);
+}
+
 app.get('/health', (c) =>
   c.json({
     status: 'ok',
