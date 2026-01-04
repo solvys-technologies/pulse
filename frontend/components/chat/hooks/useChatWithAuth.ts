@@ -141,9 +141,8 @@ export function useChatWithAuth(conversationId: string | undefined, setConversat
           throw new Error(`Authentication failed: Unable to refresh token. Please sign in again.`);
         }
       } else {
-        // Max retries exceeded - redirect to sign-in
+        // Max retries exceeded - stop retrying
         console.error('[useChatWithAuth] Max retries exceeded. Auto-logout disabled for debugging.');
-        retryCountRef.current = 0; // Reset for next attempt
         throw new Error(`Authentication failed: ${errorText}`);
       }
     }
