@@ -1,5 +1,6 @@
 // src/index.ts
 import { Hono as Hono4 } from "hono";
+import { cors } from "hono/cors";
 import { serve } from "@hono/node-server";
 
 // src/routes/ai-chat.ts
@@ -212,7 +213,7 @@ var getPrimaryProvider = () => {
   return getEnv("OPENROUTER_API_KEY") ? "openrouter" : "vercel-gateway";
 };
 var enableProviderFallback = getEnv("AI_ENABLE_PROVIDER_FALLBACK") !== "false";
-var defaultModel = resolveModelKey(getEnv("AI_DEFAULT_MODEL")) ?? "grok";
+var defaultModel = resolveModelKey(getEnv("AI_DEFAULT_MODEL")) ?? "groq";
 var defaultAiConfig = {
   models: {
     sonnet: {
@@ -354,6 +355,7 @@ var getCrossProviderEquivalent = (modelKey, config = defaultAiConfig) => {
 
 // src/services/ai-model-service.ts
 import { createOpenAI as createOpenAI2 } from "@ai-sdk/openai";
+import { createXai } from "@ai-sdk/xai";
 import { generateText, streamText } from "ai";
 
 // src/services/openrouter-service.ts
@@ -870,6 +872,23 @@ var createAiModelService = (deps = {}) => {
       error.status = 500;
       error.statusCode = 500;
       throw error;
+    }
+    if (modelConfig.id.startsWith("xai/")) {
+      const xaiApiKey = getEnv3("XAI_API_KEY") ?? getEnv3("X_BEARER_TOKEN");
+      if (!xaiApiKey) {
+        const message = `Missing XAI_API_KEY or X_BEARER_TOKEN for ${modelConfig.displayName}`;
+        console.error("[ai] XAI API key missing", {
+          model: modelConfig.displayName
+        });
+        const error = new Error(message);
+        error.status = 500;
+        error.statusCode = 500;
+        throw error;
+      }
+      const modelId = modelConfig.id.replace("xai/", "");
+      console.info("[ai] using @ai-sdk/xai directly for model", { modelId });
+      const xai = createXai({ apiKey: xaiApiKey });
+      return xai(modelId);
     }
     const baseUrl = modelConfig.baseUrl ?? defaultGatewayBaseUrl;
     if (!baseUrl) {
@@ -1829,7 +1848,7 @@ var createChatService = (deps = {}) => {
         userId,
         onFinish
       });
-      const response = streamResult.result.toTextStreamResponse({
+      const response = streamResult.result.toUIMessageStreamResponse({
         headers: {
           "X-Conversation-Id": conversation.id,
           "X-Model": streamResult.model,
@@ -2896,6 +2915,21 @@ var createHealthService = () => {
 var app = new Hono4;
 var isDev2 = true;
 var healthService = createHealthService();
+app.use("*", cors({
+  origin: [
+    "https://pulse.solvys.io",
+    "https://pulse-solvys.vercel.app",
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174"
+  ],
+  allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowHeaders: ["Content-Type", "Authorization", "X-Request-Id", "X-Conversation-Id"],
+  exposeHeaders: ["X-Request-Id", "X-Conversation-Id", "X-Model", "X-Provider"],
+  credentials: true,
+  maxAge: 86400
+}));
 var buildRequestId2 = () => {
   try {
     return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;

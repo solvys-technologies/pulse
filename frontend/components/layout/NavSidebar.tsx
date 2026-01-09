@@ -54,7 +54,7 @@ export function NavSidebar({ activeTab, onTabChange, onSettingsClick, onLogout, 
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
-        <div className="w-16 bg-[#0a0a00] border-r border-[#FFC038]/20 flex flex-col items-center py-4 h-full">
+        <div className="w-16 bg-[#0a0a00] border-r border-[#D4AF37]/20 flex flex-col items-center py-4 h-full">
           <div className="flex-1 space-y-4">
             {navItems.map(({ id, icon: Icon, label }) => (
               <button
@@ -62,8 +62,8 @@ export function NavSidebar({ activeTab, onTabChange, onSettingsClick, onLogout, 
                 onClick={() => handleTabChange(id)}
                 className={`w-12 h-12 flex items-center justify-center rounded-lg transition-lush ${
                   activeTab === id
-                    ? 'bg-[#FFC038] text-black'
-                    : 'text-[#FFC038]/60 hover:text-[#FFC038] hover:bg-[#FFC038]/10'
+                    ? 'bg-[#D4AF37] text-black'
+                    : 'text-[#D4AF37]/60 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10'
                 }`}
                 title={label}
               >
@@ -75,7 +75,7 @@ export function NavSidebar({ activeTab, onTabChange, onSettingsClick, onLogout, 
           <div className="space-y-4">
             <button
               onClick={onSettingsClick}
-              className="w-12 h-12 flex items-center justify-center rounded-lg text-[#FFC038]/60 hover:text-[#FFC038] hover:bg-[#FFC038]/10 transition-lush"
+              className="w-12 h-12 flex items-center justify-center rounded-lg text-[#D4AF37]/60 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-lush"
               title="Settings"
             >
               <Settings className="w-6 h-6" />
@@ -99,7 +99,7 @@ export function NavSidebar({ activeTab, onTabChange, onSettingsClick, onLogout, 
 
   // Normal sidebar when TopStepX is disabled
   return (
-    <div className="w-16 bg-[#0a0a00] border-r border-[#FFC038]/20 flex flex-col items-center py-4">
+    <div className="w-16 bg-[#0a0a00] border-r border-[#D4AF37]/20 flex flex-col items-center py-4">
       <div className="flex-1 space-y-4">
         {navItems.map(({ id, icon: Icon, label }) => (
           <button
@@ -107,8 +107,8 @@ export function NavSidebar({ activeTab, onTabChange, onSettingsClick, onLogout, 
             onClick={() => onTabChange(id)}
             className={`w-12 h-12 flex items-center justify-center rounded-lg transition-lush ${
               activeTab === id
-                ? 'bg-[#FFC038] text-black'
-                : 'text-[#FFC038]/60 hover:text-[#FFC038] hover:bg-[#FFC038]/10'
+                ? 'bg-[#D4AF37] text-black'
+                : 'text-[#D4AF37]/60 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10'
             }`}
             title={label}
           >
@@ -120,7 +120,7 @@ export function NavSidebar({ activeTab, onTabChange, onSettingsClick, onLogout, 
       <div className="space-y-4">
         <button
           onClick={onSettingsClick}
-          className="w-12 h-12 flex items-center justify-center rounded-lg text-[#FFC038]/60 hover:text-[#FFC038] hover:bg-[#FFC038]/10 transition-lush"
+          className="w-12 h-12 flex items-center justify-center rounded-lg text-[#D4AF37]/60 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-lush"
           title="Settings"
         >
           <Settings className="w-6 h-6" />

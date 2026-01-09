@@ -25,7 +25,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
             className={`
               w-12 h-12 rounded-lg flex items-center justify-center transition-all
               ${isActive 
-                ? "bg-[#FFC038]/10 text-[#FFC038] shadow-[0_0_12px_rgba(255,192,56,0.2)]" 
+                ? "bg-[#D4AF37]/10 text-[#D4AF37] shadow-[0_0_12px_rgba(255,192,56,0.2)]" 
                 : "text-zinc-600 hover:text-zinc-400 hover:bg-zinc-900/30"
               }
             `}

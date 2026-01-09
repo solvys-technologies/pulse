@@ -13,10 +13,10 @@ export function BlindspotsWidget() {
   ];
 
   const content = (
-    <div className="bg-[#050500] border border-[#FFC038]/20 rounded-lg p-4">
+    <div className="bg-[#050500] border border-[#D4AF37]/20 rounded-lg p-4">
       <div className="flex items-center gap-2 mb-3">
-        <Eye className="w-4 h-4 text-[#FFC038]" />
-        <h3 className="text-sm font-semibold text-[#FFC038]">Blindspots</h3>
+        <Eye className="w-4 h-4 text-[#D4AF37]" />
+        <h3 className="text-sm font-semibold text-[#D4AF37]">Blindspots</h3>
       </div>
       <div className="space-y-2">
         {blindspots.map(spot => (

@@ -58,7 +58,7 @@ export default function SystemFeed() {
       case "error":
         return <XCircle className="w-4 h-4 text-[#FF4040]" />;
       case "warning":
-        return <AlertCircle className="w-4 h-4 text-[#FFC038]" />;
+        return <AlertCircle className="w-4 h-4 text-[#D4AF37]" />;
       default:
         return <Info className="w-4 h-4 text-zinc-500" />;
     }
@@ -69,7 +69,7 @@ export default function SystemFeed() {
       case "trade":
         return "text-[#00FF85]";
       case "alert":
-        return "text-[#FFC038]";
+        return "text-[#D4AF37]";
       case "error":
         return "text-[#FF4040]";
       default:
@@ -98,7 +98,7 @@ export default function SystemFeed() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowNTNModal(true)}
-              className="px-4 py-2 bg-[#FFC038]/10 border border-[#FFC038]/30 hover:bg-[#FFC038]/20 text-[#FFC038] rounded-full text-xs font-medium transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-[#D4AF37]/10 border border-[#D4AF37]/30 hover:bg-[#D4AF37]/20 text-[#D4AF37] rounded-full text-xs font-medium transition-colors flex items-center gap-2"
             >
               <FileText className="w-3.5 h-3.5" />
               Run NTN Report

@@ -116,7 +116,9 @@ const getPrimaryProvider = (): AiProviderType => {
 
 const enableProviderFallback = getEnv('AI_ENABLE_PROVIDER_FALLBACK') !== 'false'
 
-const defaultModel = resolveModelKey(getEnv('AI_DEFAULT_MODEL')) ?? 'grok'
+// Default to groq since it doesn't require a separate API key
+// Change to 'grok' once XAI_API_KEY is configured on Fly.io
+const defaultModel = resolveModelKey(getEnv('AI_DEFAULT_MODEL')) ?? 'groq'
 
 export const defaultAiConfig: AiConfig = {
   models: {

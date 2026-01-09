@@ -134,7 +134,7 @@ export function FloatingWidget({ vix, ivScore, layoutOption = 'movable', onClose
       {/* Only show VIX ticker when NOT in tickers-only layout */}
       {layoutOption !== 'tickers-only' && (
         <div 
-          className="flex items-center gap-2 backdrop-blur-3xl bg-gradient-to-br from-[#0a0a00]/50 via-[#0a0a00]/40 to-[#0a0a00]/30 border border-[#FFC038]/30 rounded-2xl p-2.5 shadow-2xl shadow-black/50"
+          className="flex items-center gap-2 backdrop-blur-3xl bg-gradient-to-br from-[#0a0a00]/50 via-[#0a0a00]/40 to-[#0a0a00]/30 border border-[#D4AF37]/30 rounded-2xl p-2.5 shadow-2xl shadow-black/50"
           style={{
             backdropFilter: 'blur(40px) saturate(180%)',
             WebkitBackdropFilter: 'blur(40px) saturate(180%)',
@@ -159,7 +159,7 @@ export function FloatingWidget({ vix, ivScore, layoutOption = 'movable', onClose
           {onClose && (
             <button
               onClick={onClose}
-              className="p-1.5 hover:bg-[#FFC038]/20 rounded-xl text-[#FFC038]/80 hover:text-[#FFC038] backdrop-blur-sm transition-all"
+              className="p-1.5 hover:bg-[#D4AF37]/20 rounded-xl text-[#D4AF37]/80 hover:text-[#D4AF37] backdrop-blur-sm transition-all"
               title="Close Widget"
               style={{
                 backdropFilter: 'blur(10px)',
@@ -175,7 +175,7 @@ export function FloatingWidget({ vix, ivScore, layoutOption = 'movable', onClose
       {/* Tickers-Only Expanded Panel - Shows ER Monitor, P&L */}
       {layoutOption === 'tickers-only' && (
         <div
-          className="backdrop-blur-3xl bg-gradient-to-br from-[#0a0a00]/50 via-[#0a0a00]/40 to-[#0a0a00]/30 border border-[#FFC038]/30 rounded-2xl p-3 w-80 shadow-2xl"
+          className="backdrop-blur-3xl bg-gradient-to-br from-[#0a0a00]/50 via-[#0a0a00]/40 to-[#0a0a00]/30 border border-[#D4AF37]/30 rounded-2xl p-3 w-80 shadow-2xl"
           style={{
             backdropFilter: 'blur(40px) saturate(180%)',
             WebkitBackdropFilter: 'blur(40px) saturate(180%)',
@@ -183,9 +183,9 @@ export function FloatingWidget({ vix, ivScore, layoutOption = 'movable', onClose
           }}
         >
           {/* Compact ER Monitor - Landscape */}
-          <div className="mb-3 pb-3 border-b border-[#FFC038]/20">
+          <div className="mb-3 pb-3 border-b border-[#D4AF37]/20">
             <div className="flex items-center gap-1.5 mb-2">
-              <span className="text-[10px] text-[#FFC038] font-semibold">PsychAssist</span>
+              <span className="text-[10px] text-[#D4AF37] font-semibold">PsychAssist</span>
             </div>
             <CompactERMonitor onERScoreChange={setErScore} />
           </div>
@@ -200,7 +200,7 @@ export function FloatingWidget({ vix, ivScore, layoutOption = 'movable', onClose
       {/* ER Monitor Card - Landscape oriented, drops down with frosted glass */}
       {layoutOption !== 'tickers-only' && showERCard && (
         <div
-          className="backdrop-blur-3xl bg-gradient-to-br from-[#0a0a00]/50 via-[#0a0a00]/40 to-[#0a0a00]/30 border border-[#FFC038]/30 rounded-2xl p-4 w-96 transition-all duration-300 opacity-100 translate-y-0 animate-slide-down shadow-2xl"
+          className="backdrop-blur-3xl bg-gradient-to-br from-[#0a0a00]/50 via-[#0a0a00]/40 to-[#0a0a00]/30 border border-[#D4AF37]/30 rounded-2xl p-4 w-96 transition-all duration-300 opacity-100 translate-y-0 animate-slide-down shadow-2xl"
           style={{
             backdropFilter: 'blur(40px) saturate(180%)',
             WebkitBackdropFilter: 'blur(40px) saturate(180%)',
@@ -208,10 +208,10 @@ export function FloatingWidget({ vix, ivScore, layoutOption = 'movable', onClose
           }}
         >
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold text-[#FFC038] drop-shadow-sm">Emotional Resonance</h3>
+            <h3 className="text-sm font-semibold text-[#D4AF37] drop-shadow-sm">Emotional Resonance</h3>
             <button
               onClick={() => setShowERCard(false)}
-              className="p-1.5 hover:bg-[#FFC038]/20 rounded-xl text-[#FFC038]/70 hover:text-[#FFC038] backdrop-blur-sm transition-all"
+              className="p-1.5 hover:bg-[#D4AF37]/20 rounded-xl text-[#D4AF37]/70 hover:text-[#D4AF37] backdrop-blur-sm transition-all"
             >
               <X className="w-4 h-4" />
             </button>
@@ -232,7 +232,7 @@ export function FloatingWidget({ vix, ivScore, layoutOption = 'movable', onClose
           {/* Clear All Header */}
           {notifications.length > 1 && (
             <div
-              className="backdrop-blur-3xl bg-gradient-to-br from-[#0a0a00]/60 via-[#0a0a00]/50 to-[#0a0a00]/40 border border-[#FFC038]/30 rounded-xl px-3 py-1 flex items-center justify-between shadow-lg"
+              className="backdrop-blur-3xl bg-gradient-to-br from-[#0a0a00]/60 via-[#0a0a00]/50 to-[#0a0a00]/40 border border-[#D4AF37]/30 rounded-xl px-3 py-1 flex items-center justify-between shadow-lg"
               style={{
                 backdropFilter: 'blur(40px) saturate(180%)',
                 WebkitBackdropFilter: 'blur(40px) saturate(180%)',
@@ -253,7 +253,7 @@ export function FloatingWidget({ vix, ivScore, layoutOption = 'movable', onClose
           {notifications.slice(0, 2).map((newsItem) => (
             <div
               key={newsItem.notificationId}
-              className="backdrop-blur-3xl bg-gradient-to-br from-[#0a0a00]/50 via-[#0a0a00]/40 to-[#0a0a00]/30 border border-[#FFC038]/30 rounded-2xl p-3 w-80 transition-all duration-500 opacity-100 animate-slide-up shadow-2xl"
+              className="backdrop-blur-3xl bg-gradient-to-br from-[#0a0a00]/50 via-[#0a0a00]/40 to-[#0a0a00]/30 border border-[#D4AF37]/30 rounded-2xl p-3 w-80 transition-all duration-500 opacity-100 animate-slide-up shadow-2xl"
               style={{
                 backdropFilter: 'blur(40px) saturate(180%)',
                 WebkitBackdropFilter: 'blur(40px) saturate(180%)',
@@ -262,21 +262,21 @@ export function FloatingWidget({ vix, ivScore, layoutOption = 'movable', onClose
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
-                  <div className="text-[10px] text-[#FFC038]/70 mb-0.5 drop-shadow-sm">{newsItem.source}</div>
+                  <div className="text-[10px] text-[#D4AF37]/70 mb-0.5 drop-shadow-sm">{newsItem.source}</div>
                   <h4 className="text-xs font-semibold text-gray-100 mb-1 drop-shadow-sm line-clamp-2">{newsItem.title}</h4>
                   {newsItem.content && (
                     <p className="text-[10px] text-gray-300/80 line-clamp-1 drop-shadow-sm">{newsItem.content}</p>
                   )}
                   {newsItem.ivScore != null && typeof newsItem.ivScore === 'number' && (
                     <div className="mt-1 text-[10px]">
-                      <span className="text-[#FFC038] drop-shadow-sm">IV: </span>
+                      <span className="text-[#D4AF37] drop-shadow-sm">IV: </span>
                       <span className="text-gray-200 drop-shadow-sm">{newsItem.ivScore.toFixed(1)}</span>
                     </div>
                   )}
                 </div>
                 <button
                   onClick={() => dismissNotification(newsItem.notificationId)}
-                  className="p-1 hover:bg-[#FFC038]/20 rounded-lg text-[#FFC038]/70 hover:text-[#FFC038] flex-shrink-0 backdrop-blur-sm transition-all"
+                  className="p-1 hover:bg-[#D4AF37]/20 rounded-lg text-[#D4AF37]/70 hover:text-[#D4AF37] flex-shrink-0 backdrop-blur-sm transition-all"
                 >
                   <X className="w-3 h-3" />
                 </button>

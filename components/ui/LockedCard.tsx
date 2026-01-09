@@ -20,8 +20,8 @@ export function LockedCard({ locked, children, onUpgrade }: LockedCardProps) {
       </div>
       <div className="absolute inset-0 flex items-center justify-center bg-black/60">
         <div className="text-center space-y-3">
-          <Lock className="w-8 h-8 text-[#FFC038] mx-auto" />
-          <p className="text-[#FFC038] font-semibold">Premium Feature</p>
+          <Lock className="w-8 h-8 text-[#D4AF37] mx-auto" />
+          <p className="text-[#D4AF37] font-semibold">Premium Feature</p>
           <p className="text-sm text-gray-400">Upgrade to access this feature</p>
           {onUpgrade && (
             <Button variant="primary" onClick={onUpgrade} className="mt-2">

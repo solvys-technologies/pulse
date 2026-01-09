@@ -142,13 +142,13 @@ export function FeedSection() {
         {/* Header with CTAs */}
         <div className="flex items-center justify-between p-6 pb-4">
           <div>
-            <h2 className="text-2xl font-bold text-[#FFC038]">The Tape</h2>
+            <h2 className="text-2xl font-bold text-[#D4AF37]">The Tape</h2>
             <p className="text-sm text-gray-400 mt-1">RiskFlow and Algorithmic Analytics Feed.</p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowNTNModal(true)}
-              className="px-4 py-2 bg-[#FFC038]/10 border border-[#FFC038]/30 hover:bg-[#FFC038]/20 text-[#FFC038] rounded-full text-xs font-medium transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-[#D4AF37]/10 border border-[#D4AF37]/30 hover:bg-[#D4AF37]/20 text-[#D4AF37] rounded-full text-xs font-medium transition-colors flex items-center gap-2"
             >
               <FileText className="w-3.5 h-3.5" />
               Run NTN Report

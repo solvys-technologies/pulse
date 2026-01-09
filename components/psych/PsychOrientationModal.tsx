@@ -56,9 +56,9 @@ export function PsychOrientationModal() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 px-4">
-      <div className="w-full max-w-2xl bg-[#050500] border border-[#FFC038]/40 rounded-2xl shadow-[0_0_40px_rgba(255,192,56,0.2)] p-8 space-y-6 animate-fade-in">
+      <div className="w-full max-w-2xl bg-[#050500] border border-[#D4AF37]/40 rounded-2xl shadow-[0_0_40px_rgba(255,192,56,0.2)] p-8 space-y-6 animate-fade-in">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-[#FFC038]/70 mb-2">Psych Assist</p>
+          <p className="text-xs uppercase tracking-[0.3em] text-[#D4AF37]/70 mb-2">Psych Assist</p>
           <h2 className="text-2xl font-semibold text-white mb-2">Welcome Mission Briefing</h2>
           <p className="text-sm text-zinc-400">
             Price needs your blind spots and current goal to calibrate Mission Control. This orientation only happens once;
@@ -67,7 +67,7 @@ export function PsychOrientationModal() {
         </div>
 
         <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-[#FFC038] uppercase tracking-wide">Top 3 Blind Spots</h3>
+          <h3 className="text-sm font-semibold text-[#D4AF37] uppercase tracking-wide">Top 3 Blind Spots</h3>
           {blindSpots.map((spot, idx) => (
             <div key={idx}>
               <label className="text-xs text-zinc-500 mb-1 block">Blind Spot #{idx + 1}</label>
@@ -75,7 +75,7 @@ export function PsychOrientationModal() {
                 type="text"
                 value={spot}
                 onChange={(e) => handleBlindSpotChange(idx, e.target.value)}
-                className="w-full bg-black/60 border border-zinc-800 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-[#FFC038]/60"
+                className="w-full bg-black/60 border border-zinc-800 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-[#D4AF37]/60"
                 placeholder={
                   idx === 0
                     ? 'Example: Over-sizing after a green streak'
@@ -89,13 +89,13 @@ export function PsychOrientationModal() {
         </div>
 
         <div>
-          <h3 className="text-sm font-semibold text-[#FFC038] uppercase tracking-wide mb-2">Primary Goal</h3>
+          <h3 className="text-sm font-semibold text-[#D4AF37] uppercase tracking-wide mb-2">Primary Goal</h3>
           <textarea
             value={goal}
             onChange={(e) => setGoal(e.target.value)}
             rows={3}
             placeholder="Example: Reduce revenge trades by sticking to the first two setups and standing down after -$400."
-            className="w-full bg-black/60 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#FFC038]/60 resize-none"
+            className="w-full bg-black/60 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#D4AF37]/60 resize-none"
           />
         </div>
 

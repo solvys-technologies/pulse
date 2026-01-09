@@ -69,7 +69,7 @@ export default function MissionControl({ onClose }: MissionControlProps) {
   return (
     <div className="w-[280px] bg-[#0a0a00] border-r border-zinc-900 flex flex-col">
       <div className="h-14 border-b border-zinc-900 flex items-center justify-between px-4">
-        <h2 className="text-sm font-medium text-[#FFC038] tracking-wider uppercase">Mission Control</h2>
+        <h2 className="text-sm font-medium text-[#D4AF37] tracking-wider uppercase">Mission Control</h2>
         <button
           onClick={onClose}
           className="p-1 rounded hover:bg-zinc-900/50 transition-colors"
@@ -108,7 +108,7 @@ export default function MissionControl({ onClose }: MissionControlProps) {
             <h3 className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Analyst Pulse</h3>
             <button
               onClick={refreshAnalystReports}
-              className="text-[10px] text-[#FFC038] uppercase tracking-widest disabled:opacity-50"
+              className="text-[10px] text-[#D4AF37] uppercase tracking-widest disabled:opacity-50"
               disabled={analystRefreshing}
             >
               {analystRefreshing ? 'Refreshing…' : 'Refresh'}
@@ -121,7 +121,7 @@ export default function MissionControl({ onClose }: MissionControlProps) {
               const data = report.reportData || {};
               const metrics = Array.isArray(data.metrics) ? data.metrics : [];
               return (
-                <div key={report.id} className="bg-black/30 border border-[#FFC038]/10 rounded-lg p-3 space-y-2">
+                <div key={report.id} className="bg-black/30 border border-[#D4AF37]/10 rounded-lg p-3 space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-xs font-semibold text-white uppercase">
                       {data.title || report.agentType.replace('_', ' ')}

@@ -204,28 +204,28 @@ function MainLayoutInner({ onSettingsClick, signOut }: MainLayoutProps & { signO
     if (layoutOption === 'combined') {
       // Combined panel: both Mission Control and Tape stacked on the right
       rightPanels.push(
-        <div key="combined" className={`bg-[#0a0a00] border-l border-[#FFC038]/20 transition-lush ${combinedPanelCollapsed ? 'w-16' : 'w-80'}`}>
+        <div key="combined" className={`bg-[#0a0a00] border-l border-[#D4AF37]/20 transition-lush ${combinedPanelCollapsed ? 'w-16' : 'w-80'}`}>
           <div className="h-full flex flex-col">
-            <div className="h-12 flex items-center justify-between px-3 border-b border-[#FFC038]/20">
+            <div className="h-12 flex items-center justify-between px-3 border-b border-[#D4AF37]/20">
               {!combinedPanelCollapsed && (
-                <h2 className="text-sm font-semibold text-[#FFC038]">Panels</h2>
+                <h2 className="text-sm font-semibold text-[#D4AF37]">Panels</h2>
               )}
               <button
                 onClick={() => setCombinedPanelCollapsed(!combinedPanelCollapsed)}
-                className="p-1.5 hover:bg-[#FFC038]/10 rounded transition-colors ml-auto"
+                className="p-1.5 hover:bg-[#D4AF37]/10 rounded transition-colors ml-auto"
               >
                 {combinedPanelCollapsed ? (
-                  <ChevronLeft className="w-4 h-4 text-[#FFC038]" />
+                  <ChevronLeft className="w-4 h-4 text-[#D4AF37]" />
                 ) : (
-                  <ChevronRight className="w-4 h-4 text-[#FFC038]" />
+                  <ChevronRight className="w-4 h-4 text-[#D4AF37]" />
                 )}
               </button>
             </div>
             {!combinedPanelCollapsed && (
               <div className="flex-1 overflow-hidden flex flex-col">
-                <div className="h-1/2 overflow-hidden border-b border-[#FFC038]/20 flex flex-col">
-                  <div className="h-12 flex items-center justify-between px-3 border-b border-[#FFC038]/20">
-                    <h3 className="text-xs font-semibold text-[#FFC038]">Mission Control</h3>
+                <div className="h-1/2 overflow-hidden border-b border-[#D4AF37]/20 flex flex-col">
+                  <div className="h-12 flex items-center justify-between px-3 border-b border-[#D4AF37]/20">
+                    <h3 className="text-xs font-semibold text-[#D4AF37]">Mission Control</h3>
                   </div>
                   <div className="flex-1 overflow-y-auto">
                     <div className="p-2 space-y-2">
@@ -237,8 +237,8 @@ function MainLayoutInner({ onSettingsClick, signOut }: MainLayoutProps & { signO
                   </div>
                 </div>
                 <div className="h-1/2 overflow-hidden flex flex-col">
-                  <div className="h-12 flex items-center justify-between px-3 border-b border-[#FFC038]/20">
-                    <h3 className="text-xs font-semibold text-[#FFC038]">The Tape</h3>
+                  <div className="h-12 flex items-center justify-between px-3 border-b border-[#D4AF37]/20">
+                    <h3 className="text-xs font-semibold text-[#D4AF37]">The Tape</h3>
                   </div>
                   <div className="flex-1 overflow-y-auto">
                     <div className="p-2">
@@ -306,7 +306,7 @@ function MainLayoutInner({ onSettingsClick, signOut }: MainLayoutProps & { signO
 
       if (tapePosition === 'left' && showTape) {
         leftPanels.push(
-          <div key="tape" className={`bg-[#0a0a00] border-r border-[#FFC038]/20 transition-lush ${tapeCollapsed ? 'w-16' : 'w-80'}`}>
+          <div key="tape" className={`bg-[#0a0a00] border-r border-[#D4AF37]/20 transition-lush ${tapeCollapsed ? 'w-16' : 'w-80'}`}>
             <MinimalFeedSection 
               collapsed={tapeCollapsed}
               onToggleCollapse={() => setTapeCollapsed(!tapeCollapsed)}
@@ -321,7 +321,7 @@ function MainLayoutInner({ onSettingsClick, signOut }: MainLayoutProps & { signO
         );
       } else if (tapePosition === 'right' && showTape) {
         rightPanels.push(
-          <div key="tape" className={`bg-[#0a0a00] border-l border-[#FFC038]/20 transition-lush ${tapeCollapsed ? 'w-16' : 'w-80'}`}>
+          <div key="tape" className={`bg-[#0a0a00] border-l border-[#D4AF37]/20 transition-lush ${tapeCollapsed ? 'w-16' : 'w-80'}`}>
             <MinimalFeedSection 
               collapsed={tapeCollapsed}
               onToggleCollapse={() => setTapeCollapsed(!tapeCollapsed)}

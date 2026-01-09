@@ -25,7 +25,7 @@ export function SessionCard({ date, pnl, resonanceState, onClick, isActive }: Se
       onClick={onClick}
       className={`w-full p-3 rounded-lg border transition-all ${
         isActive
-          ? 'bg-[#FFC038]/10 border-[#FFC038]/30'
+          ? 'bg-[#D4AF37]/10 border-[#D4AF37]/30'
           : 'bg-[#0a0a00] border-zinc-900 hover:border-zinc-800'
       }`}
     >

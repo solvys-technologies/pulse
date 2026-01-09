@@ -93,23 +93,23 @@ export function TopStepXBrowser({ onClose }: TopStepXBrowserProps) {
   // Web app fallback - show message to use desktop app
   if (!inElectron) {
     return (
-      <div className="h-full w-full flex flex-col bg-[#0a0a00] border border-[#FFC038]/20 rounded-lg overflow-hidden">
+      <div className="h-full w-full flex flex-col bg-[#0a0a00] border border-[#D4AF37]/20 rounded-lg overflow-hidden">
         {/* Header */}
-        <div className="h-12 bg-[#0a0a00] border-b border-[#FFC038]/20 flex items-center justify-between px-4 flex-shrink-0">
-          <h2 className="text-sm font-semibold text-[#FFC038]">TopStepX</h2>
+        <div className="h-12 bg-[#0a0a00] border-b border-[#D4AF37]/20 flex items-center justify-between px-4 flex-shrink-0">
+          <h2 className="text-sm font-semibold text-[#D4AF37]">TopStepX</h2>
           <button
             onClick={onClose}
-            className="p-1.5 hover:bg-[#FFC038]/10 rounded transition-colors"
+            className="p-1.5 hover:bg-[#D4AF37]/10 rounded transition-colors"
             title="Close TopStepX"
           >
-            <X className="w-4 h-4 text-[#FFC038]" />
+            <X className="w-4 h-4 text-[#D4AF37]" />
           </button>
         </div>
         
         {/* Desktop App Required Message */}
         <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-[#FFC038]/10 flex items-center justify-center mb-4">
-            <Monitor className="w-8 h-8 text-[#FFC038]" />
+          <div className="w-16 h-16 rounded-2xl bg-[#D4AF37]/10 flex items-center justify-center mb-4">
+            <Monitor className="w-8 h-8 text-[#D4AF37]" />
           </div>
           <h3 className="text-xl font-semibold text-white mb-2">Desktop App Required</h3>
           <p className="text-gray-400 mb-6 max-w-md">
@@ -119,7 +119,7 @@ export function TopStepXBrowser({ onClose }: TopStepXBrowserProps) {
           <div className="flex gap-3">
             <button
               onClick={openExternal}
-              className="flex items-center gap-2 px-4 py-2 bg-[#FFC038] text-black rounded-lg font-medium hover:bg-[#FFC038]/90 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-[#D4AF37] text-black rounded-lg font-medium hover:bg-[#D4AF37]/90 transition-colors"
             >
               <ExternalLink className="w-4 h-4" />
               Open TopStepX in Browser
@@ -138,16 +138,16 @@ export function TopStepXBrowser({ onClose }: TopStepXBrowserProps) {
 
   // Electron app - use webview
   return (
-    <div className="h-full w-full flex flex-col bg-[#0a0a00] border border-[#FFC038]/20 rounded-lg overflow-hidden">
+    <div className="h-full w-full flex flex-col bg-[#0a0a00] border border-[#D4AF37]/20 rounded-lg overflow-hidden">
       {/* Navigation Bar */}
-      <div className="h-12 bg-[#0a0a00] border-b border-[#FFC038]/20 flex items-center gap-2 px-3 flex-shrink-0">
+      <div className="h-12 bg-[#0a0a00] border-b border-[#D4AF37]/20 flex items-center gap-2 px-3 flex-shrink-0">
         {/* Navigation buttons */}
         <button
           onClick={goBack}
           disabled={!canGoBack}
           className={`p-1.5 rounded transition-colors ${
             canGoBack 
-              ? 'hover:bg-[#FFC038]/10 text-gray-300' 
+              ? 'hover:bg-[#D4AF37]/10 text-gray-300' 
               : 'text-gray-600 cursor-not-allowed'
           }`}
           title="Back"
@@ -159,7 +159,7 @@ export function TopStepXBrowser({ onClose }: TopStepXBrowserProps) {
           disabled={!canGoForward}
           className={`p-1.5 rounded transition-colors ${
             canGoForward 
-              ? 'hover:bg-[#FFC038]/10 text-gray-300' 
+              ? 'hover:bg-[#D4AF37]/10 text-gray-300' 
               : 'text-gray-600 cursor-not-allowed'
           }`}
           title="Forward"
@@ -168,14 +168,14 @@ export function TopStepXBrowser({ onClose }: TopStepXBrowserProps) {
         </button>
         <button
           onClick={reload}
-          className="p-1.5 hover:bg-[#FFC038]/10 rounded transition-colors text-gray-300"
+          className="p-1.5 hover:bg-[#D4AF37]/10 rounded transition-colors text-gray-300"
           title="Reload"
         >
           <RotateCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
         </button>
         <button
           onClick={goHome}
-          className="p-1.5 hover:bg-[#FFC038]/10 rounded transition-colors text-gray-300"
+          className="p-1.5 hover:bg-[#D4AF37]/10 rounded transition-colors text-gray-300"
           title="Home"
         >
           <Home className="w-4 h-4" />
@@ -187,7 +187,7 @@ export function TopStepXBrowser({ onClose }: TopStepXBrowserProps) {
             type="text"
             value={inputUrl}
             onChange={(e) => setInputUrl(e.target.value)}
-            className="w-full px-3 py-1.5 bg-zinc-900 border border-zinc-700 rounded text-sm text-gray-300 focus:outline-none focus:border-[#FFC038]/50"
+            className="w-full px-3 py-1.5 bg-zinc-900 border border-zinc-700 rounded text-sm text-gray-300 focus:outline-none focus:border-[#D4AF37]/50"
             placeholder="Enter URL..."
           />
         </form>
@@ -195,17 +195,17 @@ export function TopStepXBrowser({ onClose }: TopStepXBrowserProps) {
         {/* Open external & Close */}
         <button
           onClick={openExternal}
-          className="p-1.5 hover:bg-[#FFC038]/10 rounded transition-colors text-gray-300"
+          className="p-1.5 hover:bg-[#D4AF37]/10 rounded transition-colors text-gray-300"
           title="Open in Browser"
         >
           <ExternalLink className="w-4 h-4" />
         </button>
         <button
           onClick={onClose}
-          className="p-1.5 hover:bg-[#FFC038]/10 rounded transition-colors"
+          className="p-1.5 hover:bg-[#D4AF37]/10 rounded transition-colors"
           title="Close TopStepX"
         >
-          <X className="w-4 h-4 text-[#FFC038]" />
+          <X className="w-4 h-4 text-[#D4AF37]" />
         </button>
       </div>
       
@@ -225,7 +225,7 @@ export function TopStepXBrowser({ onClose }: TopStepXBrowserProps) {
         {isLoading && (
           <div className="absolute inset-0 bg-[#0a0a00]/80 flex items-center justify-center">
             <div className="flex flex-col items-center gap-3">
-              <RotateCw className="w-8 h-8 text-[#FFC038] animate-spin" />
+              <RotateCw className="w-8 h-8 text-[#D4AF37] animate-spin" />
               <span className="text-sm text-gray-400">Loading TopStepX...</span>
             </div>
           </div>

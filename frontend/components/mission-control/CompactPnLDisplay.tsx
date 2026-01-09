@@ -85,7 +85,7 @@ export function CompactPnLDisplay({ showAccount = true }: CompactPnLDisplayProps
       {showAccount && selectedAccount && (
         <div className="flex flex-col items-start border-l border-zinc-700 pl-3">
           <span className="text-[9px] text-gray-500">Account</span>
-          <span className="text-[10px] text-[#FFC038] font-medium truncate max-w-[80px]">
+          <span className="text-[10px] text-[#D4AF37] font-medium truncate max-w-[80px]">
             {selectedAccount.accountName}
           </span>
           <span className="text-[8px] text-gray-500">

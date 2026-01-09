@@ -56,9 +56,9 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
         onClick={handleClose}
       />
       
-      <div className={`relative w-full max-w-2xl bg-[#0a0a00] border border-[#FFC038]/20 rounded-lg shadow-[0_0_24px_rgba(255,192,56,0.15)] mx-4 ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`}>
+      <div className={`relative w-full max-w-2xl bg-[#0a0a00] border border-[#D4AF37]/20 rounded-lg shadow-[0_0_24px_rgba(255,192,56,0.15)] mx-4 ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`}>
         <div className="flex items-center justify-between p-6 border-b border-zinc-900">
-          <h2 className="text-lg font-medium text-[#FFC038] tracking-wider uppercase">Settings</h2>
+          <h2 className="text-lg font-medium text-[#D4AF37] tracking-wider uppercase">Settings</h2>
           <button
             onClick={handleClose}
             className="p-1 rounded hover:bg-zinc-900/50 transition-lush"
@@ -80,10 +80,10 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                 <div className="space-y-2 text-xs text-zinc-400">
                   <div><span className="font-medium text-zinc-300">Required Secrets:</span></div>
                   <div className="ml-3">
-                    • <code className="text-[#FFC038]">ProjectXUsername</code> - Your TopStepX username
+                    • <code className="text-[#D4AF37]">ProjectXUsername</code> - Your TopStepX username
                   </div>
                   <div className="ml-3">
-                    • <code className="text-[#FFC038]">ProjectXApiKey</code> - Your TopStepX API key
+                    • <code className="text-[#D4AF37]">ProjectXApiKey</code> - Your TopStepX API key
                   </div>
                 </div>
                 <p className="text-xs text-zinc-500 mt-3">

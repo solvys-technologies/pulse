@@ -67,12 +67,12 @@ export function MissionControlPanel({
 
   return (
     <div
-      className={`bg-[#0a0a00] border-r border-[#FFC038]/20 transition-lush ${width}`}
+      className={`bg-[#0a0a00] border-r border-[#D4AF37]/20 transition-lush ${width}`}
     >
       <div className="h-full flex flex-col">
         <div className="h-12 flex items-center justify-between px-3">
           {!collapsed && (
-            <h2 className="text-sm font-semibold text-[#FFC038]">Mission Control</h2>
+            <h2 className="text-sm font-semibold text-[#D4AF37]">Mission Control</h2>
           )}
           <div className="flex items-center gap-1">
             {topStepXEnabled && !collapsed && onPositionChange && (
@@ -80,7 +80,7 @@ export function MissionControlPanel({
                 {position === 'right' && (
                   <button
                     onClick={() => onPositionChange('left')}
-                    className="p-1 hover:bg-[#FFC038]/10 rounded text-[#FFC038]/60 hover:text-[#FFC038]"
+                    className="p-1 hover:bg-[#D4AF37]/10 rounded text-[#D4AF37]/60 hover:text-[#D4AF37]"
                     title="Move Left"
                   >
                     <MoveLeft className="w-3.5 h-3.5" />
@@ -89,7 +89,7 @@ export function MissionControlPanel({
                 {position === 'left' && (
                   <button
                     onClick={() => onPositionChange('right')}
-                    className="p-1 hover:bg-[#FFC038]/10 rounded text-[#FFC038]/60 hover:text-[#FFC038]"
+                    className="p-1 hover:bg-[#D4AF37]/10 rounded text-[#D4AF37]/60 hover:text-[#D4AF37]"
                     title="Move Right"
                   >
                     <MoveRight className="w-3.5 h-3.5" />
@@ -97,7 +97,7 @@ export function MissionControlPanel({
                 )}
                 <button
                   onClick={() => onPositionChange('floating')}
-                  className="p-1 hover:bg-[#FFC038]/10 rounded text-[#FFC038]/60 hover:text-[#FFC038]"
+                  className="p-1 hover:bg-[#D4AF37]/10 rounded text-[#D4AF37]/60 hover:text-[#D4AF37]"
                   title="Float"
                 >
                   <GripVertical className="w-3.5 h-3.5" />
@@ -107,7 +107,7 @@ export function MissionControlPanel({
             {topStepXEnabled && onHide && (
               <button
                 onClick={onHide}
-                className="p-1 hover:bg-[#FFC038]/10 rounded text-[#FFC038]/60 hover:text-[#FFC038]"
+                className="p-1 hover:bg-[#D4AF37]/10 rounded text-[#D4AF37]/60 hover:text-[#D4AF37]"
                 title="Hide"
               >
                 <X className="w-3.5 h-3.5" />
@@ -116,12 +116,12 @@ export function MissionControlPanel({
             {topStepXEnabled && (
               <button
                 onClick={onToggleCollapse}
-                className="p-1.5 hover:bg-[#FFC038]/10 rounded transition-colors"
+                className="p-1.5 hover:bg-[#D4AF37]/10 rounded transition-colors"
               >
                 {collapsed ? (
-                  <ChevronRight className="w-4 h-4 text-[#FFC038]" />
+                  <ChevronRight className="w-4 h-4 text-[#D4AF37]" />
                 ) : (
-                  <ChevronLeft className="w-4 h-4 text-[#FFC038]" />
+                  <ChevronLeft className="w-4 h-4 text-[#D4AF37]" />
                 )}
               </button>
             )}

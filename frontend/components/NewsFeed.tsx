@@ -74,7 +74,7 @@ export default function NewsFeed() {
       case "high":
         return <AlertTriangle className="w-4 h-4 text-[#FF4040]" />;
       case "medium":
-        return <TrendingUp className="w-4 h-4 text-[#FFC038]" />;
+        return <TrendingUp className="w-4 h-4 text-[#D4AF37]" />;
       default:
         return <Info className="w-4 h-4 text-zinc-500" />;
     }
@@ -85,7 +85,7 @@ export default function NewsFeed() {
       case "high":
         return "text-[#FF4040] bg-[#FF4040]/10";
       case "medium":
-        return "text-[#FFC038] bg-[#FFC038]/10";
+        return "text-[#D4AF37] bg-[#D4AF37]/10";
       default:
         return "text-zinc-500 bg-zinc-900/50";
     }
@@ -188,7 +188,7 @@ export default function NewsFeed() {
                     {item.category && (
                       <>
                         <span>•</span>
-                        <span className="text-[#FFC038]/60">{item.category}</span>
+                        <span className="text-[#D4AF37]/60">{item.category}</span>
                       </>
                     )}
                     <span>•</span>

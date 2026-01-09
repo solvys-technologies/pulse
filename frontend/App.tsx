@@ -31,7 +31,7 @@ function AppInner() {
               
               * {
                 scrollbar-width: thin;
-                scrollbar-color: #FFC038 #0a0a00;
+                scrollbar-color: #D4AF37 #0a0a00;
               }
               
               *::-webkit-scrollbar {
@@ -44,7 +44,7 @@ function AppInner() {
               }
               
               *::-webkit-scrollbar-thumb {
-                background: #FFC038;
+                background: #D4AF37;
                 border-radius: 4px;
               }
               
@@ -87,17 +87,17 @@ function AppInner() {
               baseTheme: undefined,
               elements: {
                 rootBox: 'mx-auto',
-                card: 'bg-[#0a0a00] border border-[#FFC038]/20 shadow-[0_0_24px_rgba(255,192,56,0.15)]',
-                headerTitle: 'text-[#FFC038]',
+                card: 'bg-[#0a0a00] border border-[#D4AF37]/20 shadow-[0_0_24px_rgba(255,192,56,0.15)]',
+                headerTitle: 'text-[#D4AF37]',
                 headerSubtitle: 'text-zinc-400',
                 socialButtonsBlockButton: 'bg-zinc-800 border-zinc-700 hover:bg-zinc-700 text-white',
-                formButtonPrimary: 'bg-[#FFC038] hover:bg-[#FFC038]/90 text-black',
-                footerActionLink: 'text-[#FFC038] hover:text-[#FFC038]/80',
+                formButtonPrimary: 'bg-[#D4AF37] hover:bg-[#D4AF37]/90 text-black',
+                footerActionLink: 'text-[#D4AF37] hover:text-[#D4AF37]/80',
                 formFieldInput: 'bg-zinc-800 border-zinc-700 text-white',
                 formFieldLabel: 'text-zinc-300',
                 dividerLine: 'bg-zinc-700',
                 dividerText: 'text-zinc-500',
-                identityPreviewEditButton: 'text-[#FFC038]',
+                identityPreviewEditButton: 'text-[#D4AF37]',
               },
             }}
           />

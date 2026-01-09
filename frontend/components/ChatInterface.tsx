@@ -485,7 +485,7 @@ ${kpiSection}
             <button
               onClick={() => handleSend("Run the NTN report")}
               disabled={isLoading}
-              className="px-3 py-1.5 bg-white/5 backdrop-blur-sm border border-white/10 hover:border-[#FFC038]/40 hover:bg-[#FFC038]/10 disabled:opacity-50 rounded-lg text-[13px] text-zinc-300 hover:text-[#FFC038] transition-all whitespace-nowrap"
+              className="px-3 py-1.5 bg-white/5 backdrop-blur-sm border border-white/10 hover:border-[#D4AF37]/40 hover:bg-[#D4AF37]/10 disabled:opacity-50 rounded-lg text-[13px] text-zinc-300 hover:text-[#D4AF37] transition-all whitespace-nowrap"
             >
               Run NTN Report
             </button>
@@ -531,14 +531,14 @@ ${kpiSection}
       {/* Conversation History Sidebar */}
       {showHistory && (
         <div className="absolute inset-0 z-50 flex justify-end">
-          <div className="w-80 bg-[#0a0a00] border-l border-[#FFC038]/20 flex flex-col">
-            <div className="h-16 border-b border-[#FFC038]/20 flex items-center justify-between px-4">
-              <h2 className="text-lg font-semibold text-[#FFC038]">Conversation History</h2>
+          <div className="w-80 bg-[#0a0a00] border-l border-[#D4AF37]/20 flex flex-col">
+            <div className="h-16 border-b border-[#D4AF37]/20 flex items-center justify-between px-4">
+              <h2 className="text-lg font-semibold text-[#D4AF37]">Conversation History</h2>
               <button
                 onClick={() => setShowHistory(false)}
-                className="p-2 hover:bg-[#FFC038]/10 rounded transition-colors"
+                className="p-2 hover:bg-[#D4AF37]/10 rounded transition-colors"
               >
-                <X className="w-5 h-5 text-[#FFC038]" />
+                <X className="w-5 h-5 text-[#D4AF37]" />
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-2">
@@ -567,7 +567,7 @@ ${kpiSection}
                       <div
                         key={conv.conversationId}
                         className={`group relative w-full p-3 bg-zinc-900/50 border ${isStale ? "border-zinc-700/50 opacity-60" : "border-zinc-800"
-                          } hover:border-[#FFC038]/40 hover:bg-zinc-900 rounded-lg transition-all ${isStale ? "cursor-not-allowed" : ""}`}
+                          } hover:border-[#D4AF37]/40 hover:bg-zinc-900 rounded-lg transition-all ${isStale ? "cursor-not-allowed" : ""}`}
                       >
                         {isStale && (
                           <div className="text-xs text-amber-500 mb-2 font-medium">
@@ -597,7 +597,7 @@ ${kpiSection}
                             <div className="text-xs text-zinc-500">{conv.messageCount} messages</div>
                           </div>
                           {conv.isPinned && (
-                            <Pin className="w-4 h-4 text-[#FFC038] fill-[#FFC038]" />
+                            <Pin className="w-4 h-4 text-[#D4AF37] fill-[#D4AF37]" />
                           )}
                         </div>
                         {!isStale && (
@@ -607,10 +607,10 @@ ${kpiSection}
                                 e.stopPropagation();
                                 handlePinConversation(conv.conversationId);
                               }}
-                              className="p-1.5 hover:bg-[#FFC038]/10 rounded transition-colors"
+                              className="p-1.5 hover:bg-[#D4AF37]/10 rounded transition-colors"
                               title={conv.isPinned ? "Unpin" : "Pin"}
                             >
-                              <Pin className={`w-3.5 h-3.5 ${conv.isPinned ? "text-[#FFC038] fill-[#FFC038]" : "text-zinc-400"}`} />
+                              <Pin className={`w-3.5 h-3.5 ${conv.isPinned ? "text-[#D4AF37] fill-[#D4AF37]" : "text-zinc-400"}`} />
                             </button>
                             <button
                               onClick={(e) => {
@@ -618,7 +618,7 @@ ${kpiSection}
                                 setEditingConversationId(conv.conversationId);
                                 setRenameValue(conv.customName || "");
                               }}
-                              className="p-1.5 hover:bg-[#FFC038]/10 rounded transition-colors"
+                              className="p-1.5 hover:bg-[#D4AF37]/10 rounded transition-colors"
                               title="Rename"
                             >
                               <Edit2 className="w-3.5 h-3.5 text-zinc-400" />
@@ -628,7 +628,7 @@ ${kpiSection}
                                 e.stopPropagation();
                                 handleArchiveConversation(conv.conversationId);
                               }}
-                              className="p-1.5 hover:bg-[#FFC038]/10 rounded transition-colors"
+                              className="p-1.5 hover:bg-[#D4AF37]/10 rounded transition-colors"
                               title="Archive"
                             >
                               <Archive className="w-3.5 h-3.5 text-zinc-400" />
@@ -655,7 +655,7 @@ ${kpiSection}
                             />
                             <button
                               onClick={() => handleRenameConversation(conv.conversationId, renameValue)}
-                              className="px-2 py-1 bg-[#FFC038]/20 text-[#FFC038] rounded text-xs"
+                              className="px-2 py-1 bg-[#D4AF37]/20 text-[#D4AF37] rounded text-xs"
                             >
                               Save
                             </button>
@@ -682,7 +682,7 @@ ${kpiSection}
           {showSuggestions && messages.length === 0 && (
             <div className="flex flex-col items-center justify-center min-h-[400px] gap-6">
               <div className="text-center">
-                <h3 className="text-2xl font-semibold text-[#FFC038] mb-3">The Name's Price. AI Price.</h3>
+                <h3 className="text-2xl font-semibold text-[#D4AF37] mb-3">The Name's Price. AI Price.</h3>
                 <p className="text-base text-zinc-300 mb-2">
                   I'm Priced In's Risk Event Quant & Psych Specialist.
                 </p>
@@ -696,7 +696,7 @@ ${kpiSection}
                     key={index}
                     onClick={() => handleSend(chip.prompt)}
                     disabled={isLoading}
-                    className="px-4 py-2.5 bg-white/5 backdrop-blur-sm border border-white/10 hover:border-[#FFC038]/40 hover:bg-[#FFC038]/10 disabled:opacity-50 rounded-full text-sm text-zinc-300 hover:text-[#FFC038] transition-all"
+                    className="px-4 py-2.5 bg-white/5 backdrop-blur-sm border border-white/10 hover:border-[#D4AF37]/40 hover:bg-[#D4AF37]/10 disabled:opacity-50 rounded-full text-sm text-zinc-300 hover:text-[#D4AF37] transition-all"
                   >
                     {chip.label}
                   </button>
@@ -714,7 +714,7 @@ ${kpiSection}
                 className={`
                   max-w-[80%] rounded-xl p-4 backdrop-blur-md
                   ${message.role === "user"
-                    ? "bg-[#FFC038]/10 border border-[#FFC038]/20"
+                    ? "bg-[#D4AF37]/10 border border-[#D4AF37]/20"
                     : message.cancelled
                     ? "bg-white/2 border border-white/5 opacity-50"
                     : "bg-white/5 border border-white/10"
@@ -744,11 +744,11 @@ ${kpiSection}
           {isLoading && (
             <div className="flex justify-start items-center gap-3">
               <div className="relative w-6 h-6">
-                <div className="absolute inset-0 rounded-full border-2 border-[#FFC038]/40 animate-ping"></div>
-                <div className="absolute inset-1 rounded-full border-2 border-[#FFC038]/60 animate-pulse"></div>
-                <div className="absolute inset-2 rounded-full bg-[#FFC038]/20"></div>
+                <div className="absolute inset-0 rounded-full border-2 border-[#D4AF37]/40 animate-ping"></div>
+                <div className="absolute inset-1 rounded-full border-2 border-[#D4AF37]/60 animate-pulse"></div>
+                <div className="absolute inset-2 rounded-full bg-[#D4AF37]/20"></div>
               </div>
-              <span className="text-sm text-[#FFC038] font-medium">{thinkingText}</span>
+              <span className="text-sm text-[#D4AF37] font-medium">{thinkingText}</span>
             </div>
           )}
           <div ref={messagesEndRef} />
@@ -763,27 +763,27 @@ ${kpiSection}
             className="relative flex items-center justify-center w-[42px] h-[42px] flex-shrink-0 hover:bg-white/10 rounded transition-colors z-10 self-end"
             type="button"
           >
-            <Paperclip className="w-4 h-4 text-zinc-400 hover:text-[#FFC038] transition-colors" />
+            <Paperclip className="w-4 h-4 text-zinc-400 hover:text-[#D4AF37] transition-colors" />
 
             {showAttachMenu && (
               <div className="absolute bottom-full left-0 mb-2 bg-black/95 backdrop-blur-md border border-white/10 rounded-xl p-2 shadow-xl min-w-[200px] z-10">
                 <button
                   onClick={() => setShowAttachMenu(false)}
-                  className="w-full flex items-center gap-3 px-3 py-2 text-sm text-zinc-300 hover:bg-[#FFC038]/10 rounded-lg transition-colors"
+                  className="w-full flex items-center gap-3 px-3 py-2 text-sm text-zinc-300 hover:bg-[#D4AF37]/10 rounded-lg transition-colors"
                 >
                   <Image className="w-4 h-4" />
                   <span>Photo/Video</span>
                 </button>
                 <button
                   onClick={() => setShowAttachMenu(false)}
-                  className="w-full flex items-center gap-3 px-3 py-2 text-sm text-zinc-300 hover:bg-[#FFC038]/10 rounded-lg transition-colors"
+                  className="w-full flex items-center gap-3 px-3 py-2 text-sm text-zinc-300 hover:bg-[#D4AF37]/10 rounded-lg transition-colors"
                 >
                   <FileText className="w-4 h-4" />
                   <span>Document</span>
                 </button>
                 <button
                   onClick={() => setShowAttachMenu(false)}
-                  className="w-full flex items-center gap-3 px-3 py-2 text-sm text-zinc-300 hover:bg-[#FFC038]/10 rounded-lg transition-colors"
+                  className="w-full flex items-center gap-3 px-3 py-2 text-sm text-zinc-300 hover:bg-[#D4AF37]/10 rounded-lg transition-colors"
                 >
                   <Link2 className="w-4 h-4" />
                   <span>RiskFlow Item</span>
@@ -819,7 +819,7 @@ ${kpiSection}
             placeholder="Analyze your performance, the news, or the markets…."
             disabled={false}
             rows={1}
-            className="flex-1 bg-white/5 backdrop-blur-sm border border-white/10 rounded-[18px] px-4 py-3 text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-[#FFC038]/40 focus:shadow-[0_0_12px_rgba(255,192,56,0.1)] transition-all resize-none overflow-y-auto min-h-[42px] max-h-[200px] leading-relaxed"
+            className="flex-1 bg-white/5 backdrop-blur-sm border border-white/10 rounded-[18px] px-4 py-3 text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-[#D4AF37]/40 focus:shadow-[0_0_12px_rgba(255,192,56,0.1)] transition-all resize-none overflow-y-auto min-h-[42px] max-h-[200px] leading-relaxed"
           />
 
           {isLoading ? (
@@ -841,7 +841,7 @@ ${kpiSection}
                 handleSend();
               }}
               disabled={!input.trim() || isLoading}
-              className="flex items-center justify-center w-[42px] h-[42px] flex-shrink-0 rounded-full bg-[#FFC038] hover:bg-[#FFD060] disabled:bg-zinc-900 disabled:text-zinc-700 disabled:border disabled:border-zinc-800 transition-all self-end"
+              className="flex items-center justify-center w-[42px] h-[42px] flex-shrink-0 rounded-full bg-[#D4AF37] hover:bg-[#FFD060] disabled:bg-zinc-900 disabled:text-zinc-700 disabled:border disabled:border-zinc-800 transition-all self-end"
               type="button"
             >
               <ArrowRight className="w-5 h-5" />

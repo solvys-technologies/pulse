@@ -89,8 +89,8 @@ export function IVScoreCard({ score, variant = 'default', layoutOption }: IVScor
   };
 
   const containerClasses = variant === 'frosted'
-    ? 'relative backdrop-blur-2xl bg-gradient-to-br from-[#050500]/60 to-[#050500]/40 border border-[#FFC038]/30 rounded-xl px-3 py-1.5 shadow-lg'
-    : 'relative bg-[#050500] border border-[#FFC038]/20 rounded-lg px-3 py-1.5';
+    ? 'relative backdrop-blur-2xl bg-gradient-to-br from-[#050500]/60 to-[#050500]/40 border border-[#D4AF37]/30 rounded-xl px-3 py-1.5 shadow-lg'
+    : 'relative bg-[#050500] border border-[#D4AF37]/20 rounded-lg px-3 py-1.5';
   
   const frostedStyle = variant === 'frosted' ? {
     backdropFilter: 'blur(20px) saturate(150%)',
@@ -110,8 +110,8 @@ export function IVScoreCard({ score, variant = 'default', layoutOption }: IVScor
         {expectedMove && (
           <>
             <span className="text-gray-600">|</span>
-            <TrendingUp className="w-3 h-3 text-[#FFC038]" />
-            <span className="text-[10px] text-[#FFC038] font-medium">
+            <TrendingUp className="w-3 h-3 text-[#D4AF37]" />
+            <span className="text-[10px] text-[#D4AF37] font-medium">
               ±{expectedMove.points} pts ({selectedSymbol.symbol})
             </span>
           </>
@@ -127,7 +127,7 @@ export function IVScoreCard({ score, variant = 'default', layoutOption }: IVScor
 
       {showTooltip && (
         <div 
-          className={`absolute top-full mt-2 w-80 bg-[#0a0a00] border border-[#FFC038]/30 rounded-lg p-4 shadow-xl z-50 ${
+          className={`absolute top-full mt-2 w-80 bg-[#0a0a00] border border-[#D4AF37]/30 rounded-lg p-4 shadow-xl z-50 ${
             layoutOption === 'tickers-only' ? 'right-0' : 'left-0'
           }`}
           style={{
@@ -141,14 +141,14 @@ export function IVScoreCard({ score, variant = 'default', layoutOption }: IVScor
             })
           }}
         >
-          <h4 className="text-sm font-semibold text-[#FFC038] mb-2">Implied Volatility Score</h4>
+          <h4 className="text-sm font-semibold text-[#D4AF37] mb-2">Implied Volatility Score</h4>
           <p className="text-xs text-gray-400 mb-3">
             Measures expected market volatility using Black-Scholes methodology. Higher scores indicate greater expected price swings.
           </p>
 
           {expectedMove && (
-            <div className="bg-[#FFC038]/10 border border-[#FFC038]/20 rounded-lg p-3 mb-3">
-              <h5 className="text-xs font-semibold text-[#FFC038] mb-1">Expected Move for {selectedSymbol.symbol}</h5>
+            <div className="bg-[#D4AF37]/10 border border-[#D4AF37]/20 rounded-lg p-3 mb-3">
+              <h5 className="text-xs font-semibold text-[#D4AF37] mb-1">Expected Move for {selectedSymbol.symbol}</h5>
               <div className="flex items-baseline gap-2">
                 <span className="text-lg font-bold text-white">±{expectedMove.points}</span>
                 <span className="text-xs text-gray-400">points</span>

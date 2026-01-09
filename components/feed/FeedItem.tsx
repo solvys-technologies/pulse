@@ -28,14 +28,14 @@ export function FeedItem({ item }: FeedItemProps) {
   const Icon = IVIcon[ivType];
 
   return (
-    <div className="bg-[#0a0a00] border-l-2 border-l-[#FFC038]/30 p-3 rounded hover:bg-[#0a0a00]/80 transition-colors">
+    <div className="bg-[#0a0a00] border-l-2 border-l-[#D4AF37]/30 p-3 rounded hover:bg-[#0a0a00]/80 transition-colors">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs text-gray-500">
               {item.time.toLocaleTimeString()}
             </span>
-            <span className="text-xs text-[#FFC038]">{item.source}</span>
+            <span className="text-xs text-[#D4AF37]">{item.source}</span>
             {item.type === 'alert' && (
               <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded">
                 ALERT

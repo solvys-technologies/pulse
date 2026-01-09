@@ -11,10 +11,10 @@ export function BlindspotsWidget() {
   const blindspots = profile?.blindSpots ?? [];
 
   const content = (
-    <div className="bg-[#050500] border border-[#FFC038]/20 rounded-lg p-4">
+    <div className="bg-[#050500] border border-[#D4AF37]/20 rounded-lg p-4">
       <div className="flex items-center gap-2 mb-3">
-        <Eye className="w-4 h-4 text-[#FFC038]" />
-        <h3 className="text-sm font-semibold text-[#FFC038]">Blindspots</h3>
+        <Eye className="w-4 h-4 text-[#D4AF37]" />
+        <h3 className="text-sm font-semibold text-[#D4AF37]">Blindspots</h3>
       </div>
       {loading ? (
         <p className="text-xs text-zinc-500">Syncing Psych Assist…</p>
@@ -23,7 +23,7 @@ export function BlindspotsWidget() {
           <p>Complete your Psych Assist orientation to populate blind spots here.</p>
           <button
             onClick={() => openOrientationModal()}
-            className="text-[#FFC038] underline-offset-2 hover:underline"
+            className="text-[#D4AF37] underline-offset-2 hover:underline"
           >
             Launch Orientation
           </button>

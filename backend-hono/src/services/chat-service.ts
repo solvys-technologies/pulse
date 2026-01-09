@@ -406,7 +406,8 @@ export const createChatService = (deps: {
         onFinish
       })
 
-      const response = streamResult.result.toTextStreamResponse({
+      // Use toUIMessageStreamResponse for compatibility with @ai-sdk/react useChat hook
+      const response = streamResult.result.toUIMessageStreamResponse({
         headers: {
           'X-Conversation-Id': conversation.id,
           'X-Model': streamResult.model,

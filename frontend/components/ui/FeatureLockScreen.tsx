@@ -40,14 +40,14 @@ export function FeatureLockScreen({
   const needsUpgrade = currentLevel < requiredLevel;
 
   return (
-    <div className="flex flex-col items-center justify-center p-12 bg-[#050500] border border-[#FFC038]/20 rounded-lg">
+    <div className="flex flex-col items-center justify-center p-12 bg-[#050500] border border-[#D4AF37]/20 rounded-lg">
       <div className="mb-6">
-        <Lock className="w-16 h-16 text-[#FFC038]/50 mx-auto mb-4" />
+        <Lock className="w-16 h-16 text-[#D4AF37]/50 mx-auto mb-4" />
         <h3 className="text-xl font-bold text-white mb-2 text-center">
           Feature Locked
         </h3>
         <p className="text-sm text-gray-400 text-center max-w-md">
-          {featureName} requires <span className="text-[#FFC038] font-semibold">{tierNames[requiredTier]}</span> tier
+          {featureName} requires <span className="text-[#D4AF37] font-semibold">{tierNames[requiredTier]}</span> tier
         </p>
       </div>
 
@@ -67,9 +67,9 @@ export function FeatureLockScreen({
         </div>
       )}
 
-      <div className="mb-6 p-4 bg-[#FFC038]/10 rounded-lg border border-[#FFC038]/30">
+      <div className="mb-6 p-4 bg-[#D4AF37]/10 rounded-lg border border-[#D4AF37]/30">
         <p className="text-xs text-gray-500 mb-2">Required Tier</p>
-        <p className="text-sm font-semibold text-[#FFC038]">{tierNames[requiredTier]}</p>
+        <p className="text-sm font-semibold text-[#D4AF37]">{tierNames[requiredTier]}</p>
         <p className="text-xs text-gray-400 mt-1">{tierDescriptions[requiredTier]}</p>
       </div>
 
