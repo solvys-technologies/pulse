@@ -13,13 +13,13 @@ export default function Header() {
           <span className="text-[10px] text-zinc-500 uppercase tracking-wider">Online</span>
         </div>
         
-        <h1 className="text-2xl font-bold text-[#FFC038] tracking-widest">PULSE</h1>
+        <h1 className="text-2xl font-bold text-[#D4AF37] tracking-widest">PULSE</h1>
         
         <button
           onClick={() => setShowSettings(true)}
           className="p-2 rounded hover:bg-zinc-900/50 transition-colors"
         >
-          <Settings className="w-5 h-5 text-[#FFC038]" />
+          <Settings className="w-5 h-5 text-[#D4AF37]" />
         </button>
       </header>
       

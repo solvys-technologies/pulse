@@ -20,9 +20,9 @@ export function MinimalERMeter({ resonance, pnl, algoEnabled }: MinimalERMeterPr
   const resonanceHeight = Math.max(10, Math.min(90, clampedResonance * 100));
 
   return (
-    <div className="flex flex-col gap-2 p-2 bg-[#0a0a00] border border-[#FFC038]/20 rounded w-full">
+    <div className="flex flex-col gap-2 p-2 bg-[#0a0a00] border border-[#D4AF37]/20 rounded w-full">
       <div className="text-center">
-        <span className="text-[10px] font-semibold text-[#FFC038]">ER</span>
+        <span className="text-[10px] font-semibold text-[#D4AF37]">ER</span>
       </div>
       
       <div className="flex justify-center">

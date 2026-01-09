@@ -55,21 +55,21 @@ export function NotificationToast({ notification, onDismiss }: NotificationToast
   }, [notification.id, notification.type, notification.severity, notification.title, onDismiss, alertConfig.soundEnabled, alertConfig.healingBowlSound]);
 
   return (
-    <div className="bg-[#0a0a00] border border-[#FFC038]/30 rounded-lg p-4 shadow-lg backdrop-blur-md min-w-[300px] max-w-[400px] animate-slide-in">
+    <div className="bg-[#0a0a00] border border-[#D4AF37]/30 rounded-lg p-4 shadow-lg backdrop-blur-md min-w-[300px] max-w-[400px] animate-slide-in">
       <div className="flex items-start gap-3">
         {notification.type === 'iv' ? (
-          <TrendingUp className="w-5 h-5 text-[#FFC038] flex-shrink-0" />
+          <TrendingUp className="w-5 h-5 text-[#D4AF37] flex-shrink-0" />
         ) : notification.type === 'tilt' || notification.severity === 'warning' ? (
           <AlertTriangle className="w-5 h-5 text-orange-400 flex-shrink-0" />
         ) : (
-          <Newspaper className="w-5 h-5 text-[#FFC038] flex-shrink-0" />
+          <Newspaper className="w-5 h-5 text-[#D4AF37] flex-shrink-0" />
         )}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <h4 className="text-sm font-semibold text-white">{notification.title}</h4>
             <button
               onClick={() => onDismiss(notification.id)}
-              className="p-1 hover:bg-[#FFC038]/10 rounded transition-colors flex-shrink-0"
+              className="p-1 hover:bg-[#D4AF37]/10 rounded transition-colors flex-shrink-0"
             >
               <X className="w-3 h-3 text-gray-400" />
             </button>

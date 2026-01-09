@@ -91,7 +91,7 @@ function MiniWidgetRoot() {
       appearance={{
         baseTheme: dark,
         variables: {
-          colorPrimary: '#FFC038',
+          colorPrimary: '#D4AF37',
         },
       }}
     >

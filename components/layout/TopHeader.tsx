@@ -128,13 +128,16 @@ export function TopHeader({
   };
 
   return (
-    <div className={`bg-[#0a0a00] border-b border-[#FFC038]/20 flex items-center justify-between px-6 ${topStepXEnabled && layoutOption === 'tickers-only' ? 'h-[65px]' : 'h-[70px]'}`}>
+    <div className={`bg-[#0a0a00] border-b border-[#D4AF37]/20 flex items-center justify-between pr-6 ${topStepXEnabled && layoutOption === 'tickers-only' ? 'h-[65px]' : 'h-[70px]'}`}>
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-3">
-          <PulseLogo />
+          {/* Logo centered at 32px to align with sidebar icons (w-16 = 64px, center = 32px) */}
+          <div className="w-16 flex items-center justify-center">
+            <PulseLogo />
+          </div>
           <button
             onClick={() => setShowUpgrade(true)}
-            className="relative bg-[#050500] border border-[#FFC038]/20 rounded-lg px-3 py-1 hover:bg-[#FFC038]/10 hover:border-[#FFC038]/40 transition-colors cursor-pointer flex items-center"
+            className="relative bg-[#050500] border border-[#D4AF37]/20 rounded-lg px-3 py-1 hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/40 transition-colors cursor-pointer flex items-center"
           >
             <span className="text-[13px] text-gray-300">{getTierDisplayName()}</span>
           </button>
@@ -157,8 +160,8 @@ export function TopHeader({
                 onClick={onTopStepXToggle}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                   topStepXEnabled
-                    ? 'bg-[#FFC038] text-black hover:bg-[#FFC038]/90'
-                    : 'bg-[#050500] border border-[#FFC038]/20 text-[#FFC038] hover:bg-[#FFC038]/10 hover:border-[#FFC038]/40'
+                    ? 'bg-[#D4AF37] text-black hover:bg-[#D4AF37]/90'
+                    : 'bg-[#050500] border border-[#D4AF37]/20 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/40'
                 }`}
                 title="Toggle TopStepX"
               >
@@ -179,7 +182,7 @@ export function TopHeader({
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setShowLayoutDropdown(!showLayoutDropdown)}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#050500] border border-[#FFC038]/20 text-[#FFC038] hover:bg-[#FFC038]/10 hover:border-[#FFC038]/40 transition-colors flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#050500] border border-[#D4AF37]/20 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/40 transition-colors flex items-center gap-1.5"
                 title="Layout Options"
               >
                 {layoutOptions.find(opt => opt.value === layoutOption)?.icon}
@@ -187,7 +190,7 @@ export function TopHeader({
                 <ChevronDown className={`w-3 h-3 transition-transform ${showLayoutDropdown ? 'rotate-180' : ''}`} />
               </button>
               {showLayoutDropdown && (
-                <div className="absolute right-0 top-full mt-2 w-72 bg-[#0a0a00] border border-[#FFC038]/20 rounded-lg shadow-xl z-50 overflow-hidden">
+                <div className="absolute right-0 top-full mt-2 w-72 bg-[#0a0a00] border border-[#D4AF37]/20 rounded-lg shadow-xl z-50 overflow-hidden">
                   {layoutOptions.map((option) => (
                     <button
                       key={option.value}
@@ -195,15 +198,15 @@ export function TopHeader({
                         onLayoutOptionChange(option.value);
                         setShowLayoutDropdown(false);
                       }}
-                      className={`w-full px-4 py-3 text-left hover:bg-[#FFC038]/10 transition-colors flex items-start gap-3 ${
-                        layoutOption === option.value ? 'bg-[#FFC038]/20' : ''
+                      className={`w-full px-4 py-3 text-left hover:bg-[#D4AF37]/10 transition-colors flex items-start gap-3 ${
+                        layoutOption === option.value ? 'bg-[#D4AF37]/20' : ''
                       }`}
                     >
-                      <div className="mt-0.5 text-[#FFC038]">
+                      <div className="mt-0.5 text-[#D4AF37]">
                         {option.icon}
                       </div>
                       <div className="flex-1">
-                        <div className="text-sm font-medium text-[#FFC038] mb-1">
+                        <div className="text-sm font-medium text-[#D4AF37] mb-1">
                           {option.label}
                         </div>
                         <div className="text-xs text-gray-400">

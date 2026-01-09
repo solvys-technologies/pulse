@@ -200,8 +200,8 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
 
   return (
     <div className={`fixed inset-0 bg-black/80 flex items-center justify-center z-50 ${isClosing ? 'animate-fade-out-backdrop' : 'animate-fade-in-backdrop'}`}>
-      <div className={`bg-[#0a0a00] border border-[#FFC038]/30 rounded-lg w-full max-w-4xl max-h-[80vh] mx-4 flex ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`}>
-        <div className="w-48 border-r border-[#FFC038]/20 p-4">
+      <div className={`bg-[#0a0a00] border border-[#D4AF37]/30 rounded-lg w-full max-w-4xl max-h-[80vh] mx-4 flex ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`}>
+        <div className="w-48 border-r border-[#D4AF37]/20 p-4">
           <div className="space-y-1">
             {tabs.map(tab => {
               const Icon = tab.icon;
@@ -210,8 +210,8 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                   key={tab.id}
                   onClick={() => handleTabChange(tab.id)}
                   className={`w-full flex items-center gap-3 px-3 py-2 rounded transition-lush ${activeTab === tab.id
-                      ? 'bg-[#FFC038]/20 text-[#FFC038]'
-                      : 'text-gray-400 hover:bg-[#FFC038]/10 hover:text-gray-300'
+                      ? 'bg-[#D4AF37]/20 text-[#D4AF37]'
+                      : 'text-gray-400 hover:bg-[#D4AF37]/10 hover:text-gray-300'
                     }`}
                 >
                   <Icon className="w-4 h-4" />
@@ -223,8 +223,8 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
         </div>
 
         <div className="flex-1 flex flex-col">
-          <div className="sticky top-0 bg-[#0a0a00] border-b border-[#FFC038]/20 p-4 flex items-center justify-between">
-            <h2 className="text-xl font-bold text-[#FFC038]">
+          <div className="sticky top-0 bg-[#0a0a00] border-b border-[#D4AF37]/20 p-4 flex items-center justify-between">
+            <h2 className="text-xl font-bold text-[#D4AF37]">
               {tabs.find(t => t.id === activeTab)?.label}
             </h2>
             <button
@@ -232,9 +232,9 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                 setIsClosing(true);
                 setTimeout(() => onClose(), 1300);
               }}
-              className="p-2 hover:bg-[#FFC038]/10 rounded transition-lush"
+              className="p-2 hover:bg-[#D4AF37]/10 rounded transition-lush"
             >
-              <X className="w-5 h-5 text-[#FFC038]" />
+              <X className="w-5 h-5 text-[#D4AF37]" />
             </button>
           </div>
 
@@ -242,7 +242,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
             {activeTab === 'notifications' && (
               <div key="notifications" className={tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}>
                 <section>
-                  <h3 className="text-sm font-semibold text-[#FFC038] mb-3">Alert Configuration</h3>
+                  <h3 className="text-sm font-semibold text-[#D4AF37] mb-3">Alert Configuration</h3>
                   <div className="space-y-3">
                     <Toggle
                       label="Price Alerts"
@@ -268,7 +268,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                 </section>
 
                 <section className="pt-6 border-t border-zinc-800">
-                  <h3 className="text-sm font-semibold text-[#FFC038] mb-3">Healing Bowl Sound</h3>
+                  <h3 className="text-sm font-semibold text-[#D4AF37] mb-3">Healing Bowl Sound</h3>
                   <p className="text-xs text-gray-500 mb-4">
                     Select a sound to play when emotional tilt is detected. Calm sounds are relaxing, shock sounds are alerting.
                   </p>
@@ -277,7 +277,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                       <div
                         key={sound.id}
                         className={`flex items-center justify-between p-3 rounded-lg border transition-all cursor-pointer ${alertConfig.healingBowlSound === sound.id
-                            ? 'bg-[#FFC038]/20 border-[#FFC038]/40'
+                            ? 'bg-[#D4AF37]/20 border-[#D4AF37]/40'
                             : 'bg-[#0a0a00] border-zinc-800 hover:border-zinc-700'
                           }`}
                         onClick={() => setAlertConfig({ ...alertConfig, healingBowlSound: sound.id })}
@@ -301,10 +301,10 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                             e.stopPropagation();
                             healingBowlPlayer.preview(sound.id);
                           }}
-                          className="ml-3 p-2 rounded-lg bg-[#FFC038]/10 border border-[#FFC038]/30 hover:bg-[#FFC038]/20 transition-colors"
+                          className="ml-3 p-2 rounded-lg bg-[#D4AF37]/10 border border-[#D4AF37]/30 hover:bg-[#D4AF37]/20 transition-colors"
                           title="Preview sound"
                         >
-                          <Volume2 className="w-4 h-4 text-[#FFC038]" />
+                          <Volume2 className="w-4 h-4 text-[#D4AF37]" />
                         </button>
                       </div>
                     ))}
@@ -320,8 +320,8 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                 ) : (
                   <>
                     <section>
-                      <h3 className="text-sm font-semibold text-[#FFC038] mb-3">Orientation Status</h3>
-                      <div className="bg-[#050500] border border-[#FFC038]/30 rounded-lg p-4 flex items-center justify-between gap-4">
+                      <h3 className="text-sm font-semibold text-[#D4AF37] mb-3">Orientation Status</h3>
+                      <div className="bg-[#050500] border border-[#D4AF37]/30 rounded-lg p-4 flex items-center justify-between gap-4">
                         <div>
                           <p className="text-sm text-white">
                             {psychProfile?.orientationComplete ? 'Complete' : 'Required'}
@@ -341,7 +341,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                     </section>
 
                     <section className="pt-6 border-t border-zinc-800">
-                      <h3 className="text-sm font-semibold text-[#FFC038] mb-4">Blind Spots & Goal</h3>
+                      <h3 className="text-sm font-semibold text-[#D4AF37] mb-4">Blind Spots & Goal</h3>
                       <div className="space-y-4">
                         {psychBlindSpots.map((spot, idx) => (
                           <div key={idx}>
@@ -356,7 +356,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                                   prev.map((current, sIdx) => (sIdx === idx ? e.target.value : current))
                                 )
                               }
-                              className="w-full bg-[#0a0a00] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#FFC038]/30"
+                              className="w-full bg-[#0a0a00] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#D4AF37]/30"
                               placeholder={
                                 idx === 0
                                   ? 'Example: Oversizing after a streak'
@@ -374,7 +374,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                             value={psychGoal}
                             onChange={(e) => setPsychGoal(e.target.value)}
                             rows={3}
-                            className="w-full bg-[#0a0a00] border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#FFC038]/30 resize-none"
+                            className="w-full bg-[#0a0a00] border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#D4AF37]/30 resize-none"
                             placeholder="Define the outcome Price should reinforce during sessions."
                           />
                         </div>
@@ -406,7 +406,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
             {activeTab === 'trading' && (
               <div key="trading" className={tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}>
                 <section>
-                  <h3 className="text-sm font-semibold text-[#FFC038] mb-4">Risk Management</h3>
+                  <h3 className="text-sm font-semibold text-[#D4AF37] mb-4">Risk Management</h3>
                   <div className="space-y-6">
                     <div>
                       <h4 className="text-sm font-medium text-gray-300 mb-3">Daily Profit Target</h4>
@@ -416,7 +416,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                           type="number"
                           value={riskSettings.dailyProfitTarget}
                           onChange={(e) => setRiskSettings({ ...riskSettings, dailyProfitTarget: parseFloat(e.target.value) || 0 })}
-                          className="flex-1 bg-[#0a0a00] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#FFC038]/30"
+                          className="flex-1 bg-[#0a0a00] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#D4AF37]/30"
                         />
                       </div>
                       <p className="text-xs text-gray-500 mt-2">
@@ -432,7 +432,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                           type="number"
                           value={riskSettings.dailyLossLimit}
                           onChange={(e) => setRiskSettings({ ...riskSettings, dailyLossLimit: parseFloat(e.target.value) || 0 })}
-                          className="flex-1 bg-[#0a0a00] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#FFC038]/30"
+                          className="flex-1 bg-[#0a0a00] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#D4AF37]/30"
                         />
                       </div>
                       <p className="text-xs text-gray-500 mt-2">
@@ -449,7 +449,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                           max="10"
                           value={contractsPerTrade}
                           onChange={(e) => setContractsPerTrade(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
-                          className="flex-1 bg-[#0a0a00] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#FFC038]/30"
+                          className="flex-1 bg-[#0a0a00] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#D4AF37]/30"
                         />
                       </div>
                       <p className="text-xs text-gray-500 mt-2">
@@ -465,7 +465,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                           <select
                             value={riskSettings.maxTrades || 5}
                             onChange={(e) => setRiskSettings({ ...riskSettings, maxTrades: parseInt(e.target.value) })}
-                            className="w-full bg-[#0a0a00] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#FFC038]/30"
+                            className="w-full bg-[#0a0a00] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#D4AF37]/30"
                           >
                             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30].map(num => (
                               <option key={num} value={num}>{num}</option>
@@ -477,7 +477,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                           <select
                             value={riskSettings.overTradingDuration || 15}
                             onChange={(e) => setRiskSettings({ ...riskSettings, overTradingDuration: parseInt(e.target.value) })}
-                            className="w-full bg-[#0a0a00] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#FFC038]/30"
+                            className="w-full bg-[#0a0a00] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#D4AF37]/30"
                           >
                             {[5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60].map(min => (
                               <option key={min} value={min}>{min} min</option>
@@ -498,7 +498,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
             {activeTab === 'general' && (
               <div key="general" className={tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}>
                 <section>
-                  <h3 className="text-sm font-semibold text-[#FFC038] mb-3">Trading Symbol</h3>
+                  <h3 className="text-sm font-semibold text-[#D4AF37] mb-3">Trading Symbol</h3>
                   <div className="relative">
                     {(() => {
                       const symbolKey = selectedSymbol.symbol.replace('/', '');
@@ -507,7 +507,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                         <>
                           <button
                             onClick={() => setShowSymbolDropdown(!showSymbolDropdown)}
-                            className="w-full bg-[#0a0a00] border border-zinc-800 rounded-lg px-4 py-3 text-left hover:border-[#FFC038]/30 focus:outline-none focus:border-[#FFC038]/30 transition-colors"
+                            className="w-full bg-[#0a0a00] border border-zinc-800 rounded-lg px-4 py-3 text-left hover:border-[#D4AF37]/30 focus:outline-none focus:border-[#D4AF37]/30 transition-colors"
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex-1">
@@ -526,7 +526,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                                 className="fixed inset-0 z-10" 
                                 onClick={() => setShowSymbolDropdown(false)}
                               />
-                              <div className="absolute left-0 right-0 top-full mt-1 bg-[#0a0a00] border border-[#FFC038]/30 rounded-lg shadow-xl z-20 max-h-64 overflow-y-auto">
+                              <div className="absolute left-0 right-0 top-full mt-1 bg-[#0a0a00] border border-[#D4AF37]/30 rounded-lg shadow-xl z-20 max-h-64 overflow-y-auto">
                                 {availableSymbols.map(sym => {
                                   const isSelected = sym.symbol === symbolKey;
                                   return (
@@ -539,8 +539,8 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                                         });
                                         setShowSymbolDropdown(false);
                                       }}
-                                      className={`w-full text-left px-4 py-3 hover:bg-[#FFC038]/10 transition-colors border-b border-zinc-800 last:border-b-0 ${
-                                        isSelected ? 'bg-[#FFC038]/20' : ''
+                                      className={`w-full text-left px-4 py-3 hover:bg-[#D4AF37]/10 transition-colors border-b border-zinc-800 last:border-b-0 ${
+                                        isSelected ? 'bg-[#D4AF37]/20' : ''
                                       }`}
                                     >
                                       <div className="text-sm font-bold text-white">{sym.symbol}</div>
@@ -559,14 +559,14 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                 </section>
 
                 <section className="pt-6 border-t border-zinc-800">
-                  <h3 className="text-sm font-semibold text-[#FFC038] mb-3">Billing</h3>
+                  <h3 className="text-sm font-semibold text-[#D4AF37] mb-3">Billing</h3>
                   <div className="space-y-6">
                     <div>
                       <h4 className="text-sm font-medium text-gray-300 mb-3">Current Plan</h4>
-                      <div className="bg-[#050500] border border-[#FFC038]/30 rounded-lg p-4">
+                      <div className="bg-[#050500] border border-[#D4AF37]/30 rounded-lg p-4">
                         <div className="flex items-center justify-between mb-3">
                           <div>
-                            <p className="text-lg font-bold text-[#FFC038]">{tier.replace('_', ' ').toUpperCase()}</p>
+                            <p className="text-lg font-bold text-[#D4AF37]">{tier.replace('_', ' ').toUpperCase()}</p>
                             <p className="text-xs text-gray-500">Active subscription</p>
                           </div>
                           <Button variant="secondary" className="text-xs">
@@ -610,7 +610,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                         ].map((invoice, idx) => (
                           <div
                             key={idx}
-                            className="flex items-center justify-between px-4 py-3 border-b border-zinc-800 last:border-b-0 hover:bg-[#FFC038]/5 transition-colors"
+                            className="flex items-center justify-between px-4 py-3 border-b border-zinc-800 last:border-b-0 hover:bg-[#D4AF37]/5 transition-colors"
                           >
                             <div>
                               <p className="text-sm text-white">{invoice.date}</p>
@@ -618,7 +618,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                             </div>
                             <div className="flex items-center gap-3">
                               <p className="text-sm font-semibold text-white">{invoice.amount}</p>
-                              <button className="text-xs text-[#FFC038] hover:underline">
+                              <button className="text-xs text-[#D4AF37] hover:underline">
                                 Download
                               </button>
                             </div>
@@ -646,7 +646,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
             {activeTab === 'api' && (
               <div key="api" className={tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}>
                 <section>
-                  <h3 className="text-sm font-semibold text-[#FFC038] mb-4">TopstepX Credentials</h3>
+                  <h3 className="text-sm font-semibold text-[#D4AF37] mb-4">TopstepX Credentials</h3>
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm text-gray-300 mb-2">Username</label>
@@ -655,7 +655,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                         value={apiKeys.topstepxUsername || ''}
                         onChange={(e) => setAPIKeys({ ...apiKeys, topstepxUsername: e.target.value })}
                         placeholder="Enter your TopstepX username"
-                        className="w-full bg-[#0a0a00] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#FFC038]/30"
+                        className="w-full bg-[#0a0a00] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#D4AF37]/30"
                       />
                     </div>
                     <div>
@@ -665,11 +665,11 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                         value={apiKeys.topstepxApiKey || ''}
                         onChange={(e) => setAPIKeys({ ...apiKeys, topstepxApiKey: e.target.value })}
                         placeholder="Enter your TopstepX API key"
-                        className="w-full bg-[#0a0a00] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#FFC038]/30"
+                        className="w-full bg-[#0a0a00] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#D4AF37]/30"
                       />
                     </div>
                     <p className="text-xs text-gray-500">
-                      Sign up at <a href="https://topstepx.com" target="_blank" rel="noopener noreferrer" className="text-[#FFC038] hover:underline">topstepx.com</a> and contact support for API access
+                      Sign up at <a href="https://topstepx.com" target="_blank" rel="noopener noreferrer" className="text-[#D4AF37] hover:underline">topstepx.com</a> and contact support for API access
                     </p>
                   </div>
                 </section>
@@ -679,7 +679,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
             {activeTab === 'developer' && (
               <div key="developer" className={tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}>
                 <section>
-                  <h3 className="text-sm font-semibold text-[#FFC038] mb-3">Account Tier</h3>
+                  <h3 className="text-sm font-semibold text-[#D4AF37] mb-3">Account Tier</h3>
                   <div className="flex gap-2">
                     {(['free', 'pulse', 'pulse_plus', 'pulse_pro'] as const).map(t => (
                       <Button
@@ -695,7 +695,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                 </section>
 
                 <section className="pt-6 border-t border-zinc-800">
-                  <h3 className="text-sm font-semibold text-[#FFC038] mb-3">Developer Settings</h3>
+                  <h3 className="text-sm font-semibold text-[#D4AF37] mb-3">Developer Settings</h3>
                   <div className="space-y-3">
                     <Toggle
                       label="Enable Mock Data Feed"
@@ -719,7 +719,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
             )}
           </div>
 
-          <div className="sticky bottom-0 bg-[#0a0a00] border-t border-[#FFC038]/20 p-4">
+          <div className="sticky bottom-0 bg-[#0a0a00] border-t border-[#D4AF37]/20 p-4">
             {saveMessage && (
               <div className={`mb-3 px-4 py-2 rounded text-sm ${saveMessage.includes('success')
                   ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'

@@ -128,17 +128,17 @@ export function AccountTrackerWidget({ currentPnL: propPnL }: AccountTrackerWidg
   const leftPercentage = 50 + clampedPosition;
 
   const getPendulumColor = () => {
-    if (currentPnL >= dailyTarget) return 'bg-[#FFC038]';
+    if (currentPnL >= dailyTarget) return 'bg-[#D4AF37]';
     if (currentPnL <= -lossLimit) return 'bg-red-500';
     if (currentPnL > 0) return 'bg-emerald-400';
     return 'bg-red-400';
   };
 
   return (
-    <div className="bg-[#050500] border border-[#FFC038]/20 rounded-lg p-2.5">
+    <div className="bg-[#050500] border border-[#D4AF37]/20 rounded-lg p-2.5">
       <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-1.5">
-          <h3 className="text-xs font-semibold text-[#FFC038]">Account Tracker</h3>
+          <h3 className="text-xs font-semibold text-[#D4AF37]">Account Tracker</h3>
           {uplinked && (
             <div className="relative">
               <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
@@ -155,12 +155,12 @@ export function AccountTrackerWidget({ currentPnL: propPnL }: AccountTrackerWidg
             <>
               <button
                 onClick={() => setShowAccountDropdown(!showAccountDropdown)}
-                className="w-full px-2 py-1 rounded bg-[#0a0a00] border border-[#FFC038]/30 text-[10px] text-[#FFC038] hover:bg-[#FFC038]/10 transition-colors text-left"
+                className="w-full px-2 py-1 rounded bg-[#0a0a00] border border-[#D4AF37]/30 text-[10px] text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-colors text-left"
               >
                 {projectxAccounts.find(a => a.accountId === selectedAccount)?.accountName || 'Select Account'}
               </button>
               {showAccountDropdown && (
-                <div className="absolute left-0 right-0 top-full mt-1 bg-[#0a0a00] border border-[#FFC038]/30 rounded shadow-lg z-10 min-w-[180px]">
+                <div className="absolute left-0 right-0 top-full mt-1 bg-[#0a0a00] border border-[#D4AF37]/30 rounded shadow-lg z-10 min-w-[180px]">
                   {projectxAccounts.map(account => (
                     <button
                       key={account.accountId}
@@ -168,7 +168,7 @@ export function AccountTrackerWidget({ currentPnL: propPnL }: AccountTrackerWidg
                         setSelectedAccount(account.accountId);
                         setShowAccountDropdown(false);
                       }}
-                      className={`w-full text-left px-3 py-2 text-xs hover:bg-[#FFC038]/10 transition-colors ${selectedAccount === account.accountId ? 'text-[#FFC038]' : 'text-gray-400'
+                      className={`w-full text-left px-3 py-2 text-xs hover:bg-[#D4AF37]/10 transition-colors ${selectedAccount === account.accountId ? 'text-[#D4AF37]' : 'text-gray-400'
                         }`}
                     >
                       <div className="font-medium">{account.accountName}</div>
@@ -194,7 +194,7 @@ export function AccountTrackerWidget({ currentPnL: propPnL }: AccountTrackerWidg
           disabled={uplinking || uplinked}
           className={`w-full px-2 py-1.5 rounded font-medium text-[11px] transition-all flex items-center justify-center gap-1.5 ${uplinked
             ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-            : 'bg-[#FFC038] hover:bg-[#FFC038]/90 text-black border border-[#FFC038]'
+            : 'bg-[#D4AF37] hover:bg-[#D4AF37]/90 text-black border border-[#D4AF37]'
             } disabled:opacity-50 disabled:cursor-not-allowed`}
         >
           <Radio className={`w-3 h-3 ${uplinked ? 'animate-pulse' : ''}`} />
@@ -211,7 +211,7 @@ export function AccountTrackerWidget({ currentPnL: propPnL }: AccountTrackerWidg
       <div className="mb-2 flex justify-between items-baseline">
         <div>
           <p className="text-[10px] text-gray-500">Balance</p>
-          <p className="text-sm font-bold text-[#FFC038]">${balance.toFixed(2)}</p>
+          <p className="text-sm font-bold text-[#D4AF37]">${balance.toFixed(2)}</p>
         </div>
         <div className="text-right">
           <p className="text-[10px] text-gray-500">Current P&L</p>
@@ -251,7 +251,7 @@ export function AccountTrackerWidget({ currentPnL: propPnL }: AccountTrackerWidg
         </div>
         <div className="text-right">
           <p className="text-[10px] text-gray-500">Daily Target</p>
-          <p className="text-xs font-semibold text-[#FFC038]">${dailyTarget}</p>
+          <p className="text-xs font-semibold text-[#D4AF37]">${dailyTarget}</p>
         </div>
       </div>
 

@@ -42,17 +42,17 @@ export function MinimalTapeWidget() {
   }, []);
 
   return (
-    <div className="flex flex-col gap-2 p-2 bg-[#0a0a00] border border-[#FFC038]/20 rounded w-full">
+    <div className="flex flex-col gap-2 p-2 bg-[#0a0a00] border border-[#D4AF37]/20 rounded w-full">
       <div className="text-center">
-        <span className="text-[10px] font-semibold text-[#FFC038]">Tape</span>
+        <span className="text-[10px] font-semibold text-[#D4AF37]">Tape</span>
       </div>
       
       <div className="flex flex-col items-center gap-2 pt-1">
         <div className="text-center">
           <div className="text-xs text-gray-400">{totalItems} items</div>
           {unreadCount > 0 && (
-            <div className="mt-1 backdrop-blur-sm bg-[#FFC038]/20 border border-[#FFC038]/40 rounded px-2 py-0.5 inline-block">
-              <span className="text-[10px] font-mono text-[#FFC038]">{unreadCount} new</span>
+            <div className="mt-1 backdrop-blur-sm bg-[#D4AF37]/20 border border-[#D4AF37]/40 rounded px-2 py-0.5 inline-block">
+              <span className="text-[10px] font-mono text-[#D4AF37]">{unreadCount} new</span>
             </div>
           )}
         </div>

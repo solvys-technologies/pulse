@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { cors } from 'hono/cors';
 import { serve } from '@hono/node-server';
 import { createAiChatRoutes } from './routes/ai-chat.js';
 import { createPsychAssistRoutes } from './routes/psych-assist.js';
@@ -8,6 +9,23 @@ import { createHealthService } from './services/health-service.js';
 const app = new Hono();
 const isDev = process.env.NODE_ENV !== 'production';
 const healthService = createHealthService();
+
+// CORS configuration - allow requests from frontend domains
+app.use('*', cors({
+  origin: [
+    'https://pulse.solvys.io',
+    'https://pulse-solvys.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:5174',
+  ],
+  allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowHeaders: ['Content-Type', 'Authorization', 'X-Request-Id', 'X-Conversation-Id'],
+  exposeHeaders: ['X-Request-Id', 'X-Conversation-Id', 'X-Model', 'X-Provider'],
+  credentials: true,
+  maxAge: 86400,
+}));
 
 const buildRequestId = () => {
   try {

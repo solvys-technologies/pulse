@@ -21,10 +21,10 @@ export function ThreadHistory() {
 
   if (threads.length === 0) {
     return (
-      <div className="bg-[#050500] border border-[#FFC038]/20 rounded-lg p-4">
+      <div className="bg-[#050500] border border-[#D4AF37]/20 rounded-lg p-4">
         <div className="flex items-center gap-2 mb-3">
-          <MessageSquare className="w-4 h-4 text-[#FFC038]" />
-          <h3 className="text-sm font-semibold text-[#FFC038]">Thread History</h3>
+          <MessageSquare className="w-4 h-4 text-[#D4AF37]" />
+          <h3 className="text-sm font-semibold text-[#D4AF37]">Thread History</h3>
         </div>
         <p className="text-xs text-gray-500 text-center py-4">No threads yet</p>
       </div>
@@ -32,10 +32,10 @@ export function ThreadHistory() {
   }
 
   return (
-    <div className="bg-[#050500] border border-[#FFC038]/20 rounded-lg p-4">
+    <div className="bg-[#050500] border border-[#D4AF37]/20 rounded-lg p-4">
       <div className="flex items-center gap-2 mb-3">
-        <MessageSquare className="w-4 h-4 text-[#FFC038]" />
-        <h3 className="text-sm font-semibold text-[#FFC038]">Thread History</h3>
+        <MessageSquare className="w-4 h-4 text-[#D4AF37]" />
+        <h3 className="text-sm font-semibold text-[#D4AF37]">Thread History</h3>
       </div>
       <div className="space-y-2 max-h-64 overflow-y-auto">
         {threads.slice(0, 5).map(thread => (
@@ -44,8 +44,8 @@ export function ThreadHistory() {
             onClick={() => setActiveThreadId(thread.id)}
             className={`w-full text-left p-2 rounded bg-black/30 border transition-colors ${
               activeThreadId === thread.id
-                ? 'border-[#FFC038]/50 bg-[#FFC038]/10'
-                : 'border-[#FFC038]/20 hover:border-[#FFC038]/30 hover:bg-[#FFC038]/5'
+                ? 'border-[#D4AF37]/50 bg-[#D4AF37]/10'
+                : 'border-[#D4AF37]/20 hover:border-[#D4AF37]/30 hover:bg-[#D4AF37]/5'
             }`}
           >
             <div className="flex items-start justify-between gap-2 mb-1">

@@ -25,14 +25,14 @@ export function FeatureLockScreen({
   const currentTierName = currentTier ? tierDisplayNames[currentTier] || currentTier : 'None';
 
   return (
-    <div className="relative bg-[#050500] border border-[#FFC038]/20 rounded-lg p-8 flex flex-col items-center justify-center min-h-[200px]">
+    <div className="relative bg-[#050500] border border-[#D4AF37]/20 rounded-lg p-8 flex flex-col items-center justify-center min-h-[200px]">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm rounded-lg" />
       <div className="relative z-10 flex flex-col items-center gap-4">
-        <Lock className="w-12 h-12 text-[#FFC038]/50" />
+        <Lock className="w-12 h-12 text-[#D4AF37]/50" />
         <div className="text-center">
           <h3 className="text-lg font-semibold text-white mb-2">Feature Locked</h3>
           <p className="text-sm text-gray-400 mb-1">
-            This feature requires <span className="text-[#FFC038] font-semibold">{requiredTierName}</span> tier.
+            This feature requires <span className="text-[#D4AF37] font-semibold">{requiredTierName}</span> tier.
           </p>
           {currentTier && (
             <p className="text-xs text-gray-500">

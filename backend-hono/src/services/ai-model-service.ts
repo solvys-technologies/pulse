@@ -1,4 +1,5 @@
 import { createOpenAI } from '@ai-sdk/openai'
+import { createXai } from '@ai-sdk/xai'
 import { generateText, streamText, type LanguageModel } from 'ai'
 import {
   defaultAiConfig,
@@ -166,6 +167,7 @@ export const createAiModelService = (deps: AiModelServiceDeps = {}) => {
 
   /**
    * Build a Vercel Gateway client (existing behavior)
+   * For xAI models, use @ai-sdk/xai directly to ensure v2 compatibility
    */
   const buildVercelGatewayClient = (modelConfig: AiModelConfig) => {
     const apiKey = resolveApiKey(modelConfig)
@@ -180,6 +182,29 @@ export const createAiModelService = (deps: AiModelServiceDeps = {}) => {
       error.status = 500
       error.statusCode = 500
       throw error
+    }
+
+    // Check if this is an xAI model - use @ai-sdk/xai directly for v2 compatibility
+    if (modelConfig.id.startsWith('xai/')) {
+      // Get xAI API key - try XAI_API_KEY first, then X_BEARER_TOKEN
+      const xaiApiKey = getEnv('XAI_API_KEY') ?? getEnv('X_BEARER_TOKEN')
+      if (!xaiApiKey) {
+        const message = `Missing XAI_API_KEY or X_BEARER_TOKEN for ${modelConfig.displayName}`
+        console.error('[ai] XAI API key missing', {
+          model: modelConfig.displayName
+        })
+        const error = new Error(message) as Error & { status?: number; statusCode?: number }
+        error.status = 500
+        error.statusCode = 500
+        throw error
+      }
+      
+      // Extract the model name without the xai/ prefix
+      const modelId = modelConfig.id.replace('xai/', '')
+      console.info('[ai] using @ai-sdk/xai directly for model', { modelId })
+      
+      const xai = createXai({ apiKey: xaiApiKey })
+      return xai(modelId)
     }
 
     const baseUrl = modelConfig.baseUrl ?? defaultGatewayBaseUrl

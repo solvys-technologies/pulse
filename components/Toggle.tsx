@@ -15,7 +15,7 @@ export default function Toggle({ label, checked, enabled, onChange, className = 
       <button
         onClick={() => onChange(!isOn)}
         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-          isOn ? 'bg-[#FFC038]' : 'bg-gray-700'
+          isOn ? 'bg-[#D4AF37]' : 'bg-gray-700'
         }`}
       >
         <span

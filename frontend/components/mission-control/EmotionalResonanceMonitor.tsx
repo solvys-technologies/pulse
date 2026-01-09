@@ -393,9 +393,9 @@ export function EmotionalResonanceMonitor({ onERScoreChange }: EmotionalResonanc
   }, [isMonitoring, onERScoreChange, erScore, analyser, backend]);
 
   return (
-    <div className="bg-[#050500] border border-[#FFC038]/20 rounded-lg p-2.5">
+    <div className="bg-[#050500] border border-[#D4AF37]/20 rounded-lg p-2.5">
       <div className="flex items-center justify-between mb-1.5">
-        <h3 className="text-xs font-semibold text-[#FFC038]">PsychAssist</h3>
+        <h3 className="text-xs font-semibold text-[#D4AF37]">PsychAssist</h3>
         {isMonitoring ? (
           <Mic className="w-3 h-3 text-emerald-400 animate-pulse" />
         ) : (
@@ -404,7 +404,7 @@ export function EmotionalResonanceMonitor({ onERScoreChange }: EmotionalResonanc
       </div>
 
       <div className="space-y-1.5">
-        <div className="relative h-16 bg-black/50 rounded border border-[#FFC038]/10 overflow-hidden">
+        <div className="relative h-16 bg-black/50 rounded border border-[#D4AF37]/10 overflow-hidden">
           <div className="absolute inset-0 scanline-overlay" />
           {isMonitoring && analyser ? (
             <WaveformCanvas analyser={analyser} tiltMode={resonanceState === 'Tilt'} />

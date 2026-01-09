@@ -129,7 +129,7 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
   return (
     <div className="flex items-center gap-2 w-full">
       {/* Waveform - Landscape oriented */}
-      <div className="relative h-8 flex-1 bg-black/50 rounded border border-[#FFC038]/10 overflow-hidden min-w-[100px]">
+      <div className="relative h-8 flex-1 bg-black/50 rounded border border-[#D4AF37]/10 overflow-hidden min-w-[100px]">
         <div className="absolute inset-0 scanline-overlay opacity-50" />
         {isMonitoring && analyser ? (
           <WaveformCanvas analyser={analyser} tiltMode={resonanceState === 'Tilt'} />

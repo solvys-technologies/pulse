@@ -66,7 +66,7 @@ export function NewsSection() {
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-2xl font-bold text-[#FFC038]">RiskFlow</h2>
+            <h2 className="text-2xl font-bold text-[#D4AF37]">RiskFlow</h2>
             <p className="text-sm text-gray-400 mt-1">
               Real-time market intelligence from leading prediction markets and macroeconomic sources.
             </p>
@@ -109,12 +109,12 @@ export function NewsSection() {
             return (
               <div
                 key={item.id}
-                className="bg-[#050500] border border-[#FFC038]/20 rounded-lg p-4 hover:border-[#FFC038]/40 transition-colors border-b-2"
+                className="bg-[#050500] border border-[#D4AF37]/20 rounded-lg p-4 hover:border-[#D4AF37]/40 transition-colors border-b-2"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs font-semibold text-[#FFC038]">{item.source}</span>
+                      <span className="text-xs font-semibold text-[#D4AF37]">{item.source}</span>
                       <span className={`text-xs px-2 py-0.5 rounded ${item.impact === 'high' ? 'bg-red-500/20 text-red-400' :
                         item.impact === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
                           'bg-blue-500/20 text-blue-400'
@@ -141,7 +141,7 @@ export function NewsSection() {
                           href={item.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs text-[#FFC038] hover:underline"
+                          className="text-xs text-[#D4AF37] hover:underline"
                         >
                           Read more →
                         </a>
@@ -151,7 +151,7 @@ export function NewsSection() {
                 </div>
 
                 {/* Three Mini Cards at Bottom */}
-                <div className="flex gap-2 mt-4 pt-4 border-t border-[#FFC038]/10">
+                <div className="flex gap-2 mt-4 pt-4 border-t border-[#D4AF37]/10">
                   {/* Bullish/Bearish Mini Card - Shows on ALL levels */}
                   <div className={`flex-1 px-3 py-2 rounded text-xs font-semibold text-center ${priceBrain?.sentiment === 'Bullish' ? 'bg-green-500/20 text-green-400' :
                     priceBrain?.sentiment === 'Bearish' ? 'bg-red-500/20 text-red-400' :

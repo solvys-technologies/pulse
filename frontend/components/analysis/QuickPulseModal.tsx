@@ -62,11 +62,11 @@ export default function QuickPulseModal({ isOpen, onClose, onAnalysisComplete }:
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-            <div className="w-full max-w-lg bg-[#0a0a00] border border-[#FFC038]/20 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="w-full max-w-lg bg-[#0a0a00] border border-[#D4AF37]/20 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
 
                 {/* Header */}
-                <div className="p-4 border-b border-[#FFC038]/10 flex items-center justify-between bg-[#FFC038]/5">
-                    <div className="flex items-center gap-2 text-[#FFC038]">
+                <div className="p-4 border-b border-[#D4AF37]/10 flex items-center justify-between bg-[#D4AF37]/5">
+                    <div className="flex items-center gap-2 text-[#D4AF37]">
                         <Activity className="w-5 h-5" />
                         <h3 className="font-semibold text-lg tracking-wide">Quick Pulse Vision</h3>
                     </div>
@@ -84,10 +84,10 @@ export default function QuickPulseModal({ isOpen, onClose, onAnalysisComplete }:
                     {!image ? (
                         <div
                             onClick={() => fileInputRef.current?.click()}
-                            className="border-2 border-dashed border-zinc-700 hover:border-[#FFC038]/50 rounded-xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all hover:bg-[#FFC038]/5 group"
+                            className="border-2 border-dashed border-zinc-700 hover:border-[#D4AF37]/50 rounded-xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all hover:bg-[#D4AF37]/5 group"
                         >
                             <div className="w-12 h-12 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <Upload className="w-6 h-6 text-zinc-400 group-hover:text-[#FFC038]" />
+                                <Upload className="w-6 h-6 text-zinc-400 group-hover:text-[#D4AF37]" />
                             </div>
                             <p className="text-sm text-zinc-300 font-medium">Upload Chart Screenshot</p>
                             <p className="text-xs text-zinc-500">Supports JPG, PNG (Max 5MB)</p>
@@ -123,7 +123,7 @@ export default function QuickPulseModal({ isOpen, onClose, onAnalysisComplete }:
                                 <button
                                     onClick={handleAnalyze}
                                     disabled={loading}
-                                    className="px-6 py-2 bg-[#FFC038] hover:bg-[#FFD060] text-black font-semibold rounded-lg text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-[0_0_15px_rgba(255,192,56,0.3)] hover:shadow-[0_0_20px_rgba(255,192,56,0.5)]"
+                                    className="px-6 py-2 bg-[#D4AF37] hover:bg-[#FFD060] text-black font-semibold rounded-lg text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-[0_0_15px_rgba(255,192,56,0.3)] hover:shadow-[0_0_20px_rgba(255,192,56,0.5)]"
                                 >
                                     {loading ? (
                                         <>
