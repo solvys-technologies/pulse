@@ -8,7 +8,8 @@ import { MainLayout } from './components/layout/MainLayout';
 import { SettingsPanel } from './components/SettingsPanel';
 import { NotificationContainer } from './components/NotificationToast';
 import { PsychOrientationModal } from './components/psych/PsychOrientationModal';
-import { dark } from '@clerk/themes';
+import { AuthShell } from './components/auth/AuthShell';
+import { pulseAppearance } from './components/auth/pulseAppearance';
 // ERProvider removed - using component-based ER monitoring for stability
 
 // Development mode: bypass Clerk authentication ONLY when explicitly enabled
@@ -86,27 +87,14 @@ function AppInner() {
   return (
     <>
       <SignedOut>
-        <div className="min-h-screen bg-black flex items-center justify-center p-4">
+        <AuthShell>
           <SignIn
-            appearance={{
-              baseTheme: dark,
-              elements: {
-                rootBox: 'mx-auto',
-                card: 'bg-zinc-900 border border-[#D4AF37]/20 shadow-[0_0_24px_rgba(255,192,56,0.15)]',
-                headerTitle: 'text-[#D4AF37]',
-                headerSubtitle: 'text-zinc-400',
-                socialButtonsBlockButton: 'bg-zinc-800 border-zinc-700 hover:bg-zinc-700 text-white',
-                formButtonPrimary: 'bg-[#D4AF37] hover:bg-[#D4AF37]/90 text-black',
-                footerActionLink: 'text-[#D4AF37] hover:text-[#D4AF37]/80',
-                formFieldInput: 'bg-zinc-800 border-zinc-700 text-white',
-                formFieldLabel: 'text-zinc-300',
-                dividerLine: 'bg-zinc-700',
-                dividerText: 'text-zinc-500',
-                identityPreviewEditButton: 'text-[#D4AF37]',
-              },
-            }}
+            appearance={pulseAppearance}
+            routing="path"
+            path="/sign-in"
+            signUpUrl="/sign-up"
           />
-        </div>
+        </AuthShell>
       </SignedOut>
       <SignedIn>
         {appContent}
