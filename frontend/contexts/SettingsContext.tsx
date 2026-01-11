@@ -41,6 +41,15 @@ interface TradingSymbol {
 
 interface DeveloperSettings {
   showTestTradeButton: boolean;
+  showMockProposal: boolean;
+}
+
+type AutoPilotMode = 'off' | 'semi' | 'autonomous';
+
+interface AutoPilotSettings {
+  mode: AutoPilotMode;
+  requireConfirmation: boolean;
+  maxDailyProposals: number;
 }
 
 interface SettingsContextType {
@@ -58,6 +67,8 @@ interface SettingsContextType {
   setRiskSettings: (settings: RiskSettings) => void;
   developerSettings: DeveloperSettings;
   setDeveloperSettings: (settings: DeveloperSettings) => void;
+  autoPilotSettings: AutoPilotSettings;
+  setAutoPilotSettings: (settings: AutoPilotSettings) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -119,6 +130,14 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [developerSettings, setDeveloperSettings] = useState<DeveloperSettings>(() =>
     loadFromStorage('developerSettings', {
       showTestTradeButton: false,
+      showMockProposal: false,
+    })
+  );
+  const [autoPilotSettings, setAutoPilotSettings] = useState<AutoPilotSettings>(() =>
+    loadFromStorage('autoPilotSettings', {
+      mode: 'off' as AutoPilotMode,
+      requireConfirmation: true,
+      maxDailyProposals: 5,
     })
   );
 
@@ -132,12 +151,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         selectedSymbol,
         riskSettings,
         developerSettings,
+        autoPilotSettings,
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
     } catch (error) {
       console.error('Failed to persist settings:', error);
     }
-  }, [apiKeys, tradingModels, alertConfig, mockDataEnabled, selectedSymbol, riskSettings, developerSettings]);
+  }, [apiKeys, tradingModels, alertConfig, mockDataEnabled, selectedSymbol, riskSettings, developerSettings, autoPilotSettings]);
 
   return (
     <SettingsContext.Provider
@@ -156,6 +176,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setRiskSettings,
         developerSettings,
         setDeveloperSettings,
+        autoPilotSettings,
+        setAutoPilotSettings,
       }}
     >
       {children}

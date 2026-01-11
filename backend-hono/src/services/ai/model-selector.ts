@@ -29,27 +29,30 @@ const HEALTH_CHECK_TTL_MS = 60_000
 
 /**
  * Task type to model routing
- * Prioritize OpenRouter models since Vercel AI Gateway is not configured
+ * ALL models via OpenRouter:
+ * - News/Sentiment: Grok (via OpenRouter) - excels at real-time news
+ * - Chat/General: Llama 3.3 70B (via OpenRouter) - fast and capable
+ * - Research: Claude Sonnet (via OpenRouter) - best reasoning
  */
 const TASK_MODEL_PREFERENCES: Record<string, AiModelKey[]> = {
-  // News analysis
-  news: ['openrouter-llama', 'openrouter-sonnet'],
-  sentiment: ['openrouter-llama', 'openrouter-sonnet'],
+  // News analysis - Grok via OpenRouter for real-time news
+  news: ['openrouter-grok', 'openrouter-llama', 'openrouter-sonnet'],
+  sentiment: ['openrouter-grok', 'openrouter-llama', 'openrouter-sonnet'],
   
   // Chat - General conversation
-  chat: ['openrouter-llama', 'openrouter-sonnet'],
-  general: ['openrouter-llama', 'openrouter-sonnet'],
+  chat: ['openrouter-llama', 'openrouter-sonnet', 'openrouter-grok'],
+  general: ['openrouter-llama', 'openrouter-sonnet', 'openrouter-grok'],
   
   // Technical analysis - Fast Llama
-  technical: ['openrouter-llama', 'openrouter-sonnet'],
-  quickpulse: ['openrouter-llama', 'openrouter-sonnet'],
+  technical: ['openrouter-llama', 'openrouter-grok', 'openrouter-sonnet'],
+  quickpulse: ['openrouter-llama', 'openrouter-grok', 'openrouter-sonnet'],
   
-  // Deep research - Claude Sonnet
-  research: ['openrouter-sonnet', 'openrouter-llama'],
-  reasoning: ['openrouter-sonnet', 'openrouter-llama'],
+  // Deep research - Claude Sonnet for best reasoning
+  research: ['openrouter-sonnet', 'openrouter-llama', 'openrouter-grok'],
+  reasoning: ['openrouter-sonnet', 'openrouter-llama', 'openrouter-grok'],
   
   // Default fallback chain
-  default: ['openrouter-llama', 'openrouter-sonnet'],
+  default: ['openrouter-llama', 'openrouter-sonnet', 'openrouter-grok'],
 }
 
 /**
