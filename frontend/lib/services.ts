@@ -311,6 +311,55 @@ export class RiskFlowService {
   async fetchVIX(): Promise<{ value: number }> {
     return this.client.get<{ value: number }>('/api/market/vix');
   }
+
+  async getIVAggregate(params?: { instrument?: string; price?: number }): Promise<IVAggregateResponse> {
+    const query = new URLSearchParams();
+    if (params?.instrument) query.append('instrument', params.instrument);
+    if (params?.price) query.append('price', params.price.toString());
+    
+    const queryString = query.toString();
+    const endpoint = `/api/riskflow/iv-aggregate${queryString ? `?${queryString}` : ''}`;
+    return this.client.get<IVAggregateResponse>(endpoint);
+  }
+}
+
+// IV Aggregate Response type
+export interface IVAggregateResponse {
+  score: number;
+  impliedPoints: {
+    impliedPct: number;
+    basePoints: number;
+    adjustedPoints: number;
+    adjustedTicks: number;
+    tickValue: number;
+    dollarRisk: number;
+    instrument: string;
+    beta: number;
+  };
+  session: {
+    name: string;
+    multiplier: number;
+  };
+  vix: {
+    level: number;
+    percentChange: number;
+    isSpike: boolean;
+    spikeDirection: 'up' | 'down' | 'none';
+    multiplier: number;
+    context: string;
+    staleMinutes: number;
+  };
+  activity: {
+    eventCount: number;
+    synergy: boolean;
+    baseline: number;
+    isEarningsSeason: boolean;
+    isFOMCWeek: boolean;
+  };
+  rationale: string[];
+  alert?: string;
+  instrument: string;
+  timestamp: string;
 }
 
 // AI Service
@@ -550,6 +599,63 @@ export class EventsService {
   }
 }
 
+// AutoPilot Service
+export class AutopilotService {
+  constructor(private client: ApiClient) { }
+
+  async generateProposal(data?: {
+    currentPrice?: number;
+    accountSize?: number;
+    currentPnL?: number;
+    vixLevel?: number;
+  }): Promise<{
+    success: boolean;
+    proposal: any | null;
+    hasProposal: boolean;
+    recommendation: any;
+    pipelineLatencyMs: number;
+  }> {
+    return this.client.post('/api/autopilot/generate', data ?? {});
+  }
+
+  async getPendingProposals(): Promise<{ proposals: any[]; total: number }> {
+    return this.client.get('/api/autopilot/proposals');
+  }
+
+  async getProposal(id: string): Promise<{ proposal: any }> {
+    return this.client.get(`/api/autopilot/proposals/${id}`);
+  }
+
+  async acknowledgeProposal(proposalId: string, decision: 'approved' | 'rejected'): Promise<{
+    success: boolean;
+    proposal: any;
+    message: string;
+  }> {
+    return this.client.post('/api/autopilot/acknowledge', { proposalId, decision });
+  }
+
+  async executeProposal(proposalId: string): Promise<{
+    success: boolean;
+    orderId?: string;
+    message: string;
+  }> {
+    return this.client.post('/api/autopilot/execute', { proposalId });
+  }
+
+  async getHistory(params?: { limit?: number; status?: string }): Promise<{
+    proposals: any[];
+    total: number;
+  }> {
+    const query = new URLSearchParams();
+    if (params?.limit) query.append('limit', params.limit.toString());
+    if (params?.status) query.append('status', params.status);
+
+    const queryString = query.toString();
+    const endpoint = `/api/autopilot/history${queryString ? `?${queryString}` : ''}`;
+    return this.client.get(endpoint);
+  }
+}
+
 // Polymarket Service
 export class PolymarketService {
   constructor(private client: ApiClient) { }
@@ -586,6 +692,7 @@ export interface BackendClient {
   er: ERService;
   events: EventsService;
   polymarket: PolymarketService;
+  autopilot: AutopilotService;
 }
 
 // Create backend client from API client
@@ -602,5 +709,6 @@ export function createBackendClient(client: ApiClient): BackendClient {
     er: new ERService(client),
     events: new EventsService(client),
     polymarket: new PolymarketService(client),
+    autopilot: new AutopilotService(client),
   };
 }

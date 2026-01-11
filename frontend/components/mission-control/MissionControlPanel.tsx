@@ -5,6 +5,7 @@ import { ThreadHistory } from './ThreadHistory';
 import { BlindspotsWidget } from './BlindspotsWidget';
 import { AlgoStatusWidget } from './AlgoStatusWidget';
 import { AccountTrackerWidget } from './AccountTrackerWidget';
+import { ProposalQueue } from './ProposalQueue';
 import { MinimalERMeter } from '../MinimalERMeter';
 import { useBackend } from '../../lib/backend';
 import { PanelPosition } from '../layout/DraggablePanel';
@@ -142,6 +143,7 @@ export function MissionControlPanel({
           <BlindspotsWidget />
           <AccountTrackerWidget />
           <AlgoStatusWidget />
+          <ProposalQueue />
           <ThreadHistory />
         </div>
       </div>

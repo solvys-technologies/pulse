@@ -15,6 +15,7 @@ import { createPsychAssistRoutes } from './psych-assist.js';
 import { createAiRoutes } from './ai/index.js';
 import { createAgentRoutes } from './agents/index.js';
 import { createPolymarketRoutes } from './polymarket/index.js';
+import { createAutopilotRoutes } from './autopilot/index.js';
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -38,6 +39,7 @@ export function registerRoutes(app: Hono): void {
   app.use('/api/ai/*', authMiddleware);
   app.use('/api/agents/*', authMiddleware);
   app.use('/api/polymarket/*', authMiddleware);
+  app.use('/api/autopilot/*', authMiddleware);
 
   // Phase 1: Account routes
   app.route('/api/account', createAccountRoutes());
@@ -65,4 +67,7 @@ export function registerRoutes(app: Hono): void {
 
   // Polymarket routes
   app.route('/api/polymarket', createPolymarketRoutes());
+
+  // Phase 7: AutoPilot routes
+  app.route('/api/autopilot', createAutopilotRoutes());
 }
