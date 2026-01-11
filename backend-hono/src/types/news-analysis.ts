@@ -1,9 +1,10 @@
 export type NewsSource =
   | 'FinancialJuice'
   | 'InsiderWire'
-  | 'Reuters'
-  | 'Bloomberg'
-  | 'Grok'
+  | 'EconomicCalendar'
+  | 'TrendSpider'
+  | 'Barchart'
+  | 'Polymarket'
   | 'Custom'
 
 export type UrgencyLevel = 'immediate' | 'high' | 'normal'

@@ -11,6 +11,9 @@ import { analyzeHeadline, type AnalyzedHeadline } from '../analysis/grok-analyze
 import { calculateIVScore } from '../analysis/iv-scorer.js';
 import { broadcastLevel4 } from './sse-broadcaster.js';
 import * as newsCache from './news-cache.js';
+import { fetchEconomicFeed } from './economic-feed.js';
+import { fetchPolymarket } from '../polymarket-service.js';
+import type { PolymarketMarket } from '../../types/polymarket.js';
 import type { NewsSource as AnalysisNewsSource } from '../../types/news-analysis.js';
 
 const MAX_FEED_ITEMS = 50;
@@ -43,15 +46,41 @@ function tweetToFeedItem(tweet: ParsedTweetNews): FeedItem {
 }
 
 /**
+ * Convert Polymarket market to FeedItem
+ */
+function polymarketToFeedItem(market: PolymarketMarket): FeedItem {
+  const macroLevel: MacroLevel =
+    market.probability >= 0.6 ? 3 : 2
+
+  return {
+    id: `poly-${market.id}`,
+    source: 'Polymarket',
+    headline: `${market.title} | ${market.outcome}: ${(market.probability * 100).toFixed(1)}%`,
+    body: market.url,
+    symbols: [],
+    tags: ['POLYMARKET', 'ODDS'],
+    isBreaking: false,
+    urgency: 'high',
+    sentiment: 'neutral',
+    ivScore: undefined,
+    macroLevel,
+    publishedAt: market.closeTime ?? new Date().toISOString(),
+    analyzedAt: new Date().toISOString(),
+  };
+}
+
+/**
  * Map RiskFlow NewsSource to Analysis NewsSource
  */
 function mapToAnalysisSource(source: NewsSource): AnalysisNewsSource {
   const sourceMap: Record<NewsSource, AnalysisNewsSource> = {
-    'FinancialJuice': 'FinancialJuice',
-    'InsiderWire': 'InsiderWire',
-    'Reuters': 'Reuters',
-    'Bloomberg': 'Bloomberg',
-    'Custom': 'Custom',
+    FinancialJuice: 'FinancialJuice',
+    InsiderWire: 'InsiderWire',
+    EconomicCalendar: 'Custom',
+    TrendSpider: 'Custom',
+    Barchart: 'Custom',
+    Polymarket: 'Custom',
+    Custom: 'Custom',
   };
   return sourceMap[source] ?? 'Custom';
 }
@@ -181,13 +210,26 @@ function applyFilters(items: FeedItem[], filters: FeedFilters): FeedItem[] {
 }
 
 /**
- * Fetch fresh feed from X API
+ * Fetch fresh feed from X API + economic prints + Polymarket odds
  */
 async function fetchFreshFeed(): Promise<FeedItem[]> {
   try {
     const xApiService = createXApiService();
-    const tweets = await xApiService.fetchLatestTweets();
-    return tweets.map(tweetToFeedItem);
+    const [tweets, econItems, polyResp] = await Promise.all([
+      xApiService.fetchLatestTweets(),
+      fetchEconomicFeed(),
+      fetchPolymarket().catch(() => ({ markets: [], fetchedAt: new Date().toISOString() })),
+    ]);
+
+    const tweetItems = tweets.map(tweetToFeedItem);
+    const polyItems = polyResp.markets.map(polymarketToFeedItem);
+
+    // Merge and dedupe by id
+    const merged = [...econItems, ...polyItems, ...tweetItems].filter(
+      (item, idx, arr) => idx === arr.findIndex(i => i.id === item.id)
+    );
+
+    return merged;
   } catch (error) {
     console.error('[RiskFlow] X API fetch error:', error);
     return [];
