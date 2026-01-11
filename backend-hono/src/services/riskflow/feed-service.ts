@@ -1,21 +1,28 @@
 /**
  * Feed Service
- * RiskFlow news feed aggregation and filtering
+ * RiskFlow news feed aggregation and filtering with AI analysis
+ * Day 17 - Phase 5 Integration
  */
 
-import type { FeedItem, FeedResponse, FeedFilters, NewsSource, UrgencyLevel } from '../../types/riskflow.js';
+import type { FeedItem, FeedResponse, FeedFilters, NewsSource, UrgencyLevel, SentimentDirection } from '../../types/riskflow.js';
 import { createXApiService, type ParsedTweetNews } from '../x-api-service.js';
 import { getWatchlist, matchesWatchlist } from './watchlist-service.js';
+import { analyzeHeadline, type AnalyzedHeadline } from '../analysis/grok-analyzer.js';
+import { calculateIVScore } from '../analysis/iv-scorer.js';
+import type { NewsSource as AnalysisNewsSource } from '../../types/news-analysis.js';
 
 const MAX_FEED_ITEMS = 50;
 const isDev = process.env.NODE_ENV !== 'production';
+
+// Enable/disable AI analysis (can be toggled via env)
+const ENABLE_AI_ANALYSIS = process.env.ENABLE_AI_ANALYSIS !== 'false';
 
 // In-memory cache for feed items
 let feedCache: { items: FeedItem[]; fetchedAt: number } | null = null;
 const CACHE_TTL_MS = 60_000; // 1 minute
 
 /**
- * Convert X API tweet to FeedItem
+ * Convert X API tweet to FeedItem (base conversion)
  */
 function tweetToFeedItem(tweet: ParsedTweetNews): FeedItem {
   return {
@@ -29,6 +36,93 @@ function tweetToFeedItem(tweet: ParsedTweetNews): FeedItem {
     urgency: determineUrgency(tweet),
     publishedAt: tweet.publishedAt,
   };
+}
+
+/**
+ * Map RiskFlow NewsSource to Analysis NewsSource
+ */
+function mapToAnalysisSource(source: NewsSource): AnalysisNewsSource {
+  const sourceMap: Record<NewsSource, AnalysisNewsSource> = {
+    'FinancialJuice': 'FinancialJuice',
+    'InsiderWire': 'InsiderWire',
+    'Reuters': 'Reuters',
+    'Bloomberg': 'Bloomberg',
+    'Custom': 'Custom',
+  };
+  return sourceMap[source] ?? 'Custom';
+}
+
+/**
+ * Enrich a feed item with AI analysis
+ */
+async function enrichWithAnalysis(item: FeedItem): Promise<FeedItem> {
+  try {
+    const analysisSource = mapToAnalysisSource(item.source);
+    const analyzed = await analyzeHeadline(item.headline, analysisSource);
+    
+    // Calculate IV score using parsed data
+    const ivResult = calculateIVScore({
+      parsed: analyzed.parsed,
+      hotPrint: analyzed.hotPrint,
+      timestamp: new Date(item.publishedAt),
+    });
+
+    return {
+      ...item,
+      // Merge symbols from analysis if more comprehensive
+      symbols: analyzed.parsed.symbols.length > item.symbols.length 
+        ? analyzed.parsed.symbols 
+        : item.symbols,
+      // Merge tags
+      tags: [...new Set([...item.tags, ...analyzed.parsed.tags])],
+      // Use analysis breaking status if different
+      isBreaking: item.isBreaking || analyzed.parsed.isBreaking,
+      // Use analysis urgency if higher priority
+      urgency: getHigherUrgency(item.urgency, analyzed.parsed.urgency),
+      // Add sentiment
+      sentiment: ivResult.sentiment as SentimentDirection,
+      // Add IV score
+      ivScore: ivResult.score,
+      // Add analyzed timestamp
+      analyzedAt: new Date().toISOString(),
+    };
+  } catch (error) {
+    console.error('[RiskFlow] Analysis enrichment failed for item:', item.id, error);
+    return item;
+  }
+}
+
+/**
+ * Get higher priority urgency
+ */
+function getHigherUrgency(a: UrgencyLevel, b: UrgencyLevel): UrgencyLevel {
+  const priority: Record<UrgencyLevel, number> = {
+    'immediate': 3,
+    'high': 2,
+    'normal': 1,
+  };
+  return priority[a] >= priority[b] ? a : b;
+}
+
+/**
+ * Batch enrich feed items with analysis
+ */
+async function enrichFeedWithAnalysis(items: FeedItem[]): Promise<FeedItem[]> {
+  if (!ENABLE_AI_ANALYSIS || items.length === 0) {
+    return items;
+  }
+
+  // Process in parallel with concurrency limit
+  const CONCURRENCY = 5;
+  const enriched: FeedItem[] = [];
+  
+  for (let i = 0; i < items.length; i += CONCURRENCY) {
+    const batch = items.slice(i, i + CONCURRENCY);
+    const results = await Promise.all(batch.map(enrichWithAnalysis));
+    enriched.push(...results);
+  }
+
+  return enriched;
 }
 
 /**
@@ -157,7 +251,7 @@ function generateMockFeed(): FeedItem[] {
 }
 
 /**
- * Get feed items with caching
+ * Get feed items with caching and AI analysis
  */
 async function getCachedFeed(): Promise<FeedItem[]> {
   // Check cache validity
@@ -167,25 +261,30 @@ async function getCachedFeed(): Promise<FeedItem[]> {
 
   // In dev mode without X API token, use mock data
   if (isDev && !process.env.X_API_BEARER_TOKEN) {
-    const items = generateMockFeed();
-    feedCache = { items, fetchedAt: Date.now() };
-    return items;
+    const mockItems = generateMockFeed();
+    // Enrich mock data with analysis for realistic testing
+    const enrichedItems = await enrichFeedWithAnalysis(mockItems);
+    feedCache = { items: enrichedItems, fetchedAt: Date.now() };
+    return enrichedItems;
   }
 
   // Fetch fresh data
-  const items = await fetchFreshFeed();
+  const rawItems = await fetchFreshFeed();
 
   // If fetch failed and we have stale cache, use it
-  if (items.length === 0 && feedCache) {
+  if (rawItems.length === 0 && feedCache) {
     return feedCache.items;
   }
 
+  // Enrich with AI analysis
+  const enrichedItems = await enrichFeedWithAnalysis(rawItems);
+
   // Update cache
-  if (items.length > 0) {
-    feedCache = { items, fetchedAt: Date.now() };
+  if (enrichedItems.length > 0) {
+    feedCache = { items: enrichedItems, fetchedAt: Date.now() };
   }
 
-  return items;
+  return enrichedItems;
 }
 
 /**

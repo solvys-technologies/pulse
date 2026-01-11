@@ -5,10 +5,10 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { serve } from '@hono/node-server';
-import { corsConfig } from './config/cors.js.js';
-import { getEnvConfig, isDev } from './config/env.js.js';
-import { registerRoutes } from './routes/index.js.js';
-import { createHealthService } from './services/health-service.js.js';
+import { corsConfig } from './config/cors.js';
+import { getEnvConfig, isDev } from './config/env.js';
+import { registerRoutes } from './routes/index.js';
+import { createHealthService } from './services/health-service.js';
 const app = new Hono();
 const healthService = createHealthService();
 const config = getEnvConfig();

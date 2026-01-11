@@ -12,6 +12,8 @@ import { createTradingRoutes } from './trading/index.js';
 import { createProjectXRoutes } from './projectx/index.js';
 import { createRiskFlowRoutes } from './riskflow/index.js';
 import { createPsychAssistRoutes } from './psych-assist.js';
+import { createAiRoutes } from './ai/index.js';
+import { createAgentRoutes } from './agents/index.js';
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -25,6 +27,8 @@ export function registerRoutes(app: Hono): void {
   app.use('/api/projectx/*', authMiddleware);
   app.use('/api/riskflow/*', authMiddleware);
   app.use('/api/psych/*', authMiddleware);
+  app.use('/api/ai/*', authMiddleware);
+  app.use('/api/agents/*', authMiddleware);
 
   // Phase 1: Account routes
   app.route('/api/account', createAccountRoutes());
@@ -44,7 +48,9 @@ export function registerRoutes(app: Hono): void {
   // Psych assist routes (existing)
   app.route('/api/psych', createPsychAssistRoutes());
 
-  // Placeholder routes - return proper 501 Not Implemented
-  app.all('/api/ai/*', (c) => c.json({ error: 'Not implemented yet' }, 501));
-  app.all('/api/agents/*', (c) => c.json({ error: 'Not implemented yet' }, 501));
+  // Phase 5: AI routes
+  app.route('/api/ai', createAiRoutes());
+
+  // Phase 6: Agent routes
+  app.route('/api/agents', createAgentRoutes());
 }
