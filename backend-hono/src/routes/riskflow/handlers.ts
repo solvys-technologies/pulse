@@ -7,6 +7,7 @@ import type { Context } from 'hono';
 import * as feedService from '../../services/riskflow/feed-service.js';
 import * as watchlistService from '../../services/riskflow/watchlist-service.js';
 import { addClient, removeClient } from '../../services/riskflow/sse-broadcaster.js';
+import { corsConfig } from '../../config/cors.js';
 import type { FeedFilters, WatchlistUpdateRequest, NewsSource } from '../../types/riskflow.js';
 
 /**
@@ -218,10 +219,17 @@ export async function handleRemoveSymbols(c: Context) {
 /**
  * GET /api/riskflow/stream
  * SSE stream for Level 4 alerts
+ * Note: EventSource doesn't support custom headers, so auth token is passed via query param
  */
 export async function handleBreakingStream(c: Context) {
   const userId = c.get('userId') || 'anonymous';
   let heartbeatId: ReturnType<typeof setInterval> | null = null;
+
+  // Get origin from request for CORS
+  const origin = c.req.header('origin') || c.req.header('Origin');
+  // Check if origin is in allowed list, otherwise use first allowed origin
+  const allowedOrigins = Array.isArray(corsConfig.origin) ? corsConfig.origin : [corsConfig.origin];
+  const allowedOrigin = origin && allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
 
   const stream = new ReadableStream({
     start(controller) {
@@ -248,7 +256,11 @@ export async function handleBreakingStream(c: Context) {
     headers: {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
-      Connection: 'keep-alive',
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Origin': allowedOrigin,
+      'Access-Control-Allow-Credentials': 'true',
+      'Access-Control-Allow-Headers': 'Cache-Control',
+      'X-Accel-Buffering': 'no', // Disable buffering in nginx/proxy
     },
   });
 }
