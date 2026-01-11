@@ -13,6 +13,7 @@ const healthService = createHealthService();
 // CORS configuration - allow requests from frontend domains
 app.use('*', cors({
   origin: [
+    'https://app.pricedinresearch.io',
     'https://pulse.solvys.io',
     'https://pulse-solvys.vercel.app',
     'http://localhost:5173',
