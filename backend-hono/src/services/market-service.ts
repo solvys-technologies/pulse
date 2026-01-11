@@ -10,6 +10,7 @@ export interface VixData {
   changePercent: number;
   timestamp: string;
   source: 'fmp' | 'mock';
+  stale?: boolean; // Flag indicating data may be stale (e.g., market closed)
 }
 
 export interface QuoteData {
@@ -44,25 +45,35 @@ async function fetchVixFromFmp(): Promise<VixData | null> {
     const response = await fetch(url);
 
     if (!response.ok) {
-      console.error('[Market] FMP API error:', response.status);
+      console.error('[Market] FMP API error:', response.status, response.statusText);
       return null;
     }
 
     const data = await response.json();
 
+    // Handle empty response (market may be closed)
     if (!Array.isArray(data) || data.length === 0) {
-      console.error('[Market] Invalid FMP response format');
+      console.warn('[Market] FMP returned empty data (market may be closed)');
       return null;
     }
 
     const quote = data[0];
+    
+    // If price is null/undefined, try previousClose (market closed scenario)
+    const vixValue = quote.price ?? quote.previousClose;
+    if (vixValue === null || vixValue === undefined) {
+      console.warn('[Market] FMP quote missing price and previousClose');
+      return null;
+    }
+
     return {
       symbol: 'VIX',
-      value: quote.price ?? quote.previousClose ?? 0,
+      value: vixValue,
       change: quote.change ?? 0,
       changePercent: quote.changesPercentage ?? 0,
       timestamp: new Date().toISOString(),
       source: 'fmp',
+      stale: quote.price === null || quote.price === undefined, // Mark as stale if using previousClose
     };
   } catch (error) {
     console.error('[Market] FMP fetch failed:', error);
@@ -72,10 +83,10 @@ async function fetchVixFromFmp(): Promise<VixData | null> {
 
 /**
  * Get current VIX value
- * Uses FMP API only (no mock fallback)
+ * Uses FMP API with fallback to cached data when market is closed
  */
 export async function getVix(): Promise<VixData> {
-  // Check cache first
+  // Check cache first (if still valid)
   if (vixCache && Date.now() < vixCache.expiresAt) {
     return vixCache.data;
   }
@@ -91,7 +102,18 @@ export async function getVix(): Promise<VixData> {
     return fmpData;
   }
 
-  throw new Error('VIX data unavailable (FMP_API_KEY missing or fetch failed)');
+  // If FMP fetch failed but we have cached data, return it with stale flag
+  // This handles market closed scenarios gracefully
+  if (vixCache) {
+    console.warn('[Market] FMP unavailable, returning cached VIX data (may be stale)');
+    return {
+      ...vixCache.data,
+      stale: true,
+    };
+  }
+
+  // No cache and FMP failed - this is a real error
+  throw new Error('VIX data unavailable (FMP_API_KEY missing or fetch failed, no cache available)');
 }
 
 /**

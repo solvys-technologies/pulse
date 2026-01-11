@@ -2,12 +2,23 @@ import type { Context, Next } from 'hono';
 import { ClerkConfigError, verifyClerkToken } from '../services/clerk-auth.js';
 
 const getBearerToken = (c: Context) => {
+  // First try Authorization header (standard)
   const authHeader = c.req.header('authorization') || '';
   const [type, token] = authHeader.split(' ');
-  if (type?.toLowerCase() !== 'bearer' || !token) {
-    return null;
+  if (type?.toLowerCase() === 'bearer' && token) {
+    return token.trim();
   }
-  return token.trim();
+  
+  // For SSE endpoints, EventSource can't send headers, so check query param
+  // This is less secure but necessary for EventSource compatibility
+  if (c.req.path.includes('/stream')) {
+    const queryToken = c.req.query('token');
+    if (queryToken) {
+      return queryToken.trim();
+    }
+  }
+  
+  return null;
 };
 
 const buildUnauthorizedResponse = (c: Context, details?: string) =>
