@@ -7,6 +7,7 @@ import { Hono } from 'hono';
 import {
   handleGetFeed,
   handleGetBreaking,
+  handlePreload,
   handleGetWatchlist,
   handleUpdateWatchlist,
   handleAddSymbols,
@@ -21,6 +22,9 @@ export function createRiskFlowRoutes(): Hono {
 
   // GET /api/riskflow/breaking - Get breaking news only
   router.get('/breaking', handleGetBreaking);
+
+  // GET /api/riskflow/preload - Pre-load 15 tweets, last 48h, level 3+
+  router.get('/preload', handlePreload);
 
   // GET /api/riskflow/watchlist - Get user watchlist
   router.get('/watchlist', handleGetWatchlist);

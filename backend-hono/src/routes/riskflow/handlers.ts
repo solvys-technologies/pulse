@@ -77,6 +77,33 @@ export async function handleGetBreaking(c: Context) {
 }
 
 /**
+ * GET /api/riskflow/preload
+ * Pre-load 15 tweets from last 48 hours, level 3+ only
+ */
+export async function handlePreload(c: Context) {
+  const userId = c.get('userId') as string | undefined;
+
+  if (!userId) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  try {
+    const feed = await feedService.getFeed(userId, {
+      limit: 15,
+      minMacroLevel: 3,
+    });
+    return c.json({
+      ...feed,
+      preloaded: true,
+      timeWindow: '48h',
+    });
+  } catch (error) {
+    console.error('[RiskFlow] Preload error:', error);
+    return c.json({ error: 'Failed to preload feed' }, 500);
+  }
+}
+
+/**
  * GET /api/riskflow/watchlist
  * Get user watchlist
  */

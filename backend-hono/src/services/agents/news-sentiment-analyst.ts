@@ -16,12 +16,15 @@ Analyze the provided news headlines and return a JSON report with this structure
 {
   "overallSentiment": "bullish" | "bearish" | "neutral",
   "sentimentScore": number (-1 to +1, where -1 is extremely bearish, +1 is extremely bullish),
+  "macroLevel": number (1-4 urgency tier: 4=breaking/extreme, 3=high impact, 2=moderate, 1=routine),
+  "breakingNewsDetected": boolean,
   "topHeadlines": [
     {
       "headline": "string",
       "source": "string",
       "sentiment": "bullish" | "bearish" | "neutral",
       "ivScore": number (0-10 for implied volatility impact),
+      "macroLevel": number (1-4),
       "publishedAt": "ISO timestamp"
     }
   ],
@@ -37,8 +40,14 @@ Analyze the provided news headlines and return a JSON report with this structure
   "summary": "2-3 sentence summary of news sentiment and key catalysts"
 }
 
+Macro Level Classification (4-tier):
+- Level 4: Breaking news, FOMC decisions, major economic surprises, IV >= 8
+- Level 3: High impact scheduled events (CPI, NFP), IV 6-8
+- Level 2: Moderate impact (earnings, Fed speakers), IV 4-6
+- Level 1: Routine news, sector chatter, IV < 4
+
 Focus on:
-1. Breaking news that could move markets
+1. Breaking news that could move markets (Level 4)
 2. Scheduled events (Fed, earnings, economic data)
 3. Geopolitical developments
 4. Sector-specific news affecting tech/NASDAQ

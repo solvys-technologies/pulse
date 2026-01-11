@@ -68,11 +68,14 @@ export interface MarketDataReport {
 export interface NewsSentimentReport {
   overallSentiment: Sentiment
   sentimentScore: number // -1 to +1
+  macroLevel: 1 | 2 | 3 | 4 // 4-tier urgency system
+  breakingNewsDetected: boolean
   topHeadlines: {
     headline: string
     source: string
     sentiment: Sentiment
     ivScore: number
+    macroLevel: 1 | 2 | 3 | 4
     publishedAt: string
   }[]
   catalysts: {
@@ -161,10 +164,24 @@ export interface DebateResult {
   createdAt: string
 }
 
+// Trading strategies
+export type TradingStrategy = 
+  | 'MORNING_FLUSH'
+  | 'LUNCH_FLUSH'
+  | 'POWER_HOUR_FLUSH'
+  | 'VIX_FIX_22'
+  | 'FORTY_FORTY_CLUB'
+  | 'MOMENTUM'
+  | 'CHARGED_RIPPERS'
+  | 'MEAN_REVERSION'
+  | 'DISCRETIONARY'
+
 // Trading proposal from Trader agent
 export interface TradingProposal {
   id: string
   userId: string
+  tradeRecommended: boolean
+  strategyName: TradingStrategy
   instrument: string
   direction: 'long' | 'short' | 'flat'
   entryPrice?: number

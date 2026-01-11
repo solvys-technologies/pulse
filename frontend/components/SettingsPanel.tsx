@@ -31,6 +31,8 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
     setRiskSettings,
     developerSettings,
     setDeveloperSettings,
+    autoPilotSettings,
+    setAutoPilotSettings,
   } = useSettings();
   const backend = useBackend();
   const [contractsPerTrade, setContractsPerTrade] = useState<number>(1);
@@ -364,6 +366,42 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                   <h2 className="text-lg font-semibold text-[#D4AF37] mb-4">Autopilot</h2>
 
                   <div className="space-y-6">
+                    {/* AutoPilot Mode Selector */}
+                    <div>
+                      <h4 className="text-sm font-semibold text-[#D4AF37] mb-3">Autopilot Mode</h4>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { value: 'off', label: 'Off', desc: 'Manual trading only' },
+                          { value: 'semi', label: 'Semi-Auto', desc: 'Proposals require approval' },
+                          { value: 'autonomous', label: 'Autonomous', desc: 'Auto-execute trades' },
+                        ].map(mode => (
+                          <button
+                            key={mode.value}
+                            onClick={() => setAutoPilotSettings({ 
+                              ...autoPilotSettings, 
+                              mode: mode.value as 'off' | 'semi' | 'autonomous',
+                              requireConfirmation: mode.value !== 'autonomous'
+                            })}
+                            className={`p-3 rounded-lg border text-left transition-all ${
+                              autoPilotSettings.mode === mode.value
+                                ? 'bg-[#D4AF37]/20 border-[#D4AF37]/40'
+                                : 'bg-[#050500] border-zinc-800 hover:border-zinc-700'
+                            }`}
+                          >
+                            <div className={`text-sm font-medium ${autoPilotSettings.mode === mode.value ? 'text-[#D4AF37]' : 'text-white'}`}>
+                              {mode.label}
+                            </div>
+                            <div className="text-[10px] text-gray-500">{mode.desc}</div>
+                          </button>
+                        ))}
+                      </div>
+                      {autoPilotSettings.mode === 'autonomous' && (
+                        <div className="mt-2 p-2 bg-red-500/10 border border-red-500/30 rounded text-xs text-red-400">
+                          ⚠️ Autonomous mode will execute trades automatically without confirmation
+                        </div>
+                      )}
+                    </div>
+
                     <div>
                       <h4 className="text-sm font-semibold text-[#D4AF37] mb-3">Price Action Strategies</h4>
                       <div className="space-y-3">
@@ -646,6 +684,14 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                     />
                     <p className="text-xs text-gray-500">
                       Display test trade button for firing mock market orders to TopstepX
+                    </p>
+                    <Toggle
+                      label="Show Mock Proposal Trigger"
+                      enabled={developerSettings.showMockProposal}
+                      onChange={(val) => setDeveloperSettings({ ...developerSettings, showMockProposal: val })}
+                    />
+                    <p className="text-xs text-gray-500">
+                      Show a button on the Tape to trigger a mock trading proposal for UX testing
                     </p>
                   </div>
                 </section>

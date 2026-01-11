@@ -9,6 +9,7 @@ import { createXApiService, type ParsedTweetNews } from '../x-api-service.js';
 import { getWatchlist, matchesWatchlist } from './watchlist-service.js';
 import { analyzeHeadline, type AnalyzedHeadline } from '../analysis/grok-analyzer.js';
 import { calculateIVScore } from '../analysis/iv-scorer.js';
+import * as newsCache from './news-cache.js';
 import type { NewsSource as AnalysisNewsSource } from '../../types/news-analysis.js';
 
 const MAX_FEED_ITEMS = 50;
@@ -17,9 +18,11 @@ const isDev = process.env.NODE_ENV !== 'production';
 // Enable/disable AI analysis (can be toggled via env)
 const ENABLE_AI_ANALYSIS = process.env.ENABLE_AI_ANALYSIS !== 'false';
 
-// In-memory cache for feed items
+// In-memory cache (short-term) - DB cache is primary
 let feedCache: { items: FeedItem[]; fetchedAt: number } | null = null;
-const CACHE_TTL_MS = 60_000; // 1 minute
+const CACHE_TTL_MS = 60_000; // 1 minute (for in-memory)
+const FETCH_INTERVAL_MS = 5 * 60_000; // 5 minutes between X API calls
+let lastXApiFetch: number = 0;
 
 /**
  * Convert X API tweet to FeedItem (base conversion)
@@ -258,10 +261,11 @@ function generateMockFeed(): FeedItem[] {
 }
 
 /**
- * Get feed items with caching and AI analysis
+ * Get feed items with database caching (shared across all users)
+ * Only fetches from X API if enough time has passed
  */
 async function getCachedFeed(): Promise<FeedItem[]> {
-  // Check cache validity
+  // Check in-memory cache first (fast path)
   if (feedCache && Date.now() - feedCache.fetchedAt < CACHE_TTL_MS) {
     return feedCache.items;
   }
@@ -269,29 +273,61 @@ async function getCachedFeed(): Promise<FeedItem[]> {
   // In dev mode without X API token, use mock data
   if (isDev && !process.env.X_API_BEARER_TOKEN) {
     const mockItems = generateMockFeed();
-    // Enrich mock data with analysis for realistic testing
     const enrichedItems = await enrichFeedWithAnalysis(mockItems);
     feedCache = { items: enrichedItems, fetchedAt: Date.now() };
     return enrichedItems;
   }
 
-  // Fetch fresh data
+  // Try to get from database first (shared across users)
+  const dbItems = await newsCache.getCachedFeed({ 
+    limit: MAX_FEED_ITEMS, 
+    hoursBack: 48 
+  });
+
+  // Check if we need to fetch fresh data from X API
+  const shouldFetchFresh = Date.now() - lastXApiFetch >= FETCH_INTERVAL_MS;
+
+  if (dbItems.length >= 15 && !shouldFetchFresh) {
+    // Use database cache
+    feedCache = { items: dbItems, fetchedAt: Date.now() };
+    return dbItems;
+  }
+
+  // Fetch fresh data from X API
+  console.log('[RiskFlow] Fetching fresh data from X API...');
+  lastXApiFetch = Date.now();
+  
   const rawItems = await fetchFreshFeed();
 
-  // If fetch failed and we have stale cache, use it
-  if (rawItems.length === 0 && feedCache) {
-    return feedCache.items;
+  // If fetch failed, use database cache
+  if (rawItems.length === 0 && dbItems.length > 0) {
+    feedCache = { items: dbItems, fetchedAt: Date.now() };
+    return dbItems;
   }
 
-  // Enrich with AI analysis
-  const enrichedItems = await enrichFeedWithAnalysis(rawItems);
+  // Check which items are already in cache
+  const existingIds = await newsCache.getCachedTweetIds(rawItems.map(i => i.id));
+  const newItems = rawItems.filter(item => !existingIds.has(item.id));
 
-  // Update cache
-  if (enrichedItems.length > 0) {
-    feedCache = { items: enrichedItems, fetchedAt: Date.now() };
+  console.log(`[RiskFlow] ${newItems.length} new items to analyze (${existingIds.size} already cached)`);
+
+  // Only analyze new items
+  let enrichedNewItems: FeedItem[] = [];
+  if (newItems.length > 0) {
+    enrichedNewItems = await enrichFeedWithAnalysis(newItems);
+    // Store new items in database
+    await newsCache.storeFeedItems(enrichedNewItems);
   }
 
-  return enrichedItems;
+  // Merge new items with existing database items
+  const allItems = [...enrichedNewItems, ...dbItems]
+    .filter((item, index, self) => 
+      index === self.findIndex(i => i.id === item.id)
+    )
+    .slice(0, MAX_FEED_ITEMS);
+
+  feedCache = { items: allItems, fetchedAt: Date.now() };
+  return allItems;
 }
 
 /**

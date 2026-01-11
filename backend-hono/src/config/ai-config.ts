@@ -15,7 +15,9 @@ export type AiModelKey =
   | 'groq'
   // OpenRouter alternative routes
   | 'openrouter-sonnet'  // Claude Sonnet 4.5 via OpenRouter
+  | 'openrouter-opus'    // Claude Opus 4.5 via OpenRouter
   | 'openrouter-llama'   // Llama 3.3 70B via OpenRouter
+  | 'openrouter-grok'    // Grok 4.1 via OpenRouter
 
 export type AiProvider = 'openai-compatible'
 
@@ -96,8 +98,11 @@ const modelAliases: Record<string, AiModelKey> = {
   // OpenRouter alternative routes
   'openrouter-sonnet': 'openrouter-sonnet',
   'openrouter-claude': 'openrouter-sonnet',
+  'openrouter-opus': 'openrouter-opus',
   'openrouter-llama': 'openrouter-llama',
-  'llama-70b': 'openrouter-llama'
+  'llama-70b': 'openrouter-llama',
+  'openrouter-grok': 'openrouter-grok',
+  'grok-openrouter': 'openrouter-grok'
 }
 
 export const resolveModelKey = (value?: string): AiModelKey | undefined => {
@@ -200,51 +205,80 @@ export const defaultAiConfig: AiConfig = {
       temperature: 0.25,
       maxTokens: 2048,
       timeoutMs: 30_000,
-      // OpenRouter pricing for Llama 3.3 70B
       costPer1kInputUsd: 0.00012,
       costPer1kOutputUsd: 0.0003,
       contextWindow: 128_000,
       supportsStreaming: true,
       supportsVision: false
+    },
+    'openrouter-grok': {
+      id: 'x-ai/grok-4',
+      displayName: 'Grok 4.1 (OpenRouter)',
+      provider: 'openai-compatible',
+      providerType: 'openrouter',
+      apiKeyEnv: 'OPENROUTER_API_KEY',
+      baseUrl: openRouterBaseUrl,
+      temperature: 0.3,
+      maxTokens: 4096,
+      timeoutMs: 45_000,
+      costPer1kInputUsd: 0.003,
+      costPer1kOutputUsd: 0.015,
+      contextWindow: 128_000,
+      supportsStreaming: true,
+      supportsVision: false
+    },
+    'openrouter-opus': {
+      id: 'anthropic/claude-opus-4',
+      displayName: 'Claude Opus 4.5 (OpenRouter)',
+      provider: 'openai-compatible',
+      providerType: 'openrouter',
+      apiKeyEnv: 'OPENROUTER_API_KEY',
+      baseUrl: openRouterBaseUrl,
+      temperature: 0.4,
+      maxTokens: 8192,
+      timeoutMs: 90_000,
+      costPer1kInputUsd: 0.015,
+      costPer1kOutputUsd: 0.075,
+      contextWindow: 200_000,
+      supportsStreaming: true,
+      supportsVision: true
     }
   },
 
   routing: {
     defaultModel,
     taskModelMap: {
-      // Fast technical analysis - Groq Llama via Vercel
-      analysis: 'groq',
-      // Deep research - Sonnet via Vercel
-      research: 'sonnet',
-      // Complex reasoning - Sonnet via Vercel
-      reasoning: 'sonnet',
-      // Ultra-fast technical via Groq
-      technical: 'groq',
-      'quick-pulse': 'groq',
-      quickpulse: 'groq',
-      // Real-time news via xAI Grok
-      news: 'grok',
-      // Sentiment analysis via Grok
-      sentiment: 'grok',
-      // General chat via Grok
-      chat: 'grok',
-      general: 'grok'
+      // All models via OpenRouter
+      // Fast technical analysis
+      analysis: 'openrouter-llama',
+      // Deep research - Claude Opus 4.5
+      research: 'openrouter-opus',
+      // Complex reasoning - Claude Opus 4.5
+      reasoning: 'openrouter-opus',
+      // Ultra-fast technical - Llama
+      technical: 'openrouter-llama',
+      'quick-pulse': 'openrouter-llama',
+      quickpulse: 'openrouter-llama',
+      // Real-time news via Grok 4.1
+      news: 'openrouter-grok',
+      // Sentiment analysis via Grok 4.1
+      sentiment: 'openrouter-grok',
+      // General chat via Llama
+      chat: 'openrouter-llama',
+      general: 'openrouter-llama'
     },
-    // Same-provider fallback chain
+    // OpenRouter-only fallback chain
     fallbackMap: {
-      sonnet: 'grok',
-      grok: 'groq',
-      groq: 'sonnet',
+      sonnet: 'openrouter-sonnet',
+      grok: 'openrouter-grok',
+      groq: 'openrouter-llama',
       'openrouter-sonnet': 'openrouter-llama',
-      'openrouter-llama': 'openrouter-sonnet'
+      'openrouter-llama': 'openrouter-grok',
+      'openrouter-grok': 'openrouter-opus',
+      'openrouter-opus': 'openrouter-sonnet'
     },
-    // Cross-provider fallbacks when one provider is down
-    crossProviderFallbacks: [
-      { from: 'openrouter-sonnet', to: 'sonnet', provider: 'vercel-gateway' },
-      { from: 'openrouter-llama', to: 'groq', provider: 'vercel-gateway' },
-      { from: 'sonnet', to: 'openrouter-sonnet', provider: 'openrouter' },
-      { from: 'groq', to: 'openrouter-llama', provider: 'openrouter' }
-    ]
+    // Cross-provider fallbacks (all within OpenRouter now)
+    crossProviderFallbacks: []
   },
 
   providers: {

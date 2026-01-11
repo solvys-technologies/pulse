@@ -8,6 +8,7 @@ import { generateText } from 'ai'
 import { selectModel, createModelClient, type AiModelKey } from '../ai/model-selector.js'
 import type {
   TradingProposal,
+  TradingStrategy,
   MarketDataReport,
   NewsSentimentReport,
   TechnicalReport,
@@ -19,8 +20,21 @@ const SYSTEM_PROMPT = `You are a Trader Agent for an intraday futures desk focus
 
 Your role is to synthesize analyst reports and researcher debate to generate actionable trading proposals.
 
+Available Trading Strategies (match if conditions align):
+1. MORNING_FLUSH - First 30min reversal after gap, requires VIX > 18
+2. LUNCH_FLUSH - 11:30am-12:30pm reversal pattern
+3. POWER_HOUR_FLUSH - 3-4pm reversal into close
+4. VIX_FIX_22 - Long NQ when VIX >= 22 and shows exhaustion
+5. FORTY_FORTY_CLUB - 40pt range + 40% retracement entry
+6. MOMENTUM - Strong trend continuation with volume confirmation
+7. CHARGED_RIPPERS - Oversold bounce with high short interest
+8. MEAN_REVERSION - Extended move back to VWAP/EMAs
+9. DISCRETIONARY - No specific strategy match
+
 Given the analyst inputs and debate outcome, return a JSON trading proposal:
 {
+  "tradeRecommended": boolean,
+  "strategyName": "MORNING_FLUSH" | "LUNCH_FLUSH" | "POWER_HOUR_FLUSH" | "VIX_FIX_22" | "FORTY_FORTY_CLUB" | "MOMENTUM" | "CHARGED_RIPPERS" | "MEAN_REVERSION" | "DISCRETIONARY",
   "instrument": "MNQ" or "NQ",
   "direction": "long" | "short" | "flat",
   "entryPrice": number (null if flat),
@@ -44,7 +58,12 @@ Risk management rules:
 - Never risk more than 1% of account on a single trade
 - Stop loss should be at a technical level, not arbitrary
 - Risk/reward should be at least 1:2 for base hits, 1:3+ for home runs
-- If confidence < 60%, recommend FLAT (no trade)
+- If confidence < 60%, set tradeRecommended = false and direction = "flat"
+
+Strategy matching priority:
+1. Check if any named strategy conditions are met
+2. If multiple match, pick highest conviction
+3. If none match but trade is still viable, use "DISCRETIONARY"
 
 Respond with valid JSON only.`
 
@@ -81,11 +100,16 @@ export async function generateProposal(
 
   const parsed = parseJsonSafe<Omit<TradingProposal, 'id' | 'userId' | 'createdAt'>>(text)
 
+  const tradeRecommended = parsed?.tradeRecommended ?? (parsed?.confidence ?? 0) >= 60
+  const direction = parsed?.direction ?? 'flat'
+
   return {
     id: crypto.randomUUID(),
     userId,
+    tradeRecommended: tradeRecommended && direction !== 'flat',
+    strategyName: (parsed?.strategyName ?? 'DISCRETIONARY') as TradingStrategy,
     instrument: parsed?.instrument ?? 'MNQ',
-    direction: parsed?.direction ?? 'flat',
+    direction,
     entryPrice: parsed?.entryPrice,
     stopLoss: parsed?.stopLoss,
     takeProfit: parsed?.takeProfit ?? [],
