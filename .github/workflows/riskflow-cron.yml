@@ -15,7 +15,7 @@ jobs:
     steps:
       - name: Call Riskflow endpoint looped every 2 minutes (3 attempts)
         env:
-          URL: https://your-api-url.fly.dev/api/riskflow/cron/prefetch
+          URL: https://pulse-api-withered-dust-1394.fly.dev/api/riskflow/cron/prefetch
           # Recommended: create a repository secret named CRON_SECRET and set it there.
           # If the secret is not defined, the script will fall back to the literal token below.
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
