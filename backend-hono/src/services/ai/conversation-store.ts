@@ -79,6 +79,13 @@ export async function getConversation(
   conversationId: string,
   userId: string
 ): Promise<Conversation | null> {
+  // Validate UUID format (conversation IDs are UUIDs)
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  if (!uuidRegex.test(conversationId)) {
+    console.warn(`[Conversations] Invalid UUID format: ${conversationId}`)
+    return null
+  }
+
   if (!isDatabaseAvailable() || !sql) {
     const conv = memoryStore.conversations.get(conversationId)
     if (conv && conv.userId === userId) return conv
