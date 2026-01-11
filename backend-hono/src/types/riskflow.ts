@@ -7,6 +7,8 @@ export type NewsSource = 'FinancialJuice' | 'InsiderWire' | 'Reuters' | 'Bloombe
 export type UrgencyLevel = 'immediate' | 'high' | 'normal';
 export type SentimentDirection = 'bullish' | 'bearish' | 'neutral';
 
+export type MacroLevel = 1 | 2 | 3 | 4;
+
 export interface FeedItem {
   id: string;
   source: NewsSource;
@@ -18,6 +20,7 @@ export interface FeedItem {
   urgency: UrgencyLevel;
   sentiment?: SentimentDirection;
   ivScore?: number;
+  macroLevel?: MacroLevel;
   publishedAt: string;
   analyzedAt?: string;
 }
@@ -36,6 +39,7 @@ export interface FeedFilters {
   tags?: string[];
   breakingOnly?: boolean;
   minIvScore?: number;
+  minMacroLevel?: MacroLevel;
   limit?: number;
   cursor?: string;
 }

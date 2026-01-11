@@ -4,7 +4,7 @@
  * Day 17 - Phase 5 Integration
  */
 
-import type { FeedItem, FeedResponse, FeedFilters, NewsSource, UrgencyLevel, SentimentDirection } from '../../types/riskflow.js';
+import type { FeedItem, FeedResponse, FeedFilters, NewsSource, UrgencyLevel, SentimentDirection, MacroLevel } from '../../types/riskflow.js';
 import { createXApiService, type ParsedTweetNews } from '../x-api-service.js';
 import { getWatchlist, matchesWatchlist } from './watchlist-service.js';
 import { analyzeHeadline, type AnalyzedHeadline } from '../analysis/grok-analyzer.js';
@@ -83,6 +83,8 @@ async function enrichWithAnalysis(item: FeedItem): Promise<FeedItem> {
       sentiment: ivResult.sentiment as SentimentDirection,
       // Add IV score
       ivScore: ivResult.score,
+      // Add macro level (1-4)
+      macroLevel: ivResult.macroLevel as MacroLevel,
       // Add analyzed timestamp
       analyzedAt: new Date().toISOString(),
     };
@@ -165,6 +167,11 @@ function applyFilters(items: FeedItem[], filters: FeedFilters): FeedItem[] {
 
   if (filters.minIvScore !== undefined) {
     filtered = filtered.filter(item => (item.ivScore ?? 0) >= filters.minIvScore!);
+  }
+
+  // Filter by macro level (1-4 scale) - default to 3+ for high importance
+  if (filters.minMacroLevel !== undefined) {
+    filtered = filtered.filter(item => (item.macroLevel ?? 1) >= filters.minMacroLevel!);
   }
 
   return filtered;
@@ -289,6 +296,7 @@ async function getCachedFeed(): Promise<FeedItem[]> {
 
 /**
  * Get feed with user watchlist applied
+ * Default: Only returns macroLevel 3+ (high importance headlines)
  */
 export async function getFeed(userId: string, filters?: FeedFilters): Promise<FeedResponse> {
   const allItems = await getCachedFeed();
@@ -297,13 +305,24 @@ export async function getFeed(userId: string, filters?: FeedFilters): Promise<Fe
   // Apply watchlist filtering
   let items = allItems.filter(item => matchesWatchlist(watchlist, item));
 
-  // Apply additional filters
-  if (filters) {
-    items = applyFilters(items, filters);
-  }
+  // Default to macroLevel 3+ (high importance only)
+  const effectiveFilters: FeedFilters = {
+    minMacroLevel: 3 as MacroLevel,
+    ...filters,
+  };
 
-  // Sort by published date (newest first)
-  items.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+  // Apply filters (including macroLevel)
+  items = applyFilters(items, effectiveFilters);
+
+  // Sort by macro level (highest first), then by published date
+  items.sort((a, b) => {
+    // Macro level priority (4 > 3 > 2 > 1)
+    const macroA = a.macroLevel ?? 1;
+    const macroB = b.macroLevel ?? 1;
+    if (macroB !== macroA) return macroB - macroA;
+    // Then by date (newest first)
+    return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
+  });
 
   // Apply pagination
   const limit = Math.min(filters?.limit ?? MAX_FEED_ITEMS, MAX_FEED_ITEMS);
