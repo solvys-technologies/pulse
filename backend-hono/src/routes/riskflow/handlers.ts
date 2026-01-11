@@ -82,18 +82,44 @@ export async function handleGetFeed(c: Context) {
       }
     }
 
+    console.log(`[RiskFlow] handleGetFeed called for user ${userId} with filters:`, JSON.stringify(filters));
+    
     const feed = await feedService.getFeed(userId, filters);
     
     // Log feed response for debugging
     console.log(`[RiskFlow] Feed response for user ${userId}: ${feed.items.length} items (total: ${feed.total}, hasMore: ${feed.hasMore})`);
     if (feed.items.length === 0) {
       console.warn(`[RiskFlow] Empty feed returned - check database cache and filters`);
+      console.warn(`[RiskFlow] Feed response structure:`, JSON.stringify({
+        items: feed.items,
+        total: feed.total,
+        hasMore: feed.hasMore,
+        fetchedAt: feed.fetchedAt
+      }));
     }
     
-    return c.json(feed);
+    // Ensure we always return a valid FeedResponse structure
+    const response = {
+      items: feed.items || [],
+      total: feed.total || 0,
+      hasMore: feed.hasMore || false,
+      fetchedAt: feed.fetchedAt || new Date().toISOString(),
+      ...(feed.nextCursor && { nextCursor: feed.nextCursor })
+    };
+    
+    console.log(`[RiskFlow] Returning response with ${response.items.length} items`);
+    return c.json(response);
   } catch (error) {
     console.error('[RiskFlow] Feed error:', error);
-    return c.json({ error: 'Failed to fetch feed' }, 500);
+    console.error('[RiskFlow] Error stack:', error instanceof Error ? error.stack : 'No stack');
+    // Return empty response structure instead of error to prevent frontend crashes
+    return c.json({
+      items: [],
+      total: 0,
+      hasMore: false,
+      fetchedAt: new Date().toISOString(),
+      error: error instanceof Error ? error.message : 'Failed to fetch feed'
+    }, 500);
   }
 }
 

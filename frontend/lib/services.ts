@@ -220,8 +220,19 @@ export class RiskFlowService {
 
     const queryString = query.toString();
     const endpoint = `/api/riskflow/feed${queryString ? `?${queryString}` : ''}`;
+    console.log(`[RiskFlowService] Calling endpoint: ${endpoint}`);
+    
     try {
-      const response = await this.client.get<{ items?: any[]; total?: number }>(endpoint);
+      const response = await this.client.get<{ items?: any[]; total?: number; hasMore?: boolean; fetchedAt?: string; error?: string }>(endpoint);
+      
+      console.log(`[RiskFlowService] Raw response:`, {
+        hasItems: !!response.items,
+        itemsLength: response.items?.length ?? 0,
+        total: response.total,
+        hasMore: response.hasMore,
+        hasError: !!response.error,
+        error: response.error
+      });
       
       // Backend returns { items: FeedItem[], total: number, hasMore: boolean, fetchedAt: string }
       const items = response.items || [];
@@ -229,6 +240,7 @@ export class RiskFlowService {
       console.log(`[RiskFlowService] Received ${items.length} items from backend (total: ${response.total ?? 0})`);
       if (items.length === 0) {
         console.warn(`[RiskFlowService] Empty response from backend - check database cache and filters`);
+        console.warn(`[RiskFlowService] Full response object:`, JSON.stringify(response, null, 2));
       }
 
       // Transform backend FeedItem to frontend RiskFlowItem format
