@@ -25,13 +25,20 @@ export async function handleChat(c: Context) {
   }
 
   try {
-    const body = await c.req.json<ChatRequest>().catch(() => null)
+    const body = await c.req.json<ChatRequest & { messages?: { role: string; content: string }[] }>().catch(() => null)
 
-    if (!body?.message?.trim()) {
+    // Support both 'message' (string) and 'messages' (array from Vercel AI SDK)
+    let message = body?.message?.trim() ?? ''
+    if (!message && body?.messages?.length) {
+      const lastUserMsg = [...body.messages].reverse().find(m => m.role === 'user')
+      message = lastUserMsg?.content?.trim() ?? ''
+    }
+
+    if (!message) {
       return c.json({ error: 'Message is required' }, 400)
     }
 
-    const { message, conversationId, model, taskType } = body
+    const { conversationId, model, taskType } = body ?? {}
 
     // Get or create conversation
     let conversation = conversationId 
@@ -187,13 +194,20 @@ export async function handleChatStream(c: Context) {
   }
 
   try {
-    const body = await c.req.json<ChatRequest>().catch(() => null)
+    const body = await c.req.json<ChatRequest & { messages?: { role: string; content: string }[] }>().catch(() => null)
 
-    if (!body?.message?.trim()) {
+    // Support both 'message' (string) and 'messages' (array from Vercel AI SDK)
+    let message = body?.message?.trim() ?? ''
+    if (!message && body?.messages?.length) {
+      const lastUserMsg = [...body.messages].reverse().find(m => m.role === 'user')
+      message = lastUserMsg?.content?.trim() ?? ''
+    }
+
+    if (!message) {
       return c.json({ error: 'Message is required' }, 400)
     }
 
-    const { message, conversationId, model, taskType } = body
+    const { conversationId, model, taskType } = body ?? {}
 
     // Get or create conversation
     let conversation = conversationId 

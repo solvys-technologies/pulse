@@ -5,10 +5,11 @@
 
 import { neon } from '@neondatabase/serverless';
 
-const DATABASE_URL = process.env.DATABASE_URL;
+// Check NEON_DATABASE_URL first (preferred), then fallback to DATABASE_URL
+const DATABASE_URL = process.env.NEON_DATABASE_URL || process.env.DATABASE_URL;
 
 if (!DATABASE_URL) {
-  console.warn('[DB] DATABASE_URL not set - database features will be unavailable');
+  console.warn('[DB] No database URL set - database features will be unavailable');
 }
 
 export const sql = DATABASE_URL ? neon(DATABASE_URL) : null;
