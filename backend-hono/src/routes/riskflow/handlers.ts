@@ -82,18 +82,44 @@ export async function handleGetFeed(c: Context) {
       }
     }
 
+    console.log(`[RiskFlow] handleGetFeed called for user ${userId} with filters:`, JSON.stringify(filters));
+    
     const feed = await feedService.getFeed(userId, filters);
     
     // Log feed response for debugging
     console.log(`[RiskFlow] Feed response for user ${userId}: ${feed.items.length} items (total: ${feed.total}, hasMore: ${feed.hasMore})`);
     if (feed.items.length === 0) {
       console.warn(`[RiskFlow] Empty feed returned - check database cache and filters`);
+      console.warn(`[RiskFlow] Feed response structure:`, JSON.stringify({
+        items: feed.items,
+        total: feed.total,
+        hasMore: feed.hasMore,
+        fetchedAt: feed.fetchedAt
+      }));
     }
     
-    return c.json(feed);
+    // Ensure we always return a valid FeedResponse structure
+    const response = {
+      items: feed.items || [],
+      total: feed.total || 0,
+      hasMore: feed.hasMore || false,
+      fetchedAt: feed.fetchedAt || new Date().toISOString(),
+      ...(feed.nextCursor && { nextCursor: feed.nextCursor })
+    };
+    
+    console.log(`[RiskFlow] Returning response with ${response.items.length} items`);
+    return c.json(response);
   } catch (error) {
     console.error('[RiskFlow] Feed error:', error);
-    return c.json({ error: 'Failed to fetch feed' }, 500);
+    console.error('[RiskFlow] Error stack:', error instanceof Error ? error.stack : 'No stack');
+    // Return empty response structure instead of error to prevent frontend crashes
+    return c.json({
+      items: [],
+      total: 0,
+      hasMore: false,
+      fetchedAt: new Date().toISOString(),
+      error: error instanceof Error ? error.message : 'Failed to fetch feed'
+    }, 500);
   }
 }
 
@@ -303,6 +329,59 @@ export async function handleBreakingStream(c: Context) {
       'X-Accel-Buffering': 'no',
     },
   });
+}
+
+/**
+ * GET /api/riskflow/debug
+ * Debug endpoint to check database state
+ */
+export async function handleDebug(c: Context) {
+  const userId = c.get('userId') as string | undefined;
+  if (!userId) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  try {
+    const { sql, isDatabaseAvailable } = await import('../../config/database.js');
+    
+    if (!isDatabaseAvailable() || !sql) {
+      return c.json({ error: 'Database not available' }, 503);
+    }
+
+    // Get raw counts
+    const totalCount = await sql`SELECT COUNT(*) as count FROM news_feed_items`;
+    const recentCount = await sql`
+      SELECT COUNT(*) as count FROM news_feed_items 
+      WHERE published_at >= NOW() - INTERVAL '48 hours'
+    `;
+    const level3Count = await sql`
+      SELECT COUNT(*) as count FROM news_feed_items 
+      WHERE published_at >= NOW() - INTERVAL '48 hours' 
+        AND (macro_level IS NULL OR macro_level >= 3)
+    `;
+    const sampleItems = await sql`
+      SELECT id, headline, source, macro_level, published_at, is_breaking
+      FROM news_feed_items
+      ORDER BY published_at DESC
+      LIMIT 5
+    `;
+
+    return c.json({
+      database: {
+        total: Number(totalCount[0]?.count ?? 0),
+        recent48h: Number(recentCount[0]?.count ?? 0),
+        level3Plus: Number(level3Count[0]?.count ?? 0),
+      },
+      sample: sampleItems,
+      env: {
+        hasXApiToken: !!process.env.X_API_BEARER_TOKEN,
+        nodeEnv: process.env.NODE_ENV,
+      }
+    });
+  } catch (error) {
+    console.error('[RiskFlow] Debug error:', error);
+    return c.json({ error: error instanceof Error ? error.message : 'Debug failed' }, 500);
+  }
 }
 
 /**

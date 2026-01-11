@@ -14,6 +14,7 @@ import {
   handleRemoveSymbols,
   handleBreakingStream,
   handleCronPrefetch,
+  handleDebug,
 } from './handlers.js';
 
 export function createRiskFlowRoutes(): Hono {
@@ -45,6 +46,9 @@ export function createRiskFlowRoutes(): Hono {
 
   // POST /api/riskflow/cron/prefetch - Cron job to pre-fetch news (protected by secret token)
   router.post('/cron/prefetch', handleCronPrefetch);
+
+  // GET /api/riskflow/debug - Debug endpoint
+  router.get('/debug', handleDebug);
 
   return router;
 }

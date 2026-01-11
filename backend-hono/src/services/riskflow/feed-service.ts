@@ -399,14 +399,29 @@ async function getCachedFeed(): Promise<FeedItem[]> {
  * If no items found with minMacroLevel 3+, falls back to all items (for initial load)
  */
 export async function getFeed(userId: string, filters?: FeedFilters): Promise<FeedResponse> {
-  const allItems = await getCachedFeed();
-  console.log(`[RiskFlow] getFeed: ${allItems.length} total items from cache`);
-  
-  const watchlist = getWatchlist(userId);
+  try {
+    console.log(`[RiskFlow] getFeed called for user ${userId} with filters:`, JSON.stringify(filters));
+    
+    const allItems = await getCachedFeed();
+    console.log(`[RiskFlow] getFeed: ${allItems.length} total items from cache`);
+    
+    if (allItems.length === 0) {
+      console.error(`[RiskFlow] getCachedFeed returned 0 items - this is the root cause!`);
+      console.error(`[RiskFlow] Check: database connection, X API token, fetchFreshFeed function`);
+    }
+    
+    const watchlist = getWatchlist(userId);
+    console.log(`[RiskFlow] Watchlist for user ${userId}:`, JSON.stringify(watchlist));
 
-  // Apply watchlist filtering
-  let items = allItems.filter(item => matchesWatchlist(watchlist, item));
-  console.log(`[RiskFlow] After watchlist filter: ${items.length} items`);
+    // Apply watchlist filtering
+    let items = allItems.filter(item => matchesWatchlist(watchlist, item));
+    console.log(`[RiskFlow] After watchlist filter: ${items.length} items`);
+    
+    if (items.length === 0 && allItems.length > 0) {
+      console.warn(`[RiskFlow] Watchlist filtered out all ${allItems.length} items!`);
+      console.warn(`[RiskFlow] Watchlist config:`, watchlist);
+      console.warn(`[RiskFlow] Sample item:`, JSON.stringify(allItems[0], null, 2));
+    }
 
   // Default to macroLevel 3+ (high importance only)
   const effectiveFilters: FeedFilters = {
@@ -459,17 +474,31 @@ export async function getFeed(userId: string, filters?: FeedFilters): Promise<Fe
     return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
   });
 
-  // Apply pagination
-  const limit = Math.min(filters?.limit ?? MAX_FEED_ITEMS, MAX_FEED_ITEMS);
-  const paginatedItems = items.slice(0, limit);
+    // Apply pagination
+    const limit = Math.min(filters?.limit ?? MAX_FEED_ITEMS, MAX_FEED_ITEMS);
+    const paginatedItems = items.slice(0, limit);
 
-  return {
-    items: paginatedItems,
-    total: items.length,
-    hasMore: items.length > limit,
-    nextCursor: items.length > limit ? paginatedItems[limit - 1]?.id : undefined,
-    fetchedAt: new Date().toISOString(),
-  };
+    const response = {
+      items: paginatedItems,
+      total: items.length,
+      hasMore: items.length > limit,
+      nextCursor: items.length > limit ? paginatedItems[limit - 1]?.id : undefined,
+      fetchedAt: new Date().toISOString(),
+    };
+    
+    console.log(`[RiskFlow] getFeed returning: ${response.items.length} items (total: ${response.total}, hasMore: ${response.hasMore})`);
+    return response;
+  } catch (error) {
+    console.error(`[RiskFlow] getFeed error for user ${userId}:`, error);
+    console.error(`[RiskFlow] Error stack:`, error instanceof Error ? error.stack : 'No stack');
+    // Return empty response instead of throwing
+    return {
+      items: [],
+      total: 0,
+      hasMore: false,
+      fetchedAt: new Date().toISOString(),
+    };
+  }
 }
 
 /**
