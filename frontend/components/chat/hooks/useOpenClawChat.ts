@@ -1,6 +1,6 @@
 /**
- * useChatWithAuth Hook
- * Simplified for local single-user mode - no authentication
+ * useOpenClawChat Hook
+ * Simple chat hook for local OpenClaw processing
  */
 
 import { useCallback, useState } from 'react';
@@ -8,16 +8,15 @@ import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { API_BASE_URL } from '../constants.js';
 
-export function useChatWithAuth(conversationId: string | undefined, setConversationId: (id: string) => void) {
+export function useOpenClawChat(conversationId: string | undefined, setConversationId: (id: string) => void) {
   const [isStreaming, setIsStreaming] = useState(false);
 
-  const fetchWithAuth = useCallback(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+  const fetchFn = useCallback(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
     const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
 
     const headers = new Headers(init?.headers);
     headers.set('Content-Type', 'application/json');
-    // No auth header needed in local mode
 
     let body = init?.body;
     if (body && conversationId) {
@@ -27,21 +26,15 @@ export function useChatWithAuth(conversationId: string | undefined, setConversat
           bodyObj.conversationId = conversationId;
           body = JSON.stringify(bodyObj);
         }
-      } catch (e) {
-        // Ignore parse errors
+      } catch {
+        // Ignore
       }
     }
 
-    const response = await fetch(fullUrl, {
-      ...init,
-      headers,
-      body,
-    });
+    const response = await fetch(fullUrl, { ...init, headers, body });
 
     const convId = response.headers.get('X-Conversation-Id');
-    if (convId) {
-      setConversationId(convId);
-    }
+    if (convId) setConversationId(convId);
 
     return response;
   }, [conversationId, setConversationId]);
@@ -55,39 +48,31 @@ export function useChatWithAuth(conversationId: string | undefined, setConversat
   } = useChat({
     transport: new DefaultChatTransport({
       api: `${API_BASE_URL}/api/ai/chat`,
-      fetch: fetchWithAuth,
-      prepareSendMessagesRequest: ({ messages, id }) => {
-        return {
-          body: {
-            messages: messages.map((msg) => ({
-              role: msg.role,
-              content: msg.parts
-                ?.filter((part: any) => part.type === 'text')
-                .map((part: any) => part.text)
-                .join('') || '',
-            })),
-            ...(conversationId && { conversationId }),
-          },
-        };
-      },
+      fetch: fetchFn,
+      prepareSendMessagesRequest: ({ messages }) => ({
+        body: {
+          messages: messages.map((msg) => ({
+            role: msg.role,
+            content: msg.parts?.filter((p: any) => p.type === 'text').map((p: any) => p.text).join('') || '',
+          })),
+          ...(conversationId && { conversationId }),
+        },
+      }),
     }),
-    onFinish: () => {
-      setIsStreaming(false);
-    },
-    onError: () => {
-      setIsStreaming(false);
-    },
+    onFinish: () => setIsStreaming(false),
+    onError: () => setIsStreaming(false),
   });
-
-  const isLoading = isStreaming || status === 'streaming' || status === 'submitted';
 
   return {
     messages: useChatMessages,
     sendMessage,
     status,
     setMessages: setUseChatMessages,
-    isLoading,
+    isLoading: isStreaming || status === 'streaming' || status === 'submitted',
     setIsStreaming,
     stop,
   };
 }
+
+// Keep old name for backward compat
+export const useChatWithAuth = useOpenClawChat;

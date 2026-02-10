@@ -282,9 +282,21 @@ export async function handleBreakingStream(c: Context) {
 
   // Get origin from request for CORS
   const origin = c.req.header('origin') || c.req.header('Origin');
-  // Check if origin is in allowed list, otherwise use first allowed origin
-  const allowedOrigins = Array.isArray(corsConfig.origin) ? corsConfig.origin : [corsConfig.origin];
-  const allowedOrigin = origin && allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
+  // Determine allowed origin from corsConfig (supports string | string[] | function)
+  const allowedOrigin = await (async () => {
+    const cfg: any = corsConfig.origin;
+    if (!origin) return '*';
+    if (typeof cfg === 'function') {
+      return (await cfg(origin)) || '*';
+    }
+    if (Array.isArray(cfg)) {
+      return cfg.includes(origin) ? origin : cfg[0] || '*';
+    }
+    if (typeof cfg === 'string') {
+      return cfg === '*' ? '*' : cfg === origin ? origin : '*';
+    }
+    return '*';
+  })();
 
   const stream = new ReadableStream({
     start(controller) {

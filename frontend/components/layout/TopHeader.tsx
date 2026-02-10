@@ -36,6 +36,7 @@ export function TopHeader({
 }: TopHeaderProps) {
   const { tier } = useAuth();
   const backend = useBackend();
+  const instanceName = import.meta.env.VITE_PULSE_INSTANCE_NAME || 'Pulse';
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [ivScore, setIvScore] = useState(3.2);
   const [vix, setVix] = useState(20);
@@ -123,6 +124,14 @@ export function TopHeader({
           {/* Logo centered at 32px to align with sidebar icons (w-16 = 64px, center = 32px) */}
           <div className="w-16 flex items-center justify-center">
             <PulseLogo />
+          </div>
+          <div className="flex flex-col leading-tight">
+            <span className="text-[12px] font-semibold tracking-[0.22em] text-[#D4AF37] uppercase">
+              {instanceName}
+            </span>
+            <span className="text-[10px] tracking-[0.18em] text-gray-500 uppercase">
+              Command Center
+            </span>
           </div>
           <button
             onClick={() => setShowUpgrade(true)}

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Activity, Newspaper, Settings, LogOut, Sparkles } from 'lucide-react';
+import { Activity, Newspaper, Settings, LogOut, Sparkles, LayoutDashboard, MessagesSquare, NotebookText } from 'lucide-react';
 
-type NavTab = 'feed' | 'analysis' | 'news';
+type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion';
 
 interface NavSidebarProps {
   activeTab: NavTab;
@@ -15,9 +15,12 @@ export function NavSidebar({ activeTab, onTabChange, onSettingsClick, onLogout, 
   const [isHovered, setIsHovered] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const navItems = [
+    { id: 'executive' as NavTab, icon: LayoutDashboard, label: 'Executive Dashboard' },
     { id: 'feed' as NavTab, icon: Activity, label: 'Feed' },
     { id: 'analysis' as NavTab, icon: Sparkles, label: 'Analysis' },
     { id: 'news' as NavTab, icon: Newspaper, label: 'Market News & Events' },
+    { id: 'chatroom' as NavTab, icon: MessagesSquare, label: 'Agent Chatroom' },
+    { id: 'notion' as NavTab, icon: NotebookText, label: 'Notion + Executive Thread' },
   ];
 
   // Auto-hide after tab selection

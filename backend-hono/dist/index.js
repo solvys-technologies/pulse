@@ -2,6 +2,7 @@
  * Pulse API - Main Entry Point
  * Hono backend on Fly.io
  */
+import 'dotenv/config';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { serve } from '@hono/node-server';
@@ -9,6 +10,7 @@ import { corsConfig } from './config/cors.js';
 import { getEnvConfig, isDev } from './config/env.js';
 import { registerRoutes } from './routes/index.js';
 import { createHealthService } from './services/health-service.js';
+import { startFeedPoller } from './services/riskflow/feed-poller.js';
 const app = new Hono();
 const healthService = createHealthService();
 const config = getEnvConfig();
@@ -51,5 +53,7 @@ app.notFound((c) => c.json({ error: 'Not found' }, 404));
 serve({ fetch: app.fetch, port: config.PORT });
 console.log(`[API] Server started on port ${config.PORT}`);
 console.log(`[API] Environment: ${config.NODE_ENV}`);
+// Start background feed poller for real-time Level 4 detection
+startFeedPoller();
 export default app;
 //# sourceMappingURL=index.js.map

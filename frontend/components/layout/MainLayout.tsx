@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useClerk } from '@clerk/clerk-react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { TopHeader } from './TopHeader';
 import { NavSidebar } from './NavSidebar';
@@ -19,20 +18,19 @@ import { AccountTrackerWidget } from '../mission-control/AccountTrackerWidget';
 import { AlgoStatusWidget } from '../mission-control/AlgoStatusWidget';
 import { PanelNotificationWidget } from './PanelNotificationWidget';
 import { MinimalERMeter } from '../MinimalERMeter';
+import { ExecutiveDashboard } from '../executive/ExecutiveDashboard';
+import { AgentChatroomView } from '../executive/AgentChatroomView';
+import { NotionExecutiveView } from '../executive/NotionExecutiveView';
 
-// Development mode: bypass Clerk authentication ONLY when explicitly enabled
-const DEV_MODE = import.meta.env.DEV || import.meta.env.MODE === 'development';
-const BYPASS_AUTH = DEV_MODE && import.meta.env.VITE_BYPASS_AUTH === 'true';
-
-type NavTab = 'feed' | 'analysis' | 'news';
+type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion';
 type LayoutOption = 'movable' | 'tickers-only' | 'combined';
 
 interface MainLayoutProps {
   onSettingsClick: () => void;
 }
 
-// Inner component that doesn't use Clerk hooks directly
-function MainLayoutInner({ onSettingsClick, signOut }: MainLayoutProps & { signOut?: () => Promise<void> }) {
+// Main layout component - no authentication needed
+export function MainLayout({ onSettingsClick }: MainLayoutProps) {
   const [activeTab, setActiveTab] = useState<NavTab>('feed');
   const [missionControlCollapsed, setMissionControlCollapsed] = useState(false);
   const [tapeCollapsed, setTapeCollapsed] = useState(false);
@@ -169,16 +167,8 @@ function MainLayoutInner({ onSettingsClick, signOut }: MainLayoutProps & { signO
   };
 
   const handleLogout = async () => {
-    if (!signOut) {
-      console.warn('Logout not available in dev mode');
-      return;
-    }
-    try {
-      await signOut();
-      // Clerk will automatically redirect to sign-in page
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
+    // No-op in local single-user mode
+    console.log('Logout not available in local mode');
   };
 
   // Determine layout based on TopStepX state and layout option
@@ -382,6 +372,11 @@ function MainLayoutInner({ onSettingsClick, signOut }: MainLayoutProps & { signO
                   <FeedSection />
                 </div>
               )}
+              {activeTab === 'executive' && (
+                <div key="executive" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                  <ExecutiveDashboard />
+                </div>
+              )}
               {activeTab === 'analysis' && (
                 <div key="analysis" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <AnalysisSection />
@@ -390,6 +385,16 @@ function MainLayoutInner({ onSettingsClick, signOut }: MainLayoutProps & { signO
               {activeTab === 'news' && (
                 <div key="news" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <NewsSection />
+                </div>
+              )}
+              {activeTab === 'chatroom' && (
+                <div key="chatroom" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                  <AgentChatroomView />
+                </div>
+              )}
+              {activeTab === 'notion' && (
+                <div key="notion" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                  <NotionExecutiveView />
                 </div>
               )}
             </div>
@@ -444,21 +449,3 @@ function MainLayoutInner({ onSettingsClick, signOut }: MainLayoutProps & { signO
   );
 }
 
-// Wrapper component that uses Clerk (only rendered when ClerkProvider is available)
-function MainLayoutWithClerk({ onSettingsClick }: MainLayoutProps) {
-  const clerk = useClerk();
-  return <MainLayoutInner onSettingsClick={onSettingsClick} signOut={clerk.signOut} />;
-}
-
-// Wrapper component for dev mode without Clerk
-function MainLayoutWithoutClerk({ onSettingsClick }: MainLayoutProps) {
-  return <MainLayoutInner onSettingsClick={onSettingsClick} signOut={undefined} />;
-}
-
-// Main export that chooses the right implementation
-export function MainLayout({ onSettingsClick }: MainLayoutProps) {
-  if (BYPASS_AUTH) {
-    return <MainLayoutWithoutClerk onSettingsClick={onSettingsClick} />;
-  }
-  return <MainLayoutWithClerk onSettingsClick={onSettingsClick} />;
-}

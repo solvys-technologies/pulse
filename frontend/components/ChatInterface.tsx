@@ -2,10 +2,13 @@
  * ChatInterface Component
  * v2.28.6 Refactor
  */
+/**
+ * ChatInterface Component
+ * Simplified for local single-user mode - no authentication
+ */
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { ArrowRight, Paperclip, Image, FileText, Link2, AlertTriangle, TrendingUp, History, X, Pin, Archive, Edit2, MoreVertical, Square } from "lucide-react";
-import { useChatWithAuth } from "./chat/hooks/useChatWithAuth";
-import { useAuth } from "@clerk/clerk-react";
+import { useOpenClawChat } from "./chat/hooks/useOpenClawChat";
 import { useBackend } from "../lib/backend";
 import { healingBowlPlayer } from "../utils/healingBowlSounds";
 import { useSettings } from "../contexts/SettingsContext";
@@ -84,7 +87,8 @@ interface ConversationSession {
 export default function ChatInterface() {
   const backend = useBackend();
   const { alertConfig } = useSettings();
-  const { getToken, isSignedIn } = useAuth();
+  // Local mode - always authenticated
+  const isSignedIn = true;
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [conversationId, setConversationId] = useState<string | undefined>();
@@ -104,11 +108,9 @@ export default function ChatInterface() {
   // Store the last sent message so we can restore it if stopped
   const [lastSentMessage, setLastSentMessage] = useState<string>("");
 
-  // Track loading state manually
-  const [isStreaming, setIsStreamingState] = useState(false);
   const [showQuickPulseModal, setShowQuickPulseModal] = useState(false);
 
-  // Use useChatWithAuth hook for streaming chat with proper auth and message handling
+  // OpenClaw chat hook
   const {
     messages: useChatMessages,
     sendMessage,
@@ -116,9 +118,13 @@ export default function ChatInterface() {
     setMessages: setUseChatMessages,
     setIsStreaming,
     stop,
-  } = useChatWithAuth(conversationId, setConversationId);
+  } = useOpenClawChat(conversationId, setConversationId);
 
-  const isLoading = isStreaming || status === 'streaming' || status === 'submitted';
+  const isLoading = status === 'streaming' || status === 'submitted';
+
+  // Debug: log raw messages from useChat
+  console.log('[ChatInterface] useChatMessages:', JSON.stringify(useChatMessages, null, 2));
+  console.log('[ChatInterface] status:', status);
 
   // Convert useChat messages to our Message format for display
   const messages: Message[] = (useChatMessages || [])
@@ -330,16 +336,11 @@ export default function ChatInterface() {
     setLastSentMessage(messageText);
     setShowSuggestions(false);
     setThinkingText(THINKING_TERMS[0]);
-    setIsStreamingState(true);
 
     try {
-      const token = await getToken({ template: 'neon' });
       await sendMessage({
         text: messageText
       }, {
-        headers: {
-          'Authorization': `Bearer ${token || ''}`
-        },
         body: {
           conversationId
         }
@@ -366,7 +367,6 @@ export default function ChatInterface() {
   const handleStop = () => {
     // Stop the streaming
     stop();
-    setIsStreamingState(false);
     setIsStreaming(false);
     
     // Remove any partial assistant message and add a cancelled indicator
@@ -411,13 +411,9 @@ export default function ChatInterface() {
   const handleCheckTape = async () => {
     setShowSuggestions(false);
     try {
-      const token = await getToken({ template: 'neon' });
       await sendMessage({
         text: "Check the Tape"
       }, {
-        headers: {
-          'Authorization': `Bearer ${token || ''}`
-        },
         body: { conversationId }
       });
     } catch (error) {
@@ -428,13 +424,9 @@ export default function ChatInterface() {
   const handleDailyRecap = async () => {
     setShowSuggestions(false);
     try {
-      const token = await getToken({ template: 'neon' });
       await sendMessage({
         text: "Generate daily recap"
       }, {
-        headers: {
-          'Authorization': `Bearer ${token || ''}`
-        },
         body: { conversationId }
       });
     } catch (error) {

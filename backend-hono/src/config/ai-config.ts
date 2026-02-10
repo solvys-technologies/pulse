@@ -18,6 +18,11 @@ export type AiModelKey =
   | 'openrouter-opus'    // Claude Opus 4.5 via OpenRouter
   | 'openrouter-llama'   // Llama 3.3 70B via OpenRouter
   | 'openrouter-grok'    // Grok 4.1 via OpenRouter
+  // OpenClaw P.I.C. agents
+  | 'openclaw-cao'       // CAO/Harper reasoning (Opus)
+  | 'openclaw-research'  // Deep research (Sonnet)
+  | 'openclaw-fast'      // Fast analysis (Llama)
+  | 'openclaw-realtime'  // Real-time news (Grok)
 
 export type AiProvider = 'openai-compatible'
 
@@ -56,6 +61,10 @@ export interface AiProviderSettings {
   vercelGateway: {
     baseUrl: string
   }
+  openClaw: {
+    baseUrl: string
+    appName: string
+  }
 }
 
 export interface AiConversationConfig {
@@ -81,6 +90,19 @@ const vercelGatewayBaseUrl =
 
 const openRouterBaseUrl = 'https://openrouter.ai/api/v1'
 
+const normalizeOpenClawGatewayBaseUrl = (value: string): string => {
+  const trimmed = value.trim().replace(/\/+$/, '')
+  // Allow passing either http://host:port or http://host:port/v1
+  return trimmed.endsWith('/v1') ? trimmed.slice(0, -3) : trimmed
+}
+
+const getOpenClawOpenAIBaseUrl = (): string => {
+  const gateway = normalizeOpenClawGatewayBaseUrl(
+    getEnv('OPENCLAW_BASE_URL') ?? 'http://localhost:18789'
+  )
+  return `${gateway}/v1`
+}
+
 // Model aliases for backward compatibility
 const modelAliases: Record<string, AiModelKey> = {
   // Vercel Gateway models
@@ -102,7 +124,18 @@ const modelAliases: Record<string, AiModelKey> = {
   'openrouter-llama': 'openrouter-llama',
   'llama-70b': 'openrouter-llama',
   'openrouter-grok': 'openrouter-grok',
-  'grok-openrouter': 'openrouter-grok'
+  'grok-openrouter': 'openrouter-grok',
+  // OpenClaw P.I.C. agent routes
+  'openclaw-cao': 'openclaw-cao',
+  'harper': 'openclaw-cao',
+  'cao': 'openclaw-cao',
+  'openclaw-research': 'openclaw-research',
+  'pic-research': 'openclaw-research',
+  'openclaw-fast': 'openclaw-fast',
+  'pic-fast': 'openclaw-fast',
+  'openclaw-realtime': 'openclaw-realtime',
+  'pic-realtime': 'openclaw-realtime',
+  'pma': 'openclaw-realtime'
 }
 
 export const resolveModelKey = (value?: string): AiModelKey | undefined => {
@@ -242,6 +275,72 @@ export const defaultAiConfig: AiConfig = {
       contextWindow: 200_000,
       supportsStreaming: true,
       supportsVision: true
+    },
+
+    // OpenClaw P.I.C. Agent Models
+    'openclaw-cao': {
+      id: 'anthropic/claude-opus-4',
+      displayName: 'OpenClaw CAO (Opus)',
+      provider: 'openai-compatible',
+      providerType: 'openclaw',
+      apiKeyEnv: 'OPENCLAW_API_KEY',
+      baseUrl: getOpenClawOpenAIBaseUrl(),
+      temperature: 0.3,
+      maxTokens: 8192,
+      timeoutMs: 90_000,
+      costPer1kInputUsd: 0.015,
+      costPer1kOutputUsd: 0.075,
+      contextWindow: 200_000,
+      supportsStreaming: true,
+      supportsVision: true
+    },
+    'openclaw-research': {
+      id: 'anthropic/claude-sonnet-4',
+      displayName: 'OpenClaw Research (Sonnet)',
+      provider: 'openai-compatible',
+      providerType: 'openclaw',
+      apiKeyEnv: 'OPENCLAW_API_KEY',
+      baseUrl: getOpenClawOpenAIBaseUrl(),
+      temperature: 0.4,
+      maxTokens: 4096,
+      timeoutMs: 60_000,
+      costPer1kInputUsd: 0.003,
+      costPer1kOutputUsd: 0.015,
+      contextWindow: 200_000,
+      supportsStreaming: true,
+      supportsVision: true
+    },
+    'openclaw-fast': {
+      id: 'meta-llama/llama-3.3-70b-instruct',
+      displayName: 'OpenClaw Fast (Llama)',
+      provider: 'openai-compatible',
+      providerType: 'openclaw',
+      apiKeyEnv: 'OPENCLAW_API_KEY',
+      baseUrl: getOpenClawOpenAIBaseUrl(),
+      temperature: 0.25,
+      maxTokens: 2048,
+      timeoutMs: 30_000,
+      costPer1kInputUsd: 0.00012,
+      costPer1kOutputUsd: 0.0003,
+      contextWindow: 128_000,
+      supportsStreaming: true,
+      supportsVision: false
+    },
+    'openclaw-realtime': {
+      id: 'x-ai/grok-4',
+      displayName: 'OpenClaw Realtime (Grok)',
+      provider: 'openai-compatible',
+      providerType: 'openclaw',
+      apiKeyEnv: 'OPENCLAW_API_KEY',
+      baseUrl: getOpenClawOpenAIBaseUrl(),
+      temperature: 0.3,
+      maxTokens: 4096,
+      timeoutMs: 45_000,
+      costPer1kInputUsd: 0.003,
+      costPer1kOutputUsd: 0.015,
+      contextWindow: 128_000,
+      supportsStreaming: true,
+      supportsVision: false
     }
   },
 
@@ -265,9 +364,22 @@ export const defaultAiConfig: AiConfig = {
       sentiment: 'openrouter-grok',
       // General chat via Llama
       chat: 'openrouter-llama',
-      general: 'openrouter-llama'
+      general: 'openrouter-llama',
+      // OpenClaw P.I.C. agent-specific tasks
+      'harper-cao': 'openclaw-cao',
+      'cao-approval': 'openclaw-cao',
+      'cao-consolidation': 'openclaw-research',
+      'pma-1': 'openclaw-realtime',
+      'pma-2': 'openclaw-realtime',
+      'prediction-market': 'openclaw-realtime',
+      'futures-desk': 'openclaw-fast',
+      'fa-rippers': 'openclaw-fast',
+      'economic-analysis': 'openclaw-realtime',
+      'fundamentals-desk': 'openclaw-cao',
+      'earnings-analysis': 'openclaw-cao',
+      'tech-mega-cap': 'openclaw-research'
     },
-    // OpenRouter-only fallback chain
+    // OpenRouter + OpenClaw fallback chain
     fallbackMap: {
       sonnet: 'openrouter-sonnet',
       grok: 'openrouter-grok',
@@ -275,7 +387,12 @@ export const defaultAiConfig: AiConfig = {
       'openrouter-sonnet': 'openrouter-llama',
       'openrouter-llama': 'openrouter-grok',
       'openrouter-grok': 'openrouter-opus',
-      'openrouter-opus': 'openrouter-sonnet'
+      'openrouter-opus': 'openrouter-sonnet',
+      // OpenClaw fallbacks (fall back to OpenRouter equivalents)
+      'openclaw-cao': 'openrouter-opus',
+      'openclaw-research': 'openrouter-sonnet',
+      'openclaw-fast': 'openrouter-llama',
+      'openclaw-realtime': 'openrouter-grok'
     },
     // Cross-provider fallbacks (all within OpenRouter now)
     crossProviderFallbacks: []
@@ -291,6 +408,10 @@ export const defaultAiConfig: AiConfig = {
     },
     vercelGateway: {
       baseUrl: vercelGatewayBaseUrl
+    },
+    openClaw: {
+      baseUrl: getOpenClawOpenAIBaseUrl(),
+      appName: getEnv('OPENCLAW_APP_NAME') ?? 'Pulse-PIC-Gateway'
     }
   },
 
@@ -308,6 +429,19 @@ export const defaultAiConfig: AiConfig = {
 // Helper to check if a model uses OpenRouter
 export const isOpenRouterModel = (modelKey: AiModelKey): boolean => {
   return modelKey.startsWith('openrouter-')
+}
+
+// Helper to check if a model uses OpenClaw
+export const isOpenClawModel = (modelKey: AiModelKey): boolean => {
+  return modelKey.startsWith('openclaw-')
+}
+
+// Translate OpenClaw model ID for the Clawdbot gateway
+// Gateway expects 'clawdbot:main' or 'clawdbot:<agentId>' format
+export const getOpenClawGatewayModel = (modelKey: AiModelKey): string => {
+  // All OpenClaw models route through the main agent (Harper)
+  // The gateway handles internal model selection
+  return 'clawdbot:main'
 }
 
 // Helper to get equivalent model across providers

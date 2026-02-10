@@ -15,6 +15,8 @@ import {
   resolveModelKey,
   getCrossProviderEquivalent,
   isOpenRouterModel,
+  isOpenClawModel,
+  getOpenClawGatewayModel,
 } from '../../config/ai-config.js'
 
 // Re-export for use by other modules
@@ -29,28 +31,50 @@ const HEALTH_CHECK_TTL_MS = 60_000
 
 /**
  * Task type to model routing
- * ALL models via OpenRouter:
+ * ALL models via OpenRouter + OpenClaw for P.I.C. agents:
  * - News/Sentiment: Grok 4.1 (OpenRouter)
  * - Chat/General: Grok 4.1 primary, Llama 3.3 70B fallback (per user request)
  * - Research/Reasoning: Claude Opus 4.5 (OpenRouter)
+ * - P.I.C. Agents: OpenClaw with OpenRouter fallbacks
  */
 const TASK_MODEL_PREFERENCES: Record<string, AiModelKey[]> = {
   // News analysis - Grok 4.1 via OpenRouter for real-time news
   news: ['openrouter-grok', 'openrouter-llama', 'openrouter-sonnet'],
   sentiment: ['openrouter-grok', 'openrouter-llama', 'openrouter-sonnet'],
-  
+
   // Chat - Grok 4.1 primary, Llama fallback (user request Jan 11)
   chat: ['openrouter-grok', 'openrouter-llama', 'openrouter-sonnet'],
   general: ['openrouter-grok', 'openrouter-llama', 'openrouter-sonnet'],
-  
+
   // Technical analysis - Grok 4.1 primary for speed
   technical: ['openrouter-grok', 'openrouter-llama', 'openrouter-sonnet'],
   quickpulse: ['openrouter-grok', 'openrouter-llama', 'openrouter-sonnet'],
-  
+
   // Deep research / reasoning - Claude Opus 4.5
   research: ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
   reasoning: ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
-  
+
+  // OpenClaw P.I.C. Agent-specific task routing
+  // Harper/CAO - Executive reasoning (Opus via OpenClaw, fallback to OpenRouter)
+  'harper-cao': ['openclaw-cao', 'openrouter-opus', 'openrouter-sonnet'],
+  'cao-approval': ['openclaw-cao', 'openrouter-opus', 'openrouter-sonnet'],
+  'cao-consolidation': ['openclaw-research', 'openrouter-sonnet', 'openrouter-llama'],
+
+  // PMA agents - Real-time prediction market analysis (Grok)
+  'pma-1': ['openclaw-realtime', 'openrouter-grok', 'openrouter-llama'],
+  'pma-2': ['openclaw-realtime', 'openrouter-grok', 'openrouter-llama'],
+  'prediction-market': ['openclaw-realtime', 'openrouter-grok', 'openrouter-llama'],
+
+  // Futures Desk - Fast technical analysis (Llama)
+  'futures-desk': ['openclaw-fast', 'openrouter-llama', 'openrouter-grok'],
+  'fa-rippers': ['openclaw-fast', 'openrouter-llama', 'openrouter-grok'],
+  'economic-analysis': ['openclaw-realtime', 'openrouter-grok', 'openrouter-llama'],
+
+  // Fundamentals Desk - Deep research (Opus)
+  'fundamentals-desk': ['openclaw-cao', 'openrouter-opus', 'openrouter-sonnet'],
+  'earnings-analysis': ['openclaw-cao', 'openrouter-opus', 'openrouter-sonnet'],
+  'tech-mega-cap': ['openclaw-research', 'openrouter-sonnet', 'openrouter-llama'],
+
   // Default fallback chain - Grok primary
   default: ['openrouter-grok', 'openrouter-llama', 'openrouter-sonnet'],
 }
@@ -232,6 +256,18 @@ export function createModelClient(modelKey: AiModelKey) {
       },
     })
     return client(config.id)
+  }
+
+  // OpenClaw P.I.C. agent models use OpenAI-compatible client
+  if (isOpenClawModel(modelKey)) {
+    const client = createOpenAI({
+      apiKey,
+      baseURL: config.baseUrl,
+      headers: {
+        'X-OpenClaw-App': process.env.OPENCLAW_APP_NAME ?? 'Pulse-PIC-Gateway',
+      },
+    })
+    return client(getOpenClawGatewayModel(modelKey))
   }
 
   // Vercel Gateway models - route based on provider type in model ID
