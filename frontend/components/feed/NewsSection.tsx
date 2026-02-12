@@ -62,32 +62,19 @@ export function NewsSection() {
   }, [backend, mockDataEnabled]);
 
   return (
-    <div className="h-full p-6">
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-2xl font-bold text-[#D4AF37]">RiskFlow</h2>
-            <p className="text-sm text-gray-400 mt-1">
-              Real-time market intelligence from leading prediction markets and macroeconomic sources.
-            </p>
-            <p className="text-xs text-gray-500 mt-0.5">
-              Filtered by watchlist • Classified by AI • Scored by IV
-            </p>
-          </div>
-
-          <Button
-            variant={notificationsEnabled ? 'primary' : 'secondary'}
-            onClick={requestNotifications}
-            className="flex items-center gap-2"
-          >
-            {notificationsEnabled ? (
-              <Bell className="w-4 h-4" />
-            ) : (
-              <BellOff className="w-4 h-4" />
-            )}
-            {notificationsEnabled ? 'Notifications On' : 'Enable Notifications'}
-          </Button>
-        </div>
+    <div className="h-full overflow-y-auto px-5 pt-4 pb-4">
+      <div className="flex items-center justify-end mb-3 mt-1">
+        <button
+          onClick={requestNotifications}
+          className="flex items-center gap-2 text-xs text-gray-400 hover:text-[#D4AF37] transition-colors px-2 py-1"
+        >
+          {notificationsEnabled ? (
+            <Bell className="w-3.5 h-3.5" />
+          ) : (
+            <BellOff className="w-3.5 h-3.5" />
+          )}
+          {notificationsEnabled ? 'Notifications On' : 'Notifications'}
+        </button>
       </div>
 
       <div className="space-y-3">
@@ -115,14 +102,14 @@ export function NewsSection() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-xs font-semibold text-[#D4AF37]">{item.source}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded ${item.impact === 'high' ? 'bg-red-500/20 text-red-400' :
-                        item.impact === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                          'bg-blue-500/20 text-blue-400'
+                      <span className={`text-xs ${item.impact === 'high' ? 'text-red-400' :
+                        item.impact === 'medium' ? 'text-yellow-400' :
+                          'text-blue-400'
                         }`}>
                         {(item.impact || 'low').toUpperCase()}
                       </span>
                       {item.macroLevel && (
-                        <span className="text-xs px-2 py-0.5 rounded bg-purple-500/20 text-purple-400">
+                        <span className="text-xs text-purple-400">
                           Level {item.macroLevel}
                         </span>
                       )}
@@ -153,31 +140,31 @@ export function NewsSection() {
                 {/* Three Mini Cards at Bottom */}
                 <div className="flex gap-2 mt-4 pt-4 border-t border-[#D4AF37]/10">
                   {/* Bullish/Bearish Mini Card - Shows on ALL levels */}
-                  <div className={`flex-1 px-3 py-2 rounded text-xs font-semibold text-center ${priceBrain?.sentiment === 'Bullish' ? 'bg-green-500/20 text-green-400' :
-                    priceBrain?.sentiment === 'Bearish' ? 'bg-red-500/20 text-red-400' :
-                      'bg-gray-500/20 text-gray-400'
+                  <div className={`flex-1 px-3 py-2 text-xs font-semibold text-center ${priceBrain?.sentiment === 'Bullish' ? 'text-green-400' :
+                    priceBrain?.sentiment === 'Bearish' ? 'text-red-400' :
+                      'text-gray-400'
                     }`}>
                     {priceBrain?.sentiment || 'Neutral'}
                   </div>
 
                   {/* Cyclical/Counter-cyclical Mini Card - Shows on ALL levels */}
-                  <div className={`flex-1 px-3 py-2 rounded text-xs font-semibold text-center ${priceBrain?.classification === 'Cyclical' ? 'bg-blue-500/20 text-blue-400' :
-                    priceBrain?.classification === 'Counter-cyclical' ? 'bg-orange-500/20 text-orange-400' :
-                      'bg-gray-500/20 text-gray-400'
+                  <div className={`flex-1 px-3 py-2 text-xs font-semibold text-center ${priceBrain?.classification === 'Cyclical' ? 'text-blue-400' :
+                    priceBrain?.classification === 'Counter-cyclical' ? 'text-orange-400' :
+                      'text-gray-400'
                     }`}>
                     {priceBrain?.classification || 'Neutral'}
                   </div>
 
                   {/* Implied Points Mini Card - Shows ONLY on Level 3 and 4 */}
                   {showImpliedPoints ? (
-                    <div className={`flex-1 px-3 py-2 rounded text-xs font-semibold text-center ${(priceBrain?.impliedPoints || 0) > 0 ? 'bg-green-500/20 text-green-400' :
-                      (priceBrain?.impliedPoints || 0) < 0 ? 'bg-red-500/20 text-red-400' :
-                        'bg-gray-500/20 text-gray-400'
+                    <div className={`flex-1 px-3 py-2 text-xs font-semibold text-center ${(priceBrain?.impliedPoints || 0) > 0 ? 'text-green-400' :
+                      (priceBrain?.impliedPoints || 0) < 0 ? 'text-red-400' :
+                        'text-gray-400'
                       }`}>
                       {(priceBrain?.impliedPoints || 0) > 0 ? '+' : ''}{priceBrain?.impliedPoints?.toFixed(1)} pts
                     </div>
                   ) : (
-                    <div className="flex-1 px-3 py-2 rounded text-xs font-semibold text-center bg-gray-500/10 text-gray-500">
+                    <div className="flex-1 px-3 py-2 text-xs font-semibold text-center text-gray-500">
                       N/A
                     </div>
                   )}

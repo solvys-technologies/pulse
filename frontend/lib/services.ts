@@ -573,6 +573,59 @@ export class PolymarketService {
   }
 }
 
+// Boardroom types (mirrors backend boardroom.ts)
+export type BoardroomAgent =
+  | 'Oracle'
+  | 'Feucht'
+  | 'Sentinel'
+  | 'Charles'
+  | 'Horace'
+  | 'Harper'
+  | 'Unknown';
+
+export interface BoardroomMessage {
+  id: string;
+  agent: BoardroomAgent;
+  emoji: string;
+  content: string;
+  timestamp: string;
+  role: 'user' | 'assistant' | 'system';
+}
+
+export interface InterventionMessage {
+  id: string;
+  sender: 'User' | 'Harper' | 'Unknown';
+  content: string;
+  timestamp: string;
+}
+
+// Boardroom Service
+export class BoardroomService {
+  constructor(private client: ApiClient) {}
+
+  async getMessages(): Promise<BoardroomMessage[]> {
+    const response = await this.client.get<{ messages: BoardroomMessage[] }>('/api/boardroom/messages');
+    return response.messages || [];
+  }
+
+  async getInterventionMessages(): Promise<InterventionMessage[]> {
+    const response = await this.client.get<{ messages: InterventionMessage[] }>('/api/boardroom/intervention/messages');
+    return response.messages || [];
+  }
+
+  async sendIntervention(message: string): Promise<void> {
+    await this.client.post('/api/boardroom/intervention/send', { message });
+  }
+
+  async sendMention(message: string, agent: string): Promise<void> {
+    await this.client.post('/api/boardroom/mention/send', { message, agent });
+  }
+
+  async getStatus(): Promise<{ boardroomActive: boolean; interventionActive: boolean }> {
+    return this.client.get('/api/boardroom/status');
+  }
+}
+
 // Main Backend Client Interface
 export interface BackendClient {
   account: AccountService;
@@ -586,6 +639,7 @@ export interface BackendClient {
   er: ERService;
   events: EventsService;
   polymarket: PolymarketService;
+  boardroom: BoardroomService;
 }
 
 // Create backend client from API client
@@ -602,5 +656,6 @@ export function createBackendClient(client: ApiClient): BackendClient {
     er: new ERService(client),
     events: new EventsService(client),
     polymarket: new PolymarketService(client),
+    boardroom: new BoardroomService(client),
   };
 }

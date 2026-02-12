@@ -89,8 +89,8 @@ export function IVScoreCard({ score, variant = 'default', layoutOption }: IVScor
   };
 
   const containerClasses = variant === 'frosted'
-    ? 'relative backdrop-blur-2xl bg-gradient-to-br from-[#050500]/60 to-[#050500]/40 border border-[#D4AF37]/30 rounded-xl px-3 py-1.5 shadow-lg'
-    : 'relative bg-[#050500] border border-[#D4AF37]/20 rounded-lg px-3 py-1.5';
+    ? 'relative backdrop-blur-2xl bg-gradient-to-br from-[#050500]/60 to-[#050500]/40 border border-[#D4AF37]/30 rounded-xl px-3 h-8 flex items-center shadow-lg'
+    : 'relative bg-[#050500] border border-[#D4AF37]/20 rounded-lg px-3 h-8 flex items-center';
   
   const frostedStyle = variant === 'frosted' ? {
     backdropFilter: 'blur(20px) saturate(150%)',

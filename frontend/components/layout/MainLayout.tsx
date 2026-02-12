@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { TopHeader } from './TopHeader';
 import { NavSidebar } from './NavSidebar';
 import { MissionControlPanel } from '../mission-control/MissionControlPanel';
@@ -8,7 +8,7 @@ import { MinimalFeedSection } from '../feed/MinimalFeedSection';
 import { MinimalTapeWidget } from '../feed/MinimalTapeWidget';
 import { NewsSection } from '../feed/NewsSection';
 import { AnalysisSection } from '../analysis/AnalysisSection';
-import { TopStepXBrowser } from '../TopStepXBrowser';
+import { TopStepXBrowser, type TradingPlatform } from '../TopStepXBrowser';
 import { FloatingWidget } from './FloatingWidget';
 import { PanelPosition } from './DraggablePanel';
 import { useBackend } from '../../lib/backend';
@@ -19,18 +19,20 @@ import { AlgoStatusWidget } from '../mission-control/AlgoStatusWidget';
 import { PanelNotificationWidget } from './PanelNotificationWidget';
 import { MinimalERMeter } from '../MinimalERMeter';
 import { ExecutiveDashboard } from '../executive/ExecutiveDashboard';
-import { AgentChatroomView } from '../executive/AgentChatroomView';
-import { NotionExecutiveView } from '../executive/NotionExecutiveView';
+import { BoardroomView } from '../BoardroomView';
+import { ResearchDepartment } from '../executive/ResearchDepartment';
+import { InterventionSidebar } from '../InterventionSidebar';
+import { SectionBreadcrumb } from './SectionBreadcrumb';
+import { useBoardroom } from '../../hooks/useBoardroom';
+import { SearchModal } from '../search/SearchModal';
+import { PulseFloatingChat } from '../chat/PulseFloatingChat';
+import { SettingsPage } from '../SettingsPanel';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion';
+type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'settings';
 type LayoutOption = 'movable' | 'tickers-only' | 'combined';
 
-interface MainLayoutProps {
-  onSettingsClick: () => void;
-}
-
 // Main layout component - no authentication needed
-export function MainLayout({ onSettingsClick }: MainLayoutProps) {
+export function MainLayout() {
   const [activeTab, setActiveTab] = useState<NavTab>('feed');
   const [missionControlCollapsed, setMissionControlCollapsed] = useState(false);
   const [tapeCollapsed, setTapeCollapsed] = useState(false);
@@ -38,6 +40,9 @@ export function MainLayout({ onSettingsClick }: MainLayoutProps) {
   const [tabTransitioning, setTabTransitioning] = useState(false);
   const [prevTab, setPrevTab] = useState<NavTab | null>(null);
   const [topStepXEnabled, setTopStepXEnabled] = useState(false);
+  const [selectedPlatform, setSelectedPlatform] = useState<TradingPlatform>('topstepx');
+  const [secondaryPlatform, setSecondaryPlatform] = useState<TradingPlatform>('research');
+  const [splitBrowserView, setSplitBrowserView] = useState(false);
   const [layoutOption, setLayoutOption] = useState<LayoutOption>('movable');
   const [prevLayoutOption, setPrevLayoutOption] = useState<LayoutOption | null>(null);
   const [lastMovableLayout, setLastMovableLayout] = useState<LayoutOption | null>(null);
@@ -50,8 +55,74 @@ export function MainLayout({ onSettingsClick }: MainLayoutProps) {
   const [combinedPanelErScore, setCombinedPanelErScore] = useState(0);
   const [combinedPanelPnl, setCombinedPanelPnl] = useState(0);
   const [combinedPanelAlgoEnabled, setCombinedPanelAlgoEnabled] = useState(false);
-  
+  const [showAskHarp, setShowAskHarp] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
+
+  // Tab history for breadcrumb back/forward navigation
+  const [tabHistory, setTabHistory] = useState<NavTab[]>(['feed']);
+  const [historyIndex, setHistoryIndex] = useState(0);
+
+  const navigateTab = (tab: NavTab) => {
+    // Trim forward history when navigating to a new tab
+    const trimmed = tabHistory.slice(0, historyIndex + 1);
+    trimmed.push(tab);
+    setTabHistory(trimmed);
+    setHistoryIndex(trimmed.length - 1);
+    setActiveTab(tab);
+  };
+
+  const goBack = () => {
+    if (historyIndex > 0) {
+      const newIdx = historyIndex - 1;
+      setHistoryIndex(newIdx);
+      setActiveTab(tabHistory[newIdx]);
+    }
+  };
+
+  const goForward = () => {
+    if (historyIndex < tabHistory.length - 1) {
+      const newIdx = historyIndex + 1;
+      setHistoryIndex(newIdx);
+      setActiveTab(tabHistory[newIdx]);
+    }
+  };
+
   const backend = useBackend();
+  const boardroom = useBoardroom();
+
+  /* ---- Keyboard shortcuts ---- */
+  useEffect(() => {
+    const TAB_MAP: Record<string, NavTab> = {
+      '1': 'executive',
+      '2': 'feed',
+      '3': 'analysis',
+      '4': 'news',
+      '5': 'chatroom',
+      '6': 'notion',
+    };
+
+    const handler = (e: KeyboardEvent) => {
+      // Cmd+K -> Search
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setShowSearchModal((v) => !v);
+        return;
+      }
+      // Cmd+Shift+1-6 -> Tab navigation
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && TAB_MAP[e.key]) {
+        e.preventDefault();
+        navigateTab(TAB_MAP[e.key]);
+        return;
+      }
+      // Esc -> Close modals
+      if (e.key === 'Escape') {
+        setShowSearchModal(false);
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Reset layout when TopStepX is toggled
   useEffect(() => {
@@ -158,7 +229,7 @@ export function MainLayout({ onSettingsClick }: MainLayoutProps) {
     setTabTransitioning(true);
     setPrevTab(activeTab);
     setTimeout(() => {
-      setActiveTab(tab);
+      navigateTab(tab);
       setTimeout(() => {
         setTabTransitioning(false);
         setPrevTab(null);
@@ -324,30 +395,42 @@ export function MainLayout({ onSettingsClick }: MainLayoutProps) {
     // For 'tickers-only', no panels are shown (only floating widget)
   } else {
     // When TopStepX is disabled, show static layout with Mission Control on right
-    rightPanels.push(
-      <MissionControlPanel
-        key="mission-control"
-        collapsed={missionControlCollapsed}
-        onToggleCollapse={() => setMissionControlCollapsed(!missionControlCollapsed)}
-        topStepXEnabled={false}
-      />
-    );
+    // Hide Mission Control when Research Department, Boardroom, or Dashboard is active
+    const hideRightPanel = activeTab === 'notion' || activeTab === 'chatroom' || activeTab === 'settings';
+    if (!hideRightPanel) {
+      rightPanels.push(
+        <MissionControlPanel
+          key="mission-control"
+          collapsed={missionControlCollapsed}
+          onToggleCollapse={() => setMissionControlCollapsed(!missionControlCollapsed)}
+          topStepXEnabled={false}
+        />
+      );
+    }
   }
 
   return (
     <div className="h-screen flex flex-col bg-[#050500] text-white">
-      <TopHeader 
+      <TopHeader
         topStepXEnabled={topStepXEnabled}
-        onTopStepXToggle={() => setTopStepXEnabled(!topStepXEnabled)}
+        onTopStepXToggle={() => setTopStepXEnabled(true)}
+        selectedPlatform={selectedPlatform}
+        onPlatformSelect={setSelectedPlatform}
         layoutOption={layoutOption}
         onLayoutOptionChange={setLayoutOption}
+        askHarpOpen={showAskHarp}
+        onAskHarpToggle={() => setShowAskHarp(prev => !prev)}
+        activeTab={activeTab}
+        tabHistory={tabHistory}
+        historyIndex={historyIndex}
+        onBack={goBack}
+        onForward={goForward}
       />
 
       <div className="flex-1 flex overflow-hidden relative">
         <NavSidebar
           activeTab={activeTab}
           onTabChange={handleTabChange}
-          onSettingsClick={onSettingsClick}
           onLogout={handleLogout}
           topStepXEnabled={topStepXEnabled}
         />
@@ -363,40 +446,56 @@ export function MainLayout({ onSettingsClick }: MainLayoutProps) {
         <div className="flex-1 overflow-hidden relative min-w-0 flex flex-col">
           {topStepXEnabled ? (
             <div className="h-full w-full flex-1 p-4 min-h-0">
-              <TopStepXBrowser onClose={() => setTopStepXEnabled(false)} />
+              <TopStepXBrowser
+                onClose={() => setTopStepXEnabled(false)}
+                primaryPlatform={selectedPlatform}
+                onPrimaryPlatformChange={setSelectedPlatform}
+                secondaryPlatform={secondaryPlatform}
+                onSecondaryPlatformChange={setSecondaryPlatform}
+                splitViewEnabled={splitBrowserView}
+                onSplitViewEnabledChange={setSplitBrowserView}
+                allowSplitView={layoutOption === 'tickers-only'}
+              />
             </div>
           ) : (
-            <div className="h-full overflow-y-auto relative flex-1">
+            <div className="h-full relative flex-1 flex flex-col">
+              <div className="flex-1 min-h-0 overflow-hidden">
               {activeTab === 'feed' && (
-                <div key="feed" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                <div key="feed" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <FeedSection />
                 </div>
               )}
               {activeTab === 'executive' && (
-                <div key="executive" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                <div key="executive" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <ExecutiveDashboard />
                 </div>
               )}
               {activeTab === 'analysis' && (
-                <div key="analysis" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                <div key="analysis" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <AnalysisSection />
                 </div>
               )}
               {activeTab === 'news' && (
-                <div key="news" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                <div key="news" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <NewsSection />
                 </div>
               )}
               {activeTab === 'chatroom' && (
-                <div key="chatroom" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
-                  <AgentChatroomView />
+                <div key="chatroom" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                  <BoardroomView />
                 </div>
               )}
               {activeTab === 'notion' && (
                 <div key="notion" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
-                  <NotionExecutiveView />
+                  <ResearchDepartment />
                 </div>
               )}
+              {activeTab === 'settings' && (
+                <div key="settings" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                  <SettingsPage />
+                </div>
+              )}
+              </div>
             </div>
           )}
         </div>
@@ -444,7 +543,42 @@ export function MainLayout({ onSettingsClick }: MainLayoutProps) {
             onDismiss={() => setShowTapeNotification(false)}
           />
         )}
+
+        {/* Global Ask Harp slide-in overlay (hidden on boardroom tab where it's already embedded) */}
+        {showAskHarp && activeTab !== 'chatroom' && (
+          <div className="absolute right-0 top-0 bottom-0 w-[360px] z-40 flex flex-col bg-[#0a0a00] border-l border-[#D4AF37]/20 shadow-2xl animate-fade-in-tab">
+            <div className="flex items-center justify-between px-4 py-2 border-b border-[#D4AF37]/20">
+              <span className="text-xs tracking-[0.22em] uppercase text-[#D4AF37] font-semibold">Ask Harp</span>
+              <button
+                onClick={() => setShowAskHarp(false)}
+                className="p-1 rounded hover:bg-[#D4AF37]/10 text-gray-400 hover:text-[#D4AF37] transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex-1 min-h-0">
+              <InterventionSidebar
+                messages={boardroom.interventionMessages}
+                sending={boardroom.sending}
+                onSend={boardroom.sendIntervention}
+                onMention={boardroom.sendMention}
+                active={boardroom.status.interventionActive}
+              />
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Global overlays */}
+      <SearchModal
+        open={showSearchModal}
+        onClose={() => setShowSearchModal(false)}
+        onNavigateTab={(tab) => navigateTab(tab as NavTab)}
+      />
+      <PulseFloatingChat
+        visible={activeTab !== 'analysis' && activeTab !== 'chatroom' && activeTab !== 'notion' && activeTab !== 'settings'}
+        onExpandToAnalysis={() => navigateTab('analysis')}
+      />
     </div>
   );
 }

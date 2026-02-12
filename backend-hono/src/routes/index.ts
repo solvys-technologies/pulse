@@ -15,11 +15,13 @@ import { createPsychAssistRoutes } from './psych-assist.js';
 import { createAiRoutes } from './ai/index.js';
 import { createAgentRoutes } from './agents/index.js';
 import { createPolymarketRoutes } from './polymarket/index.js';
+import { createBoardroomRoutes } from './boardroom/index.js';
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
   // Phase 2: Market routes - VIX is public
   app.route('/api/market', createMarketRoutes());
+  app.route('/api/boardroom', createBoardroomRoutes());
 
   // Protected routes (auth required)
   app.use('/api/account/*', authMiddleware);

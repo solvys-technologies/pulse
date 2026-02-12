@@ -293,3 +293,10 @@
 .transition-lush-fast {
   transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* Subtle gold background glow on bottom corners — applied as box-shadow to avoid extra height */
+.section-fade-corners {
+  box-shadow:
+    inset 80px -60px 80px -60px rgba(212, 175, 55, 0.03),
+    inset -80px -60px 80px -60px rgba(212, 175, 55, 0.03);
+}

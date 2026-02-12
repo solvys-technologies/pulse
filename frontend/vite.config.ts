@@ -48,7 +48,7 @@ export default defineConfig(() => {
     base: process.env.VERCEL ? '/' : './',
     server: {
       cors: true,
-      port: 7777
+      port: 8888
     },
     define: {
       // Inject build timestamp so each build has a unique version

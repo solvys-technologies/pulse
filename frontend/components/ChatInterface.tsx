@@ -7,7 +7,7 @@
  * Simplified for local single-user mode - no authentication
  */
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { ArrowRight, Paperclip, Image, FileText, Link2, AlertTriangle, TrendingUp, History, X, Pin, Archive, Edit2, MoreVertical, Square } from "lucide-react";
+import { ArrowRight, Paperclip, Image, FileText, Link2, AlertTriangle, TrendingUp, History, X, Pin, Archive, Edit2, MoreVertical, Square, BarChart3, CalendarCheck, Brain, Eye } from "lucide-react";
 import { useOpenClawChat } from "./chat/hooks/useOpenClawChat";
 import { useBackend } from "../lib/backend";
 import { healingBowlPlayer } from "../utils/healingBowlSounds";
@@ -15,6 +15,8 @@ import { useSettings } from "../contexts/SettingsContext";
 import ReactMarkdown from "react-markdown";
 import { MessageRenderer } from "./chat/MessageRenderer";
 import QuickPulseModal from "./analysis/QuickPulseModal";
+import { PulseChatInput } from "./chat/PulseChatInput";
+import { usePulseAgents } from "../contexts/PulseAgentContext";
 
 
 interface Message {
@@ -31,13 +33,20 @@ interface TiltWarning {
   message?: string;
 }
 
-const SUGGESTION_CHIPS = [
-  { label: "Run the NTN report", prompt: "Run the NTN report" },
-  { label: "Give me the Tale of the Tape (Weekly Summary)", prompt: "Give me the Tale of the Tape (Weekly Summary)" },
-  { label: "Let's do a psych eval", prompt: "Let's do a psych eval" },
-  { label: "How's my ER this week?", prompt: "How's my ER this week?" },
-  { label: "Update my Blindspots", prompt: "Update my Blindspots" },
+const SUGGESTION_CHIPS: { label: string; prompt: string; icon: typeof BarChart3 }[] = [
+  { label: "Run the NTN Report", prompt: "Run the NTN report", icon: BarChart3 },
+  { label: "Tale of the Tape", prompt: "Give me the Tale of the Tape (Weekly Summary)", icon: CalendarCheck },
+  { label: "Psych Eval", prompt: "Let's do a psych eval", icon: Brain },
+  { label: "Update my Blindspots", prompt: "Update my Blindspots", icon: Eye },
 ];
+
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 6) return "Late session. What needs attention?";
+  if (hour < 12) return "Good morning. What can I help with?";
+  if (hour < 17) return "Good afternoon. What can I help with?";
+  return "Good evening. What can I help with?";
+}
 
 const THINKING_TERMS = [
   "finagling",
@@ -109,6 +118,7 @@ export default function ChatInterface() {
   const [lastSentMessage, setLastSentMessage] = useState<string>("");
 
   const [showQuickPulseModal, setShowQuickPulseModal] = useState(false);
+  const [thinkHarder, setThinkHarder] = useState(false);
 
   // OpenClaw chat hook
   const {
@@ -484,12 +494,12 @@ ${kpiSection}
     <div className="h-full flex flex-col">
       {/* Header with buttons */}
       <div className="bg-transparent">
-        <div className="h-14 flex items-center justify-end px-6">
+        <div className="h-14 flex items-center justify-end px-6 mt-1">
           <div className="flex items-center gap-3">
             <button
               onClick={() => handleSend("Run the NTN report")}
               disabled={isLoading}
-              className="px-3 py-1.5 bg-white/5 backdrop-blur-sm border border-white/10 hover:border-[#D4AF37]/40 hover:bg-[#D4AF37]/10 disabled:opacity-50 rounded-lg text-[13px] text-zinc-300 hover:text-[#D4AF37] transition-all whitespace-nowrap"
+              className="px-3 py-1.5 hover:bg-[#D4AF37]/10 disabled:opacity-50 rounded text-[13px] text-zinc-400 hover:text-[#D4AF37] transition-all whitespace-nowrap"
             >
               Run NTN Report
             </button>
@@ -499,7 +509,7 @@ ${kpiSection}
                 setConversationId(undefined);
                 setShowSuggestions(true);
               }}
-              className="px-3 py-1.5 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 rounded text-xs font-medium text-zinc-400 whitespace-nowrap transition-colors"
+              className="px-3 py-1.5 hover:bg-white/5 rounded text-xs font-medium text-zinc-400 whitespace-nowrap transition-colors"
             >
               New Chat
             </button>
@@ -510,7 +520,7 @@ ${kpiSection}
                   loadConversationHistory();
                 }
               }}
-              className="px-3 py-1.5 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 rounded text-xs font-medium text-zinc-400 whitespace-nowrap transition-colors flex items-center gap-1.5"
+              className="px-3 py-1.5 hover:bg-white/5 rounded text-xs font-medium text-zinc-400 whitespace-nowrap transition-colors flex items-center gap-1.5"
             >
               <History className="w-3.5 h-3.5" />
               History
@@ -545,7 +555,7 @@ ${kpiSection}
                 <X className="w-5 h-5 text-[#D4AF37]" />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+            <div className="flex-1 overflow-hidden p-4 space-y-2">
               {loadingHistory ? (
                 <div className="text-center text-zinc-500 text-sm py-8">Loading...</div>
               ) : conversations.length === 0 ? (
@@ -684,29 +694,7 @@ ${kpiSection}
       <div className="flex-1 overflow-y-auto p-6 pb-8">
         <div className="max-w-3xl mx-auto space-y-4 mb-8">
           {showSuggestions && messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center min-h-[400px] gap-6">
-              <div className="text-center">
-                <h3 className="text-2xl font-semibold text-[#D4AF37] mb-3">The Name's Price. AI Price.</h3>
-                <p className="text-base text-zinc-300 mb-2">
-                  I'm Priced In's Risk Event Quant & Psych Specialist.
-                </p>
-                <p className="text-sm text-zinc-400">
-                  Ask me anything about The Tape, The Markets, or yourself; I'm listening.
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-3 justify-center w-full max-w-2xl">
-                {SUGGESTION_CHIPS.map((chip, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleSend(chip.prompt)}
-                    disabled={isLoading}
-                    className="px-4 py-2.5 bg-white/5 backdrop-blur-sm border border-white/10 hover:border-[#D4AF37]/40 hover:bg-[#D4AF37]/10 disabled:opacity-50 rounded-full text-sm text-zinc-300 hover:text-[#D4AF37] transition-all"
-                  >
-                    {chip.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <AnalysisGreeting onSend={handleSend} isLoading={isLoading} />
           )}
 
           {messages.map((message) => (
@@ -759,98 +747,17 @@ ${kpiSection}
         </div>
       </div>
 
-      {/* Input */}
-      <div className="sticky bottom-0 pt-6 pb-4 px-4 bg-[#050500]/80 backdrop-blur-md">
-        <div className="w-full max-w-3xl mx-auto flex gap-2 items-end">
-          <button
-            onClick={() => setShowAttachMenu(!showAttachMenu)}
-            className="relative flex items-center justify-center w-[42px] h-[42px] flex-shrink-0 hover:bg-white/10 rounded transition-colors z-10 self-end"
-            type="button"
-          >
-            <Paperclip className="w-4 h-4 text-zinc-400 hover:text-[#D4AF37] transition-colors" />
-
-            {showAttachMenu && (
-              <div className="absolute bottom-full left-0 mb-2 bg-black/95 backdrop-blur-md border border-white/10 rounded-xl p-2 shadow-xl min-w-[200px] z-10">
-                <button
-                  onClick={() => setShowAttachMenu(false)}
-                  className="w-full flex items-center gap-3 px-3 py-2 text-sm text-zinc-300 hover:bg-[#D4AF37]/10 rounded-lg transition-colors"
-                >
-                  <Image className="w-4 h-4" />
-                  <span>Photo/Video</span>
-                </button>
-                <button
-                  onClick={() => setShowAttachMenu(false)}
-                  className="w-full flex items-center gap-3 px-3 py-2 text-sm text-zinc-300 hover:bg-[#D4AF37]/10 rounded-lg transition-colors"
-                >
-                  <FileText className="w-4 h-4" />
-                  <span>Document</span>
-                </button>
-                <button
-                  onClick={() => setShowAttachMenu(false)}
-                  className="w-full flex items-center gap-3 px-3 py-2 text-sm text-zinc-300 hover:bg-[#D4AF37]/10 rounded-lg transition-colors"
-                >
-                  <Link2 className="w-4 h-4" />
-                  <span>RiskFlow Item</span>
-                </button>
-              </div>
-            )}
-          </button>
-
-          <textarea
-            id="chat-message-input"
-            name="chat-message"
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => {
-              setInput(e.target.value);
-              const target = e.target as HTMLTextAreaElement;
-              target.style.height = "auto";
-              target.style.height = `${Math.min(target.scrollHeight, 200)}px`;
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                if (isLoading) {
-                  // If streaming, stop on Enter
-                  e.preventDefault();
-                  handleStop();
-                } else if (input.trim()) {
-                  // If not streaming and has input, send
-                  e.preventDefault();
-                  handleSend();
-                }
-              }
-            }}
-            placeholder="Analyze your performance, the news, or the markets…."
-            disabled={false}
-            rows={1}
-            className="flex-1 bg-white/5 backdrop-blur-sm border border-white/10 rounded-[18px] px-4 py-3 text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-[#D4AF37]/40 focus:shadow-[0_0_12px_rgba(255,192,56,0.1)] transition-all resize-none overflow-y-auto min-h-[42px] max-h-[200px] leading-relaxed"
+      {/* Input — PulseChatInput */}
+      <div className="sticky bottom-0 pt-4 pb-4 px-4 bg-[#050500]/80 backdrop-blur-md">
+        <div className="w-full max-w-3xl mx-auto">
+          <PulseChatInput
+            onSend={(msg) => handleSend(msg)}
+            onStop={handleStop}
+            isProcessing={isLoading}
+            thinkHarder={thinkHarder}
+            setThinkHarder={setThinkHarder}
+            placeholder="Analyze your performance, the news, or the markets..."
           />
-
-          {isLoading ? (
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                handleStop();
-              }}
-              className="flex items-center justify-center w-[42px] h-[42px] flex-shrink-0 rounded-full bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-400 hover:text-red-300 transition-all self-end"
-              type="button"
-              title="Stop generating"
-            >
-              <Square className="w-4 h-4 fill-current" />
-            </button>
-          ) : (
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                handleSend();
-              }}
-              disabled={!input.trim() || isLoading}
-              className="flex items-center justify-center w-[42px] h-[42px] flex-shrink-0 rounded-full bg-[#D4AF37] hover:bg-[#FFD060] disabled:bg-zinc-900 disabled:text-zinc-700 disabled:border disabled:border-zinc-800 transition-all self-end"
-              type="button"
-            >
-              <ArrowRight className="w-5 h-5" />
-            </button>
-          )}
         </div>
       </div>
 
@@ -862,3 +769,83 @@ ${kpiSection}
     </div>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/*  Analysis Greeting — shown when no messages in Analysis tab          */
+/* ------------------------------------------------------------------ */
+
+function AnalysisGreeting({ onSend, isLoading }: { onSend: (msg: string) => void; isLoading: boolean }) {
+  let activeAgent: { name: string; icon: string; sector: string; description: string } | null = null;
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const ctx = usePulseAgents();
+    activeAgent = ctx.activeAgent;
+  } catch {
+    // Provider not mounted yet — fallback
+  }
+
+  const agent = activeAgent || { name: 'Harper', icon: 'H', sector: 'Chief Analyst', description: 'Executive strategy and oversight' };
+  const greeting = getGreeting();
+
+  // Role subtitle based on agent
+  const getSubtitle = () => {
+    switch (agent.name) {
+      case 'Harper': return "I'm Harper, your Chief Agentic Officer. What needs orchestrating today?";
+      case 'Oracle': return "I'm Oracle, your Market Intelligence Analyst. What data shall we review?";
+      case 'Feucht': return "I'm Feucht, your Risk Management Specialist. What exposure needs attention?";
+      case 'Sentinel': return "I'm Sentinel, your Compliance Monitor. What needs verification?";
+      case 'Charles': return "I'm Charles, your Quantitative Strategist. What patterns should we analyze?";
+      case 'Horace': return "I'm Horace, your Portfolio Architect. What allocations need review?";
+      default: return `I'm ${agent.name}. What needs orchestrating today?`;
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[400px] gap-5 max-w-[580px] mx-auto w-full">
+      {/* Agent name — large, centered, no icon */}
+      <div className="flex flex-col items-center gap-2.5">
+        <h2 className="text-[22px] font-semibold text-white tracking-tight">{agent.name}</h2>
+
+        {/* Anthropic model badge */}
+        <div className="flex items-center gap-1.5">
+          <div
+            className="w-[14px] h-[14px] rounded-full flex items-center justify-center"
+            style={{ backgroundColor: '#D97757' }}
+          >
+            <span style={{ fontSize: '7px', color: 'white', fontWeight: 800, lineHeight: 1 }}>A</span>
+          </div>
+          <span className="text-[12px] font-medium" style={{ color: '#D97757' }}>
+            Claude Opus 4.6
+          </span>
+        </div>
+
+        {/* Subtitle */}
+        <p className="text-[13px] text-gray-500 mt-0.5">{getSubtitle()}</p>
+      </div>
+
+      {/* Large greeting */}
+      <h1 className="text-[26px] font-bold text-white tracking-tight text-center leading-snug mt-1">
+        {greeting}
+      </h1>
+
+      {/* Suggestion chips — 2×2 grid, card style with icons */}
+      <div className="grid grid-cols-2 gap-3 w-full mt-3">
+        {SUGGESTION_CHIPS.map((chip, index) => {
+          const Icon = chip.icon;
+          return (
+            <button
+              key={index}
+              onClick={() => onSend(chip.prompt)}
+              disabled={isLoading}
+              className="flex items-center gap-3 px-4 py-3.5 bg-transparent border border-white/10 hover:border-[#D4AF37]/40 hover:bg-[#D4AF37]/5 disabled:opacity-50 rounded-xl text-left transition-all group"
+            >
+              <Icon className="w-[18px] h-[18px] text-gray-500 group-hover:text-[#D4AF37] transition-colors shrink-0" />
+              <span className="text-[13px] text-zinc-300 group-hover:text-white transition-colors">{chip.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+

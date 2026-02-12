@@ -23,6 +23,11 @@ export interface ExecutiveBriefItem {
 export interface ExecutiveScheduleItem {
   title: string;
   detail: string;
+  forecast?: string;
+  actual?: string;
+  previous?: string;
+  /** ISO date string (YYYY-MM-DD). If omitted, treated as today. */
+  date?: string;
 }
 
 export const executiveKpis: ExecutiveKpi[] = [
@@ -63,9 +68,105 @@ export const executiveNeedToKnow: ExecutiveBriefItem[] = [
   { title: 'Research memo: AI infra pricing', detail: 'Comp stack suggests margin compression in Q2.' },
 ];
 
+// Helper to generate date strings relative to today
+function relativeDate(daysFromNow: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + daysFromNow);
+  return d.toISOString().slice(0, 10);
+}
+
 export const executiveSchedule: ExecutiveScheduleItem[] = [
-  { title: '09:30 NY Open', detail: 'Harper sets session bias' },
-  { title: '10:00 CPI Print', detail: 'Risk pause window' },
-  { title: '14:15 RiskFlow Sync', detail: 'Executive checkpoint' },
+  // Today
+  {
+    title: '09:30 NY Open',
+    detail: 'Harper sets session bias',
+    forecast: '-',
+    actual: '-',
+    previous: '-',
+    date: relativeDate(0),
+  },
+  {
+    title: '10:00 CPI Print',
+    detail: 'Risk pause window',
+    forecast: '0.3%',
+    actual: '-',
+    previous: '0.2%',
+    date: relativeDate(0),
+  },
+  {
+    title: '14:15 RiskFlow Sync',
+    detail: 'Executive checkpoint',
+    forecast: '-',
+    actual: '-',
+    previous: '-',
+    date: relativeDate(0),
+  },
+  {
+    title: '15:00 Options Expiry Review',
+    detail: 'Weekly pin risk assessment',
+    forecast: '-',
+    actual: '-',
+    previous: '-',
+    date: relativeDate(0),
+  },
+  // Tomorrow
+  {
+    title: '08:30 Jobless Claims',
+    detail: 'Weekly initial claims release',
+    forecast: '220K',
+    actual: '-',
+    previous: '215K',
+    date: relativeDate(1),
+  },
+  {
+    title: '09:30 NY Open',
+    detail: 'Session bias recalibration',
+    forecast: '-',
+    actual: '-',
+    previous: '-',
+    date: relativeDate(1),
+  },
+  {
+    title: '13:00 30Y Bond Auction',
+    detail: 'Duration supply event — watch tail',
+    forecast: '4.62%',
+    actual: '-',
+    previous: '4.58%',
+    date: relativeDate(1),
+  },
+  // Day +2
+  {
+    title: '10:00 UMich Sentiment',
+    detail: 'Consumer confidence prelim',
+    forecast: '78.5',
+    actual: '-',
+    previous: '79.4',
+    date: relativeDate(2),
+  },
+  {
+    title: '11:00 Crude Inventories',
+    detail: 'EIA weekly petroleum status',
+    forecast: '-1.2M',
+    actual: '-',
+    previous: '-2.5M',
+    date: relativeDate(2),
+  },
+  // Day +3
+  {
+    title: '08:30 PPI Final',
+    detail: 'Producer prices — inflation pipeline',
+    forecast: '0.2%',
+    actual: '-',
+    previous: '0.1%',
+    date: relativeDate(3),
+  },
+  {
+    title: '14:00 FOMC Minutes',
+    detail: 'December meeting minutes release',
+    forecast: '-',
+    actual: '-',
+    previous: '-',
+    date: relativeDate(3),
+  },
 ];
 
