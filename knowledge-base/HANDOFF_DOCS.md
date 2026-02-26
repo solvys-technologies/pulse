@@ -1,78 +1,70 @@
 # System Handoff Documentation
 
-## 1. Agentic AI Chat System
+## Snapshot Date
 
-### Overview
-The Agentic AI Chat System is designed to act as a "Brain Layer" for the Pulse application, extending beyond simple chat to interpreting market data, news, and user emotional states to provide trading assistance. It integrates with the Vercel AI SDK and potentially Vercel AI Gateway for model management.
+2026-02-12
 
-### Key Components
+## 1) Current Backend Reality
 
-#### 1.1 Firmware (Identity & Rules)
-- **Location**: `src/lib/agents/prop-firm-trader/firmware.ts` (or similar, verifying location in codebase suggested).
-- **Function**: Defines the "personality" and strict operating rules of the AI.
-- **Critical Rules**:
-  - Never give financial advice.
-  - Maintain a calm, professional demeanor.
-  - Prioritize risk management over profit.
-  - Interpret "The Tape" (News Feed) for IV (Implied Volatility) impact.
+Pulse backend is implemented under `backend-hono/` and is not greenfield.
 
-#### 1.2 Context & Memory
-- The AI receives a "System Prompt" constructed at runtime that includes:
-  - **User Context**: Account balance, open positions (from ProjectX).
-  - **Market Context**: "The Tape" (Live News Feed), active algorithms.
-  - **Emotional Context**: "PsychAssist" metrics (e.g., if the user is verbally abusive or "tilted").
-- **Persistence**: Chat history is persisted (likely via Vercel AI SDK adapters or local state, verify `useChat` implementation).
+### Route groups currently mounted
 
-#### 1.3 Tools & Capabilities
-- The AI can access backend APIs to:
-  - Toggle trading algorithms (on/off).
-  - Adjust risk parameters (daily loss limits).
-  - Analyze "The Tape" for sentiment and macro impact.
+- `/api/market`
+- `/api/boardroom`
+- `/api/account`
+- `/api/notifications`
+- `/api/trading`
+- `/api/projectx`
+- `/api/riskflow`
+- `/api/psych`
+- `/api/ai`
+- `/api/agents`
+- `/api/polymarket`
 
-### Known Issues / Future Work
-- **Model consistency**: Ensure the selected model (e.g., Claude 3.5 Sonnet, GPT-4o) adheres to the system prompt strictly.
-- **Latency**: Real-time correlation with "The Tape" needs optimization to ensure the AI comments on news seconds after it appears.
+### Not yet mounted
 
----
+- Autopilot route module exists at `backend-hono/src/routes/autopilot/` but is not registered in `backend-hono/src/routes/index.ts`.
 
-## 2. Autopilot Trading System ("RiskFlow")
+### Auth mode
 
-### Overview
-The Autopilot Trading System is a backend-driven logic engine that manages algorithmic trading execution and risk supervision. It operates independently of the frontend but communicates status via websockets/polling.
+- `backend-hono/src/middleware/auth.ts` runs local single-user auth context (`local-user`) for protected routes.
 
-### Key Components
+## 2) Frontend Integration Reality
 
-#### 2.1 RiskFlow Service
-- **Location**: `backend-hono/src/routes/riskflow.ts` (API), `backend-hono/src/services/risk-engine.ts` (Logic).
-- **Function**:
-  - Monitors open positions.
-  - Enforces "Hard Stops" (Daily Loss Limit).
-  - Calculates "IV Scores" based on news sentiment to adjust sizing or pause trading.
+Frontend service wrappers live in `frontend/lib/services.ts` and most major domains are wired.
 
-#### 2.2 News Feed Integration ("The Tape")
-- **Source**: `backend-hono/src/services/news-service.ts` & `x-client.ts`.
-- **Mechanism**:
-  - **Auto-Fetch**: On server startup, fetches the latest 15 financial news items.
-  - **Sources**: Official X API (primary).
-  - **Impact**: News items are scored (-10 to +10) for "Implied Volatility (IV) Impact".
-  - **Action**: High IV impact events (e.g., "Rate Hike") can trigger a "Circuit Breaker" to pause Autopilot.
+### Actively consumed API domains
 
-#### 2.3 Algorithm Governance
-- The system supports "permissions" for algorithms (e.g., "TrendFollower", "MeanReversion").
-- **State**: The backend maintains the state of which algos are active.
-- **Safety**: If the connection to ProjectX (Broker) is lost, Autopilot attempts to flatten positions (verify implementation).
+- Account, riskflow, market/VIX, ai chat, trading, projectx, notifications, boardroom, agents, polymarket.
 
-### Maintenance & Operations
-- **X API Quota**: Monitor usage to avoid `429 Too Many Requests`. Consider upgrading the plan if consistent reliability is needed.
-- **Startup**: creating `news_articles` table is handled via SQL migration (already applied).
+### Stubbed or partial service methods
 
-## 3. Integration Points
+- NTN report generation fallback
+- Position seeding fallback
+- ProjectX uplink fallback
+- ER snapshots / overtrading checks fallback
+- Events list/seed fallback
 
-### Frontend <-> Backend
-- **News Feed**: Frontend polls or receives SSE/WS from `/api/riskflow/feed`.
-- **Control**: Frontend toggles algo state via `/api/riskflow/toggle`.
+These stubs were intentionally retained while backend parity is still in progress.
 
-### Backend <-> External
-- **ProjectX**: Used for trade execution and account data.
-- **Twitter/X**: Used for "The Tape".
-- **AI Gateway**: Used for AI reasoning (if connecting backend to AI directly).
+## 3) RiskFlow Notes
+
+RiskFlow has route + service implementation, feed polling, and cron-related handling. Known placeholders still in handlers include market-close detection and previous-session score values.
+
+## 4) Boardroom / OpenClaw Notes
+
+Boardroom backend reads/writes local Clawdbot session files and relays intervention messages. This works locally and requires explicit deployment/runtime validation for non-local environments.
+
+## 5) OpenClaw Move-In Critical Tasks
+
+1. Register autopilot routes in main router.
+2. Complete real order execution path (proposal -> approval -> broker execution -> persistence).
+3. Remove critical frontend service stubs by implementing missing backend parity.
+4. Harden production auth path (replace local bypass in production).
+5. Add observability baseline for proposal/execution lifecycle traceability.
+6. Run full integration certification before production move-in.
+
+## 6) Canonical Audit Reference
+
+Notion source of truth: `Pulse Engineering Audit — 2026-02-12`

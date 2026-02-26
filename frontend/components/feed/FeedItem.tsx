@@ -37,7 +37,7 @@ export function FeedItem({ item }: FeedItemProps) {
             </span>
             <span className="text-xs text-[#D4AF37]">{item.source}</span>
             {item.type === 'alert' && (
-              <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded">
+              <span className="text-xs text-red-400">
                 ALERT
               </span>
             )}

@@ -5,7 +5,20 @@ import { UpgradeModal } from '../UpgradeModal';
 import { IVScoreCard } from '../IVScoreCard';
 import { useBackend } from '../../lib/backend';
 import { isElectron } from '../../lib/platform';
-import { LayoutGrid, GripVertical, Layers, ChevronDown, Monitor } from 'lucide-react';
+import { LayoutGrid, GripVertical, Layers, ChevronDown, ChevronLeft, ChevronRight, Monitor, MessageCircle } from 'lucide-react';
+import type { TradingPlatform } from '../TopStepXBrowser';
+
+type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'settings';
+
+const TAB_LABELS: Record<NavTab, string> = {
+  executive: 'Dashboard',
+  feed: 'The Tape',
+  analysis: 'Analysis',
+  news: 'RiskFlow',
+  chatroom: 'Board Room',
+  notion: 'Research Department',
+  settings: 'Settings',
+};
 
 type LayoutOption = 'movable' | 'tickers-only' | 'combined';
 
@@ -24,23 +37,44 @@ function PulseLogo() {
 interface TopHeaderProps {
   topStepXEnabled?: boolean;
   onTopStepXToggle?: () => void;
+  selectedPlatform?: TradingPlatform;
+  onPlatformSelect?: (platform: TradingPlatform) => void;
   layoutOption?: LayoutOption;
   onLayoutOptionChange?: (option: LayoutOption) => void;
+  askHarpOpen?: boolean;
+  onAskHarpToggle?: () => void;
+  activeTab?: NavTab;
+  tabHistory?: NavTab[];
+  historyIndex?: number;
+  onBack?: () => void;
+  onForward?: () => void;
 }
 
-export function TopHeader({ 
-  topStepXEnabled = false, 
+export function TopHeader({
+  topStepXEnabled = false,
   onTopStepXToggle,
+  selectedPlatform = 'topstepx',
+  onPlatformSelect,
   layoutOption = 'movable',
-  onLayoutOptionChange
+  onLayoutOptionChange,
+  askHarpOpen = false,
+  onAskHarpToggle,
+  activeTab = 'feed',
+  tabHistory = [],
+  historyIndex = 0,
+  onBack,
+  onForward,
 }: TopHeaderProps) {
   const { tier } = useAuth();
   const backend = useBackend();
+  const instanceName = import.meta.env.VITE_PULSE_INSTANCE_NAME || 'Pulse';
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [ivScore, setIvScore] = useState(3.2);
   const [vix, setVix] = useState(20);
   const [showLayoutDropdown, setShowLayoutDropdown] = useState(false);
+  const [showPlatformDropdown, setShowPlatformDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const platformDropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -48,13 +82,26 @@ export function TopHeader({
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowLayoutDropdown(false);
       }
+      if (platformDropdownRef.current && !platformDropdownRef.current.contains(event.target as Node)) {
+        setShowPlatformDropdown(false);
+      }
     };
 
-    if (showLayoutDropdown) {
+    if (showLayoutDropdown || showPlatformDropdown) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [showLayoutDropdown]);
+  }, [showLayoutDropdown, showPlatformDropdown]);
+
+  const platformOptions: Array<{ value: TradingPlatform; label: string; description: string }> = [
+    { value: 'topstepx', label: 'TopStepX', description: 'Real-Time Futures Trading Platform' },
+    { value: 'tradelocker', label: 'TradeLocker', description: 'Real-Time CFDs Trading Platform' },
+    { value: 'kalshi', label: 'Kalshi', description: 'Prediction Market' },
+    { value: 'research', label: 'Research', description: 'Notion Research iFrame' },
+  ];
+
+  const selectedPlatformLabel =
+    platformOptions.find((opt) => opt.value === selectedPlatform)?.label ?? 'TopStepX';
 
   const layoutOptions: Array<{ value: LayoutOption; label: string; description: string; icon: React.ReactNode }> = [
     {
@@ -65,8 +112,8 @@ export function TopHeader({
     },
     {
       value: 'tickers-only',
-      label: 'Tickers Only',
-      description: 'TopStepX with minimal floating widget (IV tickers only)',
+      label: 'Zen Mode',
+      description: 'Supports split-frame browser view',
       icon: <GripVertical className="w-4 h-4" />
     },
     {
@@ -124,9 +171,43 @@ export function TopHeader({
           <div className="w-16 flex items-center justify-center">
             <PulseLogo />
           </div>
+          <div className="flex flex-col leading-tight">
+            <span className="text-[12px] font-semibold tracking-[0.22em] text-[#D4AF37] uppercase">
+              {instanceName}
+            </span>
+            <span className="text-[10px] tracking-[0.18em] text-gray-500 uppercase">
+              Command Center
+            </span>
+          </div>
+
+          {/* Breadcrumb navigation — back/forward + section name */}
+          {!topStepXEnabled && (
+            <div className="flex items-center gap-1 ml-2">
+              <button
+                onClick={onBack}
+                disabled={historyIndex <= 0}
+                className="p-1 rounded text-gray-500 hover:text-[#D4AF37] disabled:text-gray-700 disabled:cursor-default transition-colors"
+                title="Back"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={onForward}
+                disabled={historyIndex >= tabHistory.length - 1}
+                className="p-1 rounded text-gray-500 hover:text-[#D4AF37] disabled:text-gray-700 disabled:cursor-default transition-colors"
+                title="Forward"
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+              <span className="text-[10px] tracking-[0.18em] uppercase text-gray-300 ml-2">
+                {TAB_LABELS[activeTab] || activeTab}
+              </span>
+            </div>
+          )}
+
           <button
             onClick={() => setShowUpgrade(true)}
-            className="relative bg-[#050500] border border-[#D4AF37]/20 rounded-lg px-3 py-1 hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/40 transition-colors cursor-pointer flex items-center"
+            className="relative bg-[#050500] border border-[#D4AF37]/20 rounded-lg px-3 h-8 hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/40 transition-colors cursor-pointer flex items-center"
           >
             <span className="text-[13px] text-gray-300">{getTierDisplayName()}</span>
           </button>
@@ -135,7 +216,7 @@ export function TopHeader({
       
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-3">
-          <div className="bg-[#050500] border border-zinc-800 rounded-lg px-2.5 py-1">
+          <div className="bg-[#050500] border border-zinc-800 rounded-lg px-2.5 h-8 flex items-center">
             <div className="flex items-center gap-1.5">
               <span className="text-[9px] text-gray-500">VIX</span>
               <span className="text-xs font-mono text-gray-300">
@@ -144,34 +225,57 @@ export function TopHeader({
             </div>
           </div>
           {onTopStepXToggle && (
-            isElectron() ? (
+            <div className="relative" ref={platformDropdownRef}>
               <button
-                onClick={onTopStepXToggle}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                onClick={() => setShowPlatformDropdown(!showPlatformDropdown)}
+                className={`px-3 h-8 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${
                   topStepXEnabled
                     ? 'bg-[#D4AF37] text-black hover:bg-[#D4AF37]/90'
                     : 'bg-[#050500] border border-[#D4AF37]/20 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/40'
                 }`}
-                title="Toggle TopStepX"
+                title="Select trading platform"
               >
-                TopStepX
+                {!isElectron() && <Monitor className="w-3 h-3" />}
+                <span>{selectedPlatformLabel}</span>
+                <ChevronDown className={`w-3 h-3 transition-transform ${showPlatformDropdown ? 'rotate-180' : ''}`} />
               </button>
-            ) : (
-              <button
-                onClick={onTopStepXToggle}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#050500] border border-zinc-700 text-gray-400 hover:bg-zinc-900 hover:text-gray-300 transition-colors flex items-center gap-1.5"
-                title="TopStepX - Opens in browser (Desktop app required for embedded view)"
-              >
-                <Monitor className="w-3 h-3" />
-                TopStepX
-              </button>
-            )
+              {showPlatformDropdown && (
+                <div className="absolute right-0 top-full mt-2 w-72 bg-[#0a0a00] border border-[#D4AF37]/20 rounded-lg shadow-xl z-50 overflow-hidden py-1">
+                  {platformOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => {
+                        onPlatformSelect?.(option.value);
+                        onTopStepXToggle();
+                        setShowPlatformDropdown(false);
+                      }}
+                      className={`w-full px-4 py-3 text-left transition-colors ${
+                        selectedPlatform === option.value
+                          ? 'bg-[#D4AF37]/15'
+                          : 'hover:bg-[#D4AF37]/8'
+                      }`}
+                    >
+                      <div className={`text-xs font-semibold tracking-[0.14em] uppercase ${
+                        selectedPlatform === option.value ? 'text-[#D4AF37]' : 'text-gray-200'
+                      }`}>
+                        {option.label}
+                      </div>
+                      <div className={`text-[10px] mt-0.5 ${
+                        selectedPlatform === option.value ? 'text-[#D4AF37]/60' : 'text-gray-500'
+                      }`}>
+                        {option.description}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
           {topStepXEnabled && onLayoutOptionChange && (
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setShowLayoutDropdown(!showLayoutDropdown)}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#050500] border border-[#D4AF37]/20 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/40 transition-colors flex items-center gap-1.5"
+                className="px-3 h-8 rounded-lg text-xs font-medium bg-[#050500] border border-[#D4AF37]/20 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/40 transition-colors flex items-center gap-1.5"
                 title="Layout Options"
               >
                 {layoutOptions.find(opt => opt.value === layoutOption)?.icon}
@@ -208,6 +312,27 @@ export function TopHeader({
               )}
             </div>
           )}
+          {onAskHarpToggle && (
+            <button
+              onClick={onAskHarpToggle}
+              className={`px-3 h-8 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                askHarpOpen
+                  ? 'bg-[#6366f1] text-white hover:bg-[#6366f1]/90'
+                  : 'bg-[#050500] border border-[#6366f1]/30 text-[#6366f1] hover:bg-[#6366f1]/10 hover:border-[#6366f1]/50'
+              }`}
+              title="Ask Harper"
+            >
+              <MessageCircle className="w-3.5 h-3.5" />
+              Ask Harp
+            </button>
+          )}
+          <button
+            className="px-2.5 h-8 rounded-full text-[10px] tracking-[0.18em] uppercase border border-emerald-500/30 text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors flex items-center gap-1.5"
+            title="Agent Heartbeat"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse" />
+            Heartbeat
+          </button>
           <IVScoreCard score={ivScore} layoutOption={layoutOption} />
         </div>
       </div>

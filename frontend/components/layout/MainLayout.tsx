@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { useClerk } from '@clerk/clerk-react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { quickIVScore, type IVScoreResult } from '../../lib/iv-scoring';
 import { TopHeader } from './TopHeader';
 import { NavSidebar } from './NavSidebar';
 import { MissionControlPanel } from '../mission-control/MissionControlPanel';
@@ -9,7 +9,7 @@ import { MinimalFeedSection } from '../feed/MinimalFeedSection';
 import { MinimalTapeWidget } from '../feed/MinimalTapeWidget';
 import { NewsSection } from '../feed/NewsSection';
 import { AnalysisSection } from '../analysis/AnalysisSection';
-import { TopStepXBrowser } from '../TopStepXBrowser';
+import { TopStepXBrowser, type TradingPlatform } from '../TopStepXBrowser';
 import { FloatingWidget } from './FloatingWidget';
 import { PanelPosition } from './DraggablePanel';
 import { useBackend } from '../../lib/backend';
@@ -19,20 +19,22 @@ import { AccountTrackerWidget } from '../mission-control/AccountTrackerWidget';
 import { AlgoStatusWidget } from '../mission-control/AlgoStatusWidget';
 import { PanelNotificationWidget } from './PanelNotificationWidget';
 import { MinimalERMeter } from '../MinimalERMeter';
+import { ExecutiveDashboard } from '../executive/ExecutiveDashboard';
+import { BoardroomView } from '../BoardroomView';
+import { ResearchDepartment } from '../executive/ResearchDepartment';
+import { InterventionSidebar } from '../InterventionSidebar';
+import { SectionBreadcrumb } from './SectionBreadcrumb';
+import RiskFlowPanel from '../RiskFlowPanel';
+import { useBoardroom } from '../../hooks/useBoardroom';
+import { SearchModal } from '../search/SearchModal';
+import { PulseFloatingChat } from '../chat/PulseFloatingChat';
+import { SettingsPage } from '../SettingsPanel';
 
-// Development mode: bypass Clerk authentication ONLY when explicitly enabled
-const DEV_MODE = import.meta.env.DEV || import.meta.env.MODE === 'development';
-const BYPASS_AUTH = DEV_MODE && import.meta.env.VITE_BYPASS_AUTH === 'true';
-
-type NavTab = 'feed' | 'analysis' | 'news';
+type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'settings';
 type LayoutOption = 'movable' | 'tickers-only' | 'combined';
 
-interface MainLayoutProps {
-  onSettingsClick: () => void;
-}
-
-// Inner component that doesn't use Clerk hooks directly
-function MainLayoutInner({ onSettingsClick, signOut }: MainLayoutProps & { signOut?: () => Promise<void> }) {
+// Main layout component - no authentication needed
+export function MainLayout() {
   const [activeTab, setActiveTab] = useState<NavTab>('feed');
   const [missionControlCollapsed, setMissionControlCollapsed] = useState(false);
   const [tapeCollapsed, setTapeCollapsed] = useState(false);
@@ -40,20 +42,90 @@ function MainLayoutInner({ onSettingsClick, signOut }: MainLayoutProps & { signO
   const [tabTransitioning, setTabTransitioning] = useState(false);
   const [prevTab, setPrevTab] = useState<NavTab | null>(null);
   const [topStepXEnabled, setTopStepXEnabled] = useState(false);
+  const [selectedPlatform, setSelectedPlatform] = useState<TradingPlatform>('topstepx');
+  const [secondaryPlatform, setSecondaryPlatform] = useState<TradingPlatform>('research');
+  const [splitBrowserView, setSplitBrowserView] = useState(false);
   const [layoutOption, setLayoutOption] = useState<LayoutOption>('movable');
   const [prevLayoutOption, setPrevLayoutOption] = useState<LayoutOption | null>(null);
   const [lastMovableLayout, setLastMovableLayout] = useState<LayoutOption | null>(null);
   const [missionControlPosition, setMissionControlPosition] = useState<PanelPosition>('left');
   const [tapePosition, setTapePosition] = useState<PanelPosition>('right');
   const [vix, setVix] = useState(20);
-  const [ivScore, setIvScore] = useState(3.2);
+  const [ivScoreResult, setIvScoreResult] = useState<IVScoreResult | null>(null);
+  const ivScore = ivScoreResult?.legacyScore ?? 3.2;
   const [showMissionControlNotification, setShowMissionControlNotification] = useState(false);
   const [showTapeNotification, setShowTapeNotification] = useState(false);
   const [combinedPanelErScore, setCombinedPanelErScore] = useState(0);
   const [combinedPanelPnl, setCombinedPanelPnl] = useState(0);
   const [combinedPanelAlgoEnabled, setCombinedPanelAlgoEnabled] = useState(false);
-  
+  const [showAskHarp, setShowAskHarp] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
+
+  // Tab history for breadcrumb back/forward navigation
+  const [tabHistory, setTabHistory] = useState<NavTab[]>(['feed']);
+  const [historyIndex, setHistoryIndex] = useState(0);
+
+  const navigateTab = (tab: NavTab) => {
+    // Trim forward history when navigating to a new tab
+    const trimmed = tabHistory.slice(0, historyIndex + 1);
+    trimmed.push(tab);
+    setTabHistory(trimmed);
+    setHistoryIndex(trimmed.length - 1);
+    setActiveTab(tab);
+  };
+
+  const goBack = () => {
+    if (historyIndex > 0) {
+      const newIdx = historyIndex - 1;
+      setHistoryIndex(newIdx);
+      setActiveTab(tabHistory[newIdx]);
+    }
+  };
+
+  const goForward = () => {
+    if (historyIndex < tabHistory.length - 1) {
+      const newIdx = historyIndex + 1;
+      setHistoryIndex(newIdx);
+      setActiveTab(tabHistory[newIdx]);
+    }
+  };
+
   const backend = useBackend();
+  const boardroom = useBoardroom();
+
+  /* ---- Keyboard shortcuts ---- */
+  useEffect(() => {
+    const TAB_MAP: Record<string, NavTab> = {
+      '1': 'executive',
+      '2': 'feed',
+      '3': 'analysis',
+      '4': 'news',
+      '5': 'chatroom',
+      '6': 'notion',
+    };
+
+    const handler = (e: KeyboardEvent) => {
+      // Cmd+K -> Search
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setShowSearchModal((v) => !v);
+        return;
+      }
+      // Cmd+Shift+1-6 -> Tab navigation
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && TAB_MAP[e.key]) {
+        e.preventDefault();
+        navigateTab(TAB_MAP[e.key]);
+        return;
+      }
+      // Esc -> Close modals
+      if (e.key === 'Escape') {
+        setShowSearchModal(false);
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Reset layout when TopStepX is toggled
   useEffect(() => {
@@ -118,12 +190,12 @@ function MainLayoutInner({ onSettingsClick, signOut }: MainLayoutProps & { signO
     return () => clearInterval(interval);
   }, [backend]);
 
+  // Compute IV score from VIX using the scoring engine
   useEffect(() => {
-    const interval = setInterval(() => {
-      setIvScore(prev => Math.max(0, Math.min(10, prev + (Math.random() - 0.5) * 0.5)));
-    }, 10000);
-    return () => clearInterval(interval);
-  }, []);
+    if (vix > 0) {
+      setIvScoreResult(quickIVScore(vix));
+    }
+  }, [vix]);
 
   // Fetch account data for combined panel collapsed state
   useEffect(() => {
@@ -160,7 +232,7 @@ function MainLayoutInner({ onSettingsClick, signOut }: MainLayoutProps & { signO
     setTabTransitioning(true);
     setPrevTab(activeTab);
     setTimeout(() => {
-      setActiveTab(tab);
+      navigateTab(tab);
       setTimeout(() => {
         setTabTransitioning(false);
         setPrevTab(null);
@@ -169,16 +241,8 @@ function MainLayoutInner({ onSettingsClick, signOut }: MainLayoutProps & { signO
   };
 
   const handleLogout = async () => {
-    if (!signOut) {
-      console.warn('Logout not available in dev mode');
-      return;
-    }
-    try {
-      await signOut();
-      // Clerk will automatically redirect to sign-in page
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
+    // No-op in local single-user mode
+    console.log('Logout not available in local mode');
   };
 
   // Determine layout based on TopStepX state and layout option
@@ -334,30 +398,48 @@ function MainLayoutInner({ onSettingsClick, signOut }: MainLayoutProps & { signO
     // For 'tickers-only', no panels are shown (only floating widget)
   } else {
     // When TopStepX is disabled, show static layout with Mission Control on right
-    rightPanels.push(
-      <MissionControlPanel
-        key="mission-control"
-        collapsed={missionControlCollapsed}
-        onToggleCollapse={() => setMissionControlCollapsed(!missionControlCollapsed)}
-        topStepXEnabled={false}
-      />
-    );
+    // Hide Mission Control when Research Department, Boardroom, or Dashboard is active
+    const hideRightPanel = activeTab === 'notion' || activeTab === 'chatroom' || activeTab === 'settings';
+    if (!hideRightPanel) {
+      rightPanels.push(
+        <div key="right-stack" className="flex flex-col h-full">
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <MissionControlPanel
+              collapsed={missionControlCollapsed}
+              onToggleCollapse={() => setMissionControlCollapsed(!missionControlCollapsed)}
+              topStepXEnabled={false}
+            />
+          </div>
+          <div className="h-[320px] border-t border-[#D4AF37]/20 overflow-hidden">
+            <RiskFlowPanel />
+          </div>
+        </div>
+      );
+    }
   }
 
   return (
     <div className="h-screen flex flex-col bg-[#050500] text-white">
-      <TopHeader 
+      <TopHeader
         topStepXEnabled={topStepXEnabled}
-        onTopStepXToggle={() => setTopStepXEnabled(!topStepXEnabled)}
+        onTopStepXToggle={() => setTopStepXEnabled(true)}
+        selectedPlatform={selectedPlatform}
+        onPlatformSelect={setSelectedPlatform}
         layoutOption={layoutOption}
         onLayoutOptionChange={setLayoutOption}
+        askHarpOpen={showAskHarp}
+        onAskHarpToggle={() => setShowAskHarp(prev => !prev)}
+        activeTab={activeTab}
+        tabHistory={tabHistory}
+        historyIndex={historyIndex}
+        onBack={goBack}
+        onForward={goForward}
       />
 
       <div className="flex-1 flex overflow-hidden relative">
         <NavSidebar
           activeTab={activeTab}
           onTabChange={handleTabChange}
-          onSettingsClick={onSettingsClick}
           onLogout={handleLogout}
           topStepXEnabled={topStepXEnabled}
         />
@@ -373,25 +455,56 @@ function MainLayoutInner({ onSettingsClick, signOut }: MainLayoutProps & { signO
         <div className="flex-1 overflow-hidden relative min-w-0 flex flex-col">
           {topStepXEnabled ? (
             <div className="h-full w-full flex-1 p-4 min-h-0">
-              <TopStepXBrowser onClose={() => setTopStepXEnabled(false)} />
+              <TopStepXBrowser
+                onClose={() => setTopStepXEnabled(false)}
+                primaryPlatform={selectedPlatform}
+                onPrimaryPlatformChange={setSelectedPlatform}
+                secondaryPlatform={secondaryPlatform}
+                onSecondaryPlatformChange={setSecondaryPlatform}
+                splitViewEnabled={splitBrowserView}
+                onSplitViewEnabledChange={setSplitBrowserView}
+                allowSplitView={layoutOption === 'tickers-only'}
+              />
             </div>
           ) : (
-            <div className="h-full overflow-y-auto relative flex-1">
+            <div className="h-full relative flex-1 flex flex-col">
+              <div className="flex-1 min-h-0 overflow-hidden">
               {activeTab === 'feed' && (
-                <div key="feed" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                <div key="feed" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <FeedSection />
                 </div>
               )}
+              {activeTab === 'executive' && (
+                <div key="executive" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                  <ExecutiveDashboard />
+                </div>
+              )}
               {activeTab === 'analysis' && (
-                <div key="analysis" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                <div key="analysis" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <AnalysisSection />
                 </div>
               )}
               {activeTab === 'news' && (
-                <div key="news" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                <div key="news" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <NewsSection />
                 </div>
               )}
+              {activeTab === 'chatroom' && (
+                <div key="chatroom" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                  <BoardroomView />
+                </div>
+              )}
+              {activeTab === 'notion' && (
+                <div key="notion" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                  <ResearchDepartment />
+                </div>
+              )}
+              {activeTab === 'settings' && (
+                <div key="settings" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                  <SettingsPage />
+                </div>
+              )}
+              </div>
             </div>
           )}
         </div>
@@ -439,26 +552,43 @@ function MainLayoutInner({ onSettingsClick, signOut }: MainLayoutProps & { signO
             onDismiss={() => setShowTapeNotification(false)}
           />
         )}
+
+        {/* Global Ask Harp slide-in overlay (hidden on boardroom tab where it's already embedded) */}
+        {showAskHarp && activeTab !== 'chatroom' && (
+          <div className="absolute right-0 top-0 bottom-0 w-[360px] z-40 flex flex-col bg-[#0a0a00] border-l border-[#D4AF37]/20 shadow-2xl animate-fade-in-tab">
+            <div className="flex items-center justify-between px-4 py-2 border-b border-[#D4AF37]/20">
+              <span className="text-xs tracking-[0.22em] uppercase text-[#D4AF37] font-semibold">Ask Harp</span>
+              <button
+                onClick={() => setShowAskHarp(false)}
+                className="p-1 rounded hover:bg-[#D4AF37]/10 text-gray-400 hover:text-[#D4AF37] transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex-1 min-h-0">
+              <InterventionSidebar
+                messages={boardroom.interventionMessages}
+                sending={boardroom.sending}
+                onSend={boardroom.sendIntervention}
+                onMention={boardroom.sendMention}
+                active={boardroom.status.interventionActive}
+              />
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Global overlays */}
+      <SearchModal
+        open={showSearchModal}
+        onClose={() => setShowSearchModal(false)}
+        onNavigateTab={(tab) => navigateTab(tab as NavTab)}
+      />
+      <PulseFloatingChat
+        visible={activeTab !== 'analysis' && activeTab !== 'chatroom' && activeTab !== 'notion' && activeTab !== 'settings'}
+        onExpandToAnalysis={() => navigateTab('analysis')}
+      />
     </div>
   );
 }
 
-// Wrapper component that uses Clerk (only rendered when ClerkProvider is available)
-function MainLayoutWithClerk({ onSettingsClick }: MainLayoutProps) {
-  const clerk = useClerk();
-  return <MainLayoutInner onSettingsClick={onSettingsClick} signOut={clerk.signOut} />;
-}
-
-// Wrapper component for dev mode without Clerk
-function MainLayoutWithoutClerk({ onSettingsClick }: MainLayoutProps) {
-  return <MainLayoutInner onSettingsClick={onSettingsClick} signOut={undefined} />;
-}
-
-// Main export that chooses the right implementation
-export function MainLayout({ onSettingsClick }: MainLayoutProps) {
-  if (BYPASS_AUTH) {
-    return <MainLayoutWithoutClerk onSettingsClick={onSettingsClick} />;
-  }
-  return <MainLayoutWithClerk onSettingsClick={onSettingsClick} />;
-}

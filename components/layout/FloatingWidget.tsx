@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { IVScoreCard } from '../IVScoreCard';
 import { EmotionalResonanceMonitor } from '../mission-control/EmotionalResonanceMonitor';
 import { CompactERMonitor } from '../mission-control/CompactERMonitor';
-import { CompactPnLDisplay } from '../mission-control/CompactPnLDisplay';
 import { useBackend } from '../../lib/backend';
 import type { NewsItem } from '~backend/news/list';
 import { X, Trash2 } from 'lucide-react';
@@ -172,7 +171,7 @@ export function FloatingWidget({ vix, ivScore, layoutOption = 'movable', onClose
         </div>
       )}
 
-      {/* Tickers-Only Expanded Panel - Shows ER Monitor, P&L */}
+      {/* Tickers-Only Expanded Panel - Shows ER Monitor */}
       {layoutOption === 'tickers-only' && (
         <div
           className="backdrop-blur-3xl bg-gradient-to-br from-[#0a0a00]/50 via-[#0a0a00]/40 to-[#0a0a00]/30 border border-[#D4AF37]/30 rounded-2xl p-3 w-80 shadow-2xl"
@@ -190,9 +189,7 @@ export function FloatingWidget({ vix, ivScore, layoutOption = 'movable', onClose
             <CompactERMonitor onERScoreChange={setErScore} />
           </div>
 
-          {/* P&L and Account */}
           <div>
-            <CompactPnLDisplay showAccount={true} />
           </div>
         </div>
       )}

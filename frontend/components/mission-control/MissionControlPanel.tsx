@@ -1,12 +1,11 @@
 import { ChevronLeft, ChevronRight, MoveLeft, MoveRight, GripVertical, X } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { EmotionalResonanceMonitor } from './EmotionalResonanceMonitor';
-import { ThreadHistory } from './ThreadHistory';
 import { BlindspotsWidget } from './BlindspotsWidget';
 import { AlgoStatusWidget } from './AlgoStatusWidget';
 import { AccountTrackerWidget } from './AccountTrackerWidget';
-import { MinimalERMeter } from '../MinimalERMeter';
-import { useBackend } from '../../lib/backend';
+
+
 import { PanelPosition } from '../layout/DraggablePanel';
 
 interface MissionControlPanelProps {
@@ -26,56 +25,60 @@ export function MissionControlPanel({
   onPositionChange,
   onHide
 }: MissionControlPanelProps) {
-  const backend = useBackend();
-  const [dailyPnl, setDailyPnl] = useState<number>(0);
-  const [algoEnabled, setAlgoEnabled] = useState<boolean>(false);
   const [erScore, setErScore] = useState<number>(0);
+  const [headerHovered, setHeaderHovered] = useState(false);
+  const [peekOpen, setPeekOpen] = useState(false);
+  const peekTimerRef = useRef<number | null>(null);
 
-  // Fetch account data for PNL and algo status
-  useEffect(() => {
-    const fetchAccount = async () => {
-      try {
-        const account = await backend.account.get();
-        setDailyPnl(account.dailyPnl);
-        setAlgoEnabled(account.algoEnabled ?? false);
-      } catch (err) {
-        console.error('Failed to fetch account:', err);
-      }
-    };
-    fetchAccount();
-    const interval = setInterval(fetchAccount, 5000);
-    return () => clearInterval(interval);
-  }, [backend]);
+  // Collapsed hover-peek: slide open on hover, close on leave
+  const handleCollapsedEnter = useCallback(() => {
+    if (!collapsed) return;
+    if (peekTimerRef.current) { clearTimeout(peekTimerRef.current); peekTimerRef.current = null; }
+    setPeekOpen(true);
+  }, [collapsed]);
 
-  // Listen for ER score updates from EmotionalResonanceMonitor
-  // We'll use a custom event or context to share ER score
-  useEffect(() => {
-    const handleERUpdate = (event: CustomEvent<number>) => {
-      setErScore(event.detail);
-    };
-    window.addEventListener('erScoreUpdate', handleERUpdate as EventListener);
-    return () => {
-      window.removeEventListener('erScoreUpdate', handleERUpdate as EventListener);
-    };
-  }, []);
+  const handleCollapsedLeave = useCallback(() => {
+    if (!collapsed) return;
+    peekTimerRef.current = window.setTimeout(() => setPeekOpen(false), 250);
+  }, [collapsed]);
 
-  // Normalize ER score from -10 to 10 range to 0-1 range for display
-  const normalizedResonance = Math.max(0, Math.min(1, (erScore + 10) / 20));
+  // Close peek when permanently expanding
+  const handleKeepExpanded = useCallback(() => {
+    setPeekOpen(false);
+    if (collapsed) onToggleCollapse();
+  }, [collapsed, onToggleCollapse]);
 
-  // When TopStepX is enabled, Mission Control takes full sidebar width
-  const width = topStepXEnabled ? (collapsed ? 'w-16' : 'w-80') : (collapsed ? 'w-16' : 'w-80');
+  // Determine visual width
+  const isVisuallyExpanded = !collapsed || peekOpen;
+  const panelWidth = isVisuallyExpanded ? 'w-80' : 'w-3';
 
   return (
     <div
-      className={`bg-[#0a0a00] border-r border-[#D4AF37]/20 transition-lush ${width}`}
+      className={`relative bg-[#050500] border-l border-[#D4AF37]/8 transition-all duration-200 ease-out ${panelWidth}`}
+      onMouseEnter={handleCollapsedEnter}
+      onMouseLeave={handleCollapsedLeave}
+      style={{ minWidth: collapsed && !peekOpen ? '12px' : undefined }}
     >
-      <div className="h-full flex flex-col">
-        <div className="h-12 flex items-center justify-between px-3">
-          {!collapsed && (
-            <h2 className="text-sm font-semibold text-[#D4AF37]">Mission Control</h2>
-          )}
+      {/* Collapsed thin hover-trigger strip */}
+      {collapsed && !peekOpen && (
+        <div className="absolute inset-0 flex items-center justify-center cursor-pointer">
+          <div className="w-[2px] h-12 rounded-full bg-[#D4AF37]/20" />
+        </div>
+      )}
+
+      {/* Full panel content — shown when expanded or peek-open */}
+      <div className={`h-full flex flex-col transition-opacity duration-150 ${isVisuallyExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+        {/* Header */}
+        <div
+          className="h-12 flex items-center justify-between px-3"
+          onMouseEnter={() => setHeaderHovered(true)}
+          onMouseLeave={() => setHeaderHovered(false)}
+        >
+          <h2 className="text-sm font-semibold text-[#D4AF37]">Mission Control</h2>
+
           <div className="flex items-center gap-1">
-            {topStepXEnabled && !collapsed && onPositionChange && (
+            {/* TopStepX controls */}
+            {topStepXEnabled && onPositionChange && (
               <>
                 {position === 'right' && (
                   <button
@@ -113,36 +116,35 @@ export function MissionControlPanel({
                 <X className="w-3.5 h-3.5" />
               </button>
             )}
-            {topStepXEnabled && (
+
+            {/* Collapse / Keep-expanded button — only visible on header hover */}
+            {headerHovered && !collapsed && (
               <button
                 onClick={onToggleCollapse}
                 className="p-1.5 hover:bg-[#D4AF37]/10 rounded transition-colors"
+                title="Collapse"
               >
-                {collapsed ? (
-                  <ChevronRight className="w-4 h-4 text-[#D4AF37]" />
-                ) : (
-                  <ChevronLeft className="w-4 h-4 text-[#D4AF37]" />
-                )}
+                <ChevronRight className="w-4 h-4 text-[#D4AF37]" />
+              </button>
+            )}
+            {peekOpen && collapsed && (
+              <button
+                onClick={handleKeepExpanded}
+                className="p-1.5 hover:bg-[#D4AF37]/10 rounded transition-colors"
+                title="Keep expanded"
+              >
+                <ChevronLeft className="w-4 h-4 text-[#D4AF37]" />
               </button>
             )}
           </div>
         </div>
 
-        {/* Always render all components to keep them functional, hide visually when collapsed */}
-        <div className={`flex-1 px-1 py-4 flex items-start justify-center ${collapsed ? '' : 'hidden'}`}>
-          <MinimalERMeter 
-            resonance={normalizedResonance} 
-            pnl={dailyPnl} 
-            algoEnabled={algoEnabled} 
-          />
-        </div>
-        
-        <div className={`flex-1 overflow-y-auto p-2 space-y-2 ${collapsed ? 'hidden' : ''}`}>
+        {/* Widgets */}
+        <div className="flex-1 overflow-y-auto p-2 space-y-2">
           <EmotionalResonanceMonitor onERScoreChange={setErScore} />
           <BlindspotsWidget />
           <AccountTrackerWidget />
           <AlgoStatusWidget />
-          <ThreadHistory />
         </div>
       </div>
     </div>

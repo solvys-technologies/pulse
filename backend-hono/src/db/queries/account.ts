@@ -7,7 +7,7 @@ import { sql, isDatabaseAvailable } from '../../config/database.js';
 import type { Account, UserTier, AccountSettings } from '../../types/account.js';
 
 export async function getAccountByUserId(userId: string): Promise<Account | null> {
-  if (!isDatabaseAvailable() || !sql) return null;
+  if (!isDatabaseAvailable()) return null;
 
   const result = await sql`
     SELECT * FROM accounts WHERE user_id = ${userId} LIMIT 1
@@ -20,7 +20,7 @@ export async function getAccountByUserId(userId: string): Promise<Account | null
 }
 
 export async function createAccount(userId: string, email: string, initialBalance = 0): Promise<Account> {
-  if (!isDatabaseAvailable() || !sql) {
+  if (!isDatabaseAvailable()) {
     throw new Error('Database not available');
   }
 
@@ -34,7 +34,7 @@ export async function createAccount(userId: string, email: string, initialBalanc
 }
 
 export async function updateAccountSettings(userId: string, settings: AccountSettings): Promise<Account | null> {
-  if (!isDatabaseAvailable() || !sql) return null;
+  if (!isDatabaseAvailable()) return null;
 
   const result = await sql`
     UPDATE accounts SET
@@ -53,7 +53,7 @@ export async function updateAccountSettings(userId: string, settings: AccountSet
 }
 
 export async function updateAccountTier(userId: string, tier: UserTier): Promise<Account | null> {
-  if (!isDatabaseAvailable() || !sql) return null;
+  if (!isDatabaseAvailable()) return null;
 
   const result = await sql`
     UPDATE accounts SET tier = ${tier}, updated_at = NOW()

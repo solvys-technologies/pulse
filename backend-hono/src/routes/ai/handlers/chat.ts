@@ -1,38 +1,42 @@
 /**
  * AI Chat Handler
- * Handle chat messages and AI responses - Vercel AI SDK compatible
- * Enhanced with comprehensive logging for streaming issues
+ * Handle chat messages and AI responses - OpenClaw Local Processing
+ * Routes through P.I.C. agent network for local single-user mode
  */
 
 import type { Context } from 'hono'
-import { streamText, generateText } from 'ai'
+import { createUIMessageStreamResponse, streamText } from 'ai'
 import { selectModel, createModelClient, logModelSelection, markProviderUnhealthy, getFallbackModel, type AiModelKey } from '../../../services/ai/model-selector.js'
 import * as conversationStore from '../../../services/ai/conversation-store.js'
 import { defaultAiConfig } from '../../../config/ai-config.js'
 import type { ChatRequest } from '../../../types/ai-chat.js'
+import { handleOpenClawChat, detectAgent } from '../../../services/openclaw-handler.js'
 
 // Timeout for streaming responses (60 seconds)
 const STREAM_TIMEOUT_MS = 60_000
 
+// Check if we should use local OpenClaw processing
+const USE_LOCAL_OPENCLAW = process.env.USE_LOCAL_OPENCLAW !== 'false'
+
 /**
  * POST /api/ai/chat
- * Vercel AI SDK compatible streaming endpoint
+ * OpenClaw Local Processing - Routes through P.I.C. agent network
  */
 export async function handleChat(c: Context) {
   const startTime = Date.now()
   const requestId = `chat-${Date.now()}-${Math.random().toString(36).substring(7)}`
   const userId = c.get('userId') as string | undefined
 
-  console.log(`[AI Chat][${requestId}] Request started`)
+  console.log(`[OpenClaw][${requestId}] Request started (local mode: ${USE_LOCAL_OPENCLAW})`)
 
   if (!userId) {
-    console.warn(`[AI Chat][${requestId}] Unauthorized - no userId`)
+    console.warn(`[OpenClaw][${requestId}] Unauthorized - no userId`)
     return c.json({ error: 'Unauthorized' }, 401)
   }
 
   try {
     const body = await c.req.json<ChatRequest & { messages?: { role: string; content: string }[] }>().catch((err) => {
-      console.error(`[AI Chat][${requestId}] Failed to parse request body:`, err)
+      console.error(`[OpenClaw][${requestId}] Failed to parse request body:`, err)
       return null
     })
 
@@ -44,30 +48,30 @@ export async function handleChat(c: Context) {
     }
 
     if (!message) {
-      console.warn(`[AI Chat][${requestId}] Empty message`)
+      console.warn(`[OpenClaw][${requestId}] Empty message`)
       return c.json({ error: 'Message is required' }, 400)
     }
 
-    console.log(`[AI Chat][${requestId}] Message: "${message.substring(0, 50)}..." (${message.length} chars)`)
+    console.log(`[OpenClaw][${requestId}] Message: "${message.substring(0, 50)}..." (${message.length} chars)`)
 
     const { conversationId, model, taskType } = body ?? {}
 
     // Get or create conversation
-    let conversation = conversationId 
+    let conversation = conversationId
       ? await conversationStore.getConversation(conversationId, userId)
       : null
 
     if (conversationId && !conversation) {
-      console.log(`[AI Chat][${requestId}] Conversation ${conversationId} not found, creating new`)
+      console.log(`[OpenClaw][${requestId}] Conversation ${conversationId} not found, creating new`)
       conversation = null
     }
 
     if (!conversation) {
       const title = conversationStore.generateTitle(message)
       conversation = await conversationStore.createConversation(userId, { title, model })
-      console.log(`[AI Chat][${requestId}] Created conversation: ${conversation.id}`)
+      console.log(`[OpenClaw][${requestId}] Created conversation: ${conversation.id}`)
     } else {
-      console.log(`[AI Chat][${requestId}] Using existing conversation: ${conversation.id}`)
+      console.log(`[OpenClaw][${requestId}] Using existing conversation: ${conversation.id}`)
     }
 
     // Store user message
@@ -76,36 +80,100 @@ export async function handleChat(c: Context) {
       role: 'user',
       content: message,
     })
-    console.log(`[AI Chat][${requestId}] User message saved`)
+    console.log(`[OpenClaw][${requestId}] User message saved`)
 
     // Get conversation history
     const history = await conversationStore.getRecentContext(conversation.id)
-    console.log(`[AI Chat][${requestId}] History: ${history.length} messages`)
+    console.log(`[OpenClaw][${requestId}] History: ${history.length} messages`)
 
-    // Select model - using OpenRouter with Grok 4.1 primary
+    // Detect which P.I.C. agent should handle this
+    const agentInfo = detectAgent(message)
+    console.log(`[OpenClaw][${requestId}] Routed to agent: ${agentInfo.agent} (intent: ${agentInfo.intent}, confidence: ${agentInfo.confidence})`)
+
+    // USE LOCAL OPENCLAW PROCESSING (no external API calls)
+    if (USE_LOCAL_OPENCLAW) {
+      console.log(`[OpenClaw][${requestId}] Using LOCAL processing via P.I.C. agents`)
+
+      // Generate response locally through OpenClaw
+      const openclawResponse = await handleOpenClawChat({
+        message,
+        conversationId: conversation.id,
+        history: history.map(h => ({ role: h.role as 'user' | 'assistant', content: h.content })),
+      })
+
+      console.log(`[OpenClaw][${requestId}] Local response generated by ${openclawResponse.agent}`)
+
+      // Store assistant message
+      await conversationStore.addMessage(conversation.id, {
+        conversationId: conversation.id,
+        role: 'assistant',
+        content: openclawResponse.content,
+        model: `openclaw-${openclawResponse.agent}`,
+      })
+
+      const duration = Date.now() - startTime
+      console.log(`[OpenClaw][${requestId}] Response complete (${duration}ms, ${openclawResponse.content.length} chars)`)
+
+      // Set conversation ID header
+      c.header('X-Conversation-Id', conversation.id)
+      c.header('X-OpenClaw-Agent', openclawResponse.agent)
+
+      // Stream using AI SDK UI message event stream (SSE with JSON payloads).
+      // This matches `DefaultChatTransport` on the frontend, which expects SSE JSON events.
+      const uiMessageId = `assistant-${Date.now()}`
+      const content = openclawResponse.content
+
+      const stream = new ReadableStream({
+        start(controller) {
+          controller.enqueue({ type: 'text-start', id: uiMessageId })
+          const chunkSize = 64
+          for (let i = 0; i < content.length; i += chunkSize) {
+            controller.enqueue({ type: 'text-delta', id: uiMessageId, delta: content.slice(i, i + chunkSize) })
+          }
+          controller.enqueue({ type: 'text-end', id: uiMessageId })
+          controller.close()
+        }
+      })
+
+      return createUIMessageStreamResponse({
+        stream,
+        headers: {
+          'X-Conversation-Id': conversation.id,
+          'X-OpenClaw-Agent': openclawResponse.agent,
+          'Access-Control-Allow-Origin': c.req.header('Origin') || '*',
+          'Access-Control-Allow-Credentials': 'true',
+          'Access-Control-Expose-Headers': 'X-Conversation-Id, X-OpenClaw-Agent',
+        }
+      })
+    }
+
+    // FALLBACK: Use external API (when USE_LOCAL_OPENCLAW=false)
+    console.log(`[OpenClaw][${requestId}] Falling back to external API`)
+
+    // Select model based on agent task type
     const selection = selectModel({
       preferredModel: model,
-      taskType: taskType ?? 'chat',
+      taskType: agentInfo.intent || taskType || 'chat',
       messageCount: history.length,
       inputChars: message.length,
     })
 
     logModelSelection(selection, { preferredModel: model, taskType })
-    console.log(`[AI Chat][${requestId}] Selected model: ${selection.model} (provider: ${selection.provider})`)
+    console.log(`[OpenClaw][${requestId}] Selected model: ${selection.model} (provider: ${selection.provider})`)
 
     const systemPrompt = defaultAiConfig.systemPrompt ?? 'You are a helpful AI trading assistant.'
-    
+
     let aiModel
     try {
       aiModel = createModelClient(selection.model as AiModelKey)
-      console.log(`[AI Chat][${requestId}] Model client created successfully`)
+      console.log(`[OpenClaw][${requestId}] Model client created successfully`)
     } catch (err) {
-      console.error(`[AI Chat][${requestId}] Failed to create model client:`, err)
-      
+      console.error(`[OpenClaw][${requestId}] Failed to create model client:`, err)
+
       // Try fallback model
       const fallback = getFallbackModel(selection.model as AiModelKey)
       if (fallback) {
-        console.log(`[AI Chat][${requestId}] Trying fallback model: ${fallback.model}`)
+        console.log(`[OpenClaw][${requestId}] Trying fallback model: ${fallback.model}`)
         markProviderUnhealthy(selection.provider)
         aiModel = createModelClient(fallback.model as AiModelKey)
       } else {
@@ -119,54 +187,39 @@ export async function handleChat(c: Context) {
       { role: 'user' as const, content: message },
     ]
 
-    console.log(`[AI Chat][${requestId}] Calling streamText with ${messages.length} messages (system + ${history.length} history + 1 user)`)
+    console.log(`[OpenClaw][${requestId}] Calling streamText with ${messages.length} messages`)
 
     // Track streaming progress
     let chunksReceived = 0
     let totalChars = 0
     let lastChunkTime = Date.now()
-    let streamCompleted = false
-    let streamError: Error | null = null
 
-    // Stream response using Vercel AI SDK with enhanced error handling
+    // Stream response using Vercel AI SDK
     const result = streamText({
       model: aiModel,
       messages,
       temperature: 0.4,
-      maxOutputTokens: 4096, // Increased for longer responses
+      maxOutputTokens: 4096,
       abortSignal: AbortSignal.timeout(STREAM_TIMEOUT_MS),
       onChunk: ({ chunk }) => {
         chunksReceived++
         const now = Date.now()
         const timeSinceLastChunk = now - lastChunkTime
         lastChunkTime = now
-        
-        // Log every 10 chunks or if there's a significant delay
+
         if (chunksReceived % 10 === 0 || timeSinceLastChunk > 5000) {
-          console.log(`[AI Chat][${requestId}] Chunk #${chunksReceived}, gap: ${timeSinceLastChunk}ms, type: ${chunk.type}`)
+          console.log(`[OpenClaw][${requestId}] Chunk #${chunksReceived}, gap: ${timeSinceLastChunk}ms`)
         }
-        
-        if (chunk.type === 'text-delta' && chunk.textDelta) {
-          totalChars += chunk.textDelta.length
+
+        if (chunk.type === 'text-delta' && chunk.text) {
+          totalChars += chunk.text.length
         }
       },
       onFinish: async ({ text, finishReason, usage }) => {
-        streamCompleted = true
         const duration = Date.now() - startTime
-        
-        console.log(`[AI Chat][${requestId}] Stream finished:`, {
-          finishReason,
-          chunks: chunksReceived,
-          chars: text.length,
-          duration: `${duration}ms`,
-          usage: usage ? {
-            promptTokens: usage.promptTokens,
-            completionTokens: usage.completionTokens,
-            totalTokens: usage.totalTokens,
-          } : 'N/A',
-        })
-        
-        // Store assistant message after streaming completes
+        console.log(`[OpenClaw][${requestId}] Stream finished (${duration}ms, ${text.length} chars)`)
+
+        // Store assistant message
         try {
           await conversationStore.addMessage(conversation!.id, {
             conversationId: conversation!.id,
@@ -174,28 +227,14 @@ export async function handleChat(c: Context) {
             content: text,
             model: selection.model,
           })
-          console.log(`[AI Chat][${requestId}] Assistant message saved (${text.length} chars)`)
         } catch (saveErr) {
-          console.error(`[AI Chat][${requestId}] Failed to save assistant message:`, saveErr)
+          console.error(`[OpenClaw][${requestId}] Failed to save message:`, saveErr)
         }
       },
-      onError: (event) => {
-        streamError = event.error as Error
-        const duration = Date.now() - startTime
-        console.error(`[AI Chat][${requestId}] Stream error after ${duration}ms:`, {
-          error: streamError.message,
-          chunksReceived,
-          charsReceived: totalChars,
-        })
-      },
     })
-    
-    console.log(`[AI Chat][${requestId}] streamText initiated, returning stream response`)
 
-    // Set conversation ID header so frontend can track it
     c.header('X-Conversation-Id', conversation.id)
 
-    // Return Vercel AI SDK UI message stream (what useChat expects)
     return result.toUIMessageStreamResponse({
       headers: {
         'X-Conversation-Id': conversation.id,
@@ -204,21 +243,20 @@ export async function handleChat(c: Context) {
     })
   } catch (error) {
     const duration = Date.now() - startTime
-    console.error(`[AI Chat][${requestId}] Fatal error after ${duration}ms:`, error)
-    
-    // Provide more specific error messages
+    console.error(`[OpenClaw][${requestId}] Fatal error after ${duration}ms:`, error)
+
     let errorMessage = 'Failed to process chat message'
     if (error instanceof Error) {
       if (error.name === 'AbortError' || error.message.includes('timeout')) {
-        errorMessage = 'Request timed out. The AI model took too long to respond. Please try again.'
+        errorMessage = 'Request timed out. Please try again.'
       } else if (error.message.includes('API key')) {
-        errorMessage = 'AI service configuration error. Please contact support.'
+        errorMessage = 'AI service configuration error.'
       } else if (error.message.includes('rate limit')) {
-        errorMessage = 'Rate limit exceeded. Please wait a moment and try again.'
+        errorMessage = 'Rate limit exceeded. Please wait.'
       }
     }
-    
-    return c.json({ 
+
+    return c.json({
       error: errorMessage,
       requestId,
       duration: `${duration}ms`,

@@ -126,20 +126,20 @@ export function IVScoreCard({ score, variant = 'default', layoutOption }: IVScor
   } : {};
 
   return (
-    <div className={`${containerClasses} relative`} style={frostedStyle}>
-      <div className="flex items-center gap-2">
-        <span className="text-[10px] text-gray-400">IV Score</span>
-        <span className={`text-sm font-bold ${getScoreColor()}`}>
+    <div className={`${containerClasses} relative overflow-hidden`} style={frostedStyle}>
+      <div className="flex items-center gap-2 whitespace-nowrap overflow-hidden">
+        <span className="text-[10px] text-gray-400 flex-shrink-0">IV Score</span>
+        <span className={`text-sm font-bold flex-shrink-0 ${getScoreColor()}`}>
           {score.toFixed(1)}
         </span>
-        <span className={`text-[10px] font-medium ${getScoreColor()}`}>
+        <span className={`text-[10px] font-medium flex-shrink-0 ${getScoreColor()}`}>
           {getScoreLabel()}
         </span>
         {expectedMove && (
           <>
             <span className="text-gray-600">|</span>
             <TrendingUp className="w-3 h-3 text-[#D4AF37]" />
-            <span className="text-[10px] text-[#D4AF37] font-medium">
+            <span className="text-[10px] text-[#D4AF37] font-medium truncate flex-shrink">
               ±{expectedMove.points} pts ({selectedSymbol.symbol})
             </span>
           </>

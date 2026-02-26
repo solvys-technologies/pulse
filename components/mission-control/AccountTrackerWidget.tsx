@@ -185,43 +185,12 @@ export function AccountTrackerWidget({ currentPnL: propPnL }: AccountTrackerWidg
         )}
       </div>
       
-      <div className="mb-2 flex justify-between items-baseline">
-        <div>
-          <p className="text-[10px] text-gray-500">Balance</p>
-          <p className="text-sm font-bold text-[#D4AF37]">${balance.toFixed(2)}</p>
-        </div>
-        <div className="text-right">
-          <p className="text-[10px] text-gray-500">Current P&L</p>
-          <span className={`text-sm font-bold ${currentPnL >= 0 ? 'text-emerald-400' : 'text-red-500'}`}>
-            {currentPnL >= 0 ? '+' : ''}${currentPnL.toFixed(2)}
-          </span>
-        </div>
+      <div className="mb-2">
+        <p className="text-[10px] text-gray-500">Balance</p>
+        <p className="text-sm font-bold text-[#D4AF37]">${balance.toFixed(2)}</p>
       </div>
       
-      <div className="relative">
-        <div className="flex justify-between text-[10px] text-gray-500 mb-1">
-          <span className="text-red-500">-${lossLimit}</span>
-          <span className="text-gray-400">$0</span>
-          <span className="text-emerald-400">+${dailyTarget}</span>
-        </div>
-        
-        <div className="relative h-3 bg-zinc-900 rounded-full overflow-hidden">
-          <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-gray-600 z-0" />
-          
-          <div
-            className="absolute top-0 bottom-0 w-0.5 rounded-full z-10 transition-all duration-500"
-            style={{ left: `${leftPercentage}%` }}
-          >
-            <div className={`w-full h-full ${getPendulumColor()} rounded-full shadow-lg`} />
-            <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 ${getPendulumColor()} rounded-full border border-[#0a0a00]`} />
-          </div>
-          
-          <div className="absolute left-0 top-0 bottom-0 w-1/2 bg-gradient-to-r from-red-500/10 to-transparent" />
-          <div className="absolute right-0 top-0 bottom-0 w-1/2 bg-gradient-to-l from-emerald-400/10 to-transparent" />
-        </div>
-      </div>
-      
-      <div className="mt-2 pt-2 border-t border-zinc-800 flex justify-between items-center">
+      <div className="flex justify-between items-center">
         <div>
           <p className="text-[10px] text-gray-500">Loss Limit</p>
           <p className="text-xs font-semibold text-red-500">${lossLimit}</p>

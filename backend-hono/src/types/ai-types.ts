@@ -1,10 +1,11 @@
 /**
  * Shared AI types for multi-provider architecture
  * Supports OpenRouter primary with Vercel Gateway fallback
+ * OpenClaw integration for P.I.C. agentic backend
  */
 
 // Provider type discriminator
-export type AiProviderType = 'openrouter' | 'vercel-gateway'
+export type AiProviderType = 'openrouter' | 'vercel-gateway' | 'openclaw'
 
 // Circuit breaker states
 export type CircuitState = 'closed' | 'open' | 'half-open'

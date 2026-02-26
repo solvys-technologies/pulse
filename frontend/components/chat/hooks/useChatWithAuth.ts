@@ -1,61 +1,23 @@
 /**
  * useChatWithAuth Hook
- * Custom hook for chat with authentication
+ * Simplified for local single-user mode - no authentication
  */
 
 import { useCallback, useState } from 'react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
-import { useAuth } from '@clerk/clerk-react';
 import { API_BASE_URL } from '../constants.js';
 
 export function useChatWithAuth(conversationId: string | undefined, setConversationId: (id: string) => void) {
-  const { getToken, isSignedIn, userId } = useAuth();
   const [isStreaming, setIsStreaming] = useState(false);
-  
-  const MAX_RETRIES = 1;
-  
-  // Log auth state for debugging
-  if (!isSignedIn) {
-    console.warn('[useChatWithAuth] User is not signed in. Token requests will fail.');
-  }
 
   const fetchWithAuth = useCallback(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    // Per-request retry counter to prevent interference between concurrent requests
-    let retryCount = 0;
-    
-    // Try to get a fresh token - Clerk handles caching internally
-    let token = await getToken({ template: 'neon' });
-    
-    // If token is null, try getting it without template as fallback
-    if (!token) {
-      console.warn('[useChatWithAuth] No token with neon template, trying default token...');
-      token = await getToken();
-    }
-    
-    // Ensure token is available before making the request
-    if (!token) {
-      console.error('[useChatWithAuth] No authentication token available. User may need to sign in.');
-      throw new Error('Authentication required. Please sign in to continue.');
-    }
-    
-    // Log token info for debugging (first 20 chars only for security)
-    console.log('[useChatWithAuth] Token obtained:', {
-      hasToken: !!token,
-      tokenLength: token.length,
-      tokenPreview: token.substring(0, 20) + '...',
-      isSignedIn,
-      userId,
-    });
-
     const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
-
     const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
 
-    const normalizedToken = token.replace(/^Bearer\s+/i, '');
     const headers = new Headers(init?.headers);
     headers.set('Content-Type', 'application/json');
-    headers.set('Authorization', `Bearer ${normalizedToken}`); // Always set Authorization header since we've verified token exists
+    // No auth header needed in local mode
 
     let body = init?.body;
     if (body && conversationId) {
@@ -76,82 +38,13 @@ export function useChatWithAuth(conversationId: string | undefined, setConversat
       body,
     });
 
-    // Handle 401 Unauthorized responses
-    if (response.status === 401) {
-      const errorText = await response.text().catch(() => 'Unauthorized');
-      let didRedirect = false;
-      
-      console.error('[useChatWithAuth] 401 Unauthorized - Token may be expired or invalid', {
-        errorText,
-        tokenLength: token.length,
-        tokenPreview: token.substring(0, 50) + '...',
-        retryCount,
-      });
-      
-      // Only attempt retry if we haven't exceeded max retries
-      if (retryCount < MAX_RETRIES) {
-        retryCount += 1;
-        
-        try {
-          // Try to get a fresh token with skipCache to force refresh
-          const freshToken = await getToken({ template: 'neon', skipCache: true });
-          
-          if (freshToken && freshToken !== token) {
-            console.log('[useChatWithAuth] Got fresh token. Retrying request with new token.');
-            
-            // Retry the original request with the fresh token
-            const retryNormalizedToken = freshToken.replace(/^Bearer\s+/i, '');
-            const retryHeaders = new Headers(init?.headers);
-            retryHeaders.set('Content-Type', 'application/json');
-            retryHeaders.set('Authorization', `Bearer ${retryNormalizedToken}`);
-            
-            const retryResponse = await fetch(fullUrl, {
-              ...init,
-              headers: retryHeaders,
-              body,
-            });
-            
-            // Retry succeeded
-            if (retryResponse.status !== 401) {
-              const convId = retryResponse.headers.get('X-Conversation-Id');
-              if (convId) {
-                setConversationId(convId);
-              }
-              
-              return retryResponse;
-            } else {
-              // Still 401 after retry - token refresh didn't help
-              console.error('[useChatWithAuth] Retry with fresh token still returned 401. Auto-logout disabled for debugging.');
-              throw new Error(`Authentication failed: ${errorText}`);
-            }
-          } else if (!freshToken) {
-            // Failed to get fresh token - user needs to sign in again
-            console.error('[useChatWithAuth] Failed to get fresh token. Auto-logout disabled for debugging.');
-            throw new Error(`Authentication failed: Unable to refresh token. Please sign in again.`);
-          } else {
-            // Got same token - likely expired or invalid
-            console.warn('[useChatWithAuth] Got fresh token, but it\'s the same as the old one. Token may be expired. Auto-logout disabled for debugging.');
-            throw new Error(`Authentication failed: Token expired. Please sign in again.`);
-          }
-        } catch (refreshError) {
-          // If refreshing token fails, user likely needs to log in again
-          console.error('[useChatWithAuth] Failed to get fresh token:', refreshError);
-          throw new Error(`Authentication failed: Unable to refresh token. Please sign in again.`);
-        }
-      } else {
-        // Max retries exceeded - stop retrying
-        console.error('[useChatWithAuth] Max retries exceeded. Auto-logout disabled for debugging.');
-        throw new Error(`Authentication failed: ${errorText}`);
-      }
-    }
-
     const convId = response.headers.get('X-Conversation-Id');
     if (convId) {
       setConversationId(convId);
     }
 
     return response;
-  }, [getToken, conversationId, setConversationId, isSignedIn, userId]);
+  }, [conversationId, setConversationId]);
 
   const {
     messages: useChatMessages,
@@ -164,12 +57,6 @@ export function useChatWithAuth(conversationId: string | undefined, setConversat
       api: `${API_BASE_URL}/api/ai/chat`,
       fetch: fetchWithAuth,
       prepareSendMessagesRequest: ({ messages, id }) => {
-        const lastMessage = messages[messages.length - 1];
-        const textContent = lastMessage.parts
-          ?.filter((part: any) => part.type === 'text')
-          .map((part: any) => part.text)
-          .join('') || '';
-
         return {
           body: {
             messages: messages.map((msg) => ({
@@ -179,8 +66,6 @@ export function useChatWithAuth(conversationId: string | undefined, setConversat
                 .map((part: any) => part.text)
                 .join('') || '',
             })),
-            // Only send conversationId if it's a valid UUID from our backend
-            // Don't use `id` from useChat - it's not a UUID
             ...(conversationId && { conversationId }),
           },
         };
