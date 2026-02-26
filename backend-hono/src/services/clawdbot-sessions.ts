@@ -116,6 +116,13 @@ export async function getInterventionMessages(sessionLabel = 'pic-intervention')
   return messages.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 }
 
+export async function appendToBoardroom(
+  content: string,
+  role: 'user' | 'assistant' = 'assistant'
+): Promise<void> {
+  await appendToSession('pic-boardroom', content, role);
+}
+
 async function appendToSession(
   sessionLabel: string,
   content: string,

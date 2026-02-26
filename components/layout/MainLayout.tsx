@@ -20,12 +20,13 @@ import { AccountTrackerWidget } from '../mission-control/AccountTrackerWidget';
 import { AlgoStatusWidget } from '../mission-control/AlgoStatusWidget';
 import { PanelNotificationWidget } from './PanelNotificationWidget';
 import { MinimalERMeter } from '../MinimalERMeter';
+import { ModelDashboard } from '../models/ModelDashboard';
 
 // Development mode: bypass Clerk authentication ONLY when explicitly enabled
 const DEV_MODE = import.meta.env.DEV || import.meta.env.MODE === 'development';
 const BYPASS_AUTH = DEV_MODE && import.meta.env.VITE_BYPASS_AUTH === 'true';
 
-type NavTab = 'feed' | 'analysis' | 'news';
+type NavTab = 'feed' | 'analysis' | 'news' | 'models';
 type LayoutOption = 'movable' | 'tickers-only' | 'combined';
 
 interface MainLayoutProps {
@@ -393,6 +394,11 @@ function MainLayoutInner({ onSettingsClick, signOut }: MainLayoutProps & { signO
               {activeTab === 'news' && (
                 <div key="news" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <NewsSection />
+                </div>
+              )}
+              {activeTab === 'models' && (
+                <div key="models" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                  <ModelDashboard />
                 </div>
               )}
             </div>

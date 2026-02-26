@@ -1,4 +1,5 @@
 import { ExternalLink, SplitSquareVertical, X } from 'lucide-react';
+import { EmbeddedBrowserFrame } from './layout/EmbeddedBrowserFrame';
 
 export type TradingPlatform = 'topstepx' | 'tradelocker' | 'kalshi' | 'research';
 
@@ -109,18 +110,16 @@ export function TopStepXBrowser({
       </div>
 
       <div className={`flex-1 min-h-0 ${splitViewEnabled && allowSplitView ? 'grid grid-cols-2 gap-0.5 bg-[#D4AF37]/20' : ''}`}>
-        <iframe
+        <EmbeddedBrowserFrame
           title={PLATFORM_LABELS[primaryPlatform]}
           src={primaryUrl}
           className="w-full h-full bg-white"
-          sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
         />
         {splitViewEnabled && allowSplitView && (
-          <iframe
+          <EmbeddedBrowserFrame
             title={PLATFORM_LABELS[secondaryPlatform]}
             src={secondaryUrl}
             className="w-full h-full bg-white"
-            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
           />
         )}
       </div>

@@ -198,7 +198,7 @@ export function AgentChatroomView() {
     <div className="h-full w-full p-6">
       <div className="mb-6 flex items-end justify-between gap-4">
         <div>
-          <div className="text-xs tracking-[0.28em] uppercase text-gray-500">Pulse Executive</div>
+          <div className="text-xs tracking-[0.28em] uppercase text-gray-500">Pulse v6</div>
           <h1 className="mt-2 text-2xl font-semibold text-white">Agent Chatroom</h1>
         </div>
         <div className="flex items-center gap-3">

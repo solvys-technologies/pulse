@@ -1,12 +1,10 @@
-import { TrendingUp, TrendingDown } from 'lucide-react';
-
 interface MinimalERMeterProps {
   resonance: number;
-  pnl: number;
+  pnl?: number;
   algoEnabled: boolean;
 }
 
-export function MinimalERMeter({ resonance, pnl, algoEnabled }: MinimalERMeterProps) {
+export function MinimalERMeter({ resonance, algoEnabled }: MinimalERMeterProps) {
   const getResonanceColor = () => {
     // Resonance is normalized 0-1, where 0.5 is the median/neutral level
     // Above median (0.5) = green, below median = red
@@ -35,21 +33,8 @@ export function MinimalERMeter({ resonance, pnl, algoEnabled }: MinimalERMeterPr
         </div>
       </div>
       
-      <div className="flex flex-col gap-2 items-center pt-1">
-        <div className="flex justify-center">
-          <div className={`w-2 h-2 rounded-full ${algoEnabled ? 'bg-emerald-400' : 'bg-gray-600'}`} />
-        </div>
-        
-        <div className="flex flex-col items-center gap-0.5">
-          {pnl >= 0 ? (
-            <TrendingUp className="w-3 h-3 text-emerald-400" />
-          ) : (
-            <TrendingDown className="w-3 h-3 text-red-500" />
-          )}
-          <span className={`text-[10px] font-semibold ${pnl >= 0 ? 'text-emerald-400' : 'text-red-500'}`}>
-            ${Math.abs(pnl).toFixed(0)}
-          </span>
-        </div>
+      <div className="flex justify-center pt-1">
+        <div className={`w-2 h-2 rounded-full ${algoEnabled ? 'bg-emerald-400' : 'bg-gray-600'}`} />
       </div>
     </div>
   );

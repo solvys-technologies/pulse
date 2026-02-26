@@ -2,6 +2,7 @@ import { useMemo, useState, useCallback } from 'react';
 import { ChevronRight, ChevronLeft, Send, Plus, Wrench, Brain } from 'lucide-react';
 import { useOpenClawChat } from '../chat/hooks/useOpenClawChat';
 import { usePulseAgents } from '../../contexts/PulseAgentContext';
+import { EmbeddedBrowserFrame } from '../layout/EmbeddedBrowserFrame';
 
 export function ResearchDepartment() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -70,11 +71,10 @@ export function ResearchDepartment() {
 
         {/* Notion iframe — fills everything from edge to edge */}
         <div className="flex-1 min-h-0 w-full">
-          <iframe
+          <EmbeddedBrowserFrame
             title="Notion Research Department"
             src={notionResearchUrl}
             className="w-full h-full bg-white"
-            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
           />
         </div>
       </div>

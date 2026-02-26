@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { quickIVScore, type IVScoreResult } from '../../lib/iv-scoring';
 import { TopHeader } from './TopHeader';
 import { NavSidebar } from './NavSidebar';
 import { MissionControlPanel } from '../mission-control/MissionControlPanel';
@@ -23,6 +24,7 @@ import { BoardroomView } from '../BoardroomView';
 import { ResearchDepartment } from '../executive/ResearchDepartment';
 import { InterventionSidebar } from '../InterventionSidebar';
 import { SectionBreadcrumb } from './SectionBreadcrumb';
+import RiskFlowPanel from '../RiskFlowPanel';
 import { useBoardroom } from '../../hooks/useBoardroom';
 import { SearchModal } from '../search/SearchModal';
 import { PulseFloatingChat } from '../chat/PulseFloatingChat';
@@ -49,7 +51,8 @@ export function MainLayout() {
   const [missionControlPosition, setMissionControlPosition] = useState<PanelPosition>('left');
   const [tapePosition, setTapePosition] = useState<PanelPosition>('right');
   const [vix, setVix] = useState(20);
-  const [ivScore, setIvScore] = useState(3.2);
+  const [ivScoreResult, setIvScoreResult] = useState<IVScoreResult | null>(null);
+  const ivScore = ivScoreResult?.legacyScore ?? 3.2;
   const [showMissionControlNotification, setShowMissionControlNotification] = useState(false);
   const [showTapeNotification, setShowTapeNotification] = useState(false);
   const [combinedPanelErScore, setCombinedPanelErScore] = useState(0);
@@ -187,12 +190,12 @@ export function MainLayout() {
     return () => clearInterval(interval);
   }, [backend]);
 
+  // Compute IV score from VIX using the scoring engine
   useEffect(() => {
-    const interval = setInterval(() => {
-      setIvScore(prev => Math.max(0, Math.min(10, prev + (Math.random() - 0.5) * 0.5)));
-    }, 10000);
-    return () => clearInterval(interval);
-  }, []);
+    if (vix > 0) {
+      setIvScoreResult(quickIVScore(vix));
+    }
+  }, [vix]);
 
   // Fetch account data for combined panel collapsed state
   useEffect(() => {
@@ -399,12 +402,18 @@ export function MainLayout() {
     const hideRightPanel = activeTab === 'notion' || activeTab === 'chatroom' || activeTab === 'settings';
     if (!hideRightPanel) {
       rightPanels.push(
-        <MissionControlPanel
-          key="mission-control"
-          collapsed={missionControlCollapsed}
-          onToggleCollapse={() => setMissionControlCollapsed(!missionControlCollapsed)}
-          topStepXEnabled={false}
-        />
+        <div key="right-stack" className="flex flex-col h-full">
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <MissionControlPanel
+              collapsed={missionControlCollapsed}
+              onToggleCollapse={() => setMissionControlCollapsed(!missionControlCollapsed)}
+              topStepXEnabled={false}
+            />
+          </div>
+          <div className="h-[320px] border-t border-[#D4AF37]/20 overflow-hidden">
+            <RiskFlowPanel />
+          </div>
+        </div>
       );
     }
   }

@@ -599,6 +599,40 @@ export interface InterventionMessage {
   timestamp: string;
 }
 
+// Structured Intervention types
+export type InterventionType =
+  | 'risk_alert'
+  | 'overtrading_warning'
+  | 'rule_violation'
+  | 'market_event'
+  | 'position_check';
+
+export type InterventionSeverity = 'info' | 'warning' | 'critical';
+
+export interface TriggerInterventionParams {
+  agent: string;
+  type: InterventionType;
+  message: string;
+  severity: InterventionSeverity;
+  metadata?: Record<string, unknown>;
+}
+
+// Trade Idea types
+export type TradeDirection = 'long' | 'short' | 'neutral';
+export type ConvictionLevel = 'low' | 'medium' | 'high' | 'max';
+
+export interface TradeIdeaParams {
+  agent: string;
+  instrument: string;
+  direction: TradeDirection;
+  conviction: ConvictionLevel;
+  entry?: number;
+  stopLoss?: number;
+  target?: number;
+  thesis: string;
+  keyLevels?: { label: string; price: number }[];
+}
+
 // Boardroom Service
 export class BoardroomService {
   constructor(private client: ApiClient) {}
@@ -623,6 +657,14 @@ export class BoardroomService {
 
   async getStatus(): Promise<{ boardroomActive: boolean; interventionActive: boolean }> {
     return this.client.get('/api/boardroom/status');
+  }
+
+  async triggerIntervention(params: TriggerInterventionParams): Promise<{ success: boolean; id: string }> {
+    return this.client.post('/api/boardroom/intervention/trigger', params);
+  }
+
+  async postTradeIdea(params: TradeIdeaParams): Promise<{ success: boolean; id: string }> {
+    return this.client.post('/api/boardroom/trade-idea', params);
   }
 }
 

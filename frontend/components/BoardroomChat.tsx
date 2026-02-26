@@ -1,12 +1,110 @@
 import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { AlertTriangle, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import type { BoardroomMessage } from '../lib/services';
 import { PULSE_AGENTS } from '../contexts/PulseAgentContext';
+import {
+  isInterventionMessage,
+  isTradeIdeaMessage,
+  parseIntervention,
+  parseTradeIdea,
+} from '../lib/interventions';
 
 function formatTimestamp(ts: string) {
   const d = new Date(ts);
   if (Number.isNaN(d.getTime())) return '--:--';
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+/* ------------------------------------------------------------------ */
+/*  Intervention message card                                          */
+/* ------------------------------------------------------------------ */
+function InterventionCard({ content, timestamp }: { content: string; timestamp: string }) {
+  const parsed = parseIntervention(content);
+  if (!parsed) return null;
+
+  const severityStyles: Record<string, { border: string; bg: string; text: string; icon: string }> = {
+    info: { border: 'border-blue-500/40', bg: 'bg-blue-500/10', text: 'text-blue-300', icon: 'ℹ️' },
+    warning: { border: 'border-orange-500/40', bg: 'bg-orange-500/10', text: 'text-orange-300', icon: '⚠️' },
+    critical: { border: 'border-red-500/40', bg: 'bg-red-500/10', text: 'text-red-300', icon: '🚨' },
+  };
+  const style = severityStyles[parsed.severity] || severityStyles.warning;
+
+  return (
+    <div className={`mx-2 my-2 rounded-lg border-l-4 ${style.border} ${style.bg} px-4 py-3`}>
+      <div className="flex items-center gap-2 mb-1.5">
+        <AlertTriangle className={`w-4 h-4 ${style.text}`} />
+        <span className={`text-xs font-bold tracking-wider uppercase ${style.text}`}>
+          {parsed.type}
+        </span>
+        <span className="text-[10px] text-gray-500 ml-auto">{parsed.agent} · {formatTimestamp(timestamp)}</span>
+      </div>
+      <div className="text-sm text-gray-200 prose prose-invert prose-sm max-w-none break-words">
+        <ReactMarkdown>{parsed.body}</ReactMarkdown>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Trade idea card                                                    */
+/* ------------------------------------------------------------------ */
+function TradeIdeaCard({ content, timestamp }: { content: string; timestamp: string }) {
+  const parsed = parseTradeIdea(content);
+  if (!parsed) return null;
+
+  const dirIcon = parsed.direction === 'long' ? TrendingUp : parsed.direction === 'short' ? TrendingDown : Minus;
+  const DirIcon = dirIcon;
+  const dirColor = parsed.direction === 'long' ? 'text-emerald-400' : parsed.direction === 'short' ? 'text-red-400' : 'text-yellow-400';
+  const borderColor = parsed.direction === 'long' ? 'border-emerald-500/30' : parsed.direction === 'short' ? 'border-red-500/30' : 'border-yellow-500/30';
+  const bgColor = parsed.direction === 'long' ? 'bg-emerald-500/5' : parsed.direction === 'short' ? 'bg-red-500/5' : 'bg-yellow-500/5';
+
+  const convictionBars = { low: 1, medium: 2, high: 3, max: 4 };
+  const bars = convictionBars[parsed.conviction as keyof typeof convictionBars] || 2;
+
+  return (
+    <div className={`mx-2 my-2 rounded-lg border ${borderColor} ${bgColor} overflow-hidden`}>
+      {/* Header */}
+      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-white/5">
+        <DirIcon className={`w-5 h-5 ${dirColor}`} />
+        <span className="text-sm font-bold text-white">{parsed.instrument}</span>
+        <span className={`text-xs font-semibold uppercase ${dirColor}`}>{parsed.direction}</span>
+        <div className="flex items-center gap-0.5 ml-auto">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className={`w-1.5 h-3 rounded-sm ${i < bars ? dirColor.replace('text-', 'bg-') : 'bg-gray-700'}`}
+            />
+          ))}
+          <span className="text-[10px] text-gray-500 ml-1.5">{parsed.conviction}</span>
+        </div>
+        <span className="text-[10px] text-gray-500 ml-2">{parsed.agent} · {formatTimestamp(timestamp)}</span>
+      </div>
+
+      {/* Key levels */}
+      {(parsed.entry || parsed.stopLoss || parsed.target) && (
+        <div className="flex items-center gap-4 px-4 py-2 border-b border-white/5 text-xs">
+          {parsed.entry && (
+            <div><span className="text-gray-500">Entry</span> <span className="text-white font-mono">{parsed.entry}</span></div>
+          )}
+          {parsed.stopLoss && (
+            <div><span className="text-gray-500">Stop</span> <span className="text-red-400 font-mono">{parsed.stopLoss}</span></div>
+          )}
+          {parsed.target && (
+            <div><span className="text-gray-500">Target</span> <span className="text-emerald-400 font-mono">{parsed.target}</span></div>
+          )}
+          {parsed.keyLevels && (
+            <div className="text-gray-400"><span className="text-gray-500">Levels:</span> {parsed.keyLevels}</div>
+          )}
+        </div>
+      )}
+
+      {/* Thesis */}
+      <div className="px-4 py-2.5 text-sm text-gray-300 prose prose-invert prose-sm max-w-none break-words">
+        <ReactMarkdown>{parsed.thesis}</ReactMarkdown>
+      </div>
+    </div>
+  );
 }
 
 interface BoardroomChatProps {
@@ -73,6 +171,16 @@ export function BoardroomChat({ messages, loading, active }: BoardroomChatProps)
           </div>
         ) : (
           messages.map((m) => {
+            // Render structured intervention messages as special cards
+            if (isInterventionMessage(m.content)) {
+              return <InterventionCard key={m.id} content={m.content} timestamp={m.timestamp} />;
+            }
+
+            // Render trade idea messages as special cards
+            if (isTradeIdeaMessage(m.content)) {
+              return <TradeIdeaCard key={m.id} content={m.content} timestamp={m.timestamp} />;
+            }
+
             const isUser = m.role === 'user';
             const displayName = isUser ? 'You' : m.agent;
             const initial = isUser ? 'Y' : m.agent.charAt(0);

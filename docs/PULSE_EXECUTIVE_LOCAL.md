@@ -15,14 +15,14 @@ This machine’s local Pulse instance is branded as **Pulse Executive**.
 2. Start Pulse backend:
 
 ```bash
-cd "/Users/tifos/Desktop/Pulse/pulse/backend-hono"
+cd "/Users/tifos/Desktop/Priced In Capital/pulse/backend-hono"
 npm run dev
 ```
 
 3. Start Pulse frontend:
 
 ```bash
-cd "/Users/tifos/Desktop/Pulse/pulse/frontend"
+cd "/Users/tifos/Desktop/Priced In Capital/pulse/frontend"
 npm run dev
 ```
 
@@ -35,6 +35,6 @@ npm run dev
 
 ## Branding
 
-- Local instance name is controlled by `/Users/tifos/Desktop/Pulse/pulse/.env.local`:
+- Local instance name is controlled by `/Users/tifos/Desktop/Priced In Capital/pulse/.env.local`:
   - `VITE_PULSE_INSTANCE_NAME="Pulse Executive"`
 

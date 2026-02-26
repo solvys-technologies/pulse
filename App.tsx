@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ClerkProvider, SignIn, SignedIn, SignedOut } from '@clerk/clerk-react';
 import { AuthProvider } from './contexts/AuthContext';
+import { VIXProvider } from './contexts/VIXContext';
 import { SettingsProvider } from './contexts/SettingsContext';
 import { PsychProvider } from './contexts/PsychContext';
 import { ThreadProvider } from './contexts/ThreadContext';
@@ -28,6 +29,7 @@ function AppInner() {
   const [showSettings, setShowSettings] = useState(false);
 
   const appContent = (
+    <VIXProvider>
     <AuthProvider>
       <SettingsProvider>
         <PsychProvider>
@@ -79,6 +81,7 @@ function AppInner() {
         </PsychProvider>
       </SettingsProvider>
     </AuthProvider>
+    </VIXProvider>
   );
 
   // In dev mode with auth bypass, show app directly

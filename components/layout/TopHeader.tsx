@@ -7,6 +7,7 @@ import { useBackend } from '../../lib/backend';
 import { useSettings } from '../../contexts/SettingsContext';
 import { isElectron } from '../../lib/platform';
 import { LayoutGrid, GripVertical, Layers, ChevronDown, Monitor } from 'lucide-react';
+import { VIXTicker } from '../VIXTicker';
 import type { IVAggregateResponse } from '../../lib/services';
 
 type LayoutOption = 'movable' | 'tickers-only' | 'combined';
@@ -140,14 +141,7 @@ export function TopHeader({
       
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-3">
-          <div className="bg-[#050500] border border-zinc-800 rounded-lg px-2.5 py-1">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[9px] text-gray-500">VIX</span>
-              <span className="text-xs font-mono text-gray-300">
-                {vix.toFixed(2)}
-              </span>
-            </div>
-          </div>
+          <VIXTicker />
           {onTopStepXToggle && (
             isElectron() ? (
               <button

@@ -1,92 +1,76 @@
 # Pulse — Integrated Trading Environment
 
-> **Pulse** is a comprehensive trading platform that integrates market data, risk management, journaling, and AI-powered insights into a unified interface.
+Pulse is the local + cloud command center for Priced In Capital workflows across market feed, boardroom operations, AI chat, and trade proposal orchestration.
 
-## 🏗️ Project Structure
+## Current Structure
 
-```
+```text
 pulse/
-├── frontend/          # Vite + React frontend (Vercel deployment)
-├── docs/              # Project documentation
-├── knowledge-base/    # Trading knowledge and strategies
-└── scripts/           # Utility scripts
+├── frontend/              # React 19 + Vite app
+├── backend-hono/          # Hono API (Node 20), Fly.io target
+├── docs/                  # Product and implementation docs
+├── knowledge-base/        # Handoffs and strategy references
+└── .cursor/skills/        # Local agent skill context
 ```
 
-**Note**: Backend code has been removed and is being rebuilt from scratch. See `docs/DEBUGGING-BACKEND-ROADBLOCKS.md` for details.
+## What Is Implemented
 
-## 🚀 Quick Start
+- Frontend shell with tab-based navigation (`feed`, `analysis`, `news`, `executive`, `chatroom`, `notion`, `settings`)
+- Backend route groups for market, boardroom, account, notifications, trading, projectx, riskflow, psych, ai, agents, polymarket
+- RiskFlow feed + polling/cron infrastructure
+- Boardroom UI + backend session bridge
+
+## Known Gaps (as of 2026-02-12)
+
+- Autopilot route module exists but is not registered in main route aggregation
+- Trade execution path is still simulated in core proposal service flows
+- Several frontend service methods remain intentionally stubbed pending endpoint parity
+- Auth middleware is local single-user mode (`local-user`) and not production-enforced yet
+
+See `docs/OpenClaw Move-In Sprint Plan.md` and Notion page `Pulse Engineering Audit — 2026-02-12` for the active closure plan.
+
+## Local Development
 
 ### Prerequisites
 
 - Node.js 20+
-- PostgreSQL (for local development)
-- Fly.io CLI (for backend deployment)
-- Vercel CLI (for frontend deployment)
+- npm or Bun
+- PostgreSQL/Neon credentials for backend data features
 
-### Local Development
+### Backend
 
-**Frontend:**
+```bash
+cd backend-hono
+npm install
+npm run dev
+```
+
+Backend runs on `http://localhost:8080`.
+
+### Frontend
+
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-See `docs/setup/SETUP-SUMMARY.md` for detailed setup instructions.
+Frontend runs on Vite default port unless overridden.
 
-## 📚 Documentation
+## Environment Variables
 
-All documentation is organized in the `docs/` directory:
+Core variables used today:
 
-- **Migration Phases:** `docs/phases/` - Complete migration documentation
-- **Deployment:** `docs/deployment/` - Deployment guides
-- **Architecture:** `docs/architecture/` - System design and decisions
-- **Integration:** `docs/integration/` - Third-party integrations
-- **Setup:** `docs/setup/` - Configuration and setup guides
+- `VITE_API_URL` (frontend API base, defaults to `http://localhost:8080`)
+- `NEON_DATABASE_URL` or `DATABASE_URL`
+- `CLERK_SECRET_KEY` (health/config checks; full production auth path still pending hardening)
+- `PROJECTX_USERNAME`, `PROJECTX_API_KEY`, related ProjectX config vars
 
-## 🔧 Key Technologies
+## Deployment Reality
 
-- **Frontend:** Vite + React 19, TypeScript, Tailwind CSS
-- **Auth:** Clerk
-- **Database:** Neon PostgreSQL (backend being rebuilt)
-- **Deployment:** Vercel (frontend), Backend TBD
+- Frontend: Vercel
+- Backend: Fly.io (Hono service)
 
-## 📖 Architecture
-
-See `docs/architecture/ARCHITECTURE.md` for complete system architecture.
-
-## 🔐 Environment Variables
-
-See `secrets.env` for environment variable reference (do not commit secrets).
-
-Required variables:
-- `NEON_DATABASE_URL` - Neon PostgreSQL connection string (backend uses this)
-- `CLERK_SECRET_KEY` - Clerk authentication secret
-- `VITE_API_URL` - Backend API URL
-- `PROJECTX_USERNAME` / `PROJECTX_API_KEY` - TopStepX integration
-
-## 🚢 Deployment
-
-**Frontend (Vercel):**
-```bash
-cd frontend
-vercel deploy
-```
-
-See `docs/deployment/DEPLOYMENT-GUIDE.md` for detailed instructions.
-
-## 📝 Development Workflow
-
-1. Create feature branch: `git checkout -b v.{MONTH}.{DATE}.{PATCH}`
-2. Make changes following TypeScript strict mode
-3. Test locally
-4. Commit with format: `[v.X.Y.Z] type: description`
-5. Create pull request
-
-## 🗂️ Repository Organization
-
-This is a **monorepo** containing both frontend and backend. See `docs/architecture/ARCHITECTURE-DECISIONS.md` for rationale.
-
-## 📄 License
+## License
 
 Proprietary - Solvys Technologies
