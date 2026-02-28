@@ -40,6 +40,15 @@ export default defineConfig(() => {
         input: {
           main: path.resolve(__dirname, 'index.html'),
           'mini-widget': path.resolve(__dirname, 'mini-widget.html')
+        },
+        output: {
+          manualChunks: {
+            vendor_react: ['react', 'react-dom'],
+            vendor_sentry: ['@sentry/react'],
+            vendor_clerk: ['@clerk/clerk-react', '@clerk/themes'],
+            vendor_markdown: ['react-markdown'],
+            vendor_tv: ['react-ts-tradingview-widgets']
+          }
         }
       },
       outDir: 'dist'
@@ -48,7 +57,7 @@ export default defineConfig(() => {
     base: process.env.VERCEL ? '/' : './',
     server: {
       cors: true,
-      port: 8888
+      port: 7777
     },
     define: {
       // Inject build timestamp so each build has a unique version
