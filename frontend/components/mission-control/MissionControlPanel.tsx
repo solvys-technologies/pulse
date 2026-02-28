@@ -50,7 +50,7 @@ export function MissionControlPanel({
 
   // Determine visual width
   const isVisuallyExpanded = !collapsed || peekOpen;
-  const panelWidth = isVisuallyExpanded ? 'w-80' : 'w-3';
+  const panelWidth = isVisuallyExpanded ? 'w-72' : 'w-3';
 
   return (
     <div
@@ -142,9 +142,9 @@ export function MissionControlPanel({
         {/* Widgets */}
         <div className="flex-1 overflow-y-auto p-2 space-y-2">
           <EmotionalResonanceMonitor onERScoreChange={setErScore} />
-          <BlindspotsWidget />
-          <AccountTrackerWidget />
           <AlgoStatusWidget />
+          <AccountTrackerWidget />
+          <BlindspotsWidget />
         </div>
       </div>
     </div>

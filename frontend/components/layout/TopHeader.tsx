@@ -1,3 +1,4 @@
+// [claude-code 2026-02-26] Add heading toolbar dock zone + optional docked widgets slot.
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/Button';
@@ -5,7 +6,7 @@ import { UpgradeModal } from '../UpgradeModal';
 import { IVScoreCard } from '../IVScoreCard';
 import { useBackend } from '../../lib/backend';
 import { isElectron } from '../../lib/platform';
-import { LayoutGrid, GripVertical, Layers, ChevronDown, ChevronLeft, ChevronRight, Monitor, MessageCircle } from 'lucide-react';
+import { LayoutGrid, GripVertical, Layers, ChevronDown, ChevronLeft, ChevronRight, Monitor, MessageCircle, Power } from 'lucide-react';
 import type { TradingPlatform } from '../TopStepXBrowser';
 
 type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'settings';
@@ -37,6 +38,7 @@ function PulseLogo() {
 interface TopHeaderProps {
   topStepXEnabled?: boolean;
   onTopStepXToggle?: () => void;
+  onTopStepXDisable?: () => void;
   selectedPlatform?: TradingPlatform;
   onPlatformSelect?: (platform: TradingPlatform) => void;
   layoutOption?: LayoutOption;
@@ -48,11 +50,13 @@ interface TopHeaderProps {
   historyIndex?: number;
   onBack?: () => void;
   onForward?: () => void;
+  psychAssistHeadingWidget?: React.ReactNode;
 }
 
 export function TopHeader({
   topStepXEnabled = false,
   onTopStepXToggle,
+  onTopStepXDisable,
   selectedPlatform = 'topstepx',
   onPlatformSelect,
   layoutOption = 'movable',
@@ -64,6 +68,7 @@ export function TopHeader({
   historyIndex = 0,
   onBack,
   onForward,
+  psychAssistHeadingWidget,
 }: TopHeaderProps) {
   const { tier } = useAuth();
   const backend = useBackend();
@@ -164,7 +169,10 @@ export function TopHeader({
   };
 
   return (
-    <div className={`bg-[#0a0a00] border-b border-[#D4AF37]/20 flex items-center justify-between pr-6 ${topStepXEnabled && layoutOption === 'tickers-only' ? 'h-[65px]' : 'h-[70px]'}`}>
+    <div
+      id="pulse-heading-toolbar"
+      className={`relative bg-[#0a0a00] flex items-center justify-between pr-6 ${topStepXEnabled && layoutOption === 'tickers-only' ? 'h-[65px]' : 'h-[70px]'}`}
+    >
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-3">
           {/* Logo centered at 32px to align with sidebar icons (w-16 = 64px, center = 32px) */}
@@ -216,6 +224,7 @@ export function TopHeader({
       
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-3">
+          {psychAssistHeadingWidget}
           <div className="bg-[#050500] border border-zinc-800 rounded-lg px-2.5 h-8 flex items-center">
             <div className="flex items-center gap-1.5">
               <span className="text-[9px] text-gray-500">VIX</span>
@@ -270,6 +279,15 @@ export function TopHeader({
                 </div>
               )}
             </div>
+          )}
+          {topStepXEnabled && onTopStepXDisable && (
+            <button
+              onClick={onTopStepXDisable}
+              className="px-2.5 h-8 rounded-lg text-xs font-medium bg-[#050500] text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-1.5"
+              title="Power off iframe"
+            >
+              <Power className="w-3.5 h-3.5" />
+            </button>
           )}
           {topStepXEnabled && onLayoutOptionChange && (
             <div className="relative" ref={dropdownRef}>

@@ -1,3 +1,4 @@
+// [claude-code 2026-02-26] Make RiskFlow subsection collapsible in Mission Control stack.
 import React, { useState } from 'react';
 import { useRiskFlow } from '../contexts/RiskFlowContext';
 import { Zap, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
@@ -69,7 +70,7 @@ function AlertRow({ alert }: { alert: RiskFlowAlert }) {
 
         <div className="flex-1 min-w-0">
           {/* Headline */}
-          <p className={`text-xs leading-snug font-medium truncate ${isHigh ? 'text-red-300' : 'text-zinc-300'} group-hover:text-white transition-colors`}>
+          <p className={`text-xs leading-snug font-medium line-clamp-3 break-words ${isHigh ? 'text-red-300' : 'text-zinc-300'} group-hover:text-white transition-colors`}>
             {alert.headline}
           </p>
 
@@ -90,10 +91,17 @@ function AlertRow({ alert }: { alert: RiskFlowAlert }) {
 
 type FilterMode = 'all' | 'high' | 'medium';
 
-export default function RiskFlowPanel() {
+export default function RiskFlowPanel({
+  collapsed,
+  onToggleCollapsed,
+}: {
+  collapsed?: boolean;
+  onToggleCollapsed?: () => void;
+}) {
   const { alerts, highCount, mediumCount } = useRiskFlow();
   const [filter, setFilter] = useState<FilterMode>('all');
-  const [expanded, setExpanded] = useState(true);
+  const [expandedInternal, setExpandedInternal] = useState(true);
+  const expanded = collapsed != null ? !collapsed : expandedInternal;
 
   const filtered = filter === 'all' ? alerts
     : filter === 'high' ? alerts.filter(a => a.severity === 'high')
@@ -115,7 +123,10 @@ export default function RiskFlowPanel() {
           )}
         </div>
         <button
-          onClick={() => setExpanded(!expanded)}
+          onClick={() => {
+            if (onToggleCollapsed) onToggleCollapsed();
+            else setExpandedInternal(!expandedInternal);
+          }}
           className="p-1 rounded hover:bg-[#D4AF37]/10 text-zinc-500 hover:text-[#D4AF37] transition-colors"
         >
           {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}

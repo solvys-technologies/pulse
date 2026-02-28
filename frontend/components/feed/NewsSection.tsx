@@ -3,12 +3,9 @@ import { Bell, BellOff } from 'lucide-react';
 import { useBackend } from '../../lib/backend';
 import type { RiskFlowItem } from '../../types/api';
 import { Button } from '../ui/Button';
-import { useSettings } from '../../contexts/SettingsContext';
-import { generateMockRiskFlowItem, generateMockRiskFlowItems } from '../../utils/mockDataGenerator';
 
 export function NewsSection() {
   const backend = useBackend();
-  const { mockDataEnabled } = useSettings();
   const [riskflowItems, setRiskflowItems] = useState<RiskFlowItem[]>([]);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -29,37 +26,19 @@ export function NewsSection() {
   useEffect(() => {
     const fetchNews = async () => {
       try {
-        if (mockDataEnabled) {
-          // Use mock data when enabled
-          const mockItems = generateMockRiskFlowItems(10); // Reduced from 20
-          setRiskflowItems(mockItems);
-        } else {
-          const response = await backend.riskflow.list({ limit: 50 });
-          setRiskflowItems(response.items);
-        }
+        const response = await backend.riskflow.list({ limit: 50 });
+        setRiskflowItems(response.items);
       } catch (err) {
         console.error('Failed to fetch RiskFlow:', err);
-        // Fallback to mock data on error if enabled
-        if (mockDataEnabled) {
-          setRiskflowItems(generateMockRiskFlowItems(20));
-        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchNews();
-    const interval = setInterval(() => {
-      if (mockDataEnabled) {
-        // Add new mock item periodically
-        const newItem = generateMockRiskFlowItem();
-        setRiskflowItems(prev => [newItem, ...prev].slice(0, 20)); // Cap at 20, not 50
-      } else {
-        fetchNews();
-      }
-    }, 60000); // Slowed from 30s to 60s
+    const interval = setInterval(fetchNews, 60000);
     return () => clearInterval(interval);
-  }, [backend, mockDataEnabled]);
+  }, [backend]);
 
   return (
     <div className="h-full overflow-y-auto px-5 pt-4 pb-4">

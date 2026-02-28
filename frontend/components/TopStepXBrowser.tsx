@@ -1,4 +1,4 @@
-import { ExternalLink, SplitSquareVertical, X } from 'lucide-react';
+import { ExternalLink, SplitSquareVertical, X, Power } from 'lucide-react';
 import { EmbeddedBrowserFrame } from './layout/EmbeddedBrowserFrame';
 
 export type TradingPlatform = 'topstepx' | 'tradelocker' | 'kalshi' | 'research';
@@ -46,8 +46,8 @@ export function TopStepXBrowser({
   };
 
   return (
-    <div className="h-full w-full flex flex-col bg-[#0a0a00] border border-[#D4AF37]/20 rounded-lg overflow-hidden">
-      <div className="h-12 bg-[#0a0a00] border-b border-[#D4AF37]/20 flex items-center gap-2 px-3 flex-shrink-0">
+    <div className="h-full w-full flex flex-col bg-[#0a0a00] overflow-hidden">
+      <div className="h-12 bg-[#0a0a00] flex items-center gap-2 px-3 flex-shrink-0">
         <select
           value={primaryPlatform}
           onChange={(e) => onPrimaryPlatformChange(e.target.value as TradingPlatform)}
@@ -59,6 +59,14 @@ export function TopStepXBrowser({
             </option>
           ))}
         </select>
+
+        <button
+          onClick={onClose}
+          className="p-1.5 rounded text-red-400 hover:bg-red-500/10 transition-colors"
+          title="Power off iframe"
+        >
+          <Power className="w-4 h-4" />
+        </button>
 
         {allowSplitView && (
           <>
@@ -109,7 +117,7 @@ export function TopStepXBrowser({
         </div>
       </div>
 
-      <div className={`flex-1 min-h-0 ${splitViewEnabled && allowSplitView ? 'grid grid-cols-2 gap-0.5 bg-[#D4AF37]/20' : ''}`}>
+      <div className={`flex-1 min-h-0 ${splitViewEnabled && allowSplitView ? 'grid grid-cols-2 gap-0' : ''}`}>
         <EmbeddedBrowserFrame
           title={PLATFORM_LABELS[primaryPlatform]}
           src={primaryUrl}

@@ -1,8 +1,7 @@
+// [claude-code 2026-02-26] Zen layout uses a separate dockable PsychAssist widget.
 import { useState, useEffect, useRef } from 'react';
 import { IVScoreCard } from '../IVScoreCard';
 import { EmotionalResonanceMonitor } from '../mission-control/EmotionalResonanceMonitor';
-import { CompactERMonitor } from '../mission-control/CompactERMonitor';
-import { CompactPnLDisplay } from '../mission-control/CompactPnLDisplay';
 import { useBackend } from '../../lib/backend';
 import type { RiskFlowItem } from '../../types/api';
 import { X, Trash2 } from 'lucide-react';
@@ -169,31 +168,6 @@ export function FloatingWidget({ vix, ivScore, layoutOption = 'movable', onClose
               <X className="w-4 h-4" />
             </button>
           )}
-        </div>
-      )}
-
-      {/* Tickers-Only Expanded Panel - Shows ER Monitor, P&L */}
-      {layoutOption === 'tickers-only' && (
-        <div
-          className="backdrop-blur-3xl bg-gradient-to-br from-[#0a0a00]/50 via-[#0a0a00]/40 to-[#0a0a00]/30 border border-[#D4AF37]/30 rounded-2xl p-3 w-80 shadow-2xl"
-          style={{
-            backdropFilter: 'blur(40px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-            boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37), inset 0 1px 1px 0 rgba(255, 255, 255, 0.1)',
-          }}
-        >
-          {/* Compact ER Monitor - Landscape */}
-          <div className="mb-3 pb-3 border-b border-[#D4AF37]/20">
-            <div className="flex items-center gap-1.5 mb-2">
-              <span className="text-[10px] text-[#D4AF37] font-semibold">PsychAssist</span>
-            </div>
-            <CompactERMonitor onERScoreChange={setErScore} />
-          </div>
-
-          {/* P&L and Account */}
-          <div>
-            <CompactPnLDisplay showAccount={true} />
-          </div>
         </div>
       )}
 

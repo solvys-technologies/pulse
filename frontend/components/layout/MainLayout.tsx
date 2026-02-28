@@ -1,3 +1,4 @@
+// [claude-code 2026-02-26] Support dockable PsychAssist in Zen layout.
 import React, { useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { quickIVScore, type IVScoreResult } from '../../lib/iv-scoring';
@@ -29,6 +30,7 @@ import { useBoardroom } from '../../hooks/useBoardroom';
 import { SearchModal } from '../search/SearchModal';
 import { PulseFloatingChat } from '../chat/PulseFloatingChat';
 import { SettingsPage } from '../SettingsPanel';
+import { PsychAssistDockable, type PsychAssistDockTarget } from './PsychAssistDockable';
 
 type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'settings';
 type LayoutOption = 'movable' | 'tickers-only' | 'combined';
@@ -55,11 +57,27 @@ export function MainLayout() {
   const ivScore = ivScoreResult?.legacyScore ?? 3.2;
   const [showMissionControlNotification, setShowMissionControlNotification] = useState(false);
   const [showTapeNotification, setShowTapeNotification] = useState(false);
+  const [riskFlowCollapsed, setRiskFlowCollapsed] = useState(false);
   const [combinedPanelErScore, setCombinedPanelErScore] = useState(0);
   const [combinedPanelPnl, setCombinedPanelPnl] = useState(0);
   const [combinedPanelAlgoEnabled, setCombinedPanelAlgoEnabled] = useState(false);
   const [showAskHarp, setShowAskHarp] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
+  const [psychAssistTarget, setPsychAssistTarget] = useState<PsychAssistDockTarget>(() => {
+    try {
+      return (localStorage.getItem('pulse_psychassist_target:v1') as PsychAssistDockTarget) || 'floating';
+    } catch {
+      return 'floating';
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('pulse_psychassist_target:v1', psychAssistTarget);
+    } catch {
+      // ignore
+    }
+  }, [psychAssistTarget]);
 
   // Tab history for breadcrumb back/forward navigation
   const [tabHistory, setTabHistory] = useState<NavTab[]>(['feed']);
@@ -403,15 +421,22 @@ export function MainLayout() {
     if (!hideRightPanel) {
       rightPanels.push(
         <div key="right-stack" className="flex flex-col h-full">
-          <div className="flex-1 min-h-0 overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-hidden pb-2">
             <MissionControlPanel
               collapsed={missionControlCollapsed}
               onToggleCollapse={() => setMissionControlCollapsed(!missionControlCollapsed)}
               topStepXEnabled={false}
             />
           </div>
-          <div className="h-[320px] border-t border-[#D4AF37]/20 overflow-hidden">
-            <RiskFlowPanel />
+          <div
+            className={`border-t border-[#D4AF37]/20 overflow-hidden mt-2 transition-[height] duration-200 ${
+              riskFlowCollapsed ? 'h-12' : 'h-[320px]'
+            }`}
+          >
+            <RiskFlowPanel
+              collapsed={riskFlowCollapsed}
+              onToggleCollapsed={() => setRiskFlowCollapsed((v) => !v)}
+            />
           </div>
         </div>
       );
@@ -423,6 +448,7 @@ export function MainLayout() {
       <TopHeader
         topStepXEnabled={topStepXEnabled}
         onTopStepXToggle={() => setTopStepXEnabled(true)}
+        onTopStepXDisable={() => setTopStepXEnabled(false)}
         selectedPlatform={selectedPlatform}
         onPlatformSelect={setSelectedPlatform}
         layoutOption={layoutOption}
@@ -434,6 +460,15 @@ export function MainLayout() {
         historyIndex={historyIndex}
         onBack={goBack}
         onForward={goForward}
+        psychAssistHeadingWidget={
+          topStepXEnabled && layoutOption === 'tickers-only' && psychAssistTarget === 'header' ? (
+            <PsychAssistDockable
+              target="header"
+              onDockToHeader={() => setPsychAssistTarget('header')}
+              onUndockToFloating={() => setPsychAssistTarget('floating')}
+            />
+          ) : undefined
+        }
       />
 
       <div className="flex-1 flex overflow-hidden relative">
@@ -454,7 +489,7 @@ export function MainLayout() {
         {/* Center Content - TopStepX or Main Content */}
         <div className="flex-1 overflow-hidden relative min-w-0 flex flex-col">
           {topStepXEnabled ? (
-            <div className="h-full w-full flex-1 p-4 min-h-0">
+            <div className="h-full w-full flex-1 p-0 min-h-0">
               <TopStepXBrowser
                 onClose={() => setTopStepXEnabled(false)}
                 primaryPlatform={selectedPlatform}
@@ -531,6 +566,15 @@ export function MainLayout() {
           />
         )}
 
+        {/* Zen Layout: dockable PsychAssist widget (float ↔ header) */}
+        {topStepXEnabled && layoutOption === 'tickers-only' && psychAssistTarget === 'floating' && (
+          <PsychAssistDockable
+            target="floating"
+            onDockToHeader={() => setPsychAssistTarget('header')}
+            onUndockToFloating={() => setPsychAssistTarget('floating')}
+          />
+        )}
+
         {/* Panel Notification Widgets */}
         {showMissionControlNotification && (
           <PanelNotificationWidget
@@ -586,7 +630,10 @@ export function MainLayout() {
       />
       <PulseFloatingChat
         visible={activeTab !== 'analysis' && activeTab !== 'chatroom' && activeTab !== 'notion' && activeTab !== 'settings'}
-        onExpandToAnalysis={() => navigateTab('analysis')}
+        onExpandToAnalysis={() => {
+          if (topStepXEnabled) setTopStepXEnabled(false);
+          navigateTab('analysis');
+        }}
       />
     </div>
   );

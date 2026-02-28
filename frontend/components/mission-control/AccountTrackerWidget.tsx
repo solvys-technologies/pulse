@@ -1,3 +1,4 @@
+// [claude-code 2026-02-26] Replace balance KPI with status + platform tracker; remove P&L pill graphic.
 import { useSettings } from '../../contexts/SettingsContext';
 import { useState, useEffect } from 'react';
 import { useBackend } from '../../lib/backend';
@@ -14,11 +15,7 @@ interface AccountTrackerWidgetProps {
 export function AccountTrackerWidget({ currentPnL: propPnL }: AccountTrackerWidgetProps) {
   const backend = useBackend();
   const { isAuthenticated } = useAuth();
-  const { riskSettings, developerSettings } = useSettings();
-  const { dailyProfitTarget, dailyLossLimit } = riskSettings;
-  const [balance, setBalance] = useState<number>(0);
-  const [dailyTarget, setDailyTarget] = useState<number>(dailyProfitTarget);
-  const [lossLimit, setLossLimit] = useState<number>(dailyLossLimit);
+  const { developerSettings } = useSettings();
   const [currentPnL, setCurrentPnL] = useState<number>(propPnL ?? 0);
   const [selectedAccount, setSelectedAccount] = useState<string>('');
   const [showAccountDropdown, setShowAccountDropdown] = useState<boolean>(false);
@@ -54,9 +51,6 @@ export function AccountTrackerWidget({ currentPnL: propPnL }: AccountTrackerWidg
     const fetchAccount = async (): Promise<boolean> => {
       try {
         const account = await backend.account.get();
-        setBalance(account.balance);
-        setDailyTarget(account.dailyTarget || dailyProfitTarget);
-        setLossLimit(account.dailyLossLimit || dailyLossLimit);
         // Always use dailyPnl from backend, not prop (prop is for backward compatibility)
         setCurrentPnL(account.dailyPnl);
         return true;
@@ -84,7 +78,7 @@ export function AccountTrackerWidget({ currentPnL: propPnL }: AccountTrackerWidg
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [backend, isAuthenticated, dailyProfitTarget, dailyLossLimit]);
+  }, [backend, isAuthenticated]);
 
   const handleUplink = async () => {
     setUplinking(true);
@@ -102,7 +96,6 @@ export function AccountTrackerWidget({ currentPnL: propPnL }: AccountTrackerWidg
         }
 
         const account = await backend.account.get();
-        setBalance(account.balance);
         setCurrentPnL(account.dailyPnl);
       } else {
         setUplinkMessage(result.message);
@@ -122,17 +115,12 @@ export function AccountTrackerWidget({ currentPnL: propPnL }: AccountTrackerWidg
     }
   };
 
-  const maxRange = Math.max(dailyTarget, lossLimit);
-  const normalizedPosition = (currentPnL / maxRange) * 50;
-  const clampedPosition = Math.max(-50, Math.min(50, normalizedPosition));
-  const leftPercentage = 50 + clampedPosition;
-
-  const getPendulumColor = () => {
-    if (currentPnL >= dailyTarget) return 'bg-[#D4AF37]';
-    if (currentPnL <= -lossLimit) return 'bg-red-500';
-    if (currentPnL > 0) return 'bg-emerald-400';
-    return 'bg-red-400';
-  };
+  const activeAccount = projectxAccounts.find(a => a.accountId === selectedAccount);
+  const statusWord = uplinked ? 'Active' : 'Dormant';
+  const statusColor = uplinked ? 'text-emerald-400' : 'text-zinc-500';
+  const platformLabel = activeAccount
+    ? `${activeAccount.provider ?? 'ProjectX'} • ${activeAccount.isPaper ? 'Paper' : 'Live'}`
+    : (projectxAccounts.length > 0 ? 'Select an account' : 'No uplink');
 
   return (
     <div className="bg-[#050500] border border-[#D4AF37]/20 rounded-lg p-2.5">
@@ -146,6 +134,7 @@ export function AccountTrackerWidget({ currentPnL: propPnL }: AccountTrackerWidg
             </div>
           )}
         </div>
+        <p className="text-[10px] text-gray-500">{loading ? 'Loading…' : ''}</p>
       </div>
 
       {/* Account chooser dropdown in its own row */}
@@ -182,7 +171,7 @@ export function AccountTrackerWidget({ currentPnL: propPnL }: AccountTrackerWidg
             </>
           ) : (
             <div className="w-full px-2 py-1 text-[10px] text-gray-500 text-center">
-              {loading ? 'Loading...' : 'No accounts'}
+No accounts
             </div>
           )}
         </div>
@@ -210,48 +199,15 @@ export function AccountTrackerWidget({ currentPnL: propPnL }: AccountTrackerWidg
 
       <div className="mb-2 flex justify-between items-baseline">
         <div>
-          <p className="text-[10px] text-gray-500">Balance</p>
-          <p className="text-sm font-bold text-[#D4AF37]">${balance.toFixed(2)}</p>
+          <p className="text-[10px] text-gray-500">Status</p>
+          <p className={`text-sm font-bold ${statusColor}`}>{statusWord}</p>
+          <p className="text-[10px] text-zinc-600 mt-0.5">Trading: {platformLabel}</p>
         </div>
         <div className="text-right">
-          <p className="text-[10px] text-gray-500">Current P&L</p>
+          <p className="text-[10px] text-gray-500">Day P&L</p>
           <span className={`text-sm font-bold ${currentPnL >= 0 ? 'text-emerald-400' : 'text-red-500'}`}>
             {currentPnL >= 0 ? '+' : ''}${currentPnL.toFixed(2)}
           </span>
-        </div>
-      </div>
-
-      <div className="relative">
-        <div className="flex justify-between text-[10px] text-gray-500 mb-1">
-          <span className="text-red-500">-${lossLimit}</span>
-          <span className="text-gray-400">$0</span>
-          <span className="text-emerald-400">+${dailyTarget}</span>
-        </div>
-
-        <div className="relative h-3 bg-zinc-900 rounded-full overflow-hidden">
-          <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-gray-600 z-0" />
-
-          <div
-            className="absolute top-0 bottom-0 w-0.5 rounded-full z-10 transition-all duration-500"
-            style={{ left: `${leftPercentage}%` }}
-          >
-            <div className={`w-full h-full ${getPendulumColor()} rounded-full shadow-lg`} />
-            <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 ${getPendulumColor()} rounded-full border border-[#0a0a00]`} />
-          </div>
-
-          <div className="absolute left-0 top-0 bottom-0 w-1/2 bg-gradient-to-r from-red-500/10 to-transparent" />
-          <div className="absolute right-0 top-0 bottom-0 w-1/2 bg-gradient-to-l from-emerald-400/10 to-transparent" />
-        </div>
-      </div>
-
-      <div className="mt-2 pt-2 border-t border-zinc-800 flex justify-between items-center">
-        <div>
-          <p className="text-[10px] text-gray-500">Loss Limit</p>
-          <p className="text-xs font-semibold text-red-500">${lossLimit}</p>
-        </div>
-        <div className="text-right">
-          <p className="text-[10px] text-gray-500">Daily Target</p>
-          <p className="text-xs font-semibold text-[#D4AF37]">${dailyTarget}</p>
         </div>
       </div>
 
