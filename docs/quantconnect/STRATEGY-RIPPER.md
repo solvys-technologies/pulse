@@ -1,4 +1,5 @@
 # Strategy Execution Profile: Ripper
+<!-- claude-code 2026-03-03 | Resolved: 120s blackout does NOT apply to reactive mode, added volatility spike risk governor -->
 <!-- claude-code 2026-02-28 | Full spec from TP walkthrough session -->
 
 ## Overview
@@ -17,6 +18,7 @@ Risk event / macro surprise play. A Flush **supercharged by a fundamental cataly
 - Entry on Antilag confirmation post-sweep
 - Standard 10 contracts initial, scale-in logic applies
 - Uses the timing of the catalyst rather than fixed session windows
+- **120-second blackout does NOT apply** — reactive entries are surprise moves; the blackout is for scheduled news only (Mode 2)
 
 ### Mode 2: Pre-Staged News Entry
 - Limit order placed at a known Fib level **BEFORE** the data release
@@ -88,6 +90,25 @@ Two options:
 
 ---
 
+## Volatility Spike Risk Governor (Reactive Mode)
+
+When market volatility spikes unexpectedly during reactive Ripper entries, Harper must dial back exposure:
+
+### Trigger
+- **3-candle lookback ATR** (1000T chart) jumps to **≥30–40 points**
+- This indicates a volatility regime change — normal position sizing is too aggressive
+
+### Response
+- **Reduce contract count** — scale initial position from 10 micros down to 5 or fewer
+- **Reduce risk per trade** — tighten the dollar-risk allocation for this trade
+- **Do NOT skip the trade** — the setup may still be valid, but size must reflect the volatility
+- Governor automatically disengages when 3-candle ATR drops back below 30
+
+### Rationale
+The 120-second blackout protects against scheduled news chaos. This governor protects against UNscheduled chaos — surprise moves, flash crashes, geopolitical shocks. Different risk, different tool.
+
+---
+
 ## Key Differences from Flush
 1. **Fundamental catalyst required** (not just exhaustion)
 2. **HTF fib anchor manually selectable** based on event severity
@@ -96,6 +117,7 @@ Two options:
 5. **Scalp character** — in/out before wick fills
 6. **Wider stops** (next cycle level, not just sweep wick)
 7. **Re-entry rules** for post-stop-out scenarios
+8. **120s blackout does NOT apply** to reactive mode — volatility spike risk governor applies instead
 
 ---
 

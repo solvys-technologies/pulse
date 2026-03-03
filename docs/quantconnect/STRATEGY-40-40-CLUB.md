@@ -1,4 +1,5 @@
 # Strategy Execution Profile: 40/40 Club
+<!-- claude-code 2026-03-03 | Resolved: Anchored VWAP (48h staleness, catalyst-only), footprint chart roadmap replaces DOM heuristic -->
 <!-- claude-code 2026-02-28 | Updated with TP answers — scale-in, trailing, fib, PDPT, re-entry -->
 
 ## Overview
@@ -53,6 +54,15 @@ Liquidity sweep reversal targeting ~40 points, typically firing ~40 minutes into
 - Hybrid: algo auto-detects large moves + Pulse/OpenClaw fundamental catalyst detection + manual override
 - Fibs drawn from **fundamentally driven moves** (not random swings)
 - Anchored VWAP co-plotted from same anchor point
+
+### Anchored VWAP Specification
+- **Calculation:** Plain anchored VWAP — no bands, no smoothing
+- **Anchor points — catalyst-only:** Draw anchored VWAPs exclusively from major fundamental events:
+  1. Hot market-moving commentary (e.g. Fed officials, geopolitical statements)
+  2. Mag 7 earnings with extreme volatility
+  3. Economic data prints that surprise or disappoint expectations
+- **Staleness rule:** VWAPs go stale after **48 hours** and are discarded
+- **No other anchors:** Do NOT anchor VWAPs to random swings, technical levels, or session opens — only the fundamental catalysts above
 
 ---
 
@@ -124,6 +134,14 @@ Liquidity sweep reversal targeting ~40 points, typically firing ~40 minutes into
 
 ---
 
-## Open Questions (TBD)
-- Anchored VWAP specification details (exact calculation parameters)
-- DOM heuristic for exits (algo approximation of TP's visual reads)
+## Exit Enhancement — Footprint Chart (Roadmap)
+
+> **DOM heuristic: SKIPPED.** TP's visual DOM reads cannot be replicated without real-time order book data.
+>
+> **Future enhancement:** Rithmic's TICKER_PLANT WebSocket exposes raw tick-by-tick data (trade price, volume, BBO) that Harper can use to construct:
+> - **Footprint charts** — classify each trade as buyer/seller-initiated via BBO comparison, aggregate delta per price level per bar
+> - **Anchored volume profile** — aggregate volume at each price level, anchor to the same VWAP catalyst points
+>
+> This is a **build** (custom aggregation from raw tick stream), not a plug-in. The `async_rithmic` Python library (MIT, production-stable) wraps the Protocol Buffer API. Bandwidth caveat: Rithmic standard plans cap at ~40GB/week; DOM/depth data is significantly heavier than price-only feeds.
+>
+> **Priority:** Post-MVP. Ship 40/40 Club with price-action exits first, add footprint chart data as a V2 enhancement.

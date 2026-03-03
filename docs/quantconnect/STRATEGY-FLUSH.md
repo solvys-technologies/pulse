@@ -1,4 +1,5 @@
 # Strategy Execution Profile: Flush
+<!-- claude-code 2026-03-03 | Resolved: timing windows are soft-bounded scan gates, updated open questions -->
 <!-- claude-code 2026-02-28 | Full spec from TP walkthrough session -->
 
 ## Overview
@@ -18,6 +19,12 @@ Exhaustion reversal at session extremes. Price exhausts at the high/low of a mul
 | Blackout | 9:20 – 9:35 | NO trades unless "undeniable" Antilag signal |
 | Lunch | 12:00 – 12:45 | Lower volume, wider stops |
 | Power Hour | 1:40 – 2:05 | End-of-day momentum |
+
+### Window Behavior — Soft-Bounded Scan Gates
+- Windows gate **when Harper starts scanning for setups**, NOT when she can execute
+- Harper begins looking for Flush setups at the window open time
+- If all criteria check off **after** the window closes, the trade **still executes**
+- The window is a scan trigger, not an execution cutoff
 
 ---
 
@@ -80,7 +87,7 @@ Exhaustion reversal at session extremes. Price exhausts at the high/low of a mul
 
 ---
 
-## Open Questions (TBD)
-- Fib invalidation logic
-- Anchored VWAP specification
-- DOM heuristic for exits
+## Resolved
+- **Fib invalidation** → see STRATEGY-40-40-CLUB.md § Fib Invalidation (same rules apply)
+- **Anchored VWAP** → see STRATEGY-40-40-CLUB.md § Anchored VWAP Specification (catalyst-only, 48h staleness)
+- **DOM heuristic** → skipped; footprint chart roadmap item (see STRATEGY-40-40-CLUB.md § Exit Enhancement)
