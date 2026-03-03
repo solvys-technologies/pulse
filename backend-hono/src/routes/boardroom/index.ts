@@ -5,6 +5,7 @@ import {
   handleSendInterventionMessage,
   handleSendMentionMessage,
   handleGetBoardroomStatus,
+  handleGetBoardroomMeetingSchedule,
   handleTriggerIntervention,
   handlePostTradeIdea,
 } from './handlers.js';
@@ -17,6 +18,7 @@ export function createBoardroomRoutes(): Hono {
   router.post('/intervention/send', handleSendInterventionMessage);
   router.post('/mention/send', handleSendMentionMessage);
   router.get('/status', handleGetBoardroomStatus);
+  router.get('/meeting-schedule', handleGetBoardroomMeetingSchedule);
   router.post('/intervention/trigger', handleTriggerIntervention);
   router.post('/trade-idea', handlePostTradeIdea);
 

@@ -6,7 +6,7 @@ import { useBackend } from '../../lib/backend';
 import type { RiskFlowItem } from '../../types/api';
 import { X, Trash2 } from 'lucide-react';
 
-type LayoutOption = 'movable' | 'tickers-only' | 'combined';
+type LayoutOption = 'tickers-only' | 'combined';
 
 interface FloatingWidgetProps {
   vix: number;
@@ -20,7 +20,7 @@ interface RiskFlowNotification extends RiskFlowItem {
   notificationId: string;
 }
 
-export function FloatingWidget({ vix, ivScore, layoutOption = 'movable', onClose }: FloatingWidgetProps) {
+export function FloatingWidget({ vix, ivScore, layoutOption = 'combined', onClose }: FloatingWidgetProps) {
   const backend = useBackend();
   const [erScore, setErScore] = useState<number>(0);
   const [showERCard, setShowERCard] = useState(false);

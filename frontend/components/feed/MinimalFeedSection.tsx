@@ -1,77 +1,28 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { FeedItem as FeedItemType, IVIndicator } from '../../types/feed';
-import { useBackend } from '../../lib/backend';
-import type { RiskFlowItem } from '../../types/api';
-import { useRiskFlow } from '../../hooks/useRiskFlow';
+import { useRiskFlow } from '../../contexts/RiskFlowContext';
+import type { RiskFlowAlert } from '../../lib/riskflow-feed';
 import { FeedItem } from './FeedItem';
 import { MoveLeft, MoveRight, GripVertical, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { PanelPosition } from '../layout/DraggablePanel';
 
-// Track last seen news item ID to count unread items (per session)
-let lastSeenNewsId: number | null = null;
+// Track last seen alert ID to count unread (per session)
+let lastSeenAlertId: string | null = null;
 
-// Convert RiskFlowItem to FeedItem format
-function convertRiskFlowToFeedItem(riskflowItem: RiskFlowItem): FeedItemType | null {
-  const title = riskflowItem.title || '';
-  const content = riskflowItem.content || '';
-  
-  const rawDataPatterns = [
-    /^\[.*\]/,
-    /API.*error/i,
-    /Failed to fetch/i,
-    /Error fetching/i,
-    /undefined|null/i,
-    /^[A-Z_]+$/,
-  ];
-  
-  const isRawData = rawDataPatterns.some(pattern => pattern.test(title) || pattern.test(content));
-  
-  if (isRawData || title.length < 10 || title.includes('undefined') || title.includes('null')) {
-    return null;
-  }
-  
-  const ivScoreValue = typeof riskflowItem.ivScore === 'number' ? riskflowItem.ivScore : 
-                       riskflowItem.ivScore != null ? Number(riskflowItem.ivScore) : 0;
-  const safeIvScore = isNaN(ivScoreValue) ? 0 : ivScoreValue;
-
-  let ivType: 'Bullish' | 'Bearish' | 'Neutral' = 'Neutral';
-  
-  if (riskflowItem.sentiment) {
-    if (riskflowItem.sentiment === 'bullish') ivType = 'Bullish';
-    else if (riskflowItem.sentiment === 'bearish') ivType = 'Bearish';
-  } else if (safeIvScore >= 6) {
-    const titleLower = title.toLowerCase();
-    const bullishKeywords = ['surge', 'rally', 'soar', 'jump', 'gain', 'rise', 'upgrade', 'beats', 'record high', 'increase', 'beat'];
-    const bearishKeywords = ['crash', 'plunge', 'fall', 'drop', 'tumble', 'decline', 'downgrade', 'miss', 'record low', 'decrease', 'missed'];
-
-    const isBullish = bullishKeywords.some(kw => titleLower.includes(kw));
-    const isBearish = bearishKeywords.some(kw => titleLower.includes(kw));
-
-    if (isBullish && !isBearish) ivType = 'Bullish';
-    else if (isBearish && !isBullish) ivType = 'Bearish';
-  }
-
-  let classification: 'Cyclical' | 'Countercyclical' | 'Neutral' = 'Neutral';
-  const category = riskflowItem.category || ''.toLowerCase();
-  if (category.includes('fed') || category.includes('economic') || category.includes('political') || category.includes('geopolitical')) {
-    classification = 'Countercyclical';
-  } else if (category.includes('earning') || category.includes('corporate') || category.includes('technical')) {
-    classification = 'Cyclical';
-  }
-
+function alertToFeedItem(alert: RiskFlowAlert): FeedItemType {
+  const ivValue = alert.severity === 'high' ? 7 : alert.severity === 'medium' ? 5 : 3;
   const iv: IVIndicator = {
-    value: safeIvScore,
-    type: ivType,
-    classification: classification,
+    value: ivValue,
+    type: 'Neutral',
+    classification: 'Neutral',
   };
-
   return {
-    id: riskflowItem.id.toString(),
-    time: typeof riskflowItem.publishedAt === 'string' ? new Date(riskflowItem.publishedAt) : riskflowItem.publishedAt,
-    text: title,
-    source: riskflowItem.source,
+    id: alert.id,
+    time: new Date(alert.publishedAt),
+    text: alert.headline,
+    source: alert.source,
     type: 'news',
-    iv: iv,
+    iv,
   };
 }
 
@@ -83,71 +34,41 @@ interface MinimalFeedSectionProps {
   onHide?: () => void;
 }
 
-export function MinimalFeedSection({ 
+export function MinimalFeedSection({
   collapsed = false,
   onToggleCollapse,
   position = 'right',
   onPositionChange,
   onHide
 }: MinimalFeedSectionProps) {
-  const backend = useBackend();
-  const [feedItems, setFeedItems] = useState<FeedItemType[]>([]);
+  const { alerts } = useRiskFlow();
   const [unreadCount, setUnreadCount] = useState(0);
 
-  useEffect(() => {
-    const fetchNews = async () => {
-      try {
-        const response = await backend.riskflow.list({ limit: 20 });
-        const convertedItems = response.items
-          .map((item: RiskFlowItem) => convertRiskFlowToFeedItem(item))
-          .filter((item): item is FeedItemType => item !== null);
-        setFeedItems(convertedItems);
-        
-        // Calculate unread count
-        if (response.items.length > 0) {
-          const latestId = typeof response.items[0].id === 'number' ? response.items[0].id : parseInt(response.items[0].id.toString());
-          if (lastSeenNewsId === null) {
-            lastSeenNewsId = latestId;
-            setUnreadCount(0);
-          } else {
-            // Count items newer than last seen
-            const unread = response.items.filter((item: RiskFlowItem) => {
-              const itemId = typeof item.id === 'number' ? item.id : parseInt(item.id.toString());
-              return itemId > lastSeenNewsId!;
-            }).length;
-            setUnreadCount(unread);
-          }
-        }
-      } catch (err) {
-        console.error('Failed to fetch news for The Tape:', err);
-      }
-    };
-
-    fetchNews();
-    const interval = setInterval(fetchNews, 15000);
-    return () => clearInterval(interval);
-  }, [backend]);
-
-  const handleBreakingNews = useCallback((item: RiskFlowItem) => {
-    const converted = convertRiskFlowToFeedItem(item);
-    if (!converted) return;
-    setFeedItems((prev) => [converted, ...prev].slice(0, 20));
-    setUnreadCount((prev) => prev + 1);
-  }, []);
-
-  useRiskFlow(handleBreakingNews);
+  const feedItems = alerts.slice(0, 50).map(alertToFeedItem);
 
   // Mark as read when panel is opened
   useEffect(() => {
-    if (!collapsed && feedItems.length > 0) {
-      const latestIdRaw = feedItems[0]?.id;
-      const latestId = latestIdRaw != null ? Number(latestIdRaw) : null;
-      if (latestId !== null && !Number.isNaN(latestId)) {
-        lastSeenNewsId = latestId;
-        setUnreadCount(0);
-      }
+    if (!collapsed && alerts.length > 0) {
+      lastSeenAlertId = alerts[0].id;
+      setUnreadCount(0);
     }
-  }, [collapsed, feedItems]);
+  }, [collapsed, alerts.length]);
+
+  // Compute unread count (items newer than last seen)
+  useEffect(() => {
+    if (alerts.length === 0) {
+      setUnreadCount(0);
+      return;
+    }
+    const latestId = alerts[0].id;
+    if (lastSeenAlertId === null) {
+      lastSeenAlertId = latestId;
+      setUnreadCount(0);
+    } else {
+      const idx = alerts.findIndex((a) => a.id === lastSeenAlertId);
+      setUnreadCount(idx < 0 ? alerts.length : idx);
+    }
+  }, [alerts]);
 
   if (collapsed) {
     return (

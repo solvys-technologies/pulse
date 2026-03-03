@@ -7,6 +7,7 @@ import {
   checkBoardroomStatus,
   appendToBoardroom,
 } from '../../services/clawdbot-sessions.js';
+import { getBoardroomMeetingSchedule } from '../../services/boardroom-schedule.js';
 import type { InterventionType, InterventionSeverity, BoardroomAgent } from '../../types/boardroom.js';
 
 interface SendInterventionBody {
@@ -208,5 +209,19 @@ export async function handleGetBoardroomStatus(c: Context) {
   } catch (error) {
     console.error('[Boardroom] Failed to fetch boardroom status:', error);
     return c.json({ error: 'Failed to fetch boardroom status' }, 500);
+  }
+}
+
+/**
+ * GET /api/boardroom/meeting-schedule
+ * Returns schedule derived from the OpenClaw cron that drives boardroom polling.
+ */
+export async function handleGetBoardroomMeetingSchedule(c: Context) {
+  try {
+    const schedule = getBoardroomMeetingSchedule();
+    return c.json(schedule);
+  } catch (error) {
+    console.error('[Boardroom] Failed to compute meeting schedule:', error);
+    return c.json({ error: 'Failed to compute meeting schedule' }, 500);
   }
 }

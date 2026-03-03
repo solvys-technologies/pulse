@@ -18,14 +18,14 @@ const GatewayContext = createContext<GatewayContextValue>({
   status: 'disconnected',
   lastHealthCheck: null,
   reconnect: () => {},
-  gatewayUrl: 'http://localhost:8878',
+  gatewayUrl: 'http://localhost:7787',
 });
 
 /* ------------------------------------------------------------------ */
 /*  Constants                                                          */
 /* ------------------------------------------------------------------ */
 
-const GATEWAY_URL = 'http://localhost:8878';
+const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL || 'http://localhost:7787';
 const HEALTH_INTERVAL_MS = 30_000; // 30 seconds
 const MAX_BACKOFF_MS = 60_000;
 
@@ -61,10 +61,11 @@ export function GatewayProvider({ children }: { children: ReactNode }) {
       } else {
         throw new Error(`HTTP ${res.status}`);
       }
-    } catch {
+    } catch (_err) {
       const wasConnected = status === 'connected';
       setStatus('disconnected');
 
+      // Only toast when we were previously connected (avoid noise on first load / no gateway)
       if (wasConnected) {
         addToast('Gateway disconnected — retrying...', 'error');
       }

@@ -31,6 +31,8 @@ export function SettingsPage() {
     setDeveloperSettings,
     autoPilotSettings,
     setAutoPilotSettings,
+    primaryBroker,
+    setPrimaryBroker,
   } = useSettings();
   const backend = useBackend();
   const [contractsPerTrade, setContractsPerTrade] = useState<number>(1);
@@ -404,6 +406,44 @@ export function SettingsPage() {
                   <h2 className="text-lg font-semibold text-[#D4AF37] mb-4">Autopilot</h2>
 
                   <div className="space-y-6">
+                    {/* Primary broker (execution) */}
+                    <div>
+                      <h4 className="text-sm font-semibold text-[#D4AF37] mb-3">Primary broker</h4>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setPrimaryBroker('rithmic')}
+                          className={`px-3 py-2 rounded-lg border text-sm transition-all ${
+                            primaryBroker === 'rithmic'
+                              ? 'bg-[#D4AF37]/20 border-[#D4AF37]/40 text-[#D4AF37]'
+                              : 'bg-[#050500] border-zinc-800 hover:border-zinc-700 text-gray-400'
+                          }`}
+                        >
+                          Rithmic (primary)
+                        </button>
+                        <button
+                          onClick={() => setPrimaryBroker('projectx')}
+                          className={`px-3 py-2 rounded-lg border text-sm transition-all ${
+                            primaryBroker === 'projectx'
+                              ? 'bg-[#D4AF37]/20 border-[#D4AF37]/40 text-[#D4AF37]'
+                              : 'bg-[#050500] border-zinc-800 hover:border-zinc-700 text-gray-400'
+                          }`}
+                        >
+                          ProjectX
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        Autopilot execution uses the selected broker. Rithmic is the primary; ProjectX remains available.
+                      </p>
+                    </div>
+
+                    {/* Rithmic connection placeholder */}
+                    <div>
+                      <h4 className="text-sm font-semibold text-[#D4AF37] mb-3">Rithmic</h4>
+                      <div className="bg-[#0a0a00] border border-zinc-800 rounded-lg p-4 text-sm text-gray-400">
+                        Rithmic connection – coming soon. Configure credentials when the integration is available.
+                      </div>
+                    </div>
+
                     {/* AutoPilot Mode Selector */}
                     <div>
                       <h4 className="text-sm font-semibold text-[#D4AF37] mb-3">Autopilot Mode</h4>

@@ -8,7 +8,11 @@ import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { API_BASE_URL } from '../constants.js';
 
-export function useOpenClawChat(conversationId: string | undefined, setConversationId: (id: string) => void) {
+export function useOpenClawChat(
+  conversationId: string | undefined,
+  setConversationId: (id: string) => void,
+  agentOverride?: string
+) {
   const [isStreaming, setIsStreaming] = useState(false);
 
   const fetchFn = useCallback(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
@@ -56,6 +60,7 @@ export function useOpenClawChat(conversationId: string | undefined, setConversat
             content: msg.parts?.filter((p: any) => p.type === 'text').map((p: any) => p.text).join('') || '',
           })),
           ...(conversationId && { conversationId }),
+          ...(agentOverride && { agentOverride }),
         },
       }),
     }),

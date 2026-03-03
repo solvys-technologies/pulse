@@ -18,7 +18,7 @@ const normalizeOpenClawGatewayBaseUrl = (value: string): string => {
 }
 
 const OPENCLAW_BASE_URL = `${normalizeOpenClawGatewayBaseUrl(
-  process.env.OPENCLAW_BASE_URL ?? 'http://localhost:18789'
+  process.env.OPENCLAW_BASE_URL ?? 'http://localhost:7787'
 )}/v1`
 const OPENCLAW_API_KEY = process.env.OPENCLAW_API_KEY
 

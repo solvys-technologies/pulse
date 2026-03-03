@@ -1,13 +1,14 @@
 import { ExternalLink, SplitSquareVertical, X, Power } from 'lucide-react';
 import { EmbeddedBrowserFrame } from './layout/EmbeddedBrowserFrame';
 
-export type TradingPlatform = 'topstepx' | 'tradelocker' | 'kalshi' | 'research';
+export type TradingPlatform = 'topstepx' | 'tradelocker' | 'kalshi' | 'research' | 'tradesea';
 
 const PLATFORM_LABELS: Record<TradingPlatform, string> = {
   topstepx: 'TopStepX',
   tradelocker: 'TradeLocker',
   kalshi: 'Kalshi',
   research: 'Research',
+  tradesea: 'TradeSea',
 };
 
 const PLATFORM_URLS: Record<TradingPlatform, string> = {
@@ -15,6 +16,7 @@ const PLATFORM_URLS: Record<TradingPlatform, string> = {
   tradelocker: 'https://platform.tradelocker.com',
   kalshi: 'https://kalshi.com/markets',
   research: import.meta.env.VITE_NOTION_RESEARCH_URL || 'https://www.notion.so',
+  tradesea: 'https://app.tradesea.ai/trade',
 };
 
 interface TopStepXBrowserProps {

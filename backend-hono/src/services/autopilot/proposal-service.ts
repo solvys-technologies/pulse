@@ -7,6 +7,7 @@
 import { sql, isDatabaseAvailable } from '../../config/database.js'
 import { runAgentPipeline } from '../agents/pipeline.js'
 import type { AgentPipelineResult, TradingProposal, RiskAssessment } from '../../types/agents.js'
+import * as rithmicService from '../rithmic-service.js'
 
 export interface StoredProposal {
   id: string
@@ -258,11 +259,51 @@ export async function executeProposal(
     return { success: false, error: `Proposal must be approved first (current: ${proposal.status})` }
   }
 
-  // TODO: Integrate with ProjectX client for actual order execution
-  // For now, simulate execution
+  const primaryBroker = (process.env.PRIMARY_BROKER ?? 'rithmic') as 'rithmic' | 'projectx'
+
+  if (primaryBroker === 'rithmic') {
+    const result = await rithmicService.executeOrder(userId, {
+      symbol: proposal.instrument,
+      direction: proposal.direction,
+      quantity: proposal.positionSize,
+      entryPrice: proposal.entryPrice,
+      stopLoss: proposal.stopLoss,
+      takeProfit: proposal.takeProfit,
+    })
+    if (!result.success) {
+      return { success: false, error: result.error ?? 'Rithmic execution failed' }
+    }
+    const now = new Date()
+    const executionResult = {
+      orderId: result.orderId ?? `RITHMIC-${Date.now()}`,
+      filledAt: now.toISOString(),
+      fillPrice: proposal.entryPrice,
+      contracts: proposal.positionSize,
+      message: 'Order sent to Rithmic (stub)',
+    }
+    const orderId = result.orderId ?? executionResult.orderId
+    if (isDatabaseAvailable() && sql) {
+      await sql`
+        UPDATE trading_proposals
+        SET status = 'executed',
+            executed_at = ${now.toISOString()},
+            execution_result = ${JSON.stringify(executionResult)}::jsonb,
+            projectx_order_id = ${orderId}
+        WHERE id = ${proposalId}
+      `
+    } else {
+      proposal.status = 'executed'
+      proposal.executedAt = now.toISOString()
+      proposal.executionResult = executionResult
+      proposal.updatedAt = now.toISOString()
+      proposalCache.set(proposalId, proposal)
+    }
+    return { success: true, orderId }
+  }
+
+  // ProjectX path: simulate execution until ProjectX client is wired
   const mockOrderId = `ORD-${Date.now()}`
   const now = new Date()
-
   const executionResult = {
     orderId: mockOrderId,
     filledAt: now.toISOString(),

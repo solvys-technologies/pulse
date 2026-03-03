@@ -3,13 +3,13 @@ import { ChevronRight, ChevronLeft, Send, Plus, Wrench, Brain } from 'lucide-rea
 import { useOpenClawChat } from '../chat/hooks/useOpenClawChat';
 import { usePulseAgents } from '../../contexts/PulseAgentContext';
 import { EmbeddedBrowserFrame } from '../layout/EmbeddedBrowserFrame';
+import { toOpenClawAgentOverride } from '../../lib/openclawAgentRouting';
+import { usePersistentOpenClawConversation } from '../../hooks/usePersistentOpenClawConversation';
 
 export function ResearchDepartment() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [conversationId, setConversationId] = useState<string | undefined>();
   const [inputText, setInputText] = useState('');
   const [thinkHarder, setThinkHarder] = useState(false);
-  const { messages, sendMessage, status, stop } = useOpenClawChat(conversationId, setConversationId as any);
   const notionResearchUrl = import.meta.env.VITE_NOTION_RESEARCH_URL || 'https://www.notion.so';
 
   let activeAgent: { name: string; icon: string } | null = null;
@@ -20,6 +20,9 @@ export function ResearchDepartment() {
     // fallback
   }
   const agent = activeAgent || { name: 'Harper', icon: 'H' };
+  const openclawAgentOverride = toOpenClawAgentOverride((activeAgent as any)?.id);
+  const { conversationId, setConversationId } = usePersistentOpenClawConversation((activeAgent as any)?.id);
+  const { messages, sendMessage, status, stop } = useOpenClawChat(conversationId, setConversationId as any, openclawAgentOverride);
 
   const uiMessages = useMemo(() => {
     return (messages || [])
@@ -46,9 +49,9 @@ export function ResearchDepartment() {
     setInputText('');
     await sendMessage(
       { text: msg },
-      { body: { conversationId } }
+      { body: { conversationId, agentOverride: openclawAgentOverride } }
     );
-  }, [inputText, sendMessage, conversationId]);
+  }, [inputText, sendMessage, conversationId, openclawAgentOverride]);
 
   const textareaRef = useMemo(() => ({ current: null as HTMLTextAreaElement | null }), []);
 

@@ -6,8 +6,9 @@
  * ChatInterface Component
  * Simplified for local single-user mode - no authentication
  */
+// [claude-code 2026-02-26] Add chat checkpoints (bookmark + recall) to replace thread-history reliance.
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { ArrowRight, Paperclip, Image, FileText, Link2, AlertTriangle, TrendingUp, History, X, Pin, Archive, Edit2, MoreVertical, Square, BarChart3, CalendarCheck, Brain, Eye } from "lucide-react";
+import { ArrowRight, Paperclip, Image, FileText, Link2, AlertTriangle, TrendingUp, History, X, Pin, Archive, Edit2, MoreVertical, Square, BarChart3, CalendarCheck, Brain, Eye, Trash2 } from "lucide-react";
 import { useOpenClawChat } from "./chat/hooks/useOpenClawChat";
 import { useBackend } from "../lib/backend";
 import { healingBowlPlayer } from "../utils/healingBowlSounds";
@@ -17,6 +18,9 @@ import { MessageRenderer } from "./chat/MessageRenderer";
 import QuickPulseModal from "./analysis/QuickPulseModal";
 import { PulseChatInput } from "./chat/PulseChatInput";
 import { usePulseAgents } from "../contexts/PulseAgentContext";
+import { addCheckpoint, deleteCheckpoint, listCheckpoints, type ChatCheckpoint } from "../lib/chatCheckpoints";
+import { usePersistentOpenClawConversation } from "../hooks/usePersistentOpenClawConversation";
+import { toOpenClawAgentOverride } from "../lib/openclawAgentRouting";
 
 
 interface Message {
@@ -96,14 +100,18 @@ interface ConversationSession {
 export default function ChatInterface() {
   const backend = useBackend();
   const { alertConfig } = useSettings();
+  const { activeAgent } = usePulseAgents();
+  const { conversationId, setConversationId, clearConversationId } = usePersistentOpenClawConversation(activeAgent?.id ?? 'default');
+  const openclawAgentOverride = toOpenClawAgentOverride(activeAgent?.id);
   // Local mode - always authenticated
   const isSignedIn = true;
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
-  const [conversationId, setConversationId] = useState<string | undefined>();
   const [thinkingText, setThinkingText] = useState("");
   const [tiltWarning, setTiltWarning] = useState<TiltWarning | undefined>();
   const [showHistory, setShowHistory] = useState(false);
+  const [showCheckpoints, setShowCheckpoints] = useState(false);
+  const [checkpointVersion, setCheckpointVersion] = useState(0);
   const [conversations, setConversations] = useState<ConversationSession[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [editingConversationId, setEditingConversationId] = useState<string | null>(null);
@@ -128,13 +136,9 @@ export default function ChatInterface() {
     setMessages: setUseChatMessages,
     setIsStreaming,
     stop,
-  } = useOpenClawChat(conversationId, setConversationId);
+  } = useOpenClawChat(conversationId, setConversationId, openclawAgentOverride);
 
   const isLoading = status === 'streaming' || status === 'submitted';
-
-  // Debug: log raw messages from useChat
-  console.log('[ChatInterface] useChatMessages:', JSON.stringify(useChatMessages, null, 2));
-  console.log('[ChatInterface] status:', status);
 
   // Convert useChat messages to our Message format for display
   const messages: Message[] = (useChatMessages || [])
@@ -192,6 +196,28 @@ export default function ChatInterface() {
       textareaRef.current.value = input;
     }
   }, [input]);
+
+  const checkpointItems = useMemo<ChatCheckpoint[]>(() => {
+    return listCheckpoints(conversationId);
+  }, [conversationId, showCheckpoints, checkpointVersion]);
+
+  const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  const createCheckpointFromMessage = useCallback((messageId: string, content: string) => {
+    if (!conversationId) return;
+    const trimmed = (content || '').trim();
+    const excerpt = trimmed.length > 220 ? `${trimmed.slice(0, 220)}…` : trimmed;
+    const title = (excerpt.split('\n')[0] || 'Checkpoint').slice(0, 64);
+    addCheckpoint({ conversationId, messageId, title, excerpt });
+    setCheckpointVersion((v) => v + 1);
+    setShowCheckpoints(true);
+    setShowHistory(false);
+  }, [conversationId]);
+
+  const jumpToMessage = useCallback((messageId: string) => {
+    const el = messageRefs.current[messageId];
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, []);
 
   useEffect(() => {
     healingBowlPlayer.setSound(alertConfig.healingBowlSound);
@@ -506,7 +532,7 @@ ${kpiSection}
             <button
               onClick={() => {
                 setUseChatMessages([]);
-                setConversationId(undefined);
+                clearConversationId();
                 setShowSuggestions(true);
               }}
               className="px-3 py-1.5 hover:bg-white/5 rounded text-xs font-medium text-zinc-400 whitespace-nowrap transition-colors"
@@ -516,6 +542,7 @@ ${kpiSection}
             <button
               onClick={() => {
                 setShowHistory(!showHistory);
+                setShowCheckpoints(false);
                 if (!showHistory) {
                   loadConversationHistory();
                 }
@@ -524,6 +551,17 @@ ${kpiSection}
             >
               <History className="w-3.5 h-3.5" />
               History
+            </button>
+            <button
+              onClick={() => {
+                setShowCheckpoints(!showCheckpoints);
+                setShowHistory(false);
+              }}
+              className="px-3 py-1.5 hover:bg-white/5 rounded text-xs font-medium text-zinc-400 whitespace-nowrap transition-colors flex items-center gap-1.5"
+              title="Checkpoints (bookmarks) replace thread history"
+            >
+              <CalendarCheck className="w-3.5 h-3.5" />
+              Checkpoints
             </button>
           </div>
         </div>
@@ -690,6 +728,81 @@ ${kpiSection}
         </div>
       )}
 
+      {/* Checkpoints Sidebar */}
+      {showCheckpoints && (
+        <div className="absolute inset-0 z-50 flex justify-end">
+          <div className="w-80 bg-[#0a0a00] border-l border-[#D4AF37]/20 flex flex-col">
+            <div className="h-16 border-b border-[#D4AF37]/20 flex items-center justify-between px-4">
+              <h2 className="text-lg font-semibold text-[#D4AF37]">Checkpoints</h2>
+              <button
+                onClick={() => setShowCheckpoints(false)}
+                className="p-2 hover:bg-[#D4AF37]/10 rounded transition-colors"
+              >
+                <X className="w-5 h-5 text-[#D4AF37]" />
+              </button>
+            </div>
+
+            <div className="px-4 py-3 border-b border-white/5">
+              <p className="text-[11px] text-zinc-500 leading-snug">
+                Bookmark key moments and recall them later (this replaces relying on thread history).
+              </p>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+              {!conversationId ? (
+                <div className="text-center text-zinc-500 text-sm py-8">Start a chat to create checkpoints.</div>
+              ) : checkpointItems.length === 0 ? (
+                <div className="text-center text-zinc-500 text-sm py-8">
+                  No checkpoints yet. Hover an assistant message and click the checkpoint icon.
+                </div>
+              ) : (
+                checkpointItems.map((cp) => (
+                  <div
+                    key={cp.id}
+                    className="group relative w-full p-3 bg-zinc-900/50 border border-zinc-800 hover:border-[#D4AF37]/40 hover:bg-zinc-900 rounded-lg transition-all"
+                  >
+                    <div className="text-xs text-zinc-400 mb-1">
+                      {new Date(cp.createdAt).toLocaleDateString()} {new Date(cp.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                    <div className="text-sm text-zinc-200 font-medium mb-1">{cp.title}</div>
+                    <div className="text-xs text-zinc-500 whitespace-pre-wrap">{cp.excerpt}</div>
+
+                    <div className="mt-2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => jumpToMessage(cp.messageId)}
+                        className="px-2 py-1 bg-[#D4AF37]/15 text-[#D4AF37] rounded text-xs"
+                      >
+                        Jump
+                      </button>
+                      <button
+                        onClick={() => {
+                          const insert = `Checkpoint: ${cp.title}\n${cp.excerpt}\n`;
+                          setInput((prev) => (prev ? `${prev}\n\n${insert}` : insert));
+                          setShowCheckpoints(false);
+                        }}
+                        className="px-2 py-1 bg-white/5 hover:bg-white/10 text-zinc-300 rounded text-xs"
+                      >
+                        Insert
+                      </button>
+                      <button
+                        onClick={() => {
+                          deleteCheckpoint(cp.id);
+                          setCheckpointVersion((v) => v + 1);
+                        }}
+                        className="ml-auto p-1.5 hover:bg-[#D4AF37]/10 rounded transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-zinc-500 hover:text-[#D4AF37]" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-6 pb-8">
         <div className="max-w-3xl mx-auto space-y-4 mb-8">
@@ -713,6 +826,7 @@ ${kpiSection}
                   }
                 `}
               >
+                <div ref={(el) => { messageRefs.current[message.id] = el; }} />
                 {message.role === "assistant" ? (
                   <div className={`text-sm mb-2 max-w-none ${message.cancelled ? "text-zinc-500 italic" : "text-zinc-300"}`}>
                     {message.cancelled ? (
@@ -727,9 +841,20 @@ ${kpiSection}
                 ) : (
                   <p className="text-sm text-zinc-300 mb-2 whitespace-pre-wrap">{message.content}</p>
                 )}
-                <span className={`text-[9px] font-mono ${message.cancelled ? "text-zinc-700" : "text-zinc-600"}`}>
-                  {formatTime(message.timestamp)}
-                </span>
+                <div className="flex items-center justify-between gap-3">
+                  <span className={`text-[9px] font-mono ${message.cancelled ? "text-zinc-700" : "text-zinc-600"}`}>
+                    {formatTime(message.timestamp)}
+                  </span>
+                  {message.role === 'assistant' && !message.cancelled && (
+                    <button
+                      onClick={() => createCheckpointFromMessage(message.id, message.content)}
+                      className="opacity-60 hover:opacity-100 transition-opacity text-zinc-500 hover:text-[#D4AF37]"
+                      title="Create checkpoint"
+                    >
+                      <CalendarCheck className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))}

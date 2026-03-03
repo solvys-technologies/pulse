@@ -464,7 +464,7 @@ export async function handleOpenClawChat(request: OpenClawChatRequest): Promise<
   }
 
   const gatewayUrl = normalizeGatewayBaseUrl(
-    process.env.OPENCLAW_BASE_URL ?? 'http://localhost:18789'
+    process.env.OPENCLAW_BASE_URL ?? 'http://localhost:7787'
   )
   const apiKey = process.env.OPENCLAW_API_KEY ?? ''
 

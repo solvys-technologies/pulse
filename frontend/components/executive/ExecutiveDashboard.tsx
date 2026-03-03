@@ -1,47 +1,13 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useBackend } from '../../lib/backend';
-import type { RiskFlowItem } from '../../types/api';
+import { useRiskFlow } from '../../contexts/RiskFlowContext';
 import {
   executiveKpis,
   executiveNeedToKnow,
   executiveSchedule,
   type ExecutiveScheduleItem,
 } from './mockExecutiveData';
-
-function KanbanTitle({
-  title,
-  tag,
-  tone = 'gold',
-  headerRight,
-}: {
-  title: string;
-  tag?: string;
-  tone?: 'gold' | 'violet' | 'cyan' | 'emerald';
-  headerRight?: React.ReactNode;
-}) {
-  const toneClasses: Record<NonNullable<typeof tone>, string> = {
-    gold: 'text-[#D4AF37] border-[#D4AF37]/30',
-    violet: 'text-[#a5b4fc] border-[#6366f1]/30',
-    cyan: 'text-[#67e8f9] border-[#06b6d4]/30',
-    emerald: 'text-emerald-300 border-emerald-500/30',
-  };
-
-  return (
-    <div className="flex items-center justify-between px-1 py-1">
-      <div className="flex items-center gap-2">
-        <h2 className="text-[11px] font-semibold text-[#D4AF37] tracking-[0.2em] uppercase">{title}</h2>
-        {tag ? (
-          <span
-            className={`text-[9px] tracking-[0.22em] uppercase border rounded-full px-2 py-0.5 ${toneClasses[tone]}`}
-          >
-            {tag}
-          </span>
-        ) : null}
-      </div>
-      {headerRight}
-    </div>
-  );
-}
+import { KanbanTitle } from '../ui/KanbanTitle';
 
 /** Group schedule items by date and render with progressive fade for future days */
 function SessionCalendarList({ items }: { items: ExecutiveScheduleItem[] }) {
@@ -129,7 +95,7 @@ function SessionCalendarList({ items }: { items: ExecutiveScheduleItem[] }) {
   );
 }
 
-const DASHBOARD_PAGES = ['Briefing', 'Action Tape'];
+const DASHBOARD_PAGES = ['Briefing', 'The Tape'];
 
 export function ExecutiveDashboard() {
   const backend = useBackend();
@@ -140,24 +106,20 @@ export function ExecutiveDashboard() {
   );
   const [runningReport, setRunningReport] = useState(false);
   const reportTimerRef = useRef<number | null>(null);
-  // Action tape: RiskFlow items (replaces Alerts + Signals)
-  const [tapeItems, setTapeItems] = useState<RiskFlowItem[]>([]);
-
-  useEffect(() => {
-    let mounted = true;
-    const fetchTape = async () => {
-      try {
-        const res = await backend.riskflow.list({ limit: 50 });
-        if (!mounted) return;
-        setTapeItems(res.items ?? []);
-      } catch {
-        // silent
-      }
-    };
-    fetchTape();
-    const id = window.setInterval(fetchTape, 30_000);
-    return () => { mounted = false; window.clearInterval(id); };
-  }, [backend]);
+  // The Tape: same feed as RiskFlow panel and MinimalFeedSection (RiskFlowContext)
+  const { alerts } = useRiskFlow();
+  const tapeItems = useMemo(
+    () =>
+      alerts.slice(0, 50).map((a) => ({
+        id: a.id,
+        title: a.headline,
+        summary: a.summary,
+        publishedAt: a.publishedAt,
+        isBreaking: a.severity === 'high',
+        impact: a.severity as 'high' | 'medium' | 'low',
+      })),
+    [alerts]
+  );
 
   const scrollToPage = useCallback((idx: number) => {
     setActivePage(idx);
@@ -296,9 +258,9 @@ export function ExecutiveDashboard() {
             </div>
           </div>
 
-          {/* Row 3: Action Tape — fills remaining space, fully scrollable, recency fade */}
+          {/* Row 3: The Tape — fills remaining space, fully scrollable, recency fade */}
           <div className="flex-1 min-h-0 flex flex-col">
-            <KanbanTitle title="Action Tape" tag="Alerts + Signals" tone="emerald" />
+            <KanbanTitle title="The Tape" tag="Alerts + Signals" tone="emerald" />
             <div className="mt-2 flex-1 min-h-0 overflow-y-auto pr-1 space-y-1.5">
               {tapeItems.length === 0 ? (
                 <div className="text-xs text-gray-500 px-1 py-4">No actions in the feed right now.</div>
@@ -350,9 +312,9 @@ export function ExecutiveDashboard() {
           </div>
         </div>
 
-        {/* Page 2: Full Action Tape */}
+        {/* Page 2: Full The Tape */}
         <div data-dash-page="1" className="min-h-full snap-start p-5 flex flex-col">
-          <KanbanTitle title="Action Tape" tag="Full Feed" tone="emerald" />
+          <KanbanTitle title="The Tape" tag="Full Feed" tone="emerald" />
           <div className="mt-3 flex-1 min-h-0 overflow-y-auto pr-1 space-y-1.5">
             {tapeItems.length === 0 ? (
               <div className="text-xs text-gray-500 px-1 py-8 text-center">No actions in the feed right now.</div>

@@ -52,6 +52,8 @@ interface AutoPilotSettings {
   maxDailyProposals: number;
 }
 
+export type PrimaryBroker = 'rithmic' | 'projectx';
+
 interface SettingsContextType {
   apiKeys: APIKeys;
   setAPIKeys: (keys: APIKeys | ((prev: APIKeys) => APIKeys)) => void;
@@ -69,6 +71,8 @@ interface SettingsContextType {
   setDeveloperSettings: (settings: DeveloperSettings) => void;
   autoPilotSettings: AutoPilotSettings;
   setAutoPilotSettings: (settings: AutoPilotSettings) => void;
+  primaryBroker: PrimaryBroker;
+  setPrimaryBroker: (broker: PrimaryBroker) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -140,6 +144,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       maxDailyProposals: 5,
     })
   );
+  const [primaryBroker, setPrimaryBroker] = useState<PrimaryBroker>(() =>
+    loadFromStorage('primaryBroker', 'rithmic' as PrimaryBroker)
+  );
 
   useEffect(() => {
     try {
@@ -152,12 +159,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         riskSettings,
         developerSettings,
         autoPilotSettings,
+        primaryBroker,
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
     } catch (error) {
       console.error('Failed to persist settings:', error);
     }
-  }, [apiKeys, tradingModels, alertConfig, mockDataEnabled, selectedSymbol, riskSettings, developerSettings, autoPilotSettings]);
+  }, [apiKeys, tradingModels, alertConfig, mockDataEnabled, selectedSymbol, riskSettings, developerSettings, autoPilotSettings, primaryBroker]);
 
   return (
     <SettingsContext.Provider
@@ -178,6 +186,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setDeveloperSettings,
         autoPilotSettings,
         setAutoPilotSettings,
+        primaryBroker,
+        setPrimaryBroker,
       }}
     >
       {children}

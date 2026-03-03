@@ -7,7 +7,7 @@ interface IVScoreCardProps {
   /** Legacy 0-10 score (backward compatible) */
   score: number;
   variant?: 'default' | 'frosted';
-  layoutOption?: 'movable' | 'tickers-only' | 'combined';
+  layoutOption?: 'tickers-only' | 'combined';
   /** Full IV scoring result from computeIVScore — when provided, enables enhanced display */
   ivResult?: IVScoreResult;
 }

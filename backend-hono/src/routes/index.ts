@@ -16,6 +16,7 @@ import { createAiRoutes } from './ai/index.js';
 import { createAgentRoutes } from './agents/index.js';
 import { createPolymarketRoutes } from './polymarket/index.js';
 import { createBoardroomRoutes } from './boardroom/index.js';
+import { createRithmicRoutes } from './rithmic/index.js';
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -23,23 +24,23 @@ export function registerRoutes(app: Hono): void {
   app.route('/api/market', createMarketRoutes());
   app.route('/api/boardroom', createBoardroomRoutes());
 
-  // Protected routes (auth required)
-  app.use('/api/account/*', authMiddleware);
-  app.use('/api/notifications/*', authMiddleware);
-  app.use('/api/trading/*', authMiddleware);
-  app.use('/api/projectx/*', authMiddleware);
+  // Protected routes (auth required) — use base path so exact path (e.g. GET /api/account) is covered
+  app.use('/api/account', authMiddleware);
+  app.use('/api/notifications', authMiddleware);
+  app.use('/api/trading', authMiddleware);
+  app.use('/api/projectx', authMiddleware);
+  app.use('/api/rithmic', authMiddleware);
   // RiskFlow routes - exclude cron endpoint from auth
-  app.use('/api/riskflow/*', async (c, next) => {
-    // Skip auth for cron endpoints (they use secret token)
+  app.use('/api/riskflow', async (c, next) => {
     if (c.req.path.includes('/cron/')) {
       return next();
     }
     return authMiddleware(c, next);
   });
-  app.use('/api/psych/*', authMiddleware);
-  app.use('/api/ai/*', authMiddleware);
-  app.use('/api/agents/*', authMiddleware);
-  app.use('/api/polymarket/*', authMiddleware);
+  app.use('/api/psych', authMiddleware);
+  app.use('/api/ai', authMiddleware);
+  app.use('/api/agents', authMiddleware);
+  app.use('/api/polymarket', authMiddleware);
 
   // Phase 1: Account routes
   app.route('/api/account', createAccountRoutes());
@@ -52,6 +53,9 @@ export function registerRoutes(app: Hono): void {
 
   // Phase 3: ProjectX routes
   app.route('/api/projectx', createProjectXRoutes());
+
+  // Rithmic routes (Autopilot primary broker scaffold)
+  app.route('/api/rithmic', createRithmicRoutes());
 
   // Phase 4: RiskFlow routes
   app.route('/api/riskflow', createRiskFlowRoutes());

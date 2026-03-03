@@ -486,6 +486,21 @@ export class ProjectXService {
   }
 }
 
+// Rithmic Service (Autopilot primary broker scaffold)
+export interface RithmicStatusResponse {
+  connected: boolean;
+  message: string;
+}
+
+export class RithmicService {
+  constructor(private client: ApiClient) {}
+
+  async getStatus(): Promise<RithmicStatusResponse> {
+    const response = await this.client.get<RithmicStatusResponse>('/api/rithmic/status');
+    return response;
+  }
+}
+
 // Notifications Service
 export class NotificationsService {
   constructor(private client: ApiClient) { }
@@ -677,6 +692,7 @@ export interface BackendClient {
   analysts: AnalystService;
   trading: TradingService;
   projectx: ProjectXService;
+  rithmic: RithmicService;
   notifications: NotificationsService;
   er: ERService;
   events: EventsService;
@@ -694,6 +710,7 @@ export function createBackendClient(client: ApiClient): BackendClient {
     analysts: new AnalystService(client),
     trading: new TradingService(client),
     projectx: new ProjectXService(client),
+    rithmic: new RithmicService(client),
     notifications: new NotificationsService(client),
     er: new ERService(client),
     events: new EventsService(client),

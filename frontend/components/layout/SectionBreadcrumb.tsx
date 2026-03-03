@@ -4,7 +4,7 @@ type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion'
 
 const TAB_META: Record<NavTab, { label: string; parent?: string }> = {
   executive: { label: 'Dashboard' },
-  feed: { label: 'The Tape' },
+  feed: { label: 'Dashboard' }, // feed removed from sidebar; fallback for history
   analysis: { label: 'Analysis' },
   news: { label: 'RiskFlow' },
   chatroom: { label: 'Board Room' },

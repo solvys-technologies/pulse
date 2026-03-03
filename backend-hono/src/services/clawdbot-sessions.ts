@@ -1,3 +1,4 @@
+// [claude-code 2026-02-26] Ensure intervention UI shows user chat bubbles by mirroring sent messages locally.
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { BoardroomMessage, InterventionMessage, BoardroomAgent } from '../types/boardroom.js';
@@ -152,6 +153,10 @@ export async function sendToIntervention(message: string, sessionKey = 'pic-inte
     const text = await response.text().catch(() => '');
     throw new Error(`Failed to send intervention message: ${response.status} ${text}`);
   }
+
+  // Ensure the UI can immediately render the user's bubble by recording locally.
+  // The gateway may not mirror this message back into the local session file.
+  await appendToSession(sessionKey, message.trim(), 'user');
 
   // Also relay to boardroom so agents and the boardroom thread can see it
   await appendToSession('pic-boardroom', `Human Executive (Intervention): ${message.trim()}`, 'user');

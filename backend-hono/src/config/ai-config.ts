@@ -98,7 +98,7 @@ const normalizeOpenClawGatewayBaseUrl = (value: string): string => {
 
 const getOpenClawOpenAIBaseUrl = (): string => {
   const gateway = normalizeOpenClawGatewayBaseUrl(
-    getEnv('OPENCLAW_BASE_URL') ?? 'http://localhost:18789'
+    getEnv('OPENCLAW_BASE_URL') ?? 'http://localhost:7787'
   )
   return `${gateway}/v1`
 }
