@@ -113,5 +113,12 @@ export const changelog: ChangelogEntry[] = [
       'frontend/components/feed/NewsSection.tsx',
     ],
   },
+  {
+    date: '2026-03-03T04:00:00.000Z',
+    agent: 'claude-code',
+    summary:
+      'Added Rithmic test trade endpoint plan to AGENT-2 task doc: service (executeTestTrade + getPointValue for micros), handler, route spec with strategy-specific targets, PDPT caps, scale-in limits. Types already completed in prior session.',
+    files: ['docs/AGENT-2-CLAUDE-CODE-TASKS.md'],
+  },
 ];
 

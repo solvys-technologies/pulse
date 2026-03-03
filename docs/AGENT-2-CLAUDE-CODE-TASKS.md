@@ -624,6 +624,69 @@
 
 ---
 
+## Supplementary: Rithmic Test Trade Endpoint
+
+> **Context**: Standalone backend endpoint that simulates a trade through PIC's
+> strategy models (40/40 Club, Flush, Ripper) against Rithmic micro instruments
+> on TopstepX. Returns calculated targets, risk, and scale-in capacity without
+> executing. A future separate plan will add the frontend test-trade button.
+
+### Status
+
+| Layer | File | Status |
+|-------|------|--------|
+| Types | `backend-hono/src/types/trading.ts` (lines 46-100) | **Done** |
+| Service | `backend-hono/src/services/trading-service.ts` | Planned |
+| Handler | `backend-hono/src/routes/trading/handlers.ts` | Planned |
+| Route | `backend-hono/src/routes/trading/index.ts` | Planned |
+
+### Task Checklist
+
+#### 1. Service — `trading-service.ts`
+
+- [ ] Add `getPointValue()` helper for Rithmic micro instruments:
+  | Symbol | Point Value |
+  |--------|-------------|
+  | MNQ | $2 |
+  | NQ | $20 |
+  | MES | $5 |
+  | ES | $50 |
+- [ ] Add `executeTestTrade(userId, request: TestTradeRequest): Promise<TestTradeResult>`
+- [ ] Compute stop distance, risk-per-contract, total risk from entry/stop prices
+- [ ] Generate strategy-specific targets:
+  - **40/40 Club**: +40pt primary, fib extensions, VWAP levels
+  - **Flush**: +30pt primary, HTF fib rounded to nearest 25, exhaustion targets
+  - **Ripper**: +50pt primary, wider targets, event-severity scaling
+- [ ] Calculate best R:R ratio from targets
+- [ ] Compute `maxScaleInContracts`:
+  - Default max = 25, reduced to 20 after 12:30 ET
+  - Scale-in prerequisite: >= 55% ATR from 100 EMA
+- [ ] Apply PDPT cap based on `mode`:
+  - `combine` → $1,550 hard cap
+  - `funded` → $1,500 trailing avg ($1,300–$2,000 range)
+- [ ] Populate `notes[]` with strategy-specific context (fib zone, timing window, catalyst)
+
+#### 2. Handler — `handlers.ts`
+
+- [ ] Add `handleTestTrade(c: Context)` handler
+- [ ] Validate `TestTradeRequest` body (strategy, symbol, side, entryPrice, stopPrice required)
+- [ ] Return 400 on invalid input, 500 on service error
+- [ ] Return `TestTradeResponse` on success
+
+#### 3. Route — `index.ts`
+
+- [ ] Register `POST /test-trade` → `handleTestTrade`
+
+### Implementation Notes
+
+- This is a **simulation-only** endpoint — no orders placed
+- Uses the existing service-layer pattern (types → service → handler → route)
+- `getPointValue()` is distinct from the existing `getMultiplier()` which has full-size contract values
+- Strategy target logic should reference specs in `docs/quantconnect/STRATEGY-*.md`
+- Trailing stop phases and cycle levels are display-only in test trade output (execution logic is in QC)
+
+---
+
 ## Notes
 
 1. **Priority**: Chat must work first, then analysts, then full pipeline
