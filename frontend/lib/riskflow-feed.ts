@@ -7,15 +7,32 @@
 
 export type AlertSeverity = 'low' | 'medium' | 'high';
 
+export interface TradeIdeaDetail {
+  ticker: string;
+  direction: 'long' | 'short' | 'neutral';
+  entry?: number;
+  stopLoss?: number;
+  takeProfit?: number;
+  potentialRisk?: number;
+  potentialProfit?: number;
+  riskRewardRatio?: number;
+  confidence?: string;
+  timeframe?: string;
+  sourceAgent?: string;
+  openclawDescription?: string;
+  notionUrl: string;
+}
+
 export interface RiskFlowAlert {
   id: string;
   headline: string;
   summary: string;
   url: string;
   publishedAt: string;
-  source: 'marketwatch';
+  source: 'marketwatch' | 'notion-trade-idea';
   severity: AlertSeverity;
   tags: string[];
+  tradeIdea?: TradeIdeaDetail;
 }
 
 // ── Severity Classification ────────────────────────────────────────────────────

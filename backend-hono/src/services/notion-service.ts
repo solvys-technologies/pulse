@@ -171,55 +171,88 @@ function extractPropValue(prop: any): string | number | boolean | null {
   }
 }
 
+// Exact property names from live Trade Ideas DB (verified 2026-03-03):
+// 'Trade Idea' (title), 'Ticker' (rich_text), 'Direction' (select: Long/Short),
+// 'Entry Price' (number), 'Exit Price' (number), 'Confidence' (number 0-100),
+// 'Analyst' (select), 'Thesis' (rich_text), 'Status' (status), 'Date' (date), 'Model' (select)
+
+function confidenceLabel(n: number): string {
+  if (n >= 70) return 'high';
+  if (n >= 50) return 'medium';
+  return 'low';
+}
+
 export async function queryTradeIdeas(): Promise<NotionTradeIdea[]> {
   if (!getNotionKey()) {
     console.warn('[Notion] NOTION_API_KEY not set — skipping trade idea query');
     return [];
   }
   try {
+    // Only fetch non-template, non-archived ideas (Status != Proposed template)
     const pages = await notionQuery(TRADE_IDEAS_DB);
-    return pages.map((page: any) => {
-      const ticker = String(
-        extractPropValue(getPropByAlias(page, ['ticker', 'symbol', 'instrument', 'asset', 'name', 'title'])) ?? ''
-      );
-      const rawDir = String(
-        extractPropValue(getPropByAlias(page, ['direction', 'side', 'bias', 'trade direction'])) ?? 'neutral'
-      ).toLowerCase();
-      const direction: 'long' | 'short' | 'neutral' =
-        rawDir === 'long' ? 'long' : rawDir === 'short' ? 'short' : 'neutral';
-      const entry = Number(extractPropValue(getPropByAlias(page, ['entry', 'entry price', 'entry level']))) || undefined;
-      const stopLoss = Number(extractPropValue(getPropByAlias(page, ['stop', 'stop loss', 'stoploss', 'sl']))) || undefined;
-      const takeProfit = Number(extractPropValue(getPropByAlias(page, ['target', 'take profit', 'tp', 'takeprofit']))) || undefined;
-      const confidence = String(extractPropValue(getPropByAlias(page, ['confidence', 'conviction', 'certainty'])) ?? '') || undefined;
-      const timeframe = String(extractPropValue(getPropByAlias(page, ['timeframe', 'time frame', 'horizon'])) ?? '') || undefined;
-      const sourceAgent = String(extractPropValue(getPropByAlias(page, ['agent', 'source', 'proposed by', 'author'])) ?? '') || undefined;
+    return pages
+      .filter((page: any) => {
+        // Skip the TEMPLATE entry
+        const title = extractPropValue(page.properties?.['Trade Idea']) ?? '';
+        return !String(title).startsWith('TEMPLATE');
+      })
+      .map((page: any) => {
+        const props = page.properties ?? {};
 
-      let potentialRisk: number | undefined;
-      let potentialProfit: number | undefined;
-      let riskRewardRatio: number | undefined;
-      if (entry && stopLoss) potentialRisk = (Math.abs(entry - stopLoss) / entry) * 100;
-      if (entry && takeProfit) potentialProfit = (Math.abs(takeProfit - entry) / entry) * 100;
-      if (potentialRisk && potentialProfit && potentialRisk > 0) riskRewardRatio = potentialProfit / potentialRisk;
+        // Title of the trade idea (e.g. "Fed Zero Rate Cuts in 2026 — Long YES")
+        const tradeTitle = String(extractPropValue(props['Trade Idea']) ?? '');
+        // Ticker / instrument (e.g. "RATECUTCOUNT-26-0")
+        const ticker = String(extractPropValue(props['Ticker']) ?? tradeTitle);
+        // Direction: "Long" | "Short" → normalize to lowercase
+        const rawDir = String(extractPropValue(props['Direction']) ?? 'neutral').toLowerCase();
+        const direction: 'long' | 'short' | 'neutral' =
+          rawDir === 'long' ? 'long' : rawDir === 'short' ? 'short' : 'neutral';
+        // Prices
+        const entry = (extractPropValue(props['Entry Price']) as number | null) ?? undefined;
+        const exitPrice = (extractPropValue(props['Exit Price']) as number | null) ?? undefined;
+        // Confidence: number 0-100 → classify as string label
+        const confNum = extractPropValue(props['Confidence']) as number | null;
+        const confidence = confNum != null ? confidenceLabel(confNum) : undefined;
+        // Source agent (Analyst field)
+        const sourceAgent = String(extractPropValue(props['Analyst']) ?? '') || undefined;
+        // Full thesis as the description seed
+        const thesis = String(extractPropValue(props['Thesis']) ?? '') || undefined;
 
-      return {
-        id: page.id as string,
-        ticker: ticker || 'UNKNOWN',
-        direction,
-        entry,
-        stopLoss,
-        takeProfit,
-        potentialRisk,
-        potentialProfit,
-        riskRewardRatio,
-        confidence,
-        timeframe,
-        sourceAgent,
-        openclawDescription: undefined,
-        notionUrl: page.url ?? '',
-        createdAt: page.created_time ?? new Date().toISOString(),
-        updatedAt: page.last_edited_time ?? new Date().toISOString(),
-      };
-    });
+        // For prediction market contracts: entry is the contract price (0-1 scale or cents)
+        // No explicit SL/TP — risk = entry price (cost of contract), profit = 1 - entry
+        let potentialRisk: number | undefined;
+        let potentialProfit: number | undefined;
+        let riskRewardRatio: number | undefined;
+        if (entry && entry <= 1) {
+          // Kalshi-style contract: entry is price in $0-$1
+          potentialRisk = entry * 100; // % of contract cost
+          potentialProfit = (1 - entry) * 100;
+          if (potentialRisk > 0) riskRewardRatio = potentialProfit / potentialRisk;
+        } else if (entry && exitPrice) {
+          // Traditional instrument with entry + exit price
+          potentialRisk = undefined; // No SL in DB
+          potentialProfit = (Math.abs(exitPrice - entry) / entry) * 100;
+        }
+
+        return {
+          id: page.id as string,
+          ticker: ticker || tradeTitle || 'UNKNOWN',
+          direction,
+          entry: entry ?? undefined,
+          stopLoss: undefined, // Not in DB schema
+          takeProfit: exitPrice,
+          potentialRisk,
+          potentialProfit,
+          riskRewardRatio,
+          confidence,
+          timeframe: String(extractPropValue(props['Date']) ?? '') || undefined,
+          sourceAgent,
+          openclawDescription: thesis ? thesis.slice(0, 300) : undefined, // Seed with thesis excerpt
+          notionUrl: page.url ?? '',
+          createdAt: page.created_time ?? new Date().toISOString(),
+          updatedAt: page.last_edited_time ?? new Date().toISOString(),
+        };
+      });
   } catch (err) {
     console.warn('[Notion] Failed to query trade ideas:', err);
     return [];
@@ -246,20 +279,28 @@ export async function queryDailyPnL(): Promise<NotionPerformanceKpi[]> {
     const latest = pages[0];
     const kpis: NotionPerformanceKpi[] = [];
 
-    const pnl = extractPropValue(getPropByAlias(latest, ['pnl', 'p&l', 'profit', 'profit & loss', 'daily pnl', 'daily p&l', 'net pnl']));
-    const winRate = extractPropValue(getPropByAlias(latest, ['win rate', 'winrate', 'win %', 'win percentage']));
-    const dailyReturn = extractPropValue(getPropByAlias(latest, ['daily return', 'return', 'return %', 'daily %']));
-    const drawdown = extractPropValue(getPropByAlias(latest, ['drawdown', 'max drawdown', 'dd', 'max dd']));
+    // Exact property names from live Daily P&L DB (verified 2026-03-03):
+    // 'Net P&L', 'Gross P&L', 'Win Rate', 'Trades Taken', 'Bias', 'NTN Summary', 'Day' (title), 'Date'
+    const props = latest.properties ?? {};
+    const pnl = extractPropValue(props['Net P&L'] ?? props['Gross P&L']);
+    const winRate = extractPropValue(props['Win Rate']);
+    const tradesTaken = extractPropValue(props['Trades Taken']);
+    const bias = extractPropValue(props['Bias']);
+    // Use Avg P&L / Trade formula as a proxy for daily return if available
+    const avgPnl = extractPropValue(props['Avg P&L / Trade']);
+    // No drawdown column exists — leave it out
+    const dailyReturn = null;
+    const drawdown = null;
 
-    if (pnl !== null && pnl !== '') {
+    if (pnl !== null) {
       const n = typeof pnl === 'number' ? pnl : parseFloat(String(pnl));
       kpis.push({
-        label: 'Intraday PnL',
+        label: 'Net P&L',
         value: isNaN(n) ? String(pnl) : `${n >= 0 ? '+' : ''}$${Math.abs(n).toLocaleString()}`,
         meta: 'Live · Notion',
       });
     }
-    if (winRate !== null && winRate !== '') {
+    if (winRate !== null) {
       const n = typeof winRate === 'number' ? winRate : parseFloat(String(winRate));
       kpis.push({
         label: 'Win Rate',
@@ -267,22 +308,22 @@ export async function queryDailyPnL(): Promise<NotionPerformanceKpi[]> {
         meta: 'Daily sessions',
       });
     }
-    if (dailyReturn !== null && dailyReturn !== '') {
-      const n = typeof dailyReturn === 'number' ? dailyReturn : parseFloat(String(dailyReturn));
+    if (tradesTaken !== null) {
       kpis.push({
-        label: 'Daily Return',
-        value: isNaN(n) ? String(dailyReturn) : `${n >= 0 ? '+' : ''}${(n > 1 ? n : n * 100).toFixed(2)}%`,
-        meta: 'vs session open',
+        label: 'Trades Taken',
+        value: String(tradesTaken),
+        meta: bias ? `Bias: ${bias}` : 'Today',
       });
     }
-    if (drawdown !== null && drawdown !== '') {
-      const n = typeof drawdown === 'number' ? drawdown : parseFloat(String(drawdown));
+    if (avgPnl !== null) {
+      const n = typeof avgPnl === 'number' ? avgPnl : parseFloat(String(avgPnl));
       kpis.push({
-        label: 'Max Drawdown',
-        value: isNaN(n) ? String(drawdown) : `-${Math.abs(n > 1 ? n : n * 100).toFixed(2)}%`,
-        meta: 'Intraday',
+        label: 'Avg P&L / Trade',
+        value: isNaN(n) ? String(avgPnl) : `${n >= 0 ? '+' : ''}$${Math.abs(n).toFixed(0)}`,
+        meta: 'Per trade',
       });
     }
+    // dailyReturn and drawdown are null (not in DB) — omitted intentionally
 
     return kpis;
   } catch (err) {

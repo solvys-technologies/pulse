@@ -146,6 +146,30 @@ export function ExecutiveDashboard() {
     return () => clearInterval(interval);
   }, [backend]);
 
+  // Phase 3D: Live KPIs from Notion Daily P&L database (overrides account KPIs when available)
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await backend.notion.getPerformance();
+        if (res.kpis && res.kpis.length > 0) {
+          // Merge: replace matching labels, append any new ones
+          setKpis((prev) => {
+            const merged = [...prev];
+            for (const notionKpi of res.kpis) {
+              const idx = merged.findIndex((k) => k.label === notionKpi.label);
+              if (idx >= 0) merged[idx] = notionKpi;
+              else merged.push(notionKpi);
+            }
+            return merged;
+          });
+        }
+      } catch {/* keep existing KPIs */}
+    };
+    load();
+    const interval = setInterval(load, 60_000);
+    return () => clearInterval(interval);
+  }, [backend]);
+
   // The Tape: same feed as RiskFlow panel and MinimalFeedSection (RiskFlowContext)
   const { alerts } = useRiskFlow();
   const tapeItems = useMemo(

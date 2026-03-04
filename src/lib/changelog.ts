@@ -9,6 +9,34 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-03T23:00:00.000Z',
+    agent: 'claude-code',
+    summary:
+      'Layout polish pass on new Notion trade idea components. TradeIdeaModal: tighter padding (px-4/py-3 header, px-4/py-3.5 body, px-4/py-2.5 footer), StatBox reduced to px-2.5 py-2 with text-xs value, price values formatted with formatPrice() helper ($0.XX for Kalshi contracts, $X,XXX.XX for equities).',
+    files: ['frontend/components/TradeIdeaModal.tsx'],
+  },
+  {
+    date: '2026-03-03T22:30:00.000Z',
+    agent: 'claude-code',
+    summary:
+      'Notion Polling → RiskFlow + KPI Live Data + Trade Idea Modals. Backend: notion-service.ts extended with queryTradeIdeas/queryDailyPnL using verified live DB schema (Trade Ideas: Ticker/Direction/EntryPrice/Confidence/Analyst; Daily P&L: Net P&L/Win Rate/Trades Taken). notion-poller.ts polls 60s, generates OpenClaw descriptions for new ideas. Routes: /api/notion/trade-ideas, /performance, /poll-status registered as public. NOTION_API_KEY added to .env (correct key from memory). Frontend: RiskFlowAlert extended with source notion-trade-idea + TradeIdeaDetail type. RiskFlowContext polls Notion 60s, merges trade ideas at top of feed. NotionService added to services.ts + BackendClient. TradeIdeaModal.tsx: dark overlay, gold-bordered card, price levels + R/R stats + OpenClaw brief. RiskFlowPanel: TradeIdeaRow with gold left-border + click-to-modal, Ideas filter tab. ExecutiveDashboard Phase 3D: live KPIs from /api/notion/performance merge on top of mock.',
+    files: [
+      'backend-hono/src/services/notion-service.ts',
+      'backend-hono/src/services/notion-poller.ts',
+      'backend-hono/src/routes/notion/handlers.ts',
+      'backend-hono/src/routes/notion/index.ts',
+      'backend-hono/src/routes/index.ts',
+      'backend-hono/src/index.ts',
+      'backend-hono/.env',
+      'frontend/lib/riskflow-feed.ts',
+      'frontend/contexts/RiskFlowContext.tsx',
+      'frontend/lib/services.ts',
+      'frontend/components/TradeIdeaModal.tsx',
+      'frontend/components/RiskFlowPanel.tsx',
+      'frontend/components/executive/ExecutiveDashboard.tsx',
+    ],
+  },
+  {
     date: '2026-03-03T21:00:00.000Z',
     agent: 'claude-code',
     summary:
