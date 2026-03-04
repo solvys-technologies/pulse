@@ -30,7 +30,7 @@ async function generateOpenClawDescription(idea: NotionTradeIdea): Promise<strin
   const apiKey = process.env.OPENCLAW_API_KEY;
   if (!apiKey) return '';
 
-  const rawBase = process.env.OPENCLAW_BASE_URL ?? 'http://localhost:18789';
+  const rawBase = process.env.OPENCLAW_BASE_URL ?? 'http://localhost:7787';
   const base = rawBase.trim().replace(/\/+$/, '');
   const url = base.endsWith('/v1') ? `${base}/chat/completions` : `${base}/v1/chat/completions`;
 

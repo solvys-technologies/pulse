@@ -243,7 +243,6 @@ export default function ChatInterface() {
     addCheckpoint({ conversationId, messageId, title, excerpt });
     setCheckpointVersion((v) => v + 1);
     setShowCheckpoints(true);
-    setShowHistory(false);
   }, [conversationId]);
 
   const jumpToMessage = useCallback((messageId: string) => {
