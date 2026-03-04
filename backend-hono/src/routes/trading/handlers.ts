@@ -48,6 +48,38 @@ export async function handleGetAlgoStatus(c: Context) {
 }
 
 /**
+ * POST /api/trading/test-trade
+ * Fire a 1-contract market order via ProjectX (Rithmic)
+ */
+export async function handleTestTrade(c: Context) {
+  const userId = c.get('userId') as string | undefined;
+
+  if (!userId) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  try {
+    const body = await c.req.json<{ accountId: string; symbol: string; side: 'buy' | 'sell' }>();
+
+    if (!body.accountId || !body.symbol || !body.side) {
+      return c.json({ error: 'accountId, symbol, and side are required' }, 400);
+    }
+
+    const result = await tradingService.fireTestTrade(userId, {
+      accountId: body.accountId,
+      symbol: body.symbol,
+      side: body.side,
+    });
+
+    return c.json(result);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to fire test trade';
+    console.error('[Trading] Test trade error:', error);
+    return c.json({ error: message }, 500);
+  }
+}
+
+/**
  * POST /api/trading/toggle-algo
  * Toggle algo trading on/off
  */

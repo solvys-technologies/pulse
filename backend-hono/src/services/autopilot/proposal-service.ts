@@ -264,7 +264,7 @@ export async function executeProposal(
   if (primaryBroker === 'rithmic') {
     const result = await rithmicService.executeOrder(userId, {
       symbol: proposal.instrument,
-      direction: proposal.direction,
+      direction: proposal.direction as 'long' | 'short',
       quantity: proposal.positionSize,
       entryPrice: proposal.entryPrice,
       stopLoss: proposal.stopLoss,

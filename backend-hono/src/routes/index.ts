@@ -17,12 +17,15 @@ import { createAgentRoutes } from './agents/index.js';
 import { createPolymarketRoutes } from './polymarket/index.js';
 import { createBoardroomRoutes } from './boardroom/index.js';
 import { createRithmicRoutes } from './rithmic/index.js';
+import { createNotionRoutes } from './notion/index.js';
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
   // Phase 2: Market routes - VIX is public
   app.route('/api/market', createMarketRoutes());
   app.route('/api/boardroom', createBoardroomRoutes());
+  // Notion polling routes — internal org data, no user auth required
+  app.route('/api/notion', createNotionRoutes());
 
   // Protected routes (auth required) — use base path so exact path (e.g. GET /api/account) is covered
   app.use('/api/account', authMiddleware);

@@ -8,7 +8,8 @@
  */
 // [claude-code 2026-02-26] Add chat checkpoints (bookmark + recall) to replace thread-history reliance.
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { ArrowRight, Paperclip, Image, FileText, Link2, AlertTriangle, TrendingUp, History, X, Pin, Archive, Edit2, MoreVertical, Square, BarChart3, CalendarCheck, Brain, Eye, Trash2, Bookmark } from "lucide-react";
+import { AlertTriangle, X, BarChart3, CalendarCheck, Brain, Eye, Trash2, Bookmark } from "lucide-react";
+import { PulseSkillsPopup, type SkillId } from "./chat/PulseSkillsPopup";
 import { useOpenClawChat } from "./chat/hooks/useOpenClawChat";
 import { useBackend } from "../lib/backend";
 import { healingBowlPlayer } from "../utils/healingBowlSounds";
@@ -130,18 +131,6 @@ const THINKING_TERMS = [
   "momentum building",
 ];
 
-interface ConversationSession {
-  conversationId: string;
-  updatedAt: Date;
-  messageCount: number;
-  preview: string;
-  erStatus?: "Stable" | "Tilt" | "Neutral";
-  pnl?: number;
-  isArchived?: boolean;
-  isPinned?: boolean;
-  customName?: string;
-  isStale?: boolean; // Stale after 24 hours
-}
 
 export default function ChatInterface() {
   const backend = useBackend();
@@ -155,13 +144,10 @@ export default function ChatInterface() {
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [thinkingText, setThinkingText] = useState("");
   const [tiltWarning, setTiltWarning] = useState<TiltWarning | undefined>();
-  const [showHistory, setShowHistory] = usePanelState('pulse:panel:history', false);
   const [showCheckpoints, setShowCheckpoints] = usePanelState('pulse:panel:checkpoints', false);
   const [checkpointVersion, setCheckpointVersion] = useState(0);
-  const [conversations, setConversations] = useState<ConversationSession[]>([]);
-  const [loadingHistory, setLoadingHistory] = useState(false);
-  const [editingConversationId, setEditingConversationId] = useState<string | null>(null);
-  const [renameValue, setRenameValue] = useState("");
+  const [showSkills, setShowSkills] = useState(false);
+  const [activeSkills, setActiveSkills] = useState<Set<SkillId>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -290,129 +276,9 @@ export default function ChatInterface() {
     }
   }, [messages]);
 
-  const loadConversationHistory = async () => {
-    if (!isSignedIn) {
-      setConversations([]);
-      return;
-    }
-    setLoadingHistory(true);
-    try {
-      const response = await backend.ai.listConversations();
-      const conversationsList = Array.isArray(response) ? response : [];
-      const enrichedConversations = await Promise.all(
-        conversationsList.map(async (conv: any) => {
-          const now = new Date();
-          const convDate = new Date(conv.updatedAt);
-          const hoursSinceUpdate = (now.getTime() - convDate.getTime()) / (1000 * 60 * 60);
-          const isStale = hoursSinceUpdate > 24;
-
-          let erStatus: "Stable" | "Tilt" | "Neutral" | undefined;
-          let pnl: number | undefined;
-
-          try {
-            const erSessions = await backend.er.getERSessions();
-            const convDay = new Date(conv.updatedAt).toDateString();
-            const sessions = Array.isArray(erSessions) ? erSessions : [];
-            const sessionForDay = sessions.find(
-              (s: any) => new Date(s.sessionStart).toDateString() === convDay
-            );
-            if (sessionForDay) {
-              erStatus = sessionForDay.finalScore > 0.5 ? "Stable" : sessionForDay.finalScore < -0.5 ? "Tilt" : "Neutral";
-            }
-            const account = await backend.account.get();
-            pnl = account.dailyPnl;
-          } catch (error) { }
-
-          return {
-            ...conv,
-            erStatus,
-            pnl,
-            isStale,
-            isArchived: false,
-            isPinned: false,
-            customName: undefined,
-          };
-        })
-      );
-      setConversations(enrichedConversations);
-    } catch (error) {
-      console.error("Failed to load conversation history:", error);
-      setConversations([]);
-    } finally {
-      setLoadingHistory(false);
-    }
-  };
-
-  const handleArchiveConversation = (convId: string) => {
-    setConversations(prev => prev.map(c =>
-      c.conversationId === convId ? { ...c, isArchived: !c.isArchived } : c
-    ));
-  };
-
-  const handlePinConversation = (convId: string) => {
-    setConversations(prev => prev.map(c =>
-      c.conversationId === convId ? { ...c, isPinned: !c.isPinned } : c
-    ));
-  };
-
-  const handleRenameConversation = (convId: string, newName: string) => {
-    setConversations(prev => prev.map(c =>
-      c.conversationId === convId ? { ...c, customName: newName } : c
-    ));
-    setEditingConversationId(null);
-    setRenameValue("");
-  };
-
-  const formatSessionTime = (date: Date) => {
-    return date.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    });
-  };
-
-  const loadConversation = async (convId: string) => {
-    const conv = conversations.find(c => c.conversationId === convId);
-    if (conv?.isStale) {
-      alert("This chat thread has gone stale after 24 hours. You can view it, but cannot send new messages. Start a new chat to continue the conversation.");
-    }
-
-    setShowHistory(false);
-    try {
-      const response = await backend.ai.getConversation(convId);
-      const loadedMessages = (response.messages || []).map((msg: any, idx: number) => ({
-        id: `${convId}-${idx}`,
-        role: msg.role as "user" | "assistant",
-        content: msg.content,
-        createdAt: new Date(),
-      }));
-      setUseChatMessages(loadedMessages);
-      setConversationId(convId);
-      setShowSuggestions(false);
-    } catch (error) {
-      console.error("Failed to load conversation:", error);
-    }
-  };
-
-  useEffect(() => {
-    if (isSignedIn) {
-      loadConversationHistory();
-    } else {
-      setConversations([]);
-    }
-  }, [isSignedIn]);
-
   const handleSend = async (customMessage?: string) => {
     const messageText = customMessage || input.trim();
     if (!messageText || isLoading) return;
-
-    if (conversationId) {
-      const conv = conversations.find(c => c.conversationId === conversationId);
-      if (conv?.isStale) {
-        alert("This chat thread has gone stale after 24 hours. You cannot send new messages in this thread.");
-        return;
-      }
-    }
 
     // Store the message before sending so we can restore it if stopped
     setLastSentMessage(messageText);
@@ -587,21 +453,7 @@ ${kpiSection}
             </button>
             <button
               onClick={() => {
-                setShowHistory(!showHistory);
-                setShowCheckpoints(false);
-                if (!showHistory) {
-                  loadConversationHistory();
-                }
-              }}
-              className="px-3 py-1.5 hover:bg-white/5 rounded text-xs font-medium text-zinc-400 whitespace-nowrap transition-colors flex items-center gap-1.5"
-            >
-              <History className="w-3.5 h-3.5" />
-              History
-            </button>
-            <button
-              onClick={() => {
                 setShowCheckpoints(!showCheckpoints);
-                setShowHistory(false);
               }}
               className="px-3 py-1.5 hover:bg-white/5 rounded text-xs font-medium text-zinc-400 whitespace-nowrap transition-colors flex items-center gap-1.5"
               title="Checkpoints (bookmarks) replace thread history"
@@ -628,133 +480,6 @@ ${kpiSection}
 
       {/* Phase 2: Main body — docked panels + chat (History left, Checkpoints right) */}
       <div className="flex-1 flex min-h-0 overflow-hidden">
-
-        {/* LEFT: Conversation History — docked, slides in/out */}
-        <div className={`flex-shrink-0 overflow-hidden transition-[width] duration-[240ms] ease-in-out ${showHistory ? 'w-72' : 'w-0'} border-r border-[#D4AF37]/20`}>
-          <div className="w-72 h-full flex flex-col bg-[#0a0a00]">
-            <div className="h-14 border-b border-[#D4AF37]/20 flex items-center justify-between px-4">
-              <h2 className="text-base font-semibold text-[#D4AF37] tracking-wide">History</h2>
-              <button
-                onClick={() => setShowHistory(false)}
-                className="p-1.5 hover:bg-[#D4AF37]/10 rounded transition-colors"
-              >
-                <X className="w-4 h-4 text-[#D4AF37]/70" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-3 space-y-2">
-              {loadingHistory ? (
-                <div className="text-center text-zinc-500 text-sm py-8">Loading...</div>
-              ) : conversations.length === 0 ? (
-                <div className="text-center text-zinc-500 text-sm py-8">No previous conversations</div>
-              ) : (
-                conversations
-                  .sort((a, b) => {
-                    if (a.isPinned && !b.isPinned) return -1;
-                    if (!a.isPinned && b.isPinned) return 1;
-                    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-                  })
-                  .filter(c => !c.isArchived)
-                  .map((conv) => {
-                    const convDate = new Date(conv.updatedAt);
-                    const isStale = conv.isStale || false;
-                    const erStatus = conv.erStatus || "Neutral";
-                    const pnl = conv.pnl || 0;
-                    const erColor = erStatus === "Stable" ? "text-emerald-400" : erStatus === "Tilt" ? "text-red-500" : "text-zinc-400";
-                    const pnlColor = pnl >= 0 ? "text-emerald-400" : "text-red-500";
-                    const isEditing = editingConversationId === conv.conversationId;
-
-                    return (
-                      <div
-                        key={conv.conversationId}
-                        className={`group relative w-full p-3 bg-zinc-900/50 border ${isStale ? "border-zinc-700/50 opacity-60" : "border-zinc-800"
-                          } hover:border-[#D4AF37]/40 hover:bg-zinc-900 rounded-lg transition-all ${isStale ? "cursor-not-allowed" : ""}`}
-                      >
-                        {isStale && (
-                          <div className="text-xs text-amber-500 mb-2 font-medium">
-                            Chat threads go stale after 24 hours
-                          </div>
-                        )}
-                        <div className="flex items-start justify-between gap-2 mb-2">
-                          <div className="flex-1">
-                            <div className="text-xs text-zinc-400 mb-1">
-                              {convDate.toLocaleDateString()} {formatSessionTime(convDate)}
-                            </div>
-                            <div className="flex items-center gap-3 text-xs mb-1">
-                              <span className={erColor}>ER: {erStatus}</span>
-                              <span className={pnlColor}>P&L: {pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}</span>
-                            </div>
-                            {conv.customName ? (
-                              <div className="text-sm text-zinc-300 font-medium mb-1">{conv.customName}</div>
-                            ) : (
-                              conv.preview && (
-                                <div className="text-sm text-zinc-300 truncate">{conv.preview}...</div>
-                              )
-                            )}
-                            <div className="text-xs text-zinc-500">{conv.messageCount} messages</div>
-                          </div>
-                          {conv.isPinned && (
-                            <Pin className="w-4 h-4 text-[#D4AF37] fill-[#D4AF37]" />
-                          )}
-                        </div>
-                        {!isStale && (
-                          <div className="flex items-center gap-2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              onClick={(e) => { e.stopPropagation(); handlePinConversation(conv.conversationId); }}
-                              className="p-1.5 hover:bg-[#D4AF37]/10 rounded transition-colors"
-                              title={conv.isPinned ? "Unpin" : "Pin"}
-                            >
-                              <Pin className={`w-3.5 h-3.5 ${conv.isPinned ? "text-[#D4AF37] fill-[#D4AF37]" : "text-zinc-400"}`} />
-                            </button>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setEditingConversationId(conv.conversationId); setRenameValue(conv.customName || ""); }}
-                              className="p-1.5 hover:bg-[#D4AF37]/10 rounded transition-colors"
-                              title="Rename"
-                            >
-                              <Edit2 className="w-3.5 h-3.5 text-zinc-400" />
-                            </button>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); handleArchiveConversation(conv.conversationId); }}
-                              className="p-1.5 hover:bg-[#D4AF37]/10 rounded transition-colors"
-                              title="Archive"
-                            >
-                              <Archive className="w-3.5 h-3.5 text-zinc-400" />
-                            </button>
-                          </div>
-                        )}
-                        {isEditing && (
-                          <div className="mt-2 flex gap-2">
-                            <input
-                              type="text"
-                              value={renameValue}
-                              onChange={(e) => setRenameValue(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") handleRenameConversation(conv.conversationId, renameValue);
-                                if (e.key === "Escape") { setEditingConversationId(null); setRenameValue(""); }
-                              }}
-                              className="flex-1 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-sm text-zinc-200"
-                              autoFocus
-                            />
-                            <button
-                              onClick={() => handleRenameConversation(conv.conversationId, renameValue)}
-                              className="px-2 py-1 bg-[#D4AF37]/20 text-[#D4AF37] rounded text-xs"
-                            >
-                              Save
-                            </button>
-                          </div>
-                        )}
-                        {!isStale && (
-                          <button
-                            onClick={() => loadConversation(conv.conversationId)}
-                            className="absolute inset-0 w-full h-full opacity-0"
-                          />
-                        )}
-                      </div>
-                    );
-                  })
-              )}
-            </div>
-          </div>
-        </div>
 
         {/* CENTER: Chat */}
         <div className="flex-1 flex flex-col min-h-0">
@@ -829,13 +554,26 @@ ${kpiSection}
 
           {/* Input */}
           <div className="pt-4 pb-4 px-4 bg-[#050500]/80 backdrop-blur-md">
-            <div className="w-full max-w-3xl mx-auto">
+            <div className="relative w-full max-w-3xl mx-auto">
+              {showSkills && (
+                <PulseSkillsPopup
+                  open={showSkills}
+                  onClose={() => setShowSkills(false)}
+                  activeSkills={activeSkills}
+                  onToggle={(id) => setActiveSkills((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(id)) next.delete(id); else next.add(id);
+                    return next;
+                  })}
+                />
+              )}
               <PulseChatInput
                 onSend={(msg) => handleSend(msg)}
                 onStop={handleStop}
                 isProcessing={isLoading}
                 thinkHarder={thinkHarder}
                 setThinkHarder={setThinkHarder}
+                onOpenSkills={() => setShowSkills((v) => !v)}
                 placeholder="Analyze your performance, the news, or the markets..."
               />
             </div>

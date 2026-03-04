@@ -54,7 +54,7 @@ export function MissionControlPanel({
 
   return (
     <div
-      className={`relative bg-[#050500] border-l border-[#D4AF37]/8 transition-all duration-200 ease-out ${panelWidth}`}
+      className={`relative bg-[#050500] transition-all duration-200 ease-out ${panelWidth}`}
       onMouseEnter={handleCollapsedEnter}
       onMouseLeave={handleCollapsedLeave}
       style={{ minWidth: collapsed && !peekOpen ? '12px' : undefined }}

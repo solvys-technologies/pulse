@@ -1,6 +1,8 @@
 // [claude-code 2026-02-26] Add heading toolbar dock zone + optional docked widgets slot.
 // [claude-code 2026-03-03] Toolbar items reorderable via getToolbarOrder/setToolbarOrder.
+// [claude-code 2026-03-03] Phase 4C: IV score now derived from real VIX via quickIVScore.
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { quickIVScore } from '../../lib/iv-scoring';
 import { useAuth } from '../../contexts/AuthContext';
 import { UpgradeModal } from '../UpgradeModal';
 import { IVScoreCard } from '../IVScoreCard';
@@ -145,12 +147,12 @@ export function TopHeader({
     }
   ];
 
+  // IV score derived from VIX — updates whenever VIX changes
   useEffect(() => {
-    const interval = setInterval(() => {
-      setIvScore(prev => Math.max(0, Math.min(10, prev + (Math.random() - 0.5) * 0.5)));
-    }, 10000);
-    return () => clearInterval(interval);
-  }, []);
+    if (vix > 0) {
+      setIvScore(quickIVScore(vix).legacyScore);
+    }
+  }, [vix]);
 
   // Fetch VIX value - update every 5 minutes
   useEffect(() => {
@@ -187,7 +189,7 @@ export function TopHeader({
   return (
     <div
       id="pulse-heading-toolbar"
-      className={`relative bg-[#0a0a00] flex items-center justify-between pl-6 pr-6 ${topStepXEnabled && layoutOption === 'tickers-only' ? 'h-[65px]' : 'h-[70px]'}`}
+      className={`relative bg-[#0a0a00] flex items-center justify-between pl-6 pr-6 ${topStepXEnabled && layoutOption === 'tickers-only' ? 'h-[52px]' : 'h-[56px]'}`}
     >
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-3">

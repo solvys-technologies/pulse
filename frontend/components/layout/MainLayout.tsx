@@ -29,6 +29,7 @@ import { SearchModal } from '../search/SearchModal';
 import { AskHarpChatPanel } from '../chat/AskHarpChatPanel';
 import { SettingsPage } from '../SettingsPanel';
 import { PsychAssistDockable, type PsychAssistDockTarget } from './PsychAssistDockable';
+import { FooterToolbar } from './FooterToolbar';
 
 type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'settings';
 type LayoutOption = 'tickers-only' | 'combined';
@@ -352,19 +353,19 @@ export function MainLayout() {
     }
     // For 'tickers-only', no panels are shown (only floating widget)
   } else {
-    // When TopStepX is disabled: right stack = one scroll column (Mission Control + RiskFlow split, no overlap)
+    // When TopStepX is disabled: right stack = 50/50 split with independent scroll
     const hideRightPanel = activeTab === 'notion' || activeTab === 'chatroom' || activeTab === 'settings';
     if (!hideRightPanel) {
       rightPanels.push(
-        <div key="right-stack" className="w-96 flex-shrink-0 h-full min-w-0 flex flex-col overflow-y-auto">
-          <div className="flex-shrink-0 border-b border-[#D4AF37]/20 pb-4">
+        <div key="right-stack" className="w-80 flex-shrink-0 h-full min-w-0 flex flex-col border-l border-[#D4AF37]/15">
+          {/* Top half: Mission Control — independently scrollable */}
+          <div className="h-1/2 overflow-y-auto border-b border-[#D4AF37]/20">
             <div className="p-3">
               {missionControlContent}
             </div>
           </div>
-          <div
-            className={`flex-shrink-0 border-t border-[#D4AF37]/20 ${riskFlowCollapsed ? 'min-h-0' : 'min-h-[320px]'}`}
-          >
+          {/* Bottom half: RiskFlow — independently scrollable */}
+          <div className="h-1/2 overflow-y-auto">
             <RiskFlowPanel
               collapsed={riskFlowCollapsed}
               onToggleCollapsed={() => setRiskFlowCollapsed((v) => !v)}
@@ -539,6 +540,8 @@ export function MainLayout() {
           </div>
         )}
       </div>
+
+      <FooterToolbar />
 
       {/* Global overlays */}
       <SearchModal

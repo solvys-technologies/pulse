@@ -9,6 +9,34 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-03T21:00:00.000Z',
+    agent: 'claude-code',
+    summary:
+      'Phase 3A-C: Notion backend service (NTN brief from Harper Messages DB, schedule mock). Frontend NotionService.getNtnBrief/getSchedule added. ExecutiveDashboard fetches live NTN brief, schedule, and Intraday PnL KPI from account. Phase 4B: FooterToolbar component (changelog viewer, CLI input, system status). Wired into MainLayout.',
+    files: [
+      'backend-hono/src/services/notion-service.ts',
+      'backend-hono/src/routes/notion/index.ts',
+      'backend-hono/src/routes/index.ts',
+      'frontend/lib/services.ts',
+      'frontend/components/executive/ExecutiveDashboard.tsx',
+      'frontend/components/layout/FooterToolbar.tsx',
+      'frontend/components/layout/MainLayout.tsx',
+    ],
+  },
+  {
+    date: '2026-03-03T20:00:00.000Z',
+    agent: 'claude-code',
+    summary:
+      'Phase 1C: Removed History panel (ConversationSession types, all history state/handlers, History button + left docked panel). Phase 1D: Replaced persona selector with PulseSkillsPopup (showSkills state, onOpenSkills prop). Phase 2A: Removed stray border-l from MissionControlPanel. Phase 2C: Restructured right stack to 50/50 independent scroll (Mission Control top, RiskFlow bottom), w-96→w-80. Phase 2E: BlindspotsWidget per-item dismiss + clearAll. Phase 4A: TopHeader height -20% (70→56px, 65→52px). Phase 4C-D: IV score wired to quickIVScore(vix) — removed fake random walk.',
+    files: [
+      'frontend/components/ChatInterface.tsx',
+      'frontend/components/mission-control/MissionControlPanel.tsx',
+      'frontend/components/layout/MainLayout.tsx',
+      'frontend/components/mission-control/BlindspotsWidget.tsx',
+      'frontend/components/layout/TopHeader.tsx',
+    ],
+  },
+  {
     date: '2026-03-03T19:00:00.000Z',
     agent: 'claude-code',
     summary:

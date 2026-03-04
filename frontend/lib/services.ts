@@ -632,6 +632,71 @@ export interface TriggerInterventionParams {
   metadata?: Record<string, unknown>;
 }
 
+// Notion Service
+export interface NotionTradeIdeaItem {
+  id: string;
+  ticker: string;
+  direction: 'long' | 'short' | 'neutral';
+  entry?: number;
+  stopLoss?: number;
+  takeProfit?: number;
+  potentialRisk?: number;
+  potentialProfit?: number;
+  riskRewardRatio?: number;
+  confidence?: string;
+  timeframe?: string;
+  sourceAgent?: string;
+  openclawDescription?: string;
+  notionUrl: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NotionPerformanceResponse {
+  kpis: Array<{ label: string; value: string; meta: string }>;
+  count: number;
+  fetchedAt: string;
+}
+
+export class NotionService {
+  constructor(private client: ApiClient) {}
+
+  async getTradeIdeas(): Promise<NotionTradeIdeaItem[]> {
+    try {
+      const res = await this.client.get<{ tradeIdeas: NotionTradeIdeaItem[] }>('/api/notion/trade-ideas');
+      return res.tradeIdeas ?? [];
+    } catch {
+      return [];
+    }
+  }
+
+  async getPerformance(): Promise<NotionPerformanceResponse> {
+    try {
+      return await this.client.get<NotionPerformanceResponse>('/api/notion/performance');
+    } catch {
+      return { kpis: [], count: 0, fetchedAt: new Date().toISOString() };
+    }
+  }
+
+  async getNtnBrief(): Promise<Array<{ title: string; detail: string }>> {
+    try {
+      const res = await this.client.get<{ items: Array<{ title: string; detail: string }> }>('/api/notion/ntn-brief');
+      return res.items ?? [];
+    } catch {
+      return [];
+    }
+  }
+
+  async getSchedule(): Promise<Array<{ title: string; detail: string; forecast?: string; actual?: string; previous?: string; date?: string }>> {
+    try {
+      const res = await this.client.get<{ items: Array<{ title: string; detail: string; forecast?: string; actual?: string; previous?: string; date?: string }> }>('/api/notion/schedule');
+      return res.items ?? [];
+    } catch {
+      return [];
+    }
+  }
+}
+
 // Trade Idea types
 export type TradeDirection = 'long' | 'short' | 'neutral';
 export type ConvictionLevel = 'low' | 'medium' | 'high' | 'max';
@@ -698,6 +763,7 @@ export interface BackendClient {
   events: EventsService;
   polymarket: PolymarketService;
   boardroom: BoardroomService;
+  notion: NotionService;
 }
 
 // Create backend client from API client
@@ -716,5 +782,6 @@ export function createBackendClient(client: ApiClient): BackendClient {
     events: new EventsService(client),
     polymarket: new PolymarketService(client),
     boardroom: new BoardroomService(client),
+    notion: new NotionService(client),
   };
 }

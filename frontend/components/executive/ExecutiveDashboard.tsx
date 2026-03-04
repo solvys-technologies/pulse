@@ -1,3 +1,4 @@
+// [claude-code 2026-03-03] Phase 3A-C: Fetch NTN brief + schedule from Notion backend; live KPIs from account
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useBackend } from '../../lib/backend';
 import { useRiskFlow } from '../../contexts/RiskFlowContext';
@@ -6,6 +7,7 @@ import {
   executiveNeedToKnow,
   executiveSchedule,
   type ExecutiveScheduleItem,
+  type ExecutiveKpi,
 } from './mockExecutiveData';
 import { KanbanTitle } from '../ui/KanbanTitle';
 
@@ -104,8 +106,46 @@ export function ExecutiveDashboard() {
   const [ntnText, setNtnText] = useState(
     executiveNeedToKnow.map((item) => `• ${item.title} — ${item.detail}`).join('\n\n')
   );
+  const [scheduleItems, setScheduleItems] = useState<ExecutiveScheduleItem[]>(executiveSchedule);
+  const [kpis, setKpis] = useState<ExecutiveKpi[]>(executiveKpis);
   const [runningReport, setRunningReport] = useState(false);
   const reportTimerRef = useRef<number | null>(null);
+  // Phase 3A: Fetch NTN brief from Notion backend (falls back to mock when key not set)
+  useEffect(() => {
+    backend.notion.getNtnBrief().then((items) => {
+      if (items.length > 0) {
+        setNtnText(items.map((i) => `• ${i.title} — ${i.detail}`).join('\n\n'));
+      }
+    }).catch(() => {/* keep mock */});
+  }, [backend]);
+
+  // Phase 3B: Fetch schedule from Notion backend
+  useEffect(() => {
+    backend.notion.getSchedule().then((items) => {
+      if (items.length > 0) setScheduleItems(items as ExecutiveScheduleItem[]);
+    }).catch(() => {/* keep mock */});
+  }, [backend]);
+
+  // Phase 3C: Live KPIs — wire Intraday PnL from account
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const account = await backend.account.get();
+        const pnl = account.dailyPnl ?? 0;
+        setKpis((prev) =>
+          prev.map((k) =>
+            k.label === 'Intraday PnL'
+              ? { ...k, value: `${pnl >= 0 ? '+' : ''}$${Math.abs(pnl).toLocaleString()}`, meta: 'Live · Account' }
+              : k
+          )
+        );
+      } catch {/* keep mock */}
+    };
+    load();
+    const interval = setInterval(load, 30000);
+    return () => clearInterval(interval);
+  }, [backend]);
+
   // The Tape: same feed as RiskFlow panel and MinimalFeedSection (RiskFlowContext)
   const { alerts } = useRiskFlow();
   const tapeItems = useMemo(
@@ -236,7 +276,7 @@ export function ExecutiveDashboard() {
                 }
               />
               <div className="mt-2 flex-1 min-h-0 overflow-y-auto pr-1 relative">
-                <SessionCalendarList items={executiveSchedule} />
+                <SessionCalendarList items={scheduleItems} />
               </div>
             </div>
           </div>
@@ -245,7 +285,7 @@ export function ExecutiveDashboard() {
           <div className="shrink-0 mb-5">
             <KanbanTitle title="Core KPIs" tone="emerald" />
             <div className="mt-2 grid grid-cols-2 xl:grid-cols-4 gap-3">
-              {executiveKpis.map((kpi) => (
+              {kpis.map((kpi) => (
                 <div
                   key={kpi.label}
                   className="bg-[#0b0b08] px-4 py-3 border-l-2 border-[#D4AF37]/35"

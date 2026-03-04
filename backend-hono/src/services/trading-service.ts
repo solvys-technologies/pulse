@@ -1,3 +1,4 @@
+// [claude-code 2026-03-03] Added fireTestTrade() — Rithmic primary, ProjectX fallback via PRIMARY_BROKER env
 /**
  * Trading Service
  * Business logic for trading operations
@@ -9,6 +10,9 @@ import type {
   AlgoStatus,
   ToggleAlgoResponse,
 } from '../types/trading.js';
+import * as projectxService from './projectx-service.js';
+import * as projectxClient from './projectx/client.js';
+import * as rithmicService from './rithmic-service.js';
 
 // In-memory store for algo status (per user)
 const algoStatusStore = new Map<string, AlgoStatus>();
@@ -67,6 +71,70 @@ export async function getAlgoStatus(userId: string): Promise<AlgoStatus> {
   return algoStatusStore.get(userId) || {
     enabled: false,
     activeStrategy: undefined,
+  };
+}
+
+/**
+ * Fire a test trade — Rithmic primary (PRIMARY_BROKER=rithmic default), ProjectX fallback
+ * Places a 1-contract market order for the given symbol/side
+ */
+export async function fireTestTrade(
+  userId: string,
+  params: {
+    accountId: string;
+    symbol: string;
+    side: 'buy' | 'sell';
+  }
+): Promise<{ success: boolean; orderId?: string | number; message: string }> {
+  const broker = (process.env.PRIMARY_BROKER ?? 'rithmic') as 'rithmic' | 'projectx';
+  const symbolSearch = params.symbol.replace(/^\//, '');
+  const direction = params.side === 'buy' ? 'long' : 'short';
+
+  if (broker === 'rithmic') {
+    const result = await rithmicService.executeOrder(userId, {
+      symbol: symbolSearch,
+      direction,
+      quantity: 1,
+    });
+    if (!result.success) {
+      throw new Error(result.error ?? 'Rithmic order failed');
+    }
+    return {
+      success: true,
+      orderId: result.orderId,
+      message: `Order #${result.orderId} placed — 1 ${symbolSearch} ${direction.toUpperCase()} @ Market (Rithmic)`,
+    };
+  }
+
+  // ProjectX path
+  const credentials = projectxService.getCredentials(userId);
+  if (!credentials) {
+    throw new Error('ProjectX credentials not configured. Add API key in Settings.');
+  }
+
+  const contracts = await projectxClient.searchContracts(userId, credentials, symbolSearch, false);
+  const activeContract = contracts.find(c => c.activeContract);
+  if (!activeContract) {
+    throw new Error(`No active contract found for ${symbolSearch}`);
+  }
+
+  const result = await projectxClient.placeOrder(userId, credentials, {
+    accountId: parseInt(params.accountId, 10),
+    contractId: activeContract.id,
+    type: 2,  // Market
+    side: params.side === 'buy' ? 0 : 1,
+    size: 1,
+    customTag: `PULSE-TEST-${Date.now()}`,
+  });
+
+  if (!result.success) {
+    throw new Error(result.errorMessage ?? 'ProjectX order failed');
+  }
+
+  return {
+    success: true,
+    orderId: result.orderId,
+    message: `Order #${result.orderId} placed — 1 ${symbolSearch} ${direction.toUpperCase()} @ Market (ProjectX)`,
   };
 }
 
