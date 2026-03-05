@@ -2,6 +2,7 @@
  * RiskFlow RSS Feed Poller — MarketWatch Real-Time Headlines
  * Fetches, parses, classifies, and deduplicates market news alerts.
  */
+import { decodeHtmlEntities } from './html-entities';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -104,9 +105,11 @@ function parseItems(xml: string): Array<{ title: string; description: string; li
     const itemEnd = xml.indexOf('</item>', itemStart);
     if (itemEnd === -1) break;
     const itemXml = xml.slice(itemStart, itemEnd + 7);
+    const rawTitle = getTagContent(itemXml, 'title');
+    const rawDescription = getTagContent(itemXml, 'description');
     items.push({
-      title: getTagContent(itemXml, 'title'),
-      description: getTagContent(itemXml, 'description'),
+      title: decodeHtmlEntities(rawTitle),
+      description: decodeHtmlEntities(rawDescription),
       link: getTagContent(itemXml, 'link'),
       guid: getTagContent(itemXml, 'guid') || getTagContent(itemXml, 'link'),
       pubDate: getTagContent(itemXml, 'pubDate'),

@@ -21,6 +21,7 @@ export function EmotionalResonanceMonitor({ onERScoreChange }: EmotionalResonanc
     isOvertrading: boolean;
     tradesInWindow: number;
     warning?: string;
+    penalty?: number;
   } | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const recognitionRef = useRef<any>(null);
@@ -155,6 +156,18 @@ export function EmotionalResonanceMonitor({ onERScoreChange }: EmotionalResonanc
               }
               
               safeLocalStorage.setItem('psychassist_current_score', newScore.toString());
+
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(
+                  new CustomEvent('psychassist:infraction', {
+                    detail: {
+                      timestamp: Date.now(),
+                      keywords: detectedWords,
+                      score: newScore,
+                    },
+                  })
+                );
+              }
               
               if (onERScoreChange) {
                 onERScoreChange(newScore);
@@ -364,11 +377,13 @@ export function EmotionalResonanceMonitor({ onERScoreChange }: EmotionalResonanc
             isOvertrading: status.isOvertrading,
             tradesInWindow: status.tradesInWindow,
             warning: status.warning,
+            penalty: typeof status.penalty === 'number' ? status.penalty : undefined,
           });
 
           if (status.isOvertrading) {
             setErScore(prev => {
-              const newScore = Math.max(-10, prev - 0.5);
+              const penalty = typeof status.penalty === 'number' ? status.penalty : 0.5;
+              const newScore = Math.max(-10, prev - penalty);
               safeLocalStorage.setItem('psychassist_current_score', newScore.toString());
               if (onERScoreChange) {
                 onERScoreChange(newScore);
@@ -392,8 +407,20 @@ export function EmotionalResonanceMonitor({ onERScoreChange }: EmotionalResonanc
     }
   }, [isMonitoring, onERScoreChange, erScore, analyser, backend]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(
+      new CustomEvent('psychassist:score', {
+        detail: {
+          score: erScore,
+          timestamp: Date.now(),
+        },
+      })
+    );
+  }, [erScore]);
+
   return (
-    <div className="bg-[#050500] border border-[#D4AF37]/20 rounded-lg p-2.5">
+    <div className="bg-[#050500] p-2.5">
       <div className="flex items-center justify-between mb-1.5">
         <h3 className="text-xs font-semibold text-[#D4AF37]">PsychAssist</h3>
         {isMonitoring ? (

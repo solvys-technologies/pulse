@@ -1,6 +1,7 @@
 // [claude-code 2026-03-03] Phase 3: Notion service — fetches NTN Brief from Harper Messages DB
 // [claude-code 2026-03-03] Extended: Trade Ideas + Daily P&L query functions for Notion poller.
-// Falls back to mock data when NOTION_API_KEY is not set.
+// [claude-code 2026-03-04] Economic calendar now sourced from Notion DB via alias-based field mapping.
+// [claude-code 2026-03-05] Added Notion write (createPage/updatePage), fetchEconCalendar, fetchEconPrints, writeEconPrint.
 
 const NOTION_API = 'https://api.notion.com/v1';
 const NOTION_VERSION = '2022-06-28';
@@ -9,6 +10,15 @@ const NOTION_VERSION = '2022-06-28';
 const HARPER_MESSAGES_DB = '30c141b0da7d81ba8bb6e319a0c4c309';
 const TRADE_IDEAS_DB = '136fa9a2069e4afc835e0e139ead49f2';
 const DAILY_PNL_DB = 'ee7d03052a424dcb95f6406c166e7584';
+export const ECONOMIC_EVENTS_DB = process.env.NOTION_ECONOMIC_EVENTS_DB ?? '3cbc448583e540c78effba6c5346483f';
+export const ECON_PRINTS_DB = process.env.NOTION_ECON_PRINTS_DB ?? '';
+
+const SCHEDULE_TITLE_ALIASES = ['Name', 'Title', 'Event', 'Calendar Event'];
+const SCHEDULE_DETAIL_ALIASES = ['Detail', 'Details', 'Description', 'Notes', 'Commentary'];
+const SCHEDULE_DATE_ALIASES = ['Date', 'Event Date', 'Start', 'Time'];
+const SCHEDULE_FORECAST_ALIASES = ['Forecast', 'Estimate', 'Consensus'];
+const SCHEDULE_PREVIOUS_ALIASES = ['Previous', 'Prev', 'Prior'];
+const SCHEDULE_ACTUAL_ALIASES = ['Actual', 'Result', 'Print'];
 
 function getNotionKey(): string | undefined {
   return (process.env as Record<string, string | undefined>).NOTION_API_KEY;
@@ -28,37 +38,18 @@ export interface ScheduleItem {
   date?: string;
 }
 
-// ── Fallback mock data ──────────────────────────────────────────────────────
-
-const MOCK_NTN_BRIEF: NTNBriefItem[] = [
-  { title: 'Liquidity depth favors range expansion', detail: 'Watch 12:30 re-open; keep stops 5 pts beyond extremes.' },
-  { title: 'RiskFlow bias: defensive', detail: 'Reduce duration in rate-sensitive book.' },
-  { title: 'Research memo: AI infra pricing', detail: 'Comp stack suggests margin compression in Q2.' },
-];
-
-function relativeDate(daysFromNow: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + daysFromNow);
-  return d.toISOString().slice(0, 10);
-}
-
-const MOCK_SCHEDULE: ScheduleItem[] = [
-  { title: '09:30 NY Open', detail: 'Harper sets session bias', date: relativeDate(0) },
-  { title: '10:00 CPI Print', detail: 'Risk pause window', forecast: '0.3%', actual: '-', previous: '0.2%', date: relativeDate(0) },
-  { title: '14:15 RiskFlow Sync', detail: 'Executive checkpoint', date: relativeDate(0) },
-  { title: '08:30 Jobless Claims', detail: 'Weekly initial claims', forecast: '220K', actual: '-', previous: '215K', date: relativeDate(1) },
-  { title: '13:00 30Y Bond Auction', detail: 'Duration supply — watch tail', forecast: '4.62%', actual: '-', previous: '4.58%', date: relativeDate(1) },
-  { title: '10:00 UMich Sentiment', detail: 'Consumer confidence prelim', forecast: '78.5', actual: '-', previous: '79.4', date: relativeDate(2) },
-];
-
 // ── Notion helpers ──────────────────────────────────────────────────────────
 
-async function notionQuery(databaseId: string, filter?: object): Promise<any[]> {
+export async function notionQuery(
+  databaseId: string,
+  options?: { filter?: object; sorts?: Array<Record<string, unknown>>; pageSize?: number }
+): Promise<any[]> {
   const key = getNotionKey();
   if (!key) return [];
 
-  const body: Record<string, unknown> = { page_size: 20 };
-  if (filter) body.filter = filter;
+  const body: Record<string, unknown> = { page_size: options?.pageSize ?? 50 };
+  if (options?.filter) body.filter = options.filter;
+  if (options?.sorts) body.sorts = options.sorts;
 
   const res = await fetch(`${NOTION_API}/databases/${databaseId}/query`, {
     method: 'POST',
@@ -79,7 +70,7 @@ async function notionQuery(databaseId: string, filter?: object): Promise<any[]> 
   return json.results ?? [];
 }
 
-function getPropText(page: any, field: string): string {
+export function getPropText(page: any, field: string): string {
   const prop = page?.properties?.[field];
   if (!prop) return '';
   if (prop.type === 'title') return prop.title?.map((t: any) => t.plain_text).join('') ?? '';
@@ -89,19 +80,88 @@ function getPropText(page: any, field: string): string {
   return '';
 }
 
+export function toText(value: unknown): string {
+  if (value === null || value === undefined) return '';
+  return String(value).trim();
+}
+
+export function normalizeIsoDate(value: string): string | undefined {
+  if (!value) return undefined;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return undefined;
+  return parsed.toISOString().slice(0, 10);
+}
+
+// ── Notion Write Helpers ────────────────────────────────────────────────────
+
+export async function notionCreatePage(
+  databaseId: string,
+  properties: Record<string, unknown>
+): Promise<{ id: string; url: string } | null> {
+  const key = getNotionKey();
+  if (!key) return null;
+
+  const res = await fetch(`${NOTION_API}/pages`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${key}`,
+      'Notion-Version': NOTION_VERSION,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ parent: { database_id: databaseId }, properties }),
+  });
+
+  if (!res.ok) {
+    console.error(`[Notion] createPage failed: ${res.status} ${await res.text()}`);
+    return null;
+  }
+  const json = await res.json() as { id: string; url: string };
+  return { id: json.id, url: json.url };
+}
+
+export async function notionUpdatePage(
+  pageId: string,
+  properties: Record<string, unknown>
+): Promise<boolean> {
+  const key = getNotionKey();
+  if (!key) return false;
+
+  const res = await fetch(`${NOTION_API}/pages/${pageId}`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${key}`,
+      'Notion-Version': NOTION_VERSION,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ properties }),
+  });
+
+  if (!res.ok) {
+    console.error(`[Notion] updatePage failed for ${pageId}: ${res.status}`);
+    return false;
+  }
+  return true;
+}
+
 // ── Public API ──────────────────────────────────────────────────────────────
 
 export async function fetchNTNBrief(): Promise<NTNBriefItem[]> {
   const key = getNotionKey();
-  if (!key) return MOCK_NTN_BRIEF;
+  if (!key) {
+    console.error('[Notion] NOTION_API_KEY missing — NTN brief unavailable');
+    return [];
+  }
 
   try {
     const pages = await notionQuery(HARPER_MESSAGES_DB, {
-      property: 'Source',
-      select: { equals: 'Harper-Kimi' },
+      filter: {
+        property: 'Source',
+        select: { equals: 'Harper-Kimi' },
+      },
+      pageSize: 12,
     });
 
-    if (pages.length === 0) return MOCK_NTN_BRIEF;
+    if (pages.length === 0) return [];
 
     return pages.slice(0, 6).map((page: any) => ({
       title: getPropText(page, 'Name') || getPropText(page, 'Title') || 'Untitled',
@@ -109,14 +169,45 @@ export async function fetchNTNBrief(): Promise<NTNBriefItem[]> {
     }));
   } catch (err) {
     console.error('[Notion] fetchNTNBrief error:', err);
-    return MOCK_NTN_BRIEF;
+    return [];
   }
 }
 
 export async function fetchSchedule(): Promise<ScheduleItem[]> {
-  // Economic calendar — no dedicated Notion DB, return structured mock data
-  // This can be wired to FMP economic calendar or a future Notion DB
-  return MOCK_SCHEDULE;
+  if (!getNotionKey()) {
+    console.error('[Notion] NOTION_API_KEY missing — schedule unavailable');
+    return [];
+  }
+
+  try {
+    const pages = await notionQuery(ECONOMIC_EVENTS_DB, { pageSize: 100 });
+    const mapped = pages.map((page: any) => {
+      const title = toText(extractPropValue(getPropByAlias(page, SCHEDULE_TITLE_ALIASES)));
+      const detail = toText(extractPropValue(getPropByAlias(page, SCHEDULE_DETAIL_ALIASES)));
+      const dateRaw = toText(extractPropValue(getPropByAlias(page, SCHEDULE_DATE_ALIASES)));
+      const forecast = toText(extractPropValue(getPropByAlias(page, SCHEDULE_FORECAST_ALIASES)));
+      const previous = toText(extractPropValue(getPropByAlias(page, SCHEDULE_PREVIOUS_ALIASES)));
+      const actual = toText(extractPropValue(getPropByAlias(page, SCHEDULE_ACTUAL_ALIASES)));
+
+      return {
+        title: title || 'Untitled Event',
+        detail: detail || 'No details provided',
+        forecast: forecast || undefined,
+        previous: previous || undefined,
+        actual: actual || undefined,
+        date: normalizeIsoDate(dateRaw),
+        sortTs: dateRaw ? (new Date(dateRaw).getTime() || Number.MAX_SAFE_INTEGER) : Number.MAX_SAFE_INTEGER,
+      };
+    })
+      .filter((item) => item.title || item.detail)
+      .sort((a, b) => a.sortTs - b.sortTs)
+      .map(({ sortTs, ...item }) => item);
+
+    return mapped;
+  } catch (err) {
+    console.error('[Notion] fetchSchedule error:', err);
+    return [];
+  }
 }
 
 // ── Trade Ideas ─────────────────────────────────────────────────────────────
@@ -141,7 +232,7 @@ export interface NotionTradeIdea {
 }
 
 /** Try multiple property name aliases (case-insensitive). */
-function getPropByAlias(page: any, aliases: string[]): any {
+export function getPropByAlias(page: any, aliases: string[]): any {
   const keys = Object.keys(page?.properties ?? {});
   for (const alias of aliases) {
     const match = keys.find((k) => k.toLowerCase() === alias.toLowerCase());
@@ -151,7 +242,7 @@ function getPropByAlias(page: any, aliases: string[]): any {
 }
 
 /** Extract scalar value from any Notion property type. */
-function extractPropValue(prop: any): string | number | boolean | null {
+export function extractPropValue(prop: any): string | number | boolean | null {
   if (!prop) return null;
   switch (prop.type) {
     case 'title': return prop.title?.map((t: any) => t.plain_text).join('') ?? null;
@@ -273,10 +364,18 @@ export async function queryDailyPnL(): Promise<NotionPerformanceKpi[]> {
     return [];
   }
   try {
-    const pages = await notionQuery(DAILY_PNL_DB);
+    const pages = await notionQuery(DAILY_PNL_DB, { pageSize: 100 });
     if (pages.length === 0) return [];
 
-    const latest = pages[0];
+    const sortedPages = [...pages].sort((a: any, b: any) => {
+      const aDateRaw = toText(extractPropValue(getPropByAlias(a, ['Date', 'Day']))) || String(a.created_time ?? '');
+      const bDateRaw = toText(extractPropValue(getPropByAlias(b, ['Date', 'Day']))) || String(b.created_time ?? '');
+      const aTs = new Date(aDateRaw).getTime() || 0;
+      const bTs = new Date(bDateRaw).getTime() || 0;
+      return bTs - aTs;
+    });
+
+    const latest = sortedPages[0];
     const kpis: NotionPerformanceKpi[] = [];
 
     // Exact property names from live Daily P&L DB (verified 2026-03-03):

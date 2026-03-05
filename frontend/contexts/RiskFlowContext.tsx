@@ -3,14 +3,20 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { riskFlowPoller, type RiskFlowAlert } from '../lib/riskflow-feed';
 import baseBackend from '../lib/backend';
+import { decodeHtmlEntities } from '../lib/html-entities';
+import type { NotionPollStatus } from '../lib/services';
 
 interface RiskFlowContextValue {
   alerts: RiskFlowAlert[];
   highCount: number;
   mediumCount: number;
   lowCount: number;
+  notionPollStatus: NotionPollStatus | null;
   clearAll: () => void;
   removeAlert: (id: string) => void;
+  markSeen: (id: string) => void;
+  markAllSeen: (ids: string[]) => void;
+  isSeen: (id: string) => boolean;
 }
 
 const RiskFlowContext = createContext<RiskFlowContextValue>({
@@ -18,16 +24,44 @@ const RiskFlowContext = createContext<RiskFlowContextValue>({
   highCount: 0,
   mediumCount: 0,
   lowCount: 0,
+  notionPollStatus: null,
   clearAll: () => {},
   removeAlert: () => {},
+  markSeen: () => {},
+  markAllSeen: () => {},
+  isSeen: () => false,
 });
 
 const NOTION_POLL_MS = 60_000;
+const DISMISSED_STORAGE_KEY = 'pulse_riskflow_dismissed_ids:v1';
+const SEEN_STORAGE_KEY = 'pulse_riskflow_seen_ids:v1';
+
+function loadStoredIds(key: string): Set<string> {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return new Set();
+    return new Set(parsed.filter((v: unknown) => typeof v === 'string'));
+  } catch {
+    return new Set();
+  }
+}
+
+function persistIds(key: string, ids: Set<string>): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(Array.from(ids)));
+  } catch {
+    // ignore storage failures
+  }
+}
 
 export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   const [rssAlerts, setRssAlerts] = useState<RiskFlowAlert[]>([]);
   const [notionAlerts, setNotionAlerts] = useState<RiskFlowAlert[]>([]);
-  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
+  const [notionPollStatus, setNotionPollStatus] = useState<NotionPollStatus | null>(null);
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(() => loadStoredIds(DISMISSED_STORAGE_KEY));
+  const [seenIds, setSeenIds] = useState<Set<string>>(() => loadStoredIds(SEEN_STORAGE_KEY));
   const notionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // MarketWatch RSS polling (unchanged)
@@ -43,12 +77,17 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   // Notion trade idea polling
   const pollNotion = useCallback(async () => {
     try {
-      const ideas = await baseBackend.notion.getTradeIdeas();
+      const [ideas, pollStatus] = await Promise.all([
+        baseBackend.notion.getTradeIdeas(),
+        baseBackend.notion.getPollStatus(),
+      ]);
       const converted: RiskFlowAlert[] = ideas.map((idea) => ({
         id: `notion-ti-${idea.id}`,
-        headline: `${idea.direction.toUpperCase()} ${idea.ticker}${idea.entry ? ` @ ${idea.entry}` : ''}`,
-        summary: idea.openclawDescription
-          ?? `${idea.ticker} — ${idea.direction} trade idea${idea.confidence ? ` (${idea.confidence} confidence)` : ''}`,
+        headline: decodeHtmlEntities(`${idea.direction.toUpperCase()} ${idea.ticker}${idea.entry ? ` @ ${idea.entry}` : ''}`),
+        summary: decodeHtmlEntities(
+          idea.openclawDescription
+          ?? `${idea.ticker} — ${idea.direction} trade idea${idea.confidence ? ` (${idea.confidence} confidence)` : ''}`
+        ),
         url: idea.notionUrl,
         publishedAt: idea.createdAt,
         source: 'notion-trade-idea' as const,
@@ -72,6 +111,10 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
         },
       }));
       setNotionAlerts(converted);
+      setNotionPollStatus(pollStatus);
+      console.debug(
+        `[RiskFlowContext] Notion poll: ${ideas.length} proposals (cache=${pollStatus.tradeIdeaCount}, running=${pollStatus.running})`
+      );
     } catch (err) {
       console.warn('[RiskFlowContext] Notion poll error:', err);
     }
@@ -98,11 +141,52 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
       merged.forEach((a) => next.add(a.id));
       return next;
     });
+    setSeenIds((prev) => {
+      const next = new Set(prev);
+      merged.forEach((a) => next.add(a.id));
+      return next;
+    });
   }, [merged]);
 
   const removeAlert = useCallback((id: string) => {
     setDismissedIds((prev) => new Set(prev).add(id));
+    setSeenIds((prev) => new Set(prev).add(id));
   }, []);
+
+  const markSeen = useCallback((id: string) => {
+    if (!id) return;
+    setSeenIds((prev) => {
+      if (prev.has(id)) return prev;
+      return new Set(prev).add(id);
+    });
+  }, []);
+
+  const markAllSeen = useCallback((ids: string[]) => {
+    if (ids.length === 0) return;
+    setSeenIds((prev) => {
+      const next = new Set(prev);
+      let changed = false;
+      ids.forEach((id) => {
+        if (id && !next.has(id)) {
+          next.add(id);
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, []);
+
+  const isSeen = useCallback((id: string) => {
+    return seenIds.has(id);
+  }, [seenIds]);
+
+  useEffect(() => {
+    persistIds(DISMISSED_STORAGE_KEY, dismissedIds);
+  }, [dismissedIds]);
+
+  useEffect(() => {
+    persistIds(SEEN_STORAGE_KEY, seenIds);
+  }, [seenIds]);
 
   return (
     <RiskFlowContext.Provider
@@ -111,8 +195,12 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
         highCount,
         mediumCount,
         lowCount,
+        notionPollStatus,
         clearAll,
         removeAlert,
+        markSeen,
+        markAllSeen,
+        isSeen,
       }}
     >
       {children}

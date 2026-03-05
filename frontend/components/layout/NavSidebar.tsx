@@ -1,20 +1,23 @@
-import { useState, useCallback, useEffect } from 'react';
-import { Newspaper, Settings, LogOut, Sparkles, LayoutDashboard, MessagesSquare, NotebookText, GripVertical } from 'lucide-react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { Newspaper, Settings, LogOut, Sparkles, LayoutDashboard, MessagesSquare, NotebookText, CalendarDays, GripVertical, ChevronsRight, ChevronsLeft } from 'lucide-react';
 import { getSidebarOrder, setSidebarOrder, type NavTabId } from '../../lib/layoutOrderStorage';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'settings';
+type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'econ' | 'settings';
 
 interface NavSidebarProps {
   activeTab: NavTab;
   onTabChange: (tab: NavTab) => void;
   onLogout: () => void;
   topStepXEnabled?: boolean;
+  onOverlayVisibilityChange?: (visible: boolean) => void;
+  onEditModeChange?: (editing: boolean) => void;
 }
 
 const NAV_ITEMS_MAP: Record<NavTabId, { id: NavTab; icon: typeof LayoutDashboard; label: string; description: string }> = {
   executive: { id: 'executive', icon: LayoutDashboard, label: 'Dashboard', description: 'KPIs, calendar, The Tape' },
   analysis: { id: 'analysis', icon: Sparkles, label: 'Analysis', description: 'AI-powered trade analysis' },
   news: { id: 'news', icon: Newspaper, label: 'RiskFlow', description: 'Market news & events' },
+  econ: { id: 'econ', icon: CalendarDays, label: 'Calendar', description: 'Economic calendar' },
   chatroom: { id: 'chatroom', icon: MessagesSquare, label: 'Board Room', description: 'Multi-agent boardroom' },
   notion: { id: 'notion', icon: NotebookText, label: 'Research', description: 'Notion research corpus' },
 };
@@ -23,13 +26,56 @@ const NAV_ITEMS_MAP: Record<NavTabId, { id: NavTab; icon: typeof LayoutDashboard
 // Button size: original was w-12 h-12 (48px). 35% smaller = ~31px → w-8 h-8 (32px)
 // Sidebar collapsed width: original w-16 (64px). 35% smaller = ~42px → w-11 (44px)
 
-export function NavSidebar({ activeTab, onTabChange, onLogout, topStepXEnabled = false }: NavSidebarProps) {
+export function NavSidebar({
+  activeTab,
+  onTabChange,
+  onLogout,
+  topStepXEnabled = false,
+  onOverlayVisibilityChange,
+  onEditModeChange,
+}: NavSidebarProps) {
   const [hovered, setHovered] = useState(false);
+  const [manualExpand, setManualExpand] = useState(false);
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [editMode, setEditMode] = useState(false);
   const [order, setOrder] = useState<NavTabId[]>(() => getSidebarOrder());
+
+  const expanded = hovered || manualExpand;
+
+  const handleMouseEnter = useCallback(() => {
+    hoverTimerRef.current = setTimeout(() => setHovered(true), 3000);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = null;
+    }
+    setHovered(false);
+    setManualExpand(false);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     setOrder(getSidebarOrder());
   }, []);
+
+  useEffect(() => {
+    onOverlayVisibilityChange?.(topStepXEnabled && expanded);
+  }, [onOverlayVisibilityChange, topStepXEnabled, expanded]);
+
+  useEffect(() => {
+    onEditModeChange?.(editMode);
+  }, [editMode, onEditModeChange]);
+
+  useEffect(() => {
+    return () => onEditModeChange?.(false);
+  }, [onEditModeChange]);
 
   const handleDragStart = useCallback((e: React.DragEvent, id: NavTabId) => {
     e.dataTransfer.setData('text/plain', id);
@@ -69,24 +115,52 @@ export function NavSidebar({ activeTab, onTabChange, onLogout, topStepXEnabled =
   const sidebarContent = (
     <div
       className={`h-full bg-[#0a0a00] border-r border-[#D4AF37]/20 flex flex-col py-3 transition-all duration-200 ease-out ${
-        hovered ? 'w-48' : 'w-11'
+        expanded ? 'w-48' : 'w-11'
       }`}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
+      {/* Expand/collapse toggle */}
+      <div className="px-1.5 mb-1">
+        <button
+          type="button"
+          onClick={() => setManualExpand((v) => !v)}
+          className="w-full flex items-center justify-center py-1 rounded-md text-[#D4AF37]/50 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-colors"
+          title={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
+        >
+          {expanded ? <ChevronsLeft className="w-3.5 h-3.5" /> : <ChevronsRight className="w-3.5 h-3.5" />}
+        </button>
+      </div>
+
+      {expanded && (
+        <div className="px-2 mb-2 flex justify-end">
+          <button
+            type="button"
+            onClick={() => setEditMode((v) => !v)}
+            className={`text-[10px] px-2 py-0.5 rounded border transition-colors ${
+              editMode
+                ? 'border-[#D4AF37]/50 text-[#D4AF37] bg-[#D4AF37]/10'
+                : 'border-zinc-700 text-zinc-400 hover:text-[#D4AF37] hover:border-[#D4AF37]/30'
+            }`}
+            title={editMode ? 'Finish reordering' : 'Enable drag reorder'}
+          >
+            {editMode ? 'Done' : 'Edit'}
+          </button>
+        </div>
+      )}
       <div className="flex-1 space-y-1 px-1.5">
         {orderedItems.map(({ tabId, icon: Icon, label, description }) => {
           const isActive = activeTab === tabId;
           return (
             <div
               key={tabId}
-              draggable={hovered}
-              onDragStart={(e) => handleDragStart(e, tabId)}
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, tabId)}
-              className={`flex items-center gap-1 rounded-md transition-colors ${hovered ? 'group' : ''}`}
+              draggable={expanded && editMode}
+              onDragStart={editMode ? (e) => handleDragStart(e, tabId) : undefined}
+              onDragOver={editMode ? handleDragOver : undefined}
+              onDrop={editMode ? (e) => handleDrop(e, tabId) : undefined}
+              className={`flex items-center gap-1 rounded-md transition-colors ${expanded ? 'group' : ''}`}
             >
-              {hovered && (
+              {expanded && editMode && (
                 <div
                   className="cursor-grab active:cursor-grabbing touch-none shrink-0 p-0.5 text-gray-500 hover:text-[#D4AF37]"
                   title="Drag to reorder"
@@ -97,16 +171,16 @@ export function NavSidebar({ activeTab, onTabChange, onLogout, topStepXEnabled =
               <button
                 onClick={() => onTabChange(tabId)}
                 className={`flex-1 w-full flex items-center gap-2.5 rounded-md transition-colors min-w-0 ${
-                  hovered ? 'px-2 py-1.5' : 'justify-center py-1.5 px-0'
+                  expanded ? 'px-2 py-1.5' : 'justify-center py-1.5 px-0'
                 } ${
                   isActive
                     ? 'bg-[#D4AF37] text-black'
                     : 'text-[#D4AF37]/60 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10'
                 }`}
-                title={hovered ? undefined : label}
+                title={expanded ? undefined : label}
               >
                 <Icon className="w-4 h-4 shrink-0" />
-                {hovered && (
+                {expanded && (
                   <div className="min-w-0 text-left">
                     <div className={`text-[11px] font-semibold truncate ${isActive ? 'text-black' : ''}`}>
                       {label}
@@ -126,16 +200,16 @@ export function NavSidebar({ activeTab, onTabChange, onLogout, topStepXEnabled =
         <button
           onClick={() => onTabChange('settings')}
           className={`w-full flex items-center gap-2.5 rounded-md transition-colors ${
-            hovered ? 'px-2 py-1.5' : 'justify-center py-1.5'
+            expanded ? 'px-2 py-1.5' : 'justify-center py-1.5'
           } ${
             activeTab === 'settings'
               ? 'bg-[#D4AF37] text-black'
               : 'text-[#D4AF37]/60 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10'
           }`}
-          title={hovered ? undefined : 'Settings'}
+          title={expanded ? undefined : 'Settings'}
         >
           <Settings className="w-4 h-4 shrink-0" />
-          {hovered && (
+          {expanded && (
             <div className="min-w-0 text-left">
               <div className={`text-[11px] font-semibold truncate ${activeTab === 'settings' ? 'text-black' : ''}`}>
                 Settings
@@ -149,12 +223,12 @@ export function NavSidebar({ activeTab, onTabChange, onLogout, topStepXEnabled =
         <button
           onClick={onLogout}
           className={`w-full flex items-center gap-2.5 rounded-md text-red-500/60 hover:text-red-500 hover:bg-red-500/10 transition-colors ${
-            hovered ? 'px-2 py-1.5' : 'justify-center py-1.5'
+            expanded ? 'px-2 py-1.5' : 'justify-center py-1.5'
           }`}
-          title={hovered ? undefined : 'Logout'}
+          title={expanded ? undefined : 'Logout'}
         >
           <LogOut className="w-4 h-4 shrink-0" />
-          {hovered && <span className="text-[11px] font-semibold">Logout</span>}
+          {expanded && <span className="text-[11px] font-semibold">Logout</span>}
         </button>
       </div>
     </div>
@@ -164,15 +238,15 @@ export function NavSidebar({ activeTab, onTabChange, onLogout, topStepXEnabled =
   if (topStepXEnabled) {
     return (
       <div
-        className="fixed left-0 top-[70px] bottom-0 z-50"
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
+        className="fixed left-0 top-[56px] bottom-0 z-50"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         {/* Hover trigger strip when collapsed */}
-        {!hovered && (
+        {!expanded && (
           <div className="absolute left-0 top-0 bottom-0 w-3 bg-transparent" />
         )}
-        <div className={`h-full transition-transform duration-200 ${hovered ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className={`h-full transition-transform duration-200 ${expanded ? 'translate-x-0' : '-translate-x-full'}`}>
           {sidebarContent}
         </div>
       </div>

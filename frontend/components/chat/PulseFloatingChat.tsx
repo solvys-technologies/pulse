@@ -6,6 +6,8 @@ import { PulseChatInput } from './PulseChatInput';
 import { useOpenClawChat } from './hooks/useOpenClawChat';
 import { toOpenClawAgentOverride } from '../../lib/openclawAgentRouting';
 import { usePersistentOpenClawConversation } from '../../hooks/usePersistentOpenClawConversation';
+import { PulseThinkingIndicator } from './PulseThinkingIndicator';
+import { normalizeChatMessages } from '../../lib/chatMessageNormalizer';
 
 /* ------------------------------------------------------------------ */
 /*  Props                                                              */
@@ -35,21 +37,19 @@ export function PulseFloatingChat({ visible, onExpandToAnalysis }: PulseFloating
   );
 
   const messages = useMemo(() => {
-    return (rawMessages || [])
-      .filter((m: any) => m.role !== 'system')
-      .map((m: any) => {
-        const text =
-          m.content ||
-          (Array.isArray(m.parts)
-            ? m.parts.filter((p: any) => p.type === 'text').map((p: any) => p.text).join('')
-            : '');
-        return {
-          id: String(m.id),
-          role: m.role === 'user' ? 'user' : 'assistant',
-          text: String(text || ''),
-        } as const;
-      });
+    return normalizeChatMessages(rawMessages as any[]);
   }, [rawMessages]);
+
+  const latestThinkingContent = useMemo(() => {
+    const lastUserIndex = messages.map((m) => m.role).lastIndexOf('user');
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const message = messages[i];
+      if (message.role !== 'assistant') continue;
+      if (i < lastUserIndex) return undefined;
+      return message.reasoning.trim() || undefined;
+    }
+    return undefined;
+  }, [messages]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -151,6 +151,13 @@ export function PulseFloatingChat({ visible, onExpandToAnalysis }: PulseFloating
             </div>
           </div>
         ))}
+        {isProcessing && (
+          <PulseThinkingIndicator
+            isThinking
+            thinkingContent={latestThinkingContent}
+            agentName={activeAgent?.name}
+          />
+        )}
         <div ref={messagesEndRef} />
       </div>
 

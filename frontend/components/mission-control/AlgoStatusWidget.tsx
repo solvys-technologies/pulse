@@ -4,13 +4,14 @@ import { useSettings } from '../../contexts/SettingsContext';
 import { useBackend } from '../../lib/backend';
 import { useState, useEffect } from 'react';
 import { LockedCard } from '../ui/LockedCard';
+import { IS_INTERNAL_BUILD } from '../../lib/internal-build';
 
 export function AlgoStatusWidget() {
   const { tier } = useAuth();
   const { tradingModels } = useSettings();
   const backend = useBackend();
   const [algoEnabled, setAlgoEnabled] = useState<boolean>(false);
-  const isLocked = tier === 'free';
+  const isLocked = !IS_INTERNAL_BUILD && tier === 'free';
 
   useEffect(() => {
     const fetchAccount = async () => {
@@ -67,7 +68,7 @@ export function AlgoStatusWidget() {
   ];
 
   const content = (
-    <div className="bg-[#050500] border border-[#D4AF37]/20 rounded-lg p-4">
+    <div className="bg-[#050500] p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Cpu className="w-4 h-4 text-[#D4AF37]" />

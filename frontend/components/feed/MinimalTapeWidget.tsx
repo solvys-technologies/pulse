@@ -72,9 +72,10 @@ export function MinimalTapeWidget() {
 
   return (
     <>
-      <div className="flex flex-col gap-2 p-2 bg-[#0a0a00] border border-[#D4AF37]/20 rounded w-full">
-        <div className="text-center">
-          <span className="text-[10px] font-semibold text-[#D4AF37]">Tape</span>
+      <div className={`flex flex-col gap-2 p-2 bg-[#0a0a00] w-full ${unreadCount > 0 ? 'ring-2 ring-[#D4AF37]/60 animate-pulse rounded-full' : ''}`}>
+        <div className="text-center flex items-center justify-center gap-1">
+          <Zap className="w-3 h-3 text-[#D4AF37]" />
+          <span className="text-[10px] font-semibold text-[#D4AF37]">Risk</span>
         </div>
 
         <div className="flex flex-col items-center gap-2 pt-1">

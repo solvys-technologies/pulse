@@ -9,6 +9,27 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-05T20:30:00',
+    agent: 'claude-code',
+    summary: 'RiskFlow layout fix: removed RiskFlow from Mission Control panel, gave Mission Control full right panel height. Added Proposals filter tab to RiskFlow section (NewsSection) alongside All/High/Medium filters. Updated DMG.',
+    files: [
+      'frontend/components/layout/MainLayout.tsx',
+      'frontend/components/feed/NewsSection.tsx',
+      'frontend/lib/layoutOrderStorage.ts',
+    ],
+  },
+  {
+    date: '2026-03-05T18:14:00.000Z',
+    agent: 'openclaw',
+    summary:
+      '21st-style chat polish pass implemented directly in Pulse (while preserving black/gold palette): upgraded Analysis + Ask Harp message cards and composer shell, refined action controls, and improved visual hierarchy/spacing for modern chat UX without changing OpenClaw transport behavior.',
+    files: [
+      'frontend/components/chat/PulseChatInput.tsx',
+      'frontend/components/ChatInterface.tsx',
+      'frontend/components/chat/AskHarpChatPanel.tsx',
+    ],
+  },
+  {
     date: '2026-03-05T18:03:00.000Z',
     agent: 'openclaw',
     summary:

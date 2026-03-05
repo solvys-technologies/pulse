@@ -33,12 +33,15 @@ interface ERContextValue {
   infractionCount: number;
   maxTiltScore: number;
   sessionStartTime: number | null;
+  recentInfraction: boolean;
+  lastInfractionAt: number | null;
   
   // Actions
   startMonitoring: () => Promise<void>;
   stopMonitoring: () => Promise<void>;
   updateScore: (delta: number) => void;
   addInfraction: (keywords: string[]) => void;
+  clearRecentInfraction: () => void;
   
   // Snapshots
   getRecentSnapshots: () => ERSnapshot[];
@@ -72,6 +75,8 @@ export function ERProvider({ children }: ERProviderProps) {
   const [sessionId, setSessionId] = useState<number | null>(null);
   const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
   const [overtradingStatus, setOvertradingStatus] = useState<OvertradingStatus | null>(null);
+  const [recentInfraction, setRecentInfraction] = useState(false);
+  const [lastInfractionAt, setLastInfractionAt] = useState<number | null>(null);
   
   // Refs for non-reactive state
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -86,6 +91,7 @@ export function ERProvider({ children }: ERProviderProps) {
   const isInTiltRef = useRef<boolean>(false);
   const detectedKeywordsRef = useRef<string[]>([]);
   const snapshotsRef = useRef<ERSnapshot[]>([]);
+  const infractionHoldTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Intervals
   const scoreIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -163,6 +169,27 @@ export function ERProvider({ children }: ERProviderProps) {
     detectedKeywordsRef.current.push(...keywords);
     detectedKeywordsRef.current = [...new Set(detectedKeywordsRef.current)];
     infractionCountRef.current += 1;
+    const timestamp = Date.now();
+    setLastInfractionAt(timestamp);
+    setRecentInfraction(true);
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('psychassist:infraction', {
+          detail: {
+            timestamp,
+            keywords,
+          },
+        })
+      );
+    }
+
+    if (infractionHoldTimeoutRef.current) {
+      clearTimeout(infractionHoldTimeoutRef.current);
+    }
+    infractionHoldTimeoutRef.current = setTimeout(() => {
+      setRecentInfraction(false);
+    }, 8000);
     
     setErScore(prev => {
       const newScore = Math.max(-10, prev - 1.0);
@@ -185,6 +212,10 @@ export function ERProvider({ children }: ERProviderProps) {
       return newScore;
     });
   }, [persistScore]);
+
+  const clearRecentInfraction = useCallback(() => {
+    setRecentInfraction(false);
+  }, []);
 
   const startMonitoring = useCallback(async () => {
     try {
@@ -523,6 +554,26 @@ export function ERProvider({ children }: ERProviderProps) {
     };
   }, [isMonitoring, backend, updateScore]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(
+      new CustomEvent('psychassist:score', {
+        detail: {
+          score: erScore,
+          timestamp: Date.now(),
+        },
+      })
+    );
+  }, [erScore]);
+
+  useEffect(() => {
+    return () => {
+      if (infractionHoldTimeoutRef.current) {
+        clearTimeout(infractionHoldTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const getRecentSnapshots = useCallback(() => {
     return snapshotsRef.current;
   }, []);
@@ -538,10 +589,13 @@ export function ERProvider({ children }: ERProviderProps) {
     infractionCount: infractionCountRef.current,
     maxTiltScore: maxTiltScoreRef.current,
     sessionStartTime: sessionStartTimeRef.current,
+    recentInfraction,
+    lastInfractionAt,
     startMonitoring,
     stopMonitoring,
     updateScore,
     addInfraction,
+    clearRecentInfraction,
     getRecentSnapshots,
   };
 

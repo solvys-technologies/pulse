@@ -13,6 +13,7 @@ import type {
 import * as projectxService from './projectx-service.js';
 import * as projectxClient from './projectx/client.js';
 import * as rithmicService from './rithmic-service.js';
+import { recordActivityEvent } from './projectx-activity-service.js';
 
 // In-memory store for algo status (per user)
 const algoStatusStore = new Map<string, AlgoStatus>();
@@ -99,6 +100,26 @@ export async function fireTestTrade(
     if (!result.success) {
       throw new Error(result.error ?? 'Rithmic order failed');
     }
+
+    const numericAccountId = Number.parseInt(params.accountId, 10);
+    if (Number.isFinite(numericAccountId)) {
+      await recordActivityEvent(userId, {
+        accountId: numericAccountId,
+        eventType: 'order_filled',
+        eventSource: 'rithmic',
+        eventTimestamp: new Date(),
+        isTrade: true,
+        symbol: symbolSearch,
+        side: params.side,
+        quantity: 1,
+        eventWeight: 1,
+        payload: {
+          broker: 'rithmic',
+          orderId: result.orderId,
+        },
+      });
+    }
+
     return {
       success: true,
       orderId: result.orderId,
@@ -129,6 +150,26 @@ export async function fireTestTrade(
 
   if (!result.success) {
     throw new Error(result.errorMessage ?? 'ProjectX order failed');
+  }
+
+  const numericAccountId = parseInt(params.accountId, 10);
+  if (Number.isFinite(numericAccountId)) {
+    await recordActivityEvent(userId, {
+      accountId: numericAccountId,
+      eventType: 'order_filled',
+      eventSource: 'projectx-api',
+      eventTimestamp: new Date(),
+      isTrade: true,
+      symbol: symbolSearch,
+      side: params.side,
+      quantity: 1,
+      eventWeight: 1,
+      payload: {
+        broker: 'projectx',
+        orderId: result.orderId,
+        contractId: activeContract.id,
+      },
+    });
   }
 
   return {

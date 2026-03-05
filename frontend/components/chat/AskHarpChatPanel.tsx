@@ -63,7 +63,7 @@ export function AskHarpChatPanel() {
   );
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-[#070704]">
+    <div className="flex h-full flex-col overflow-hidden bg-[radial-gradient(circle_at_top,rgba(212,175,55,0.07),transparent_38%),#070704]">
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
         {messages.length === 0 && (
@@ -83,12 +83,13 @@ export function AskHarpChatPanel() {
         {messages.map((msg, i) => (
           <div key={msg.id ?? i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div
-              className={`max-w-[85%] rounded-lg text-[12px] leading-relaxed ${
+              className={[
+                'max-w-[88%] rounded-2xl text-[12px] leading-relaxed border backdrop-blur-md',
                 msg.role === 'user'
-                  ? 'bg-[#D4AF37]/15 text-white'
-                  : 'bg-[#111108] text-gray-300'
-              }`}
-              style={{ padding: '8px 12px' }}
+                  ? 'bg-[#D4AF37]/12 border-[#D4AF37]/35 text-white shadow-[0_10px_24px_rgba(212,175,55,0.08)]'
+                  : 'bg-[#0f0f0b]/92 border-white/10 text-zinc-300 shadow-[0_10px_24px_rgba(0,0,0,0.3)]',
+              ].join(' ')}
+              style={{ padding: '10px 13px' }}
             >
               {msg.text}
             </div>
@@ -105,7 +106,7 @@ export function AskHarpChatPanel() {
       </div>
 
       {/* Input */}
-      <div className="px-3 pb-3">
+      <div className="px-3 pb-3 border-t border-white/5 bg-[linear-gradient(180deg,rgba(7,7,4,0.2),rgba(7,7,4,0.88))]">
         {lastError && (
           <div className="mb-2 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">
             {lastError}

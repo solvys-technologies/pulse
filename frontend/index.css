@@ -285,6 +285,16 @@
   animation: slideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
+/* Scrolling ticker for Econ Calendar footer */
+@keyframes ticker {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-ticker {
+  animation: ticker 30s linear infinite;
+}
+
 /* Smooth transition utilities */
 .transition-lush {
   transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);

@@ -5,26 +5,45 @@
 
 const SIDEBAR_ORDER_KEY = 'pulse_sidebar_nav_order';
 const TOOLBAR_ORDER_KEY = 'pulse_toolbar_order';
+const MISSION_WIDGET_ORDER_KEY = 'pulse_mission_widget_order';
+const RIGHT_PANEL_ORDER_KEY = 'pulse_right_panel_order';
 
-export type NavTabId = 'executive' | 'analysis' | 'news' | 'chatroom' | 'notion';
+export type NavTabId = 'executive' | 'analysis' | 'news' | 'chatroom' | 'notion' | 'econ';
 
 export const DEFAULT_SIDEBAR_ORDER: NavTabId[] = [
   'executive',
   'analysis',
   'news',
+  'econ',
   'chatroom',
   'notion',
 ];
 
-export type ToolbarItemId = 'platform' | 'power' | 'layout' | 'chat' | 'heartbeat' | 'ivScore';
+export type ToolbarItemId = 'platform' | 'power' | 'layout' | 'chat' | 'voice' | 'heartbeat' | 'ivScore';
 
 export const DEFAULT_TOOLBAR_ORDER: ToolbarItemId[] = [
   'platform',
   'power',
   'layout',
   'chat',
+  'voice',
   'heartbeat',
   'ivScore',
+];
+
+export type MissionWidgetId = 'er' | 'autopilot' | 'account' | 'blindspots';
+
+export const DEFAULT_MISSION_WIDGET_ORDER: MissionWidgetId[] = [
+  'er',
+  'autopilot',
+  'account',
+  'blindspots',
+];
+
+export type RightPanelId = 'mission';
+
+export const DEFAULT_RIGHT_PANEL_ORDER: RightPanelId[] = [
+  'mission',
 ];
 
 function loadOrder<T>(key: string, defaultOrder: T[]): T[] {
@@ -33,9 +52,10 @@ function loadOrder<T>(key: string, defaultOrder: T[]): T[] {
     if (!raw) return defaultOrder;
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return defaultOrder;
-    const valid = defaultOrder.filter((id) => parsed.includes(id));
-    const rest = parsed.filter((id: unknown) => defaultOrder.includes(id as T)) as T[];
-    return rest.length > 0 ? rest : defaultOrder;
+    const ordered = parsed.filter((id: unknown) => defaultOrder.includes(id as T)) as T[];
+    const deduped = ordered.filter((id, index) => ordered.indexOf(id) === index);
+    const missing = defaultOrder.filter((id) => !deduped.includes(id));
+    return [...deduped, ...missing];
   } catch {
     return defaultOrder;
   }
@@ -63,4 +83,20 @@ export function getToolbarOrder(): ToolbarItemId[] {
 
 export function setToolbarOrder(order: ToolbarItemId[]): void {
   saveOrder(TOOLBAR_ORDER_KEY, order);
+}
+
+export function getMissionWidgetOrder(): MissionWidgetId[] {
+  return loadOrder(MISSION_WIDGET_ORDER_KEY, DEFAULT_MISSION_WIDGET_ORDER);
+}
+
+export function setMissionWidgetOrder(order: MissionWidgetId[]): void {
+  saveOrder(MISSION_WIDGET_ORDER_KEY, order);
+}
+
+export function getRightPanelOrder(): RightPanelId[] {
+  return loadOrder(RIGHT_PANEL_ORDER_KEY, DEFAULT_RIGHT_PANEL_ORDER);
+}
+
+export function setRightPanelOrder(order: RightPanelId[]): void {
+  saveOrder(RIGHT_PANEL_ORDER_KEY, order);
 }

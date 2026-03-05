@@ -3,9 +3,11 @@
  * Pulls latest economic prints from FMP and emits as feed items for RiskFlow
  * Used as a fallback when X headlines are late/missing for economic releases.
  */
+// [claude-code 2026-03-05] Extended: hot prints now write actuals to Notion Econ Prints DB.
 
 import { createFmpService } from '../fmp-service.js'
 import { calculateIVScore } from '../analysis/iv-scorer.js'
+import { writeEconPrint } from '../econ-calendar-service.js'
 import type { FeedItem, NewsSource, SentimentDirection } from '../../types/riskflow.js'
 import type { HotPrint, ParsedHeadline } from '../../types/news-analysis.js'
 
@@ -106,7 +108,8 @@ function normalizeEvent(event: Awaited<ReturnType<ReturnType<typeof createFmpSer
 }
 
 /**
- * Fetch latest economic prints (time-windowed) and map to feed items
+ * Fetch latest economic prints (time-windowed) and map to feed items.
+ * Hot prints are also written to Notion Econ Prints DB for historical tracking.
  */
 export async function fetchEconomicFeed(): Promise<FeedItem[]> {
   try {
@@ -114,6 +117,20 @@ export async function fetchEconomicFeed(): Promise<FeedItem[]> {
     if (!latest?.events?.length) return []
 
     const normalized = latest.events.map(normalizeEvent)
+
+    // Write hot prints to Notion (fire-and-forget)
+    for (const event of normalized) {
+      if (event.isHot && event.actual !== null) {
+        writeEconPrint({
+          eventName: event.name,
+          date: new Date(event.releaseTime).toISOString().slice(0, 10),
+          actual: event.actual,
+          forecast: event.forecast ?? undefined,
+          previous: event.previous ?? undefined,
+        }).catch((err) => console.warn('[EconomicFeed] Notion write failed:', err))
+      }
+    }
+
     return normalized.map(econEventToFeedItem)
   } catch (error) {
     console.error('[EconomicFeed] Failed to fetch economic prints:', error)

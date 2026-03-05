@@ -158,14 +158,17 @@ export function PulseChatInput({
         </div>
       )}
 
-      {/* Main pill container */}
+      {/* Main container — 21st-dev-inspired clean shell w/ Pulse palette */}
       <div
-        className={`
-          relative flex flex-col rounded-[28px] border transition-colors
-          ${disabled ? 'opacity-50 pointer-events-none' : ''}
-          ${text ? 'border-[#D4AF37]/50' : 'border-[#D4AF37]/20'}
-        `}
-        style={{ backgroundColor: '#0b0b08' }}
+        className={[
+          'relative flex flex-col rounded-2xl border transition-all duration-200',
+          'backdrop-blur-xl shadow-[0_18px_40px_rgba(0,0,0,0.35)]',
+          text
+            ? 'border-[#D4AF37]/55 ring-1 ring-[#D4AF37]/25'
+            : 'border-[#D4AF37]/20 hover:border-[#D4AF37]/35',
+          disabled ? 'opacity-50 pointer-events-none' : '',
+        ].join(' ')}
+        style={{ background: 'linear-gradient(180deg, rgba(13,12,9,0.98), rgba(8,8,6,0.95))' }}
       >
         {/* Textarea */}
         <textarea
@@ -176,30 +179,30 @@ export function PulseChatInput({
           onPaste={handlePaste}
           placeholder={placeholder}
           rows={1}
-          className="resize-none bg-transparent text-[13px] text-white placeholder:text-gray-600 focus:outline-none overflow-y-auto"
+          className="resize-none bg-transparent text-[13px] text-white placeholder:text-zinc-500 focus:outline-none overflow-y-auto"
           style={{
-            padding: '14px 18px 6px',
-            maxHeight: '160px',
+            padding: '14px 16px 8px',
+            maxHeight: '170px',
             lineHeight: '1.5',
           }}
         />
 
         {/* Bottom bar */}
-        <div className="flex items-center justify-between" style={{ padding: '4px 10px 8px' }}>
+        <div className="flex items-center justify-between border-t border-white/5" style={{ padding: '8px 10px 10px' }}>
           {/* Left: Attach + Skills */}
           <div className="flex items-center gap-1">
             <button
               onClick={onOpenAttach}
-              className="flex items-center justify-center rounded-full text-gray-500 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-colors"
-              style={{ width: '30px', height: '30px' }}
+              className="flex items-center justify-center rounded-lg text-zinc-500 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-colors"
+              style={{ width: '32px', height: '32px' }}
               title="Attach"
             >
               <Plus size={16} />
             </button>
             <button
               onClick={onOpenSkills}
-              className="flex items-center justify-center rounded-full text-gray-500 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-colors"
-              style={{ width: '30px', height: '30px' }}
+              className="flex items-center justify-center rounded-lg text-zinc-500 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-colors"
+              style={{ width: '32px', height: '32px' }}
               title="Skills"
             >
               <Wrench size={14} />
@@ -212,8 +215,8 @@ export function PulseChatInput({
             <div className="relative" ref={pickerRef}>
               <button
                 onClick={() => setShowAgentPicker(!showAgentPicker)}
-                className="flex items-center gap-1 rounded-full border border-[#D4AF37]/20 text-gray-400 hover:text-white hover:border-[#D4AF37]/40 transition-colors"
-                style={{ padding: '3px 10px 3px 8px', fontSize: '12px' }}
+                className="flex items-center gap-1 rounded-lg border border-[#D4AF37]/25 bg-black/25 text-zinc-300 hover:text-white hover:border-[#D4AF37]/45 transition-colors"
+                style={{ padding: '4px 10px 4px 8px', fontSize: '12px' }}
               >
                 <span
                   className="flex items-center justify-center rounded-md bg-[#D4AF37]/10 text-[#D4AF37] font-semibold"
@@ -255,12 +258,12 @@ export function PulseChatInput({
             <button
               onClick={() => setThinkHarder(!thinkHarder)}
               title={thinkHarder ? 'Extended thinking ON' : 'Extended thinking OFF'}
-              className={`flex items-center justify-center rounded-full border transition-all ${
+              className={`flex items-center justify-center rounded-lg border transition-all ${
                 thinkHarder
-                  ? 'border-[#D4AF37] bg-[#D4AF37]/20 text-[#D4AF37] shadow-[0_0_8px_rgba(212,175,55,0.3)]'
-                  : 'border-[#D4AF37]/15 text-gray-500 hover:text-[#D4AF37] hover:border-[#D4AF37]/30'
+                  ? 'border-[#D4AF37] bg-[#D4AF37]/20 text-[#D4AF37] shadow-[0_0_10px_rgba(212,175,55,0.32)]'
+                  : 'border-[#D4AF37]/20 text-zinc-500 hover:text-[#D4AF37] hover:border-[#D4AF37]/40'
               }`}
-              style={{ width: '30px', height: '30px' }}
+              style={{ width: '32px', height: '32px' }}
             >
               <Brain size={14} />
             </button>
@@ -269,12 +272,12 @@ export function PulseChatInput({
             <button
               onClick={isProcessing && onStop ? onStop : handleSend}
               disabled={!text.trim() && images.length === 0 && !isProcessing}
-              className={`flex items-center justify-center rounded-full transition-all ${
+              className={`flex items-center justify-center rounded-lg transition-all ${
                 isProcessing
-                  ? 'bg-red-500 hover:bg-red-600 text-white'
-                  : 'bg-[#D4AF37] hover:bg-[#C5A030] text-black disabled:opacity-30 disabled:hover:bg-[#D4AF37]'
+                  ? 'bg-red-500 hover:bg-red-600 text-white shadow-[0_0_0_1px_rgba(255,255,255,0.2)]'
+                  : 'bg-[#D4AF37] hover:bg-[#C5A030] text-black disabled:opacity-30 disabled:hover:bg-[#D4AF37] shadow-[0_8px_20px_rgba(212,175,55,0.25)]'
               }`}
-              style={{ width: '30px', height: '30px' }}
+              style={{ width: '34px', height: '34px' }}
               title={isProcessing ? 'Stop' : 'Send'}
             >
               {isProcessing ? (

@@ -41,7 +41,7 @@ export function MinimalFeedSection({
   onPositionChange,
   onHide
 }: MinimalFeedSectionProps) {
-  const { alerts } = useRiskFlow();
+  const { alerts, markAllSeen } = useRiskFlow();
   const [unreadCount, setUnreadCount] = useState(0);
 
   const feedItems = alerts.slice(0, 50).map(alertToFeedItem);
@@ -51,8 +51,9 @@ export function MinimalFeedSection({
     if (!collapsed && alerts.length > 0) {
       lastSeenAlertId = alerts[0].id;
       setUnreadCount(0);
+      markAllSeen(alerts.slice(0, 50).map((a) => a.id));
     }
-  }, [collapsed, alerts.length]);
+  }, [collapsed, alerts, markAllSeen]);
 
   // Compute unread count (items newer than last seen)
   useEffect(() => {

@@ -5,6 +5,8 @@ import { usePulseAgents } from '../../contexts/PulseAgentContext';
 import { EmbeddedBrowserFrame } from '../layout/EmbeddedBrowserFrame';
 import { toOpenClawAgentOverride } from '../../lib/openclawAgentRouting';
 import { usePersistentOpenClawConversation } from '../../hooks/usePersistentOpenClawConversation';
+import { PulseThinkingIndicator } from '../chat/PulseThinkingIndicator';
+import { normalizeChatMessages } from '../../lib/chatMessageNormalizer';
 
 export function ResearchDepartment() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -25,23 +27,25 @@ export function ResearchDepartment() {
   const { messages, sendMessage, status, stop } = useOpenClawChat(conversationId, setConversationId as any, openclawAgentOverride);
 
   const uiMessages = useMemo(() => {
-    return (messages || [])
-      .filter((m: any) => m.role !== 'system')
-      .map((m: any) => {
-        const text =
-          m.content ||
-          (Array.isArray(m.parts)
-            ? m.parts.filter((p: any) => p.type === 'text').map((p: any) => p.text).join('')
-            : '');
-        return {
-          id: String(m.id),
-          role: m.role === 'user' ? 'user' : 'assistant',
-          content: String(text || ''),
-        };
-      });
+    return normalizeChatMessages(messages as any[]).map((m) => ({
+      id: m.id,
+      role: m.role,
+      content: m.text,
+      reasoning: m.reasoning,
+    }));
   }, [messages]);
 
   const isStreaming = status === 'streaming' || status === 'submitted';
+  const latestThinkingContent = useMemo(() => {
+    const lastUserIndex = uiMessages.map((m) => m.role).lastIndexOf('user');
+    for (let i = uiMessages.length - 1; i >= 0; i--) {
+      const message = uiMessages[i];
+      if (message.role !== 'assistant') continue;
+      if (i < lastUserIndex) return undefined;
+      return message.reasoning?.trim() || undefined;
+    }
+    return undefined;
+  }, [uiMessages]);
 
   const handleSend = useCallback(async (text?: string) => {
     const msg = (text ?? inputText).trim();
@@ -143,6 +147,13 @@ export function ResearchDepartment() {
                   Ask about your research, or request a report.
                 </span>
               </div>
+            )}
+            {isStreaming && (
+              <PulseThinkingIndicator
+                isThinking
+                thinkingContent={latestThinkingContent}
+                agentName={agent.name}
+              />
             )}
           </div>
 

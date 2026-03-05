@@ -18,6 +18,7 @@ import type { NewsSource as AnalysisNewsSource } from '../../types/news-analysis
 
 const MAX_FEED_ITEMS = 50;
 const isDev = process.env.NODE_ENV !== 'production';
+const ALLOW_MOCK_FALLBACK = process.env.RISKFLOW_ALLOW_MOCK_FALLBACK === 'true';
 
 // Enable/disable AI analysis (can be toggled via env)
 const ENABLE_AI_ANALYSIS = process.env.ENABLE_AI_ANALYSIS !== 'false';
@@ -318,8 +319,8 @@ async function getCachedFeed(): Promise<FeedItem[]> {
     return feedCache.items;
   }
 
-  // In dev mode without X API token, use mock data
-  if (isDev && !process.env.X_API_BEARER_TOKEN) {
+  // Optional mock fallback (disabled by default)
+  if (ALLOW_MOCK_FALLBACK && isDev && !process.env.X_API_BEARER_TOKEN) {
     const mockItems = generateMockFeed();
     const enrichedItems = await enrichFeedWithAnalysis(mockItems);
     feedCache = { items: enrichedItems, fetchedAt: Date.now() };
@@ -353,24 +354,24 @@ async function getCachedFeed(): Promise<FeedItem[]> {
       return dbItems;
     }
 
-    // If fetch failed and database is empty, return empty (or use mock in dev)
+    // If fetch failed and database is empty, return empty unless explicit mock fallback is enabled
     if (rawItems.length === 0 && dbItems.length === 0) {
       console.warn(`[RiskFlow] No items from X API and database is empty`);
       console.warn(`[RiskFlow] X_API_BEARER_TOKEN present: ${!!process.env.X_API_BEARER_TOKEN}`);
       console.warn(`[RiskFlow] Environment: ${process.env.NODE_ENV}`);
-      
-      // In production, if we have no data at all, generate mock data as fallback
-      // This ensures users always see something while we debug the real issue
-      console.warn(`[RiskFlow] Generating fallback mock data to prevent empty feed`);
-      const mockItems = generateMockFeed();
-      const enrichedItems = await enrichFeedWithAnalysis(mockItems);
-      
-      // Store mock items in database so they persist
-      await newsCache.storeFeedItems(enrichedItems);
-      console.log(`[RiskFlow] Stored ${enrichedItems.length} fallback mock items in database`);
-      
-      feedCache = { items: enrichedItems, fetchedAt: Date.now() };
-      return enrichedItems;
+
+      if (ALLOW_MOCK_FALLBACK) {
+        console.warn(`[RiskFlow] RISKFLOW_ALLOW_MOCK_FALLBACK=true — generating fallback mock data`);
+        const mockItems = generateMockFeed();
+        const enrichedItems = await enrichFeedWithAnalysis(mockItems);
+        await newsCache.storeFeedItems(enrichedItems);
+        console.log(`[RiskFlow] Stored ${enrichedItems.length} fallback mock items in database`);
+        feedCache = { items: enrichedItems, fetchedAt: Date.now() };
+        return enrichedItems;
+      }
+
+      feedCache = { items: [], fetchedAt: Date.now() };
+      return [];
     }
 
     // Check which items are already in cache

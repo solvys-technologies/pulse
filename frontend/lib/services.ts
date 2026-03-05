@@ -6,6 +6,7 @@
  */
 
 import ApiClient from "./apiClient";
+import { decodeHtmlEntities } from './html-entities';
 
 // Type definitions (update these to match your Hono backend response types)
 export interface Account {
@@ -79,6 +80,36 @@ export interface ProjectXAccount {
   isPaper?: boolean;
 }
 
+export interface ProjectXActivitySummary {
+  accountId: number;
+  windowMinutes: number;
+  eventCount: number;
+  tradeCount: number;
+  weightedTradeCount: number;
+  overtradingPenalty: number;
+  realizedPnl: number;
+  lastEventAt: string | null;
+}
+
+export interface ProjectXActivityResponse {
+  accountId: number;
+  events: Array<{
+    id: number;
+    eventType: string;
+    eventSource: string;
+    eventTimestamp: string;
+    isTrade: boolean;
+    symbol?: string | null;
+    side?: string | null;
+    quantity?: number | null;
+    price?: number | null;
+    realizedPnl?: number | null;
+    eventWeight?: number | null;
+    payload?: Record<string, unknown>;
+  }>;
+  summary: ProjectXActivitySummary;
+}
+
 export interface PsychScores {
   executions: number;
   emotionalControl: number;
@@ -118,9 +149,44 @@ export interface UplinkResponse {
   message: string;
 }
 
+export interface VoiceTranscriptionResponse {
+  text: string;
+  model?: string;
+  provider?: string;
+}
+
+export interface VoiceSpeakResponse {
+  conversationId: string;
+  agent: string;
+  responseText: string;
+  audioBase64?: string;
+  audioMimeType?: string;
+  mode?: 'chat' | 'infraction';
+}
+
 // Account Service
 export class AccountService {
   constructor(private client: ApiClient) { }
+
+  private mapAccountResponse(response: any, tier: Account['tier']): Account {
+    const dailyPnlRaw = response.dailyPnl ?? response.daily_pnl;
+    return {
+      id: response.id?.toString() || '',
+      userId: response.userId?.toString?.() || response.user_id?.toString?.() || '',
+      balance: Number(response.balance ?? 0),
+      dailyPnl: typeof dailyPnlRaw === 'number' ? dailyPnlRaw : Number(dailyPnlRaw ?? 0),
+      tier,
+      tradingEnabled: Boolean(response.tradingEnabled ?? response.trading_enabled ?? false),
+      autoTrade: Boolean(response.autoTrade ?? response.auto_trade ?? response.algoEnabled ?? response.algo_enabled ?? false),
+      riskManagement: Boolean(response.riskManagement ?? response.risk_management ?? false),
+      algoEnabled: Boolean(response.algoEnabled ?? response.algo_enabled ?? false),
+      topstepxUsername: response.topstepxUsername ?? response.topstepx_username,
+      topstepxApiKey: response.topstepxApiKey ?? response.topstepx_api_key,
+      selectedSymbol: response.selectedSymbol ?? response.selected_symbol,
+      contractsPerTrade: response.contractsPerTrade ?? response.contracts_per_trade,
+      projectxUsername: response.projectxUsername ?? response.projectx_username,
+    };
+  }
 
   async get(): Promise<Account> {
     const response = await this.client.get<any>('/api/account');
@@ -134,18 +200,7 @@ export class AccountService {
       console.warn('Failed to get tier, defaulting to free:', error);
     }
 
-    // Transform backend response to match frontend expectations
-    return {
-      id: response.id?.toString() || '',
-      userId: '', // Backend doesn't return userId
-      balance: response.balance || 0,
-      dailyPnl: 0, // Backend doesn't return this
-      tier: tier,
-      tradingEnabled: false,
-      autoTrade: false,
-      riskManagement: false,
-      algoEnabled: false, // Backend doesn't return this
-    };
+    return this.mapAccountResponse(response, tier);
   }
 
   async create(data: { initialBalance?: number }): Promise<Account> {
@@ -160,18 +215,7 @@ export class AccountService {
       console.warn('Failed to get tier, defaulting to free:', error);
     }
 
-    // Transform backend response to match frontend expectations
-    return {
-      id: response.id?.toString() || '',
-      userId: '', // Backend doesn't return userId
-      balance: response.balance || 0,
-      dailyPnl: 0, // Backend doesn't return this
-      tier: tier,
-      tradingEnabled: false,
-      autoTrade: false,
-      riskManagement: false,
-      algoEnabled: false, // Backend doesn't return this
-    };
+    return this.mapAccountResponse(response, tier);
   }
 
   async updateSettings(data: Partial<Account>): Promise<Account> {
@@ -269,9 +313,9 @@ export class RiskFlowService {
           
           return {
             id: item.id?.toString() || '',
-            title: item.headline || item.title || '', // Map headline to title
-            content: item.body || item.content || '', // Map body to content
-            summary: item.body || item.content || '', // Also set summary for compatibility
+            title: decodeHtmlEntities(item.headline || item.title || ''), // Map headline to title
+            content: decodeHtmlEntities(item.body || item.content || ''), // Map body to content
+            summary: decodeHtmlEntities(item.body || item.content || ''), // Also set summary for compatibility
             source: item.source || '',
             url: item.url,
             publishedAt: item.publishedAt || item.published_at || new Date().toISOString(),
@@ -484,6 +528,14 @@ export class ProjectXService {
   async syncProjectXAccounts(): Promise<void> {
     return this.client.post('/api/projectx/sync', {});
   }
+
+  async getActivity(accountId: string | number, params?: { windowMinutes?: number; limit?: number }): Promise<ProjectXActivityResponse> {
+    const query = new URLSearchParams();
+    if (params?.windowMinutes) query.append('windowMinutes', params.windowMinutes.toString());
+    if (params?.limit) query.append('limit', params.limit.toString());
+    const suffix = query.toString() ? `?${query.toString()}` : '';
+    return this.client.get<ProjectXActivityResponse>(`/api/projectx/activity/${accountId}${suffix}`);
+  }
 }
 
 // Rithmic Service (Autopilot primary broker scaffold)
@@ -521,10 +573,8 @@ export class ERService {
   constructor(private client: ApiClient) { }
 
   async getSessions(): Promise<any[]> {
-    // Backend uses /er/date/:date pattern instead of /er/sessions
-    // Return empty array for now - frontend should use date-specific endpoints
-    console.warn('ER sessions endpoint not available. Use /er/date/:date instead.');
-    return [];
+    const response = await this.client.get<{ sessions: any[] }>('/api/er/sessions');
+    return response.sessions || [];
   }
 
   async getERSessions(): Promise<any[]> {
@@ -537,15 +587,35 @@ export class ERService {
   }
 
   async saveSnapshot(data: any): Promise<any> {
-    // Stub - backend doesn't have this endpoint
-    console.warn('ER snapshot save endpoint not available in Hono backend');
-    return {};
+    return this.client.post('/api/er/snapshots', data);
   }
 
   async checkOvertrading(params?: { windowMinutes?: number; threshold?: number }): Promise<any> {
-    // Stub - backend doesn't have this endpoint
-    console.warn('ER overtrading check endpoint not available in Hono backend');
-    return { isOvertrading: false, tradesInWindow: 0 };
+    return this.client.post('/api/er/check-overtrading', params ?? {});
+  }
+}
+
+export class VoiceService {
+  constructor(private client: ApiClient) {}
+
+  async transcribe(data: {
+    audioBase64?: string;
+    mimeType?: string;
+    language?: string;
+    prompt?: string;
+    text?: string;
+  }): Promise<VoiceTranscriptionResponse> {
+    return this.client.post('/api/voice/transcribe', data);
+  }
+
+  async speak(data: {
+    text: string;
+    conversationId?: string;
+    mode?: 'chat' | 'infraction';
+    includeAudio?: boolean;
+    agent?: string;
+  }): Promise<VoiceSpeakResponse> {
+    return this.client.post('/api/voice/speak', data);
   }
 }
 
@@ -632,6 +702,63 @@ export interface TriggerInterventionParams {
   metadata?: Record<string, unknown>;
 }
 
+// Econ Calendar Service
+export interface EconEventItem {
+  id: string;
+  name: string;
+  date?: string;
+  time?: string;
+  country: string;
+  importance: 1 | 2 | 3;
+  forecast?: string;
+  previous?: string;
+  actual?: string;
+  category?: string;
+  definition?: string;
+  aiTicker?: string;
+  notionUrl: string;
+}
+
+export interface EconPrintItem {
+  id: string;
+  eventName: string;
+  date: string;
+  actual: number | null;
+  forecast: number | null;
+  previous: number | null;
+  surprise: number | null;
+  direction: 'beat' | 'miss' | 'inline' | null;
+  goodBeta: boolean;
+  notionUrl: string;
+}
+
+export class EconCalendarService {
+  constructor(private client: ApiClient) {}
+
+  async getEvents(params?: { from?: string; to?: string }): Promise<EconEventItem[]> {
+    try {
+      const query = new URLSearchParams();
+      if (params?.from) query.append('from', params.from);
+      if (params?.to) query.append('to', params.to);
+      const suffix = query.toString() ? `?${query.toString()}` : '';
+      const res = await this.client.get<{ events: EconEventItem[] }>(`/api/notion/econ-calendar${suffix}`);
+      return res.events ?? [];
+    } catch {
+      return [];
+    }
+  }
+
+  async getPrints(eventName?: string): Promise<EconPrintItem[]> {
+    try {
+      const suffix = eventName ? `?event=${encodeURIComponent(eventName)}` : '';
+      const res = await this.client.get<{ prints: EconPrintItem[] }>(`/api/notion/econ-prints${suffix}`);
+      return res.prints ?? [];
+    } catch {
+      return [];
+    }
+  }
+}
+
 // Notion Service
 export interface NotionTradeIdeaItem {
   id: string;
@@ -658,6 +785,13 @@ export interface NotionPerformanceResponse {
   fetchedAt: string;
 }
 
+export interface NotionPollStatus {
+  running: boolean;
+  lastPollAt: string | null;
+  pollCount: number;
+  tradeIdeaCount: number;
+}
+
 export class NotionService {
   constructor(private client: ApiClient) {}
 
@@ -675,6 +809,19 @@ export class NotionService {
       return await this.client.get<NotionPerformanceResponse>('/api/notion/performance');
     } catch {
       return { kpis: [], count: 0, fetchedAt: new Date().toISOString() };
+    }
+  }
+
+  async getPollStatus(): Promise<NotionPollStatus> {
+    try {
+      return await this.client.get<NotionPollStatus>('/api/notion/poll-status');
+    } catch {
+      return {
+        running: false,
+        lastPollAt: null,
+        pollCount: 0,
+        tradeIdeaCount: 0,
+      };
     }
   }
 
@@ -760,10 +907,12 @@ export interface BackendClient {
   rithmic: RithmicService;
   notifications: NotificationsService;
   er: ERService;
+  voice: VoiceService;
   events: EventsService;
   polymarket: PolymarketService;
   boardroom: BoardroomService;
   notion: NotionService;
+  econCalendar: EconCalendarService;
 }
 
 // Create backend client from API client
@@ -779,9 +928,11 @@ export function createBackendClient(client: ApiClient): BackendClient {
     rithmic: new RithmicService(client),
     notifications: new NotificationsService(client),
     er: new ERService(client),
+    voice: new VoiceService(client),
     events: new EventsService(client),
     polymarket: new PolymarketService(client),
     boardroom: new BoardroomService(client),
     notion: new NotionService(client),
+    econCalendar: new EconCalendarService(client),
   };
 }

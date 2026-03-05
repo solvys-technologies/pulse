@@ -52,6 +52,7 @@
       "target": [
         "dmg"
       ],
+      "icon": "electron/icons/icon.icns",
       "category": "public.app-category.finance"
     }
   }

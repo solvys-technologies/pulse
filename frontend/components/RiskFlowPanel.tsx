@@ -3,32 +3,10 @@
 import React, { useState } from 'react';
 import { useRiskFlow } from '../contexts/RiskFlowContext';
 import { Zap, ExternalLink, ChevronDown, ChevronUp, Trash2, X, TrendingUp, TrendingDown } from 'lucide-react';
-import type { AlertSeverity, RiskFlowAlert, TradeIdeaDetail } from '../lib/riskflow-feed';
+import type { RiskFlowAlert, TradeIdeaDetail } from '../lib/riskflow-feed';
 import TradeIdeaModal from './TradeIdeaModal';
 
-// ── Severity config ────────────────────────────────────────────────────────────
-
-const SEVERITY_CONFIG: Record<AlertSeverity, { label: string; bg: string; text: string; border: string; glow?: string }> = {
-  high: {
-    label: 'HIGH',
-    bg: 'bg-red-500/20',
-    text: 'text-red-400',
-    border: 'border-red-500/40',
-    glow: 'shadow-[0_0_8px_rgba(239,68,68,0.4)]',
-  },
-  medium: {
-    label: 'MED',
-    bg: 'bg-[#D4AF37]/20',
-    text: 'text-[#D4AF37]',
-    border: 'border-[#D4AF37]/40',
-  },
-  low: {
-    label: 'LOW',
-    bg: 'bg-zinc-700/30',
-    text: 'text-zinc-500',
-    border: 'border-zinc-700/40',
-  },
-};
+import { SEVERITY_CONFIG } from '../lib/severity-config';
 
 // ── Time formatting ────────────────────────────────────────────────────────────
 
@@ -48,18 +26,27 @@ function TradeIdeaRow({
   alert,
   onDelete,
   onOpen,
+  onMarkSeen,
+  seen,
 }: {
   alert: RiskFlowAlert;
   onDelete: (id: string) => void;
   onOpen: (idea: TradeIdeaDetail) => void;
+  onMarkSeen: (id: string) => void;
+  seen: boolean;
 }) {
   const idea = alert.tradeIdea!;
   const isLong = idea.direction === 'long';
 
   return (
     <div
-      className="group flex items-start gap-2 px-3 py-2.5 border-b border-zinc-800/50 border-l-2 border-l-[#c79f4a]/50 hover:bg-[#c79f4a]/5 transition-colors cursor-pointer"
-      onClick={() => onOpen(idea)}
+      className={`group flex items-start gap-2 px-3 py-2.5 border-b border-zinc-800/50 border-l-2 border-l-[#c79f4a]/50 hover:bg-[#c79f4a]/5 transition-colors cursor-pointer ${
+        seen ? 'opacity-70' : ''
+      }`}
+      onClick={() => {
+        onMarkSeen(alert.id);
+        onOpen(idea);
+      }}
     >
       <div className="flex-1 min-w-0 flex items-start gap-2">
         <span className="flex-shrink-0 mt-0.5 inline-flex items-center justify-center w-5 h-5 border border-[#c79f4a]/40 bg-[#c79f4a]/10">
@@ -107,16 +94,26 @@ function TradeIdeaRow({
 function AlertRow({
   alert,
   onDelete,
+  onMarkSeen,
+  seen,
 }: {
   alert: RiskFlowAlert;
   onDelete: (id: string) => void;
+  onMarkSeen: (id: string) => void;
+  seen: boolean;
 }) {
   const sev = SEVERITY_CONFIG[alert.severity];
   const isHigh = alert.severity === 'high';
 
   return (
-    <div className={`group flex items-start gap-2 px-3 py-2.5 border-b border-zinc-800/50 hover:bg-[#D4AF37]/5 transition-colors ${isHigh ? 'riskflow-pulse-row' : ''}`}>
-      <a href={alert.url} target="_blank" rel="noopener noreferrer" className="flex-1 min-w-0 flex items-start gap-2 cursor-pointer">
+    <div className={`group flex items-start gap-2 px-3 py-2.5 border-b border-zinc-800/50 hover:bg-[#D4AF37]/5 transition-colors ${isHigh ? 'riskflow-pulse-row' : ''} ${seen ? 'opacity-70' : ''}`}>
+      <a
+        href={alert.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex-1 min-w-0 flex items-start gap-2 cursor-pointer"
+        onClick={() => onMarkSeen(alert.id)}
+      >
         <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wider ${sev.bg} ${sev.text} ${sev.border} border ${sev.glow || ''} flex-shrink-0 mt-0.5`}>
           {sev.label}
         </span>
@@ -155,7 +152,7 @@ export default function RiskFlowPanel({
   collapsed?: boolean;
   onToggleCollapsed?: () => void;
 }) {
-  const { alerts, highCount, mediumCount, clearAll, removeAlert } = useRiskFlow();
+  const { alerts, highCount, mediumCount, clearAll, removeAlert, markSeen, markAllSeen, isSeen } = useRiskFlow();
   const [filter, setFilter] = useState<FilterMode>('all');
   const [expandedInternal, setExpandedInternal] = useState(true);
   const [selectedIdea, setSelectedIdea] = useState<TradeIdeaDetail | null>(null);
@@ -168,6 +165,12 @@ export default function RiskFlowPanel({
     filter === 'high' ? alerts.filter((a) => a.severity === 'high') :
     filter === 'medium' ? alerts.filter((a) => a.severity === 'medium') :
     alerts.filter((a) => a.source === 'notion-trade-idea');
+  const collapsedPreviewItems = alerts.slice(0, 2);
+
+  React.useEffect(() => {
+    if (!expanded) return;
+    markAllSeen(filtered.map((item) => item.id));
+  }, [expanded, filtered, markAllSeen]);
 
   return (
     <>
@@ -188,7 +191,7 @@ export default function RiskFlowPanel({
             )}
             {ideaCount > 0 && (
               <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-sm bg-[#c79f4a]/20 text-[#c79f4a] text-[9px] font-bold tracking-wider">
-                {ideaCount} idea{ideaCount !== 1 ? 's' : ''}
+                {ideaCount} proposal{ideaCount !== 1 ? 's' : ''}
               </span>
             )}
           </div>
@@ -215,7 +218,7 @@ export default function RiskFlowPanel({
                 ['all', `All (${alerts.length})`],
                 ['high', `High (${highCount})`],
                 ['medium', `Med (${mediumCount})`],
-                ['ideas', `Ideas (${ideaCount})`],
+                ['ideas', `Proposals (${ideaCount})`],
               ] as const).map(([key, label]) => (
                 <button
                   key={key}
@@ -240,14 +243,66 @@ export default function RiskFlowPanel({
               ) : (
                 filtered.map((alert) =>
                   alert.source === 'notion-trade-idea' && alert.tradeIdea ? (
-                    <TradeIdeaRow key={alert.id} alert={alert} onDelete={removeAlert} onOpen={setSelectedIdea} />
+                    <TradeIdeaRow
+                      key={alert.id}
+                      alert={alert}
+                      onDelete={removeAlert}
+                      onOpen={setSelectedIdea}
+                      onMarkSeen={markSeen}
+                      seen={isSeen(alert.id)}
+                    />
                   ) : (
-                    <AlertRow key={alert.id} alert={alert} onDelete={removeAlert} />
+                    <AlertRow
+                      key={alert.id}
+                      alert={alert}
+                      onDelete={removeAlert}
+                      onMarkSeen={markSeen}
+                      seen={isSeen(alert.id)}
+                    />
                   )
                 )
               )}
             </div>
           </>
+        )}
+
+        {!expanded && (
+          <div className="px-2 pb-2">
+            {collapsedPreviewItems.length === 0 ? (
+              <div className="rounded border border-zinc-800/80 bg-[#080806] px-3 py-2 text-[11px] text-zinc-600">
+                No recent items
+              </div>
+            ) : (
+              <div className="rounded border border-[#D4AF37]/20 bg-[#080806] overflow-hidden">
+                {collapsedPreviewItems.map((item, idx) => {
+                  const sev = SEVERITY_CONFIG[item.severity];
+                  const seen = isSeen(item.id);
+                  return (
+                    <a
+                      key={item.id}
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => markSeen(item.id)}
+                      className={`block px-3 py-2 ${idx < collapsedPreviewItems.length - 1 ? 'border-b border-zinc-800/80' : ''} ${seen ? 'opacity-70' : ''}`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[9px] font-semibold tracking-wider ${sev.text}`}>
+                          {sev.label}
+                        </span>
+                        <span className="text-[10px] text-zinc-500 uppercase tracking-wide">
+                          {item.source === 'notion-trade-idea' ? 'proposal' : item.source}
+                        </span>
+                      </div>
+                      <p className="mt-0.5 text-[11px] text-zinc-300 line-clamp-1">
+                        {item.headline}
+                      </p>
+                    </a>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         )}
 
         {/* Pulse animation styles */}

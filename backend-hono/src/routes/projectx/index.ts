@@ -10,6 +10,8 @@ import {
   handleGetPositions,
   handleCheckConnection,
   handleDisconnect,
+  handleGetActivity,
+  handleIngestActivityEvents,
 } from './handlers.js';
 
 export function createProjectXRoutes(): Hono {
@@ -29,6 +31,12 @@ export function createProjectXRoutes(): Hono {
 
   // POST /api/projectx/disconnect - Clear credentials
   router.post('/disconnect', handleDisconnect);
+
+  // GET /api/projectx/activity/:accountId - Aggregated activity feed
+  router.get('/activity/:accountId', handleGetActivity);
+
+  // POST /api/projectx/activity/ingest - SignalR bridge ingestion
+  router.post('/activity/ingest', handleIngestActivityEvents);
 
   return router;
 }

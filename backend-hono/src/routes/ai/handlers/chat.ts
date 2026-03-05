@@ -15,9 +15,50 @@ import { handleOpenClawChat, detectAgent } from '../../../services/openclaw-hand
 
 // Timeout for streaming responses (60 seconds)
 const STREAM_TIMEOUT_MS = 60_000
+const LOCAL_STREAM_CHUNK_SIZE = 72
+const LOCAL_STREAM_CHUNK_DELAY_MS = Number(process.env.OPENCLAW_STREAM_CHUNK_DELAY_MS ?? '18')
+const LOCAL_REASONING_CHUNK_SIZE = 52
+const LOCAL_REASONING_CHUNK_DELAY_MS = Number(process.env.OPENCLAW_REASONING_CHUNK_DELAY_MS ?? '14')
 
 // Check if we should use local OpenClaw processing
 const USE_LOCAL_OPENCLAW = process.env.USE_LOCAL_OPENCLAW !== 'false'
+
+function toAgentLabel(agent: OpenClawAgentRole): string {
+  switch (agent) {
+    case 'harper-cao':
+      return 'Harper / CAO'
+    case 'pma-1':
+      return 'PMA-1'
+    case 'pma-2':
+      return 'PMA-2'
+    case 'futures-desk':
+      return 'Futures Desk'
+    case 'fundamentals-desk':
+      return 'Fundamentals Desk'
+    default:
+      return 'PIC Analyst'
+  }
+}
+
+function buildLocalReasoningTrace(options: {
+  agent: OpenClawAgentRole
+  intent?: string
+  userMessage: string
+  symbols?: string[]
+}): string {
+  const { agent, intent, userMessage, symbols } = options
+  const compactInput = userMessage.replace(/\s+/g, ' ').trim()
+  const promptPreview = compactInput.length > 96 ? `${compactInput.slice(0, 96)}...` : compactInput
+  const symbolText = symbols && symbols.length > 0 ? symbols.join(', ') : 'none detected'
+  const intentText = intent || 'general'
+
+  return [
+    `Routing request to ${toAgentLabel(agent)} (${intentText}).`,
+    `Context scan: symbols = ${symbolText}.`,
+    `Applying P.I.C. risk and execution framework before final answer.`,
+    `User prompt focus: "${promptPreview}".`,
+  ].join('\n')
+}
 
 /**
  * POST /api/ai/chat
@@ -123,18 +164,55 @@ export async function handleChat(c: Context) {
       // Stream using AI SDK UI message event stream (SSE with JSON payloads).
       // This matches `DefaultChatTransport` on the frontend, which expects SSE JSON events.
       const uiMessageId = `assistant-${Date.now()}`
+      const uiReasoningId = `reasoning-${Date.now()}`
       const content = openclawResponse.content
+      const reasoningTrace = buildLocalReasoningTrace({
+        agent: openclawResponse.agent,
+        intent: openclawResponse.metadata?.intent,
+        userMessage: message,
+        symbols: openclawResponse.metadata?.symbols,
+      })
 
+      let cancelled = false
       const stream = new ReadableStream({
         start(controller) {
-          controller.enqueue({ type: 'text-start', id: uiMessageId })
-          const chunkSize = 64
-          for (let i = 0; i < content.length; i += chunkSize) {
-            controller.enqueue({ type: 'text-delta', id: uiMessageId, delta: content.slice(i, i + chunkSize) })
-          }
-          controller.enqueue({ type: 'text-end', id: uiMessageId })
-          controller.close()
-        }
+          ;(async () => {
+            controller.enqueue({ type: 'reasoning-start', id: uiReasoningId })
+            for (let i = 0; i < reasoningTrace.length; i += LOCAL_REASONING_CHUNK_SIZE) {
+              if (cancelled) return
+              controller.enqueue({
+                type: 'reasoning-delta',
+                id: uiReasoningId,
+                delta: reasoningTrace.slice(i, i + LOCAL_REASONING_CHUNK_SIZE),
+              })
+              await new Promise((resolve) => setTimeout(resolve, LOCAL_REASONING_CHUNK_DELAY_MS))
+            }
+            controller.enqueue({ type: 'reasoning-end', id: uiReasoningId })
+
+            controller.enqueue({ type: 'text-start', id: uiMessageId })
+            for (let i = 0; i < content.length; i += LOCAL_STREAM_CHUNK_SIZE) {
+              if (cancelled) return
+              controller.enqueue({
+                type: 'text-delta',
+                id: uiMessageId,
+                delta: content.slice(i, i + LOCAL_STREAM_CHUNK_SIZE),
+              })
+              // Keep deltas incremental so UI renders as a stream.
+              await new Promise((resolve) => setTimeout(resolve, LOCAL_STREAM_CHUNK_DELAY_MS))
+            }
+
+            if (!cancelled) {
+              controller.enqueue({ type: 'text-end', id: uiMessageId })
+              controller.close()
+            }
+          })().catch((error) => {
+            console.error(`[OpenClaw][${requestId}] Local stream error:`, error)
+            if (!cancelled) controller.error(error)
+          })
+        },
+        cancel() {
+          cancelled = true
+        },
       })
 
       return createUIMessageStreamResponse({

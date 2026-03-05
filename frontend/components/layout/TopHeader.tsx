@@ -9,10 +9,11 @@ import { IVScoreCard } from '../IVScoreCard';
 import { useBackend } from '../../lib/backend';
 import { isElectron } from '../../lib/platform';
 import { getToolbarOrder, setToolbarOrder, type ToolbarItemId } from '../../lib/layoutOrderStorage';
-import { GripVertical, Layers, ChevronDown, ChevronLeft, ChevronRight, Monitor, MessageCircle, Power, Pencil } from 'lucide-react';
+import { HeaderVoiceControl } from '../voice/HeaderVoiceControl';
+import { GripVertical, Layers, ChevronDown, ChevronLeft, ChevronRight, Monitor, MessageCircle, Power } from 'lucide-react';
 import type { TradingPlatform } from '../TopStepXBrowser';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'settings';
+type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'econ' | 'settings';
 
 const TAB_LABELS: Record<NavTab, string> = {
   executive: 'Dashboard',
@@ -21,6 +22,7 @@ const TAB_LABELS: Record<NavTab, string> = {
   news: 'RiskFlow',
   chatroom: 'Board Room',
   notion: 'Research Department',
+  econ: 'Economic Calendar',
   settings: 'Settings',
 };
 
@@ -41,14 +43,16 @@ interface TopHeaderProps {
   historyIndex?: number;
   onBack?: () => void;
   onForward?: () => void;
+  hideBranding?: boolean;
   psychAssistHeadingWidget?: React.ReactNode;
+  toolbarEditMode?: boolean;
 }
 
 export function TopHeader({
   topStepXEnabled = false,
   onTopStepXToggle,
   onTopStepXDisable,
-  selectedPlatform = 'tradesea',
+  selectedPlatform = 'topstepx',
   onPlatformSelect,
   layoutOption = 'combined',
   onLayoutOptionChange,
@@ -59,7 +63,9 @@ export function TopHeader({
   historyIndex = 0,
   onBack,
   onForward,
+  hideBranding = false,
   psychAssistHeadingWidget,
+  toolbarEditMode = false,
 }: TopHeaderProps) {
   const { tier } = useAuth();
   const backend = useBackend();
@@ -70,7 +76,6 @@ export function TopHeader({
   const [showLayoutDropdown, setShowLayoutDropdown] = useState(false);
   const [showPlatformDropdown, setShowPlatformDropdown] = useState(false);
   const [toolbarOrder, setToolbarOrderState] = useState<ToolbarItemId[]>(() => getToolbarOrder());
-  const [toolbarEditMode, setToolbarEditMode] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const platformDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -192,7 +197,7 @@ export function TopHeader({
       className={`relative bg-[#0a0a00] flex items-center justify-between pl-6 pr-6 ${topStepXEnabled && layoutOption === 'tickers-only' ? 'h-[52px]' : 'h-[56px]'}`}
     >
       <div className="flex items-center gap-6">
-        <div className="flex items-center gap-3">
+        <div className={`flex items-center gap-3 transition-opacity duration-150 ${hideBranding ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
           <div className="flex flex-col leading-tight">
             <span className="text-[12px] font-semibold tracking-[0.22em] text-[#D4AF37] uppercase">
               {instanceName}
@@ -386,15 +391,9 @@ export function TopHeader({
                 </button>
               );
             }
-            if (id === 'heartbeat') {
+            if (id === 'voice') {
               return wrapper(
-                <button
-                  className="px-2.5 h-8 rounded-full text-[10px] tracking-[0.18em] uppercase border border-emerald-500/30 text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors flex items-center gap-1.5"
-                  title="Agent Heartbeat"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse" />
-                  Heartbeat
-                </button>
+                <HeaderVoiceControl compact={topStepXEnabled && layoutOption === 'tickers-only'} />
               );
             }
             if (id === 'ivScore') {
@@ -402,17 +401,6 @@ export function TopHeader({
             }
             return null;
           })}
-          <button
-            onClick={() => setToolbarEditMode((v) => !v)}
-            className={`p-2 rounded-lg text-xs font-medium transition-colors ${
-              toolbarEditMode
-                ? 'bg-[#D4AF37] text-black hover:bg-[#D4AF37]/90'
-                : 'bg-[#050500] border border-[#D4AF37]/20 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/40'
-            }`}
-            title={toolbarEditMode ? 'Done editing toolbar order' : 'Edit toolbar order'}
-          >
-            <Pencil className="w-3.5 h-3.5" />
-          </button>
         </div>
       </div>
       {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}

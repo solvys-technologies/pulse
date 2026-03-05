@@ -1,11 +1,16 @@
 // [claude-code 2026-03-03] Phase 3: Notion API routes — NTN brief + schedule
 // [claude-code 2026-03-03] Extended: trade-ideas, performance, poll-status endpoints.
+// [claude-code 2026-03-05] Added econ-calendar sub-routes.
 import { Hono } from 'hono';
 import { fetchNTNBrief, fetchSchedule } from '../../services/notion-service.js';
 import { getTradeIdeas, getPerformance, getPollStatus } from './handlers.js';
+import { createEconCalendarRoutes } from './econ-calendar.js';
 
 export function createNotionRoutes(): Hono {
   const app = new Hono();
+
+  // Econ calendar routes (GET /econ-calendar, /econ-prints, POST /econ-print, PATCH /econ-event/:id/actual)
+  app.route('/', createEconCalendarRoutes());
 
   // GET /api/notion/ntn-brief
   app.get('/ntn-brief', async (c) => {

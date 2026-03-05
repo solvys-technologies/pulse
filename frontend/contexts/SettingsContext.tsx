@@ -115,7 +115,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     })
   );
   const [mockDataEnabled, setMockDataEnabled] = useState(() =>
-    loadFromStorage('mockDataEnabled', true)
+    loadFromStorage('mockDataEnabled', false)
   );
   const [selectedSymbol, setSelectedSymbol] = useState<TradingSymbol>(() =>
     loadFromStorage('selectedSymbol', {

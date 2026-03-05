@@ -456,15 +456,14 @@ ${kpiSection}
                   className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
                 >
                   <div
-                    className={`
-                      max-w-[80%] rounded-xl p-4 backdrop-blur-md
-                      ${message.role === "user"
-                        ? "bg-[#D4AF37]/10 border border-[#D4AF37]/20"
+                    className={[
+                      'max-w-[82%] rounded-2xl p-4 backdrop-blur-md border transition-colors',
+                      message.role === 'user'
+                        ? 'bg-[#D4AF37]/12 border-[#D4AF37]/35 shadow-[0_12px_26px_rgba(212,175,55,0.08)]'
                         : message.cancelled
-                        ? "bg-white/2 border border-white/5 opacity-50"
-                        : "bg-white/5 border border-white/10"
-                      }
-                    `}
+                        ? 'bg-white/[0.03] border-white/5 opacity-50'
+                        : 'bg-[#0f0f0b]/92 border-white/10 shadow-[0_12px_28px_rgba(0,0,0,0.35)]',
+                    ].join(' ')}
                   >
                     <div ref={(el) => { messageRefs.current[message.id] = el; }} />
                     {message.role === "assistant" ? (
@@ -512,7 +511,7 @@ ${kpiSection}
           </div>
 
           {/* Input */}
-          <div className="pt-4 pb-4 px-4 bg-[#050500]/80 backdrop-blur-md">
+          <div className="pt-4 pb-4 px-4 bg-[linear-gradient(180deg,rgba(5,5,0,0.15),rgba(5,5,0,0.88))] backdrop-blur-xl border-t border-white/5">
             <div className="relative w-full max-w-3xl mx-auto">
               {showSkills && (
                 <PulseSkillsPopup
