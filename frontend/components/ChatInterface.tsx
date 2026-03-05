@@ -16,12 +16,14 @@ import { healingBowlPlayer } from "../utils/healingBowlSounds";
 import { useSettings } from "../contexts/SettingsContext";
 import ReactMarkdown from "react-markdown";
 import { MessageRenderer } from "./chat/MessageRenderer";
+import { PulseThinkingIndicator } from "./chat/PulseThinkingIndicator";
 import QuickPulseModal from "./analysis/QuickPulseModal";
 import { PulseChatInput } from "./chat/PulseChatInput";
 import { usePulseAgents } from "../contexts/PulseAgentContext";
 import { addCheckpoint, deleteCheckpoint, listCheckpoints, type ChatCheckpoint } from "../lib/chatCheckpoints";
 import { usePersistentOpenClawConversation } from "../hooks/usePersistentOpenClawConversation";
 import { toOpenClawAgentOverride } from "../lib/openclawAgentRouting";
+import { normalizeChatMessages } from "../lib/chatMessageNormalizer";
 
 
 // [claude-code 2026-03-03] Phase 2: panel memory helper — persists open/closed state across sessions
@@ -74,6 +76,7 @@ interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
+  reasoning?: string;
   timestamp: Date;
   cancelled?: boolean;
 }
@@ -99,39 +102,6 @@ function getGreeting(): string {
   return "Good evening. What can I help with?";
 }
 
-const THINKING_TERMS = [
-  "finagling",
-  "polagaling",
-  "doodling",
-  "tinkering",
-  "pondering",
-  "mulling",
-  "ruminating",
-  "contemplating",
-  "considering",
-  "weighing",
-  "deliberating",
-  "reflecting",
-  "analyzing",
-  "assessing",
-  "evaluating",
-  "bullish momentum",
-  "uptrend confirmation",
-  "breakout potential",
-  "accumulation phase",
-  "support holding",
-  "resistance breaking",
-  "volume expansion",
-  "liquidity building",
-  "risk-on sentiment",
-  "fundamental strength",
-  "earnings beat",
-  "guidance raise",
-  "positive catalyst",
-  "momentum building",
-];
-
-
 export default function ChatInterface() {
   const backend = useBackend();
   const { alertConfig } = useSettings();
@@ -142,7 +112,6 @@ export default function ChatInterface() {
   const isSignedIn = true;
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
-  const [thinkingText, setThinkingText] = useState("");
   const [tiltWarning, setTiltWarning] = useState<TiltWarning | undefined>();
   const [showCheckpoints, setShowCheckpoints] = usePanelState('pulse:panel:checkpoints', false);
   const [checkpointVersion, setCheckpointVersion] = useState(0);
@@ -168,45 +137,51 @@ export default function ChatInterface() {
     setMessages: setUseChatMessages,
     setIsStreaming,
     stop,
+    lastError,
+    clearError,
   } = useOpenClawChat(conversationId, setConversationId, openclawAgentOverride);
 
   const isLoading = status === 'streaming' || status === 'submitted';
 
-  // Convert useChat messages to our Message format for display
-  const messages: Message[] = (useChatMessages || [])
-    .filter((msg: any) => msg.role !== 'system')
-    .map((msg: any) => {
-      // Handle potential parts array if present (multi-modal) or fallback to content string
-      // The AI SDK Message type might have parts or content.
-      let content = msg.content || '';
-      
-      // Try extracting from parts array (UI message format)
-      if (msg.parts && Array.isArray(msg.parts)) {
-        const textParts = msg.parts
-          .filter((part: any) => part.type === 'text')
-          .map((part: any) => part.text)
-          .join('');
-        if (textParts) content = textParts;
-      }
-      
-      // Fallback: if still empty, try text property
-      if (!content && msg.text) {
-        content = msg.text;
-      }
-      
-      // Debug log for message structure
-      if (!content) {
-        console.warn('[ChatInterface] Message has no content:', JSON.stringify(msg, null, 2));
-      }
-
-      return {
-        id: msg.id,
-        role: msg.role === 'user' ? 'user' : 'assistant',
-        content: content || '', // Ensure never undefined
-        timestamp: msg.createdAt || new Date(),
-        cancelled: msg.cancelled || false, // Preserve cancelled flag
-      };
+  const normalizedMessages = useMemo(
+    () => normalizeChatMessages(useChatMessages as any[]),
+    [useChatMessages]
+  );
+  const rawMessageById = useMemo(() => {
+    const map = new Map<string, any>();
+    (useChatMessages || []).forEach((msg: any) => {
+      map.set(String(msg.id), msg);
     });
+    return map;
+  }, [useChatMessages]);
+
+  // Convert useChat messages to local display shape
+  const messages: Message[] = normalizedMessages.map((msg) => {
+    const raw = rawMessageById.get(msg.id);
+    if (!msg.text) {
+      console.warn('[ChatInterface] Message has no content:', JSON.stringify(raw ?? msg, null, 2));
+    }
+    return {
+      id: msg.id,
+      role: msg.role,
+      content: msg.text,
+      reasoning: msg.reasoning || undefined,
+      timestamp: raw?.createdAt || new Date(),
+      cancelled: Boolean(raw?.cancelled),
+    };
+  });
+
+  const latestThinkingContent = useMemo(() => {
+    const lastUserIndex = messages.map((m) => m.role).lastIndexOf('user');
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const message = messages[i];
+      if (message.role !== 'assistant') continue;
+      if (i < lastUserIndex) return undefined;
+      if (message.reasoning?.trim()) return message.reasoning.trim();
+      return undefined;
+    }
+    return undefined;
+  }, [messages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -255,20 +230,6 @@ export default function ChatInterface() {
   }, [alertConfig.healingBowlSound]);
 
   useEffect(() => {
-    if (!isLoading) {
-      setThinkingText("");
-      return;
-    }
-    let currentIndex = 0;
-    setThinkingText(THINKING_TERMS[0]);
-    const interval = setInterval(() => {
-      currentIndex = (currentIndex + 1) % THINKING_TERMS.length;
-      setThinkingText(THINKING_TERMS[currentIndex]);
-    }, 2500);
-    return () => clearInterval(interval);
-  }, [isLoading]);
-
-  useEffect(() => {
     const hasUserMessages = messages.some((m) => m.role === "user");
     if (hasUserMessages) {
       setShowSuggestions(false);
@@ -280,9 +241,9 @@ export default function ChatInterface() {
     if (!messageText || isLoading) return;
 
     // Store the message before sending so we can restore it if stopped
+    clearError();
     setLastSentMessage(messageText);
     setShowSuggestions(false);
-    setThinkingText(THINKING_TERMS[0]);
 
     try {
       await sendMessage({
@@ -538,13 +499,12 @@ ${kpiSection}
                 </div>
               ))}
               {isLoading && (
-                <div className="flex justify-start items-center gap-3">
-                  <div className="relative w-6 h-6">
-                    <div className="absolute inset-0 rounded-full border-2 border-[#D4AF37]/40 animate-ping"></div>
-                    <div className="absolute inset-1 rounded-full border-2 border-[#D4AF37]/60 animate-pulse"></div>
-                    <div className="absolute inset-2 rounded-full bg-[#D4AF37]/20"></div>
-                  </div>
-                  <span className="text-sm text-[#D4AF37] font-medium">{thinkingText}</span>
+                <div className="flex justify-start items-center">
+                  <PulseThinkingIndicator
+                    isThinking
+                    thinkingContent={latestThinkingContent}
+                    agentName={activeAgent?.name}
+                  />
                 </div>
               )}
               <div ref={messagesEndRef} />
@@ -565,6 +525,11 @@ ${kpiSection}
                     return next;
                   })}
                 />
+              )}
+              {lastError && (
+                <div className="mb-2 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+                  {lastError}
+                </div>
               )}
               <PulseChatInput
                 onSend={(msg) => handleSend(msg)}
@@ -777,4 +742,3 @@ function AnalysisGreeting({ onSend, isLoading }: { onSend: (msg: string) => void
     </div>
   );
 }
-

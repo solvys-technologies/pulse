@@ -14,6 +14,7 @@ export function useOpenClawChat(
   agentOverride?: string
 ) {
   const [isStreaming, setIsStreaming] = useState(false);
+  const [lastError, setLastError] = useState<string | null>(null);
 
   const fetchFn = useCallback(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
@@ -35,12 +36,31 @@ export function useOpenClawChat(
       }
     }
 
-    const response = await fetch(fullUrl, { ...init, headers, body });
+    try {
+      const response = await fetch(fullUrl, { ...init, headers, body });
 
-    const convId = response.headers.get('X-Conversation-Id');
-    if (convId) setConversationId(convId);
+      if (!response.ok) {
+        let errText = `Chat request failed (${response.status})`;
+        try {
+          const json = await response.clone().json();
+          if (json?.error) errText = String(json.error);
+          else if (json?.message) errText = String(json.message);
+        } catch {
+          // no-op
+        }
+        setLastError(errText);
+      } else {
+        setLastError(null);
+      }
 
-    return response;
+      const convId = response.headers.get('X-Conversation-Id');
+      if (convId) setConversationId(convId);
+
+      return response;
+    } catch (error) {
+      setLastError('Cannot reach chat backend (expected on localhost:8080).');
+      throw error;
+    }
   }, [conversationId, setConversationId]);
 
   const {
@@ -65,7 +85,12 @@ export function useOpenClawChat(
       }),
     }),
     onFinish: () => setIsStreaming(false),
-    onError: () => setIsStreaming(false),
+    onError: (error) => {
+      setIsStreaming(false);
+      if (!lastError) {
+        setLastError(error instanceof Error ? error.message : 'Chat request failed');
+      }
+    },
   });
 
   return {
@@ -76,6 +101,8 @@ export function useOpenClawChat(
     isLoading: isStreaming || status === 'streaming' || status === 'submitted',
     setIsStreaming,
     stop,
+    lastError,
+    clearError: () => setLastError(null),
   };
 }
 

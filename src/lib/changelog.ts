@@ -9,6 +9,18 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-05T16:58:00.000Z',
+    agent: 'openclaw',
+    summary:
+      'Chat interface reliability patch: surfaced transport/backend errors directly in Analysis + Ask Harp chat panels, cleared stale errors on resend, and tightened gateway health checks to avoid false "Gateway connected" states when non-health HTML is returned. This makes chat failures visible instead of silently hanging and fixes misleading gateway status toasts.',
+    files: [
+      'frontend/components/chat/hooks/useOpenClawChat.ts',
+      'frontend/components/ChatInterface.tsx',
+      'frontend/components/chat/AskHarpChatPanel.tsx',
+      'frontend/contexts/GatewayContext.tsx',
+    ],
+  },
+  {
     date: '2026-03-04T22:55:00.000Z',
     agent: 'openclaw',
     summary:

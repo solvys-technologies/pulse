@@ -8,6 +8,8 @@ import { usePersistentOpenClawConversation } from '../../hooks/usePersistentOpen
 import { toOpenClawAgentOverride } from '../../lib/openclawAgentRouting';
 import { useOpenClawChat } from './hooks/useOpenClawChat';
 import { PulseChatInput } from './PulseChatInput';
+import { PulseThinkingIndicator } from './PulseThinkingIndicator';
+import { normalizeChatMessages } from '../../lib/chatMessageNormalizer';
 
 export function AskHarpChatPanel() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -16,28 +18,26 @@ export function AskHarpChatPanel() {
 
   const openclawAgentOverride = toOpenClawAgentOverride(activeAgent?.id);
   const { conversationId, setConversationId } = usePersistentOpenClawConversation(activeAgent?.id ?? 'default');
-  const { messages: rawMessages, sendMessage, status, stop } = useOpenClawChat(
+  const { messages: rawMessages, sendMessage, status, stop, lastError, clearError } = useOpenClawChat(
     conversationId,
     setConversationId,
     openclawAgentOverride
   );
 
   const messages = useMemo(() => {
-    return (rawMessages || [])
-      .filter((m: { role?: string }) => m.role !== 'system')
-      .map((m: { id?: string; role?: string; content?: string; parts?: { type: string; text?: string }[] }) => {
-        const text =
-          m.content ||
-          (Array.isArray(m.parts)
-            ? m.parts.filter((p: { type: string }) => p.type === 'text').map((p: { text?: string }) => p.text).join('')
-            : '');
-        return {
-          id: String(m.id),
-          role: m.role === 'user' ? 'user' : 'assistant',
-          text: String(text || ''),
-        } as const;
-      });
+    return normalizeChatMessages(rawMessages as any[]);
   }, [rawMessages]);
+
+  const latestThinkingContent = useMemo(() => {
+    const lastUserIndex = messages.map((m) => m.role).lastIndexOf('user');
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const message = messages[i];
+      if (message.role !== 'assistant') continue;
+      if (i < lastUserIndex) return undefined;
+      return message.reasoning.trim() || undefined;
+    }
+    return undefined;
+  }, [messages]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -49,10 +49,15 @@ export function AskHarpChatPanel() {
     async (text: string, images: string[]) => {
       const trimmed = text.trim();
       if (!trimmed || isProcessing) return;
-      await sendMessage(
-        { text: trimmed },
-        { body: { conversationId, agentOverride: openclawAgentOverride } }
-      );
+      clearError();
+      try {
+        await sendMessage(
+          { text: trimmed },
+          { body: { conversationId, agentOverride: openclawAgentOverride } }
+        );
+      } catch (error) {
+        console.error('AskHarp send failed:', error);
+      }
     },
     [sendMessage, conversationId, openclawAgentOverride, isProcessing]
   );
@@ -89,11 +94,23 @@ export function AskHarpChatPanel() {
             </div>
           </div>
         ))}
+        {isProcessing && (
+          <PulseThinkingIndicator
+            isThinking
+            thinkingContent={latestThinkingContent}
+            agentName={activeAgent?.name}
+          />
+        )}
         <div ref={messagesEndRef} />
       </div>
 
       {/* Input */}
       <div className="px-3 pb-3">
+        {lastError && (
+          <div className="mb-2 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+            {lastError}
+          </div>
+        )}
         <PulseChatInput
           onSend={handleSend}
           onStop={stop}

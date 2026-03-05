@@ -44,7 +44,9 @@ export function GatewayProvider({ children }: { children: ReactNode }) {
   const checkHealth = useCallback(async () => {
     try {
       const res = await fetch(`${GATEWAY_URL}/health`, { signal: AbortSignal.timeout(5000) });
-      if (res.ok) {
+      const contentType = res.headers.get('content-type') || '';
+      const looksLikeJson = contentType.includes('application/json');
+      if (res.ok && looksLikeJson) {
         const wasDisconnected = status === 'disconnected' || status === 'error' || status === 'connecting';
         setStatus('connected');
         setLastHealthCheck(new Date().toISOString());
