@@ -498,7 +498,7 @@ ${kpiSection}
                   </div>
                 </div>
               ))}
-              {isLoading && (
+              {(isLoading || !!latestThinkingContent) && (
                 <div className="flex justify-start items-center">
                   <PulseThinkingIndicator
                     isThinking

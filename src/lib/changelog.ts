@@ -9,6 +9,17 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-05T18:03:00.000Z',
+    agent: 'openclaw',
+    summary:
+      'Chat UI thinking pass (Analysis + Ask Harp): added radar pulse indicator, expanded finance thinking phrase set, and kept thinking pane visible when reasoning is present so users can inspect model thought stream after response completes.',
+    files: [
+      'frontend/components/chat/PulseThinkingIndicator.tsx',
+      'frontend/components/ChatInterface.tsx',
+      'frontend/components/chat/AskHarpChatPanel.tsx',
+    ],
+  },
+  {
     date: '2026-03-05T16:58:00.000Z',
     agent: 'openclaw',
     summary:

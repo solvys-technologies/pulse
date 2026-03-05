@@ -1,10 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 
-/* ------------------------------------------------------------------ */
-/*  Finance thinking phrases                                           */
-/* ------------------------------------------------------------------ */
-
 const THINKING_PHRASES = [
   'Scanning the tape...',
   'Running risk models...',
@@ -16,21 +12,18 @@ const THINKING_PHRASES = [
   'Processing market signals...',
   'Cross-referencing events...',
   'Calculating exposure...',
+  'Mapping liquidity pockets...',
+  'Tracking implied vol drift...',
+  'Pricing catalyst risk...',
+  'Calibrating entry zones...',
+  'Stress-testing conviction...',
 ];
-
-/* ------------------------------------------------------------------ */
-/*  Props                                                              */
-/* ------------------------------------------------------------------ */
 
 interface PulseThinkingIndicatorProps {
   isThinking: boolean;
-  thinkingContent?: string; // Streamed inner monologue from gateway
+  thinkingContent?: string;
   agentName?: string;
 }
-
-/* ------------------------------------------------------------------ */
-/*  Component                                                          */
-/* ------------------------------------------------------------------ */
 
 export function PulseThinkingIndicator({ isThinking, thinkingContent, agentName }: PulseThinkingIndicatorProps) {
   const [phrase, setPhrase] = useState(THINKING_PHRASES[0]);
@@ -43,60 +36,64 @@ export function PulseThinkingIndicator({ isThinking, thinkingContent, agentName 
     const interval = setInterval(() => {
       idx = (idx + 1) % THINKING_PHRASES.length;
       setPhrase(THINKING_PHRASES[idx]);
-    }, 2500);
+    }, 2000);
     return () => clearInterval(interval);
   }, [isThinking]);
 
   if (!isThinking) return null;
 
   return (
-    <div className="flex items-start gap-3 py-2">
-      {/* Gold spinner */}
-      <div className="relative flex-shrink-0" style={{ width: '24px', height: '24px', marginTop: '2px' }}>
-        <div
-          className="absolute inset-0 rounded-full border-2 border-transparent animate-spin"
-          style={{
-            borderTopColor: '#D4AF37',
-            borderRightColor: 'rgba(212,175,55,0.3)',
-            animationDuration: '1s',
-          }}
-        />
-        <div
-          className="absolute rounded-full bg-[#D4AF37]/20"
-          style={{ inset: '6px' }}
-        />
-      </div>
-
-      <div className="flex-1 min-w-0">
-        {/* Status line */}
-        <div className="flex items-center gap-2">
-          <span className="text-[13px] text-[#D4AF37] font-medium">{phrase}</span>
-          {agentName && (
-            <span className="text-[10px] text-gray-600">({agentName})</span>
-          )}
+    <div className="w-full rounded-xl border border-[#D4AF37]/25 bg-[#090904] px-3 py-2.5">
+      <div className="flex items-start gap-3">
+        {/* Radar pulse */}
+        <div className="relative mt-0.5 h-6 w-6 flex-shrink-0">
+          <div className="absolute inset-0 rounded-full border border-[#D4AF37]/60 pulse-radar-ring-1" />
+          <div className="absolute inset-[3px] rounded-full border border-[#D4AF37]/40 pulse-radar-ring-2" />
+          <div className="absolute inset-[7px] rounded-full bg-[#D4AF37]/70 pulse-radar-dot" />
         </div>
 
-        {/* Expandable thinking content */}
-        {thinkingContent && (
-          <div className="mt-1.5">
-            <button
-              onClick={() => setExpanded(!expanded)}
-              className="flex items-center gap-1 text-[11px] text-gray-500 hover:text-gray-400 transition-colors"
-            >
-              {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-              {expanded ? 'Hide reasoning' : 'Show reasoning'}
-            </button>
-            {expanded && (
-              <div
-                className="mt-1.5 text-[12px] text-gray-500 leading-relaxed border-l-2 border-[#D4AF37]/20 max-h-[200px] overflow-y-auto"
-                style={{ paddingLeft: '10px' }}
-              >
-                {thinkingContent}
-              </div>
-            )}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="text-[12px] font-medium text-[#D4AF37]">{phrase}</span>
+            {agentName && <span className="text-[10px] text-zinc-500">({agentName})</span>}
           </div>
-        )}
+
+          {thinkingContent && (
+            <div className="mt-1.5">
+              <button
+                onClick={() => setExpanded((v) => !v)}
+                className="flex items-center gap-1 text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors"
+              >
+                {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                {expanded ? 'Hide thinking pane' : 'Show thinking pane'}
+              </button>
+              {expanded && (
+                <div className="mt-1.5 max-h-[180px] overflow-y-auto border-l border-[#D4AF37]/25 pl-2 text-[11px] leading-relaxed text-zinc-400 whitespace-pre-wrap">
+                  {thinkingContent}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
+
+      <style>{`
+        .pulse-radar-ring-1 { animation: pulseRadar1 1.6s ease-out infinite; }
+        .pulse-radar-ring-2 { animation: pulseRadar2 1.6s ease-out infinite; }
+        .pulse-radar-dot { animation: pulseRadarDot 1.2s ease-in-out infinite; }
+        @keyframes pulseRadar1 {
+          0% { transform: scale(0.75); opacity: 0.9; }
+          100% { transform: scale(1.25); opacity: 0.1; }
+        }
+        @keyframes pulseRadar2 {
+          0% { transform: scale(0.8); opacity: 0.65; }
+          100% { transform: scale(1.15); opacity: 0.08; }
+        }
+        @keyframes pulseRadarDot {
+          0%, 100% { opacity: 0.45; }
+          50% { opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }

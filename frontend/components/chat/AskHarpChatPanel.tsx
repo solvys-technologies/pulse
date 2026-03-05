@@ -94,7 +94,7 @@ export function AskHarpChatPanel() {
             </div>
           </div>
         ))}
-        {isProcessing && (
+        {(isProcessing || !!latestThinkingContent) && (
           <PulseThinkingIndicator
             isThinking
             thinkingContent={latestThinkingContent}
