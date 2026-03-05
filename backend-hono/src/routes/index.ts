@@ -18,6 +18,8 @@ import { createPolymarketRoutes } from './polymarket/index.js';
 import { createBoardroomRoutes } from './boardroom/index.js';
 import { createRithmicRoutes } from './rithmic/index.js';
 import { createNotionRoutes } from './notion/index.js';
+import { createERRoutes } from './er/index.js';
+import { createVoiceRoutes } from './voice/index.js';
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -29,21 +31,36 @@ export function registerRoutes(app: Hono): void {
 
   // Protected routes (auth required) — use base path so exact path (e.g. GET /api/account) is covered
   app.use('/api/account', authMiddleware);
+  app.use('/api/account/*', authMiddleware);
   app.use('/api/notifications', authMiddleware);
+  app.use('/api/notifications/*', authMiddleware);
   app.use('/api/trading', authMiddleware);
+  app.use('/api/trading/*', authMiddleware);
   app.use('/api/projectx', authMiddleware);
+  app.use('/api/projectx/*', authMiddleware);
   app.use('/api/rithmic', authMiddleware);
+  app.use('/api/rithmic/*', authMiddleware);
   // RiskFlow routes - exclude cron endpoint from auth
-  app.use('/api/riskflow', async (c, next) => {
+  const riskflowAuth = async (c: Parameters<typeof authMiddleware>[0], next: Parameters<typeof authMiddleware>[1]) => {
     if (c.req.path.includes('/cron/')) {
       return next();
     }
     return authMiddleware(c, next);
-  });
+  };
+  app.use('/api/riskflow', riskflowAuth);
+  app.use('/api/riskflow/*', riskflowAuth);
   app.use('/api/psych', authMiddleware);
+  app.use('/api/psych/*', authMiddleware);
   app.use('/api/ai', authMiddleware);
+  app.use('/api/ai/*', authMiddleware);
   app.use('/api/agents', authMiddleware);
+  app.use('/api/agents/*', authMiddleware);
   app.use('/api/polymarket', authMiddleware);
+  app.use('/api/polymarket/*', authMiddleware);
+  app.use('/api/er', authMiddleware);
+  app.use('/api/er/*', authMiddleware);
+  app.use('/api/voice', authMiddleware);
+  app.use('/api/voice/*', authMiddleware);
 
   // Phase 1: Account routes
   app.route('/api/account', createAccountRoutes());
@@ -74,4 +91,10 @@ export function registerRoutes(app: Hono): void {
 
   // Polymarket routes
   app.route('/api/polymarket', createPolymarketRoutes());
+
+  // ER telemetry routes
+  app.route('/api/er', createERRoutes());
+
+  // Voice assistant routes
+  app.route('/api/voice', createVoiceRoutes());
 }

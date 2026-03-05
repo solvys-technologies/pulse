@@ -9,6 +9,27 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-04T22:55:00.000Z',
+    agent: 'openclaw',
+    summary:
+      'Fixed protected API auth middleware matching so nested routes are actually authenticated (added wildcard middleware for /api/* groups, including /api/ai/* and /api/riskflow/*). This resolves Pulse agent chat unauthorized failures where c.get("userId") was undefined in /api/ai/chat.',
+    files: ['backend-hono/src/routes/index.ts'],
+  },
+  {
+    date: '2026-03-04T17:02:00.000Z',
+    agent: 'claude-code',
+    summary:
+      'FortyFortyClub uploaded to QuantConnect (project 28682111), compiled successfully, baseline backtest launched. Fixed QC enum names: INTERACTIVE_BROKERS_BROKERAGE→QUANT_CONNECT_BROKERAGE (live uses Rithmic/Lucid), MICRO_NASDAQ100_E_MINI→MICRO_NASDAQ_100_E_MINI, SP500_E_MINI→SP_500_E_MINI. Confirmation instrument is /ES (full-size), not /MES.',
+    files: ['quantconnect/FortyFortyClub/main.py'],
+  },
+  {
+    date: '2026-03-04T12:00:00.000Z',
+    agent: 'claude-code',
+    summary:
+      'Phase I: FortyFortyClub QC algorithm — full implementation. Liquidity sweep reversal on /MNQ with Antilag (tick velocity + NQ/ES alignment) confirmation. Includes: fib sweep detection (20-candle swing H/L), 4-phase trailing stop, scale-in logic (+5 micros at ATR≥55% from 100 EMA), PDPT lockout ($1,550 combine mode), news blackout (120s), and daily reset. Ready for upload to QuantConnect via qc-mcp once Docker/MCP connected.',
+    files: ['quantconnect/FortyFortyClub/main.py'],
+  },
+  {
     date: '2026-03-03T23:00:00.000Z',
     agent: 'claude-code',
     summary:
