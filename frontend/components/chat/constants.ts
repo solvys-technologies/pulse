@@ -4,7 +4,7 @@
  */
 
 export const SUGGESTION_CHIPS = [
-  { label: "Run the NTN report", prompt: "Run the NTN report" },
+  { label: "Run the MDB report", prompt: "Run the MDB report" },
   { label: "Give me the Tale of the Tape (Weekly Summary)", prompt: "Give me the Tale of the Tape (Weekly Summary)" },
   { label: "Let's do a psych eval", prompt: "Let's do a psych eval" },
   { label: "How's my ER this week?", prompt: "How's my ER this week?" },

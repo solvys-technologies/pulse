@@ -9,6 +9,7 @@ import {
   Save,
   Play,
   Filter,
+  Download,
 } from 'lucide-react';
 import type { NarrativeFlowState, ZoomLevel, CatalystSentiment, CatalystTemplateType } from '../../lib/narrative-types';
 import { formatWeekLabel, shiftWeek } from '../../lib/narrative-time';
@@ -21,6 +22,7 @@ interface NarrativeToolbarProps {
   onSave: () => void;
   onUndo: () => void;
   hasSnapshot: boolean;
+  onImport: () => void;
 }
 
 const ZOOM_LEVELS: { value: ZoomLevel; label: string }[] = [
@@ -36,7 +38,7 @@ const SENTIMENT_OPTIONS: { value: CatalystSentiment | 'all'; label: string }[] =
   { value: 'bearish', label: 'Bearish' },
 ];
 
-export function NarrativeToolbar({ state, dispatch, onSave, onUndo, hasSnapshot }: NarrativeToolbarProps) {
+export function NarrativeToolbar({ state, dispatch, onSave, onUndo, hasSnapshot, onImport }: NarrativeToolbarProps) {
   const [templateMenuOpen, setTemplateMenuOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const addBtnRef = useRef<HTMLButtonElement>(null);
@@ -191,6 +193,15 @@ export function NarrativeToolbar({ state, dispatch, onSave, onUndo, hasSnapshot 
           }}
           anchorPosition={getAnchorPos(addBtnRef)}
         />
+
+        {/* Import from RiskFlow */}
+        <button
+          onClick={onImport}
+          className="p-1.5 rounded text-[var(--pulse-muted)] hover:text-[var(--pulse-accent)] hover:bg-[var(--pulse-accent)]/10 transition-colors"
+          title="Import catalysts from RiskFlow"
+        >
+          <Download className="w-3.5 h-3.5" />
+        </button>
 
         {/* Undo */}
         <button

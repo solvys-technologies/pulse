@@ -64,7 +64,7 @@ Provide fundamental analysis and fair value assessments.`
 // Intent detection patterns
 const INTENT_PATTERNS: { pattern: RegExp; agent: OpenClawAgentRole; intent: string }[] = [
   // Harper/CAO triggers
-  { pattern: /\b(ntn|need.?to.?know|daily.?report|morning.?brief)/i, agent: 'harper-cao', intent: 'ntn-report' },
+  { pattern: /\b(mdb|morning.?daily.?brief|daily.?report|morning.?brief)/i, agent: 'harper-cao', intent: 'mdb-report' },
   { pattern: /\b(trade.?approval|approve|reject|consolidat)/i, agent: 'harper-cao', intent: 'approval' },
   { pattern: /\b(commandment|rule|13|trading.?rules)/i, agent: 'harper-cao', intent: 'rules' },
   { pattern: /\b(psych|tilt|emotion|mental|eval)/i, agent: 'harper-cao', intent: 'psych-eval' },
@@ -150,8 +150,8 @@ export function generateLocalResponse(
   let riskLevel: 'low' | 'medium' | 'high' | undefined
 
   switch (intent) {
-    case 'ntn-report':
-      content = generateNTNReport()
+    case 'mdb-report':
+      content = generateMDBReport()
       break
 
     case 'weekly-recap':
@@ -210,9 +210,9 @@ export function generateLocalResponse(
 
 // Response generators for different intents
 
-function generateNTNReport(): string {
+function generateMDBReport(): string {
   const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-  return `## 📋 NTN Report - ${time}
+  return `## 📋 MDB Report - ${time}
 
 ### Market Status
 - **Session**: Pre-market / Regular Hours / After Hours
@@ -419,14 +419,14 @@ I'm ${agentName}, part of the OpenClaw P.I.C. agent network.
 Your message has been received. Here's what I can help with:
 
 **My Capabilities:**
-${agent === 'harper-cao' ? '- NTN Reports & Daily Briefings\n- Trade Approvals\n- Psych Evaluations\n- Trading Rules & Discipline' : ''}
+${agent === 'harper-cao' ? '- MDB Reports & Daily Briefings\n- Trade Approvals\n- Psych Evaluations\n- Trading Rules & Discipline' : ''}
 ${agent === 'pma-1' ? '- S&P 500 prediction markets\n- Crypto analysis\n- Kalshi contract evaluation' : ''}
 ${agent === 'pma-2' ? '- Fed/FOMC analysis\n- Political event impact\n- Economic data interpretation' : ''}
 ${agent === 'futures-desk' ? '- /NQ, /ES, /MNQ trading\n- FA Ripper setups\n- Technical analysis' : ''}
 ${agent === 'fundamentals-desk' ? '- Mega-cap tech analysis\n- Earnings deep-dives\n- Valuation models' : ''}
 
 **Try asking:**
-- "Run the NTN report"
+- "Run the MDB report"
 - "What's the setup on /NQ?"
 - "Check my ER status"
 

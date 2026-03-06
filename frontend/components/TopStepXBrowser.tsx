@@ -1,5 +1,6 @@
-// [claude-code 2026-03-05] Phase 2A: Removed header — controls moved to FooterToolbar
+// [claude-code 2026-03-06] Phase 2A: Removed header — controls moved to FooterToolbar
 import { EmbeddedBrowserFrame } from './layout/EmbeddedBrowserFrame';
+import { useSettings } from '../contexts/SettingsContext';
 
 export type TradingPlatform = 'topstepx' | 'tradelocker' | 'kalshi' | 'research' | 'tradesea';
 
@@ -35,8 +36,13 @@ export function TopStepXBrowser({
   splitViewEnabled,
   allowSplitView,
 }: TopStepXBrowserProps) {
-  const primaryUrl = PLATFORM_URLS[primaryPlatform];
-  const secondaryUrl = PLATFORM_URLS[secondaryPlatform];
+  const { iframeUrls } = useSettings();
+  const platformUrls = {
+    ...PLATFORM_URLS,
+    research: iframeUrls.research || PLATFORM_URLS.research,
+  };
+  const primaryUrl = platformUrls[primaryPlatform];
+  const secondaryUrl = platformUrls[secondaryPlatform];
 
   return (
     <div className="h-full w-full bg-[#0a0a00] overflow-hidden">

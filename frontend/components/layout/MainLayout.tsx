@@ -28,6 +28,7 @@ import { useRiskFlow } from '../../contexts/RiskFlowContext';
 import { SearchModal } from '../search/SearchModal';
 import { AskHarpChatPanel } from '../chat/AskHarpChatPanel';
 import { SettingsPage } from '../SettingsPanel';
+import { useSettings } from '../../contexts/SettingsContext';
 import { PsychAssistDockable, type PsychAssistDockTarget } from './PsychAssistDockable';
 import { FooterToolbar } from './FooterToolbar';
 import { EmbeddedBrowserFrame } from './EmbeddedBrowserFrame';
@@ -58,6 +59,7 @@ function normalizeOrder<T extends string>(order: T[], defaults: readonly T[]): T
 
 // Main layout component - no authentication needed
 export function MainLayout() {
+  const { iframeUrls } = useSettings();
   const [activeTab, setActiveTab] = useState<NavTab>('executive');
   const [layoutEditMode, setLayoutEditMode] = useState(false);
   const [missionControlCollapsed, setMissionControlCollapsed] = useState(false);
@@ -773,7 +775,7 @@ export function MainLayout() {
       {!topStepXEnabled && (
         <div style={{ position: 'fixed', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden' }}>
           <EmbeddedBrowserFrame title="TopStepX (preload)" src="https://www.topstepx.com" />
-          <EmbeddedBrowserFrame title="Research (preload)" src={import.meta.env.VITE_NOTION_RESEARCH_URL || 'https://www.notion.so'} />
+          <EmbeddedBrowserFrame title="Research (preload)" src={iframeUrls.research || import.meta.env.VITE_NOTION_RESEARCH_URL || 'https://www.notion.so'} />
         </div>
       )}
 

@@ -1,4 +1,4 @@
-import { Settings, Bell, CreditCard, Cpu, Code, Volume2, Terminal, Wifi, Palette, Users, AlertTriangle, ArrowLeft } from 'lucide-react';
+import { Settings, Bell, CreditCard, Cpu, Code, Volume2, Terminal, Wifi, Palette, Users, AlertTriangle, ArrowLeft, Globe } from 'lucide-react';
 import { useSettings, type APIKeys } from '../contexts/SettingsContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useGateway } from '../contexts/GatewayContext';
@@ -11,7 +11,7 @@ import { HEALING_BOWL_SOUNDS, healingBowlPlayer } from '../utils/healingBowlSoun
 import { ClawnalystDesk } from './settings/ClawnalystDesk';
 import { ThemeSettings } from './settings/ThemeSettings';
 
-type SettingsTab = 'general' | 'gateway' | 'appearance' | 'desk' | 'notifications' | 'trading' | 'api' | 'developer' | 'danger';
+type SettingsTab = 'general' | 'gateway' | 'appearance' | 'desk' | 'notifications' | 'trading' | 'api' | 'iframes' | 'developer' | 'danger';
 
 export function SettingsPage() {
   const { tier, setTier, isAuthenticated } = useAuth();
@@ -34,6 +34,8 @@ export function SettingsPage() {
     setAutoPilotSettings,
     primaryBroker,
     setPrimaryBroker,
+    iframeUrls,
+    setIframeUrls,
   } = useSettings();
   const backend = useBackend();
   const [contractsPerTrade, setContractsPerTrade] = useState<number>(1);
@@ -99,22 +101,23 @@ export function SettingsPage() {
     setIsSaving(true);
     setSaveMessage(null);
     try {
-      // Save risk settings, selected symbol, and contracts per trade
-      await backend.account.updateSettings({
-        dailyTarget: riskSettings.dailyProfitTarget,
-        dailyLossLimit: riskSettings.dailyLossLimit,
-        topstepxUsername: apiKeys.topstepxUsername,
-        topstepxApiKey: apiKeys.topstepxApiKey,
-        selectedSymbol: selectedSymbol.symbol, // Save selected symbol to database for algorithm
-        contractsPerTrade: contractsPerTrade, // Save contracts per trade for algorithm
-      });
-
-      // Save ProjectX credentials if provided
-      if (apiKeys.topstepxUsername || apiKeys.topstepxApiKey) {
-        await backend.account.updateProjectXCredentials({
-          username: apiKeys.topstepxUsername || undefined,
-          apiKey: apiKeys.topstepxApiKey || undefined,
+      // Sync to backend only when authenticated
+      if (isAuthenticated) {
+        await backend.account.updateSettings({
+          dailyTarget: riskSettings.dailyProfitTarget,
+          dailyLossLimit: riskSettings.dailyLossLimit,
+          topstepxUsername: apiKeys.topstepxUsername,
+          topstepxApiKey: apiKeys.topstepxApiKey,
+          selectedSymbol: selectedSymbol.symbol,
+          contractsPerTrade: contractsPerTrade,
         });
+
+        if (apiKeys.topstepxUsername || apiKeys.topstepxApiKey) {
+          await backend.account.updateProjectXCredentials({
+            username: apiKeys.topstepxUsername || undefined,
+            apiKey: apiKeys.topstepxApiKey || undefined,
+          });
+        }
       }
 
       setSaveMessage('Settings saved successfully!');
@@ -163,6 +166,7 @@ export function SettingsPage() {
     { id: 'trading' as const, label: 'Trading', icon: Cpu, description: 'Risk management, autopilot, and strategy toggles' },
     { id: 'notifications' as const, label: 'Notifications', icon: Bell, description: 'Alerts, sounds, and notification preferences' },
     { id: 'api' as const, label: 'API Keys', icon: Code, description: 'TopstepX credentials and external service keys' },
+    { id: 'iframes' as const, label: 'iFrames', icon: Globe, description: 'Notion embed URLs for Boardroom, Research, and more' },
     { id: 'developer' as const, label: 'Developer', icon: Terminal, description: 'Mock data, test tools, and tier management' },
     { id: 'danger' as const, label: 'Danger Zone', icon: AlertTriangle, description: 'Reset analysts, clear data, and export config' },
   ];
@@ -722,6 +726,39 @@ export function SettingsPage() {
                     <p className="text-xs text-gray-500">
                       Sign up at <a href="https://topstepx.com" target="_blank" rel="noopener noreferrer" className="text-[#D4AF37] hover:underline">topstepx.com</a> and contact support for API access
                     </p>
+                  </div>
+                </section>
+              </div>
+            )}
+
+            {activeTab === 'iframes' && (
+              <div key="iframes" className={tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}>
+                <section>
+                  <h3 className="text-sm font-semibold text-[#D4AF37] mb-4">iFrames</h3>
+                  <p className="text-xs text-gray-500 mb-4">Set Notion page URLs for embedded views. Leave blank to use defaults from environment variables.</p>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm text-gray-300 mb-2">Boardroom URL</label>
+                      <input
+                        type="url"
+                        value={iframeUrls.boardroom}
+                        onChange={(e) => setIframeUrls({ ...iframeUrls, boardroom: e.target.value })}
+                        placeholder={import.meta.env.VITE_NOTION_BOARDROOM_URL || 'https://www.notion.so/your-boardroom-page'}
+                        className="w-full bg-[#0a0a00] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#D4AF37]/30 placeholder:text-zinc-600"
+                      />
+                      <p className="text-[10px] text-gray-600 mt-1">Embedded in the Board Room tab</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-300 mb-2">Research URL</label>
+                      <input
+                        type="url"
+                        value={iframeUrls.research}
+                        onChange={(e) => setIframeUrls({ ...iframeUrls, research: e.target.value })}
+                        placeholder={import.meta.env.VITE_NOTION_RESEARCH_URL || 'https://www.notion.so/your-research-page'}
+                        className="w-full bg-[#0a0a00] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#D4AF37]/30 placeholder:text-zinc-600"
+                      />
+                      <p className="text-[10px] text-gray-600 mt-1">Embedded in the Research tab and preloaded browser</p>
+                    </div>
                   </div>
                 </section>
               </div>

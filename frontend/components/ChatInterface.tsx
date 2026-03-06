@@ -115,7 +115,7 @@ export default function ChatInterface() {
   return (
     <div className="h-full flex flex-col">
       <ChatHeader
-        onRunNTN={() => send('Run the NTN report')}
+        onRunMDB={() => send('Run the MDB report')}
         onNewChat={handleNewChat}
         onToggleCheckpoints={() => setShowCheckpoints((v) => !v)}
         showCheckpoints={showCheckpoints}

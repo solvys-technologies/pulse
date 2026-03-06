@@ -92,7 +92,13 @@ export function useOpenClawChat(
     onError: (error) => {
       setIsStreaming(false);
       if (!lastError) {
-        setLastError(error instanceof Error ? error.message : 'Chat request failed');
+        const msg = error instanceof Error ? error.message : 'Chat request failed';
+        // Replace browser-level network errors with a friendlier message
+        if (/failed to fetch|networkerror|load failed/i.test(msg)) {
+          setLastError('Backend unavailable — start it with `cd backend-hono && npm run dev`');
+        } else {
+          setLastError(msg);
+        }
       }
     },
   });

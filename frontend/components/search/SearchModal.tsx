@@ -95,7 +95,7 @@ export function SearchModal({ open, onClose, onNavigateTab }: SearchModalProps) 
     });
 
     // Static report items
-    const reports = ['NTN Report', 'Weekly Tape Summary', 'Psych Eval', 'Blindspots'];
+    const reports = ['MDB Report', 'Weekly Tape Summary', 'Psych Eval', 'Blindspots'];
     reports.forEach((r) => {
       if (r.toLowerCase().includes(q)) {
         matched.push({

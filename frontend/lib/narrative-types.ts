@@ -1,6 +1,6 @@
 // [claude-code 2026-03-06] NarrativeFlow shared types — all tracks import from here
 export type CatalystSentiment = 'bullish' | 'bearish';
-export type CatalystSource = 'rss' | 'user' | 'agent';
+export type CatalystSource = 'rss' | 'user' | 'agent' | 'riskflow' | 'brief';
 export type CatalystSeverity = 'high' | 'medium' | 'low';
 export type NarrativeStatus = 'active' | 'watching' | 'archived' | 'decayed';
 export type DirectionBias = 'long' | 'short' | 'neutral';
@@ -126,5 +126,6 @@ export type NarrativeAction =
   | { type: 'TOGGLE_HEATMAP' }
   | { type: 'SET_REPLAY_MODE'; enabled: boolean }
   | { type: 'SET_REPLAY_POSITION'; position: number }
+  | { type: 'IMPORT_CATALYSTS'; catalysts: Omit<CatalystCard, 'id' | 'createdAt' | 'updatedAt'>[] }
   | { type: 'TAKE_SNAPSHOT' }
   | { type: 'RESTORE_SNAPSHOT' };

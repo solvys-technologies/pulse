@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { InterventionSidebar } from './InterventionSidebar';
 import { useBoardroom } from '../hooks/useBoardroom';
 import { EmbeddedBrowserFrame } from './layout/EmbeddedBrowserFrame';
+import { useSettings } from '../contexts/SettingsContext';
 
 type BoardroomMeetingSchedule = {
   nowIso: string;
@@ -23,7 +24,9 @@ export function BoardroomView() {
     sendMention,
   } = useBoardroom();
 
+  const { iframeUrls } = useSettings();
   const notionBoardroomUrl =
+    iframeUrls.boardroom ||
     import.meta.env.VITE_NOTION_BOARDROOM_URL ||
     'https://www.notion.so/d0b5029cf01f4a5d86932ea0c138d44f';
 

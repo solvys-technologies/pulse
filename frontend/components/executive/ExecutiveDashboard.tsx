@@ -24,16 +24,16 @@ export function ExecutiveDashboard() {
   const [ntnLoaded, setNtnLoaded] = useState(false);
   const [kpisLoaded, setKpisLoaded] = useState(false);
 
-  // Need-to-Know brief from Notion / AI-only sources
+  // Morning Daily Brief from Notion / AI-only sources
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       try {
-        const items = await backend.notion.getNtnBrief();
+        const items = await backend.notion.getMdbBrief();
         if (cancelled) return;
         setNtnText(items.map((i) => `• ${i.title} — ${i.detail}`).join('\n\n'));
       } catch (error) {
-        console.warn('[Dashboard] NTN brief fetch failed:', error);
+        console.warn('[Dashboard] MDB brief fetch failed:', error);
         if (!cancelled) setNtnText('');
       } finally {
         if (!cancelled) setNtnLoaded(true);

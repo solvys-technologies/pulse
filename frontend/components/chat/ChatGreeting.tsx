@@ -3,7 +3,7 @@ import { BarChart3, CalendarCheck, Brain, Eye } from 'lucide-react';
 import { usePulseAgents } from '../../contexts/PulseAgentContext';
 
 const SUGGESTION_CHIPS: { label: string; prompt: string; icon: typeof BarChart3 }[] = [
-  { label: "Run the NTN Report", prompt: "Run the NTN report", icon: BarChart3 },
+  { label: "Run the MDB Report", prompt: "Run the MDB report", icon: BarChart3 },
   { label: "Tale of the Tape", prompt: "Give me the Tale of the Tape (Weekly Summary)", icon: CalendarCheck },
   { label: "Psych Eval", prompt: "Let's do a psych eval", icon: Brain },
   { label: "Update my Blindspots", prompt: "Update my Blindspots", icon: Eye },

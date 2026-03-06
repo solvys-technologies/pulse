@@ -20,11 +20,11 @@ const BULLISH_THINKING_TERMS = [
   "weighing risk...",
 ];
 
-interface NTNReportModalProps {
+interface MDBReportModalProps {
   onClose: () => void;
 }
 
-export function NTNReportModal({ onClose }: NTNReportModalProps) {
+export function MDBReportModal({ onClose }: MDBReportModalProps) {
   const backend = useBackend();
   const [isLoading, setIsLoading] = useState(true);
   const [thinkingText, setThinkingText] = useState(BULLISH_THINKING_TERMS[0]);
@@ -50,16 +50,16 @@ export function NTNReportModal({ onClose }: NTNReportModalProps) {
     return () => clearInterval(interval);
   }, [isLoading]);
 
-  // Fetch NTN report on mount
+  // Fetch MDB report on mount
   useEffect(() => {
     const fetchReport = async () => {
       try {
-        // Use the dedicated NTN report endpoint (with persistence)
-        const response = await backend.ai.generateNTNReport();
+        // Use the dedicated MDB report endpoint (with persistence)
+        const response = await backend.ai.generateMDBReport();
         setReport(response.report.content);
         // Note: Report is now persisted to database automatically
       } catch (err) {
-        console.error("Failed to fetch NTN report:", err);
+        console.error("Failed to fetch MDB report:", err);
         setError("Failed to generate report. Please try again.");
       } finally {
         setIsLoading(false);
@@ -75,8 +75,8 @@ export function NTNReportModal({ onClose }: NTNReportModalProps) {
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-zinc-900">
           <div className="flex items-center gap-3">
-            <h2 className="text-lg font-bold text-[#D4AF37]">NTN Report</h2>
-            <span className="text-xs text-zinc-500">Need-to-Know Market Risk</span>
+            <h2 className="text-lg font-bold text-[#D4AF37]">MDB Report</h2>
+            <span className="text-xs text-zinc-500">Morning Daily Brief</span>
           </div>
           <button
             onClick={handleClose}

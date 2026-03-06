@@ -7,12 +7,14 @@ import { toOpenClawAgentOverride } from '../../lib/openclawAgentRouting';
 import { usePersistentOpenClawConversation } from '../../hooks/usePersistentOpenClawConversation';
 import { PulseThinkingIndicator } from '../chat/PulseThinkingIndicator';
 import { normalizeChatMessages } from '../../lib/chatMessageNormalizer';
+import { useSettings } from '../../contexts/SettingsContext';
 
 export function ResearchDepartment() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [inputText, setInputText] = useState('');
   const [thinkHarder, setThinkHarder] = useState(false);
-  const notionResearchUrl = import.meta.env.VITE_NOTION_RESEARCH_URL || 'https://www.notion.so';
+  const { iframeUrls } = useSettings();
+  const notionResearchUrl = iframeUrls.research || import.meta.env.VITE_NOTION_RESEARCH_URL || 'https://www.notion.so';
 
   let activeAgent: { name: string; icon: string } | null = null;
   try {

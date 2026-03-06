@@ -7,10 +7,12 @@ import NarrativeMonthView from './NarrativeMonthView';
 import { NarrativeCanvasView } from './NarrativeCanvasView';
 import { TimelineScrubber } from './TimelineScrubber';
 import { NarrativeSaveModal } from './NarrativeSaveModal';
+import { RiskFlowImportModal } from './RiskFlowImportModal';
 
 export function NarrativeFlow() {
   const { state, snapshot, dispatch } = useNarrative();
   const [saveModalOpen, setSaveModalOpen] = useState(false);
+  const [importModalOpen, setImportModalOpen] = useState(false);
 
   const handleSave = useCallback(() => {
     setSaveModalOpen(true);
@@ -19,6 +21,10 @@ export function NarrativeFlow() {
   const handleConfirmSave = useCallback(() => {
     dispatch({ type: 'TAKE_SNAPSHOT' });
     setSaveModalOpen(false);
+  }, [dispatch]);
+
+  const handleImportCatalysts = useCallback((catalysts: any[]) => {
+    dispatch({ type: 'IMPORT_CATALYSTS', catalysts });
   }, [dispatch]);
 
   const handleUndo = useCallback(() => {
@@ -35,6 +41,7 @@ export function NarrativeFlow() {
         onSave={handleSave}
         onUndo={handleUndo}
         hasSnapshot={!!snapshot}
+        onImport={() => setImportModalOpen(true)}
       />
 
       <div className="flex-1 min-h-0 relative overflow-hidden">
@@ -63,6 +70,13 @@ export function NarrativeFlow() {
         open={saveModalOpen}
         onConfirm={handleConfirmSave}
         onCancel={() => setSaveModalOpen(false)}
+      />
+
+      <RiskFlowImportModal
+        open={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        onImport={handleImportCatalysts}
+        lanes={state.lanes}
       />
     </div>
   );

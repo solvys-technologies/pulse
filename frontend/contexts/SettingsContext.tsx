@@ -52,6 +52,11 @@ interface AutoPilotSettings {
   maxDailyProposals: number;
 }
 
+export interface IframeUrls {
+  boardroom: string;
+  research: string;
+}
+
 export type PrimaryBroker = 'rithmic' | 'projectx';
 
 interface SettingsContextType {
@@ -73,6 +78,8 @@ interface SettingsContextType {
   setAutoPilotSettings: (settings: AutoPilotSettings) => void;
   primaryBroker: PrimaryBroker;
   setPrimaryBroker: (broker: PrimaryBroker) => void;
+  iframeUrls: IframeUrls;
+  setIframeUrls: (urls: IframeUrls) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -147,6 +154,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [primaryBroker, setPrimaryBroker] = useState<PrimaryBroker>(() =>
     loadFromStorage('primaryBroker', 'rithmic' as PrimaryBroker)
   );
+  const [iframeUrls, setIframeUrls] = useState<IframeUrls>(() =>
+    loadFromStorage('iframeUrls', {
+      boardroom: '',
+      research: '',
+    })
+  );
 
   useEffect(() => {
     try {
@@ -160,12 +173,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         developerSettings,
         autoPilotSettings,
         primaryBroker,
+        iframeUrls,
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
     } catch (error) {
       console.error('Failed to persist settings:', error);
     }
-  }, [apiKeys, tradingModels, alertConfig, mockDataEnabled, selectedSymbol, riskSettings, developerSettings, autoPilotSettings, primaryBroker]);
+  }, [apiKeys, tradingModels, alertConfig, mockDataEnabled, selectedSymbol, riskSettings, developerSettings, autoPilotSettings, primaryBroker, iframeUrls]);
 
   return (
     <SettingsContext.Provider
@@ -188,6 +202,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setAutoPilotSettings,
         primaryBroker,
         setPrimaryBroker,
+        iframeUrls,
+        setIframeUrls,
       }}
     >
       {children}

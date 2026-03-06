@@ -149,6 +149,20 @@ function reduce(state: NarrativeFlowState, action: NarrativeAction): NarrativeFl
       const catalyst: CatalystCard = { ...action.catalyst, id: generateId(), createdAt: now, updatedAt: now };
       return { ...state, catalysts: [...state.catalysts, catalyst] };
     }
+    case 'IMPORT_CATALYSTS': {
+      const now2 = new Date().toISOString();
+      const newCatalysts = action.catalysts
+        .filter(c => !state.catalysts.some(existing =>
+          existing.title === c.title && existing.date === c.date
+        ))
+        .map(c => ({
+          ...c,
+          id: generateId(),
+          createdAt: now2,
+          updatedAt: now2,
+        }));
+      return { ...state, catalysts: [...state.catalysts, ...newCatalysts] };
+    }
     case 'UPDATE_CATALYST':
       return {
         ...state,

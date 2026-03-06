@@ -4,14 +4,14 @@ import { CalendarCheck } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface ChatHeaderProps {
-  onRunNTN: () => void;
+  onRunMDB: () => void;
   onNewChat: () => void;
   onToggleCheckpoints: () => void;
   showCheckpoints: boolean;
   isLoading: boolean;
 }
 
-export function ChatHeader({ onRunNTN, onNewChat, onToggleCheckpoints, showCheckpoints, isLoading }: ChatHeaderProps) {
+export function ChatHeader({ onRunMDB, onNewChat, onToggleCheckpoints, showCheckpoints, isLoading }: ChatHeaderProps) {
   const { gitHub } = useAuth();
 
   return (
@@ -53,11 +53,11 @@ export function ChatHeader({ onRunNTN, onNewChat, onToggleCheckpoints, showCheck
         {/* Right side: existing controls */}
         <div className="flex items-center gap-3">
           <button
-            onClick={onRunNTN}
+            onClick={onRunMDB}
             disabled={isLoading}
             className="px-3 py-1.5 disabled:opacity-50 rounded text-[13px] text-zinc-400 transition-all whitespace-nowrap pulse-accent-hover"
           >
-            Run NTN Report
+            Run MDB Report
           </button>
           <button
             onClick={onNewChat}

@@ -1,4 +1,4 @@
-// [claude-code 2026-03-03] Phase 3: Notion service — fetches NTN Brief from Harper Messages DB
+// [claude-code 2026-03-03] Phase 3: Notion service — fetches MDB Brief from Harper Messages DB
 // [claude-code 2026-03-03] Extended: Trade Ideas + Daily P&L query functions for Notion poller.
 // [claude-code 2026-03-04] Economic calendar now sourced from Notion DB via alias-based field mapping.
 // [claude-code 2026-03-05] Added Notion write (createPage/updatePage), fetchEconCalendar, fetchEconPrints, writeEconPrint.
@@ -8,6 +8,7 @@ const NOTION_VERSION = '2022-06-28';
 
 // Notion DB IDs from PIC-NOTION-ENTITY-MAP.md
 const HARPER_MESSAGES_DB = '30c141b0da7d81ba8bb6e319a0c4c309';
+const DAILY_BRIEFS_DB = '704074dcba7d4eec9b7acb1514765761';
 const TRADE_IDEAS_DB = '136fa9a2069e4afc835e0e139ead49f2';
 const DAILY_PNL_DB = 'ee7d03052a424dcb95f6406c166e7584';
 export const ECONOMIC_EVENTS_DB = process.env.NOTION_ECONOMIC_EVENTS_DB ?? '3cbc448583e540c78effba6c5346483f';
@@ -24,7 +25,7 @@ function getNotionKey(): string | undefined {
   return (process.env as Record<string, string | undefined>).NOTION_API_KEY;
 }
 
-export interface NTNBriefItem {
+export interface MDBBriefItem {
   title: string;
   detail: string;
 }
@@ -145,15 +146,33 @@ export async function notionUpdatePage(
 
 // ── Public API ──────────────────────────────────────────────────────────────
 
-export async function fetchNTNBrief(): Promise<NTNBriefItem[]> {
+export async function fetchMDBBrief(): Promise<MDBBriefItem[]> {
   const key = getNotionKey();
   if (!key) {
-    console.error('[Notion] NOTION_API_KEY missing — NTN brief unavailable');
+    console.error('[Notion] NOTION_API_KEY missing — MDB brief unavailable');
     return [];
   }
 
   try {
-    const pages = await notionQuery(HARPER_MESSAGES_DB, {
+    // Primary: Daily Briefs DB (structured MDB reports)
+    const pages = await notionQuery(DAILY_BRIEFS_DB, {
+      filter: {
+        property: 'Status',
+        status: { equals: 'Published' },
+      },
+      sorts: [{ property: 'Date', direction: 'descending' }],
+      pageSize: 6,
+    });
+
+    if (pages.length > 0) {
+      return pages.map((page: any) => ({
+        title: getPropText(page, 'Title') || 'Untitled',
+        detail: getPropText(page, 'Summary') || getPropText(page, 'Key Events') || '',
+      }));
+    }
+
+    // Fallback: Harper Messages DB (legacy)
+    const fallback = await notionQuery(HARPER_MESSAGES_DB, {
       filter: {
         property: 'Source',
         select: { equals: 'Harper-Kimi' },
@@ -161,14 +180,12 @@ export async function fetchNTNBrief(): Promise<NTNBriefItem[]> {
       pageSize: 12,
     });
 
-    if (pages.length === 0) return [];
-
-    return pages.slice(0, 6).map((page: any) => ({
+    return fallback.slice(0, 6).map((page: any) => ({
       title: getPropText(page, 'Name') || getPropText(page, 'Title') || 'Untitled',
       detail: getPropText(page, 'Summary') || getPropText(page, 'Content') || '',
     }));
   } catch (err) {
-    console.error('[Notion] fetchNTNBrief error:', err);
+    console.error('[Notion] fetchMDBBrief error:', err);
     return [];
   }
 }

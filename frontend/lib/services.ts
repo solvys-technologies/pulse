@@ -44,7 +44,7 @@ export interface ChatResponse {
   };
 }
 
-export interface NTNReport {
+export interface MDBReport {
   report: {
     content: string;
   };
@@ -408,12 +408,12 @@ export class AIService {
     return response;
   }
 
-  async generateNTNReport(): Promise<NTNReport> {
+  async generateMDBReport(): Promise<MDBReport> {
     // Stub - backend doesn't have this endpoint yet
-    console.warn('NTN report endpoint not available in Hono backend');
+    console.warn('MDB report endpoint not available in Hono backend');
     return {
       report: {
-        content: 'NTN report generation is not yet implemented in the Hono backend.',
+        content: 'MDB report generation is not yet implemented in the Hono backend.',
       },
     };
   }
@@ -825,9 +825,9 @@ export class NotionService {
     }
   }
 
-  async getNtnBrief(): Promise<Array<{ title: string; detail: string }>> {
+  async getMdbBrief(): Promise<Array<{ title: string; detail: string }>> {
     try {
-      const res = await this.client.get<{ items: Array<{ title: string; detail: string }> }>('/api/notion/ntn-brief');
+      const res = await this.client.get<{ items: Array<{ title: string; detail: string }> }>('/api/notion/mdb-brief');
       return res.items ?? [];
     } catch {
       return [];
@@ -841,6 +841,32 @@ export class NotionService {
     } catch {
       return [];
     }
+  }
+}
+
+// Narrative Scoring Service
+export interface ScoredCandidate {
+  sourceId: string;
+  sourceType: 'riskflow' | 'mdb-brief';
+  notabilityScore: number;
+  sentiment: 'bullish' | 'bearish';
+  severity: 'high' | 'medium' | 'low';
+  tickers: string[];
+  themes: string[];
+  suggestedTitle: string;
+  suggestedDescription: string;
+  originalHeadline?: string;
+}
+
+export class NarrativeService {
+  constructor(private client: ApiClient) {}
+
+  async scoreRiskflow(items: Array<{ id: string; headline: string; summary: string; source: string; severity: string; tags: string[]; publishedAt: string }>): Promise<{ scored: ScoredCandidate[]; provider: string }> {
+    return this.client.post('/api/narrative/score-riskflow', { items });
+  }
+
+  async scoreBrief(briefText: string): Promise<{ scored: ScoredCandidate[]; provider: string }> {
+    return this.client.post('/api/narrative/score-brief', { briefText });
   }
 }
 
@@ -911,6 +937,7 @@ export interface BackendClient {
   events: EventsService;
   polymarket: PolymarketService;
   boardroom: BoardroomService;
+  narrative: NarrativeService;
   notion: NotionService;
   econCalendar: EconCalendarService;
 }
@@ -932,6 +959,7 @@ export function createBackendClient(client: ApiClient): BackendClient {
     events: new EventsService(client),
     polymarket: new PolymarketService(client),
     boardroom: new BoardroomService(client),
+    narrative: new NarrativeService(client),
     notion: new NotionService(client),
     econCalendar: new EconCalendarService(client),
   };

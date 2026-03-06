@@ -18,6 +18,7 @@ import { createPolymarketRoutes } from './polymarket/index.js';
 import { createBoardroomRoutes } from './boardroom/index.js';
 import { createRithmicRoutes } from './rithmic/index.js';
 import { createNotionRoutes } from './notion/index.js';
+import { createNarrativeRoutes } from './narrative/index.js';
 import { createERRoutes } from './er/index.js';
 import { createVoiceRoutes } from './voice/index.js';
 import { createRegimeRoutes } from './regimes/index.js';
@@ -37,6 +38,8 @@ export function registerRoutes(app: Hono): void {
   app.route('/api/notion', createNotionRoutes());
   // Regime tracker — public, returns active trading regimes
   app.route('/api/regimes', createRegimeRoutes());
+  // Narrative scoring — LLM-scored catalyst candidates
+  app.route('/api/narrative', createNarrativeRoutes());
 
   // Protected routes (auth required) — use base path so exact path (e.g. GET /api/account) is covered
   app.use('/api/account', authMiddleware);

@@ -80,7 +80,7 @@ export interface OpenClawDailyReport {
   pnl: number
   trades: OpenClawTradeProposal[]
   bias: 'bullish' | 'bearish' | 'neutral' | 'selective'
-  ntnReport: string // Need-To-Know report
+  mdbReport: string // Morning Daily Brief report
   timestamp: Date
 }
 

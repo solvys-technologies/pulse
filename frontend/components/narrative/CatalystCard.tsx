@@ -22,6 +22,8 @@ const SOURCE_LABELS: Record<string, string> = {
   rss: 'RSS',
   user: 'USR',
   agent: 'AGT',
+  riskflow: 'RFL',
+  brief: 'MDB',
 };
 
 interface CatalystCardProps {

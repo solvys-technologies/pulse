@@ -11,12 +11,12 @@ interface SystemEvent {
   createdAt: Date | string;
 }
 import { AlertCircle, CheckCircle, Info, XCircle, FileText, Trash2 } from "lucide-react";
-import { NTNReportModal } from "./NTNReportModal";
+import { MDBReportModal } from './MDBReportModal';
 
 export default function SystemFeed() {
   const backend = useBackend();
   const [events, setEvents] = useState<SystemEvent[]>([]);
-  const [showNTNModal, setShowNTNModal] = useState(false);
+  const [showMDBModal, setShowMDBModal] = useState(false);
 
   useEffect(() => {
     loadEvents();
@@ -89,7 +89,7 @@ export default function SystemFeed() {
 
   return (
     <>
-      {showNTNModal && <NTNReportModal onClose={() => setShowNTNModal(false)} />}
+      {showMDBModal && <MDBReportModal onClose={() => setShowMDBModal(false)} />}
 
       <div className="h-full flex flex-col">
         {/* Header with CTAs */}
@@ -97,11 +97,11 @@ export default function SystemFeed() {
           <h2 className="text-lg font-bold text-zinc-300">System Feed</h2>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setShowNTNModal(true)}
+              onClick={() => setShowMDBModal(true)}
               className="px-4 py-2 bg-[#D4AF37]/10 border border-[#D4AF37]/30 hover:bg-[#D4AF37]/20 text-[#D4AF37] rounded-full text-xs font-medium transition-colors flex items-center gap-2"
             >
               <FileText className="w-3.5 h-3.5" />
-              Run NTN Report
+              Run MDB Report
             </button>
             <button
               onClick={handleClear}

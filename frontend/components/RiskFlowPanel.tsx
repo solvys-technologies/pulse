@@ -210,8 +210,7 @@ export default function RiskFlowPanel({
           </div>
         </div>
 
-        {expanded && (
-          <>
+        <div className={`flex-1 min-h-0 flex flex-col transition-all duration-300 ease-in-out overflow-hidden ${expanded ? 'opacity-100' : 'max-h-0 opacity-0'}`}>
             {/* Filter tabs */}
             <div className="flex items-center gap-1 px-3 py-1.5 border-b border-zinc-800/50 flex-wrap">
               {([
@@ -263,9 +262,9 @@ export default function RiskFlowPanel({
                 )
               )}
             </div>
-          </>
-        )}
+        </div>
 
+        <div className={`transition-all duration-300 ease-in-out overflow-hidden ${!expanded ? 'opacity-100' : 'max-h-0 opacity-0'}`}>
         {!expanded && (
           <div className="px-2 pb-2">
             {collapsedPreviewItems.length === 0 ? (
@@ -304,6 +303,7 @@ export default function RiskFlowPanel({
             )}
           </div>
         )}
+        </div>
 
         {/* Pulse animation styles */}
         <style>{`
