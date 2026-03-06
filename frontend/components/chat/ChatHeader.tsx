@@ -17,7 +17,7 @@ export function ChatHeader({ onRunNTN, onNewChat, onToggleCheckpoints, showCheck
           <button
             onClick={onRunNTN}
             disabled={isLoading}
-            className="px-3 py-1.5 hover:bg-[#D4AF37]/10 disabled:opacity-50 rounded text-[13px] text-zinc-400 hover:text-[#D4AF37] transition-all whitespace-nowrap"
+            className="px-3 py-1.5 disabled:opacity-50 rounded text-[13px] text-zinc-400 transition-all whitespace-nowrap pulse-accent-hover"
           >
             Run NTN Report
           </button>

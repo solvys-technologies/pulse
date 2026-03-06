@@ -85,9 +85,9 @@ export function ChatGreeting({ onSend, isLoading }: ChatGreetingProps) {
               key={index}
               onClick={() => onSend(chip.prompt)}
               disabled={isLoading}
-              className="flex items-center gap-3 px-4 py-3.5 bg-transparent border border-white/10 hover:border-[#D4AF37]/40 hover:bg-[#D4AF37]/5 disabled:opacity-50 rounded-xl text-left transition-all group"
+              className="flex items-center gap-3 px-4 py-3.5 bg-transparent border border-white/10 pulse-accent-border-hover disabled:opacity-50 rounded-xl text-left transition-all group"
             >
-              <Icon className="w-[18px] h-[18px] text-gray-500 group-hover:text-[#D4AF37] transition-colors shrink-0" />
+              <Icon className="w-[18px] h-[18px] text-gray-500 transition-colors shrink-0 pulse-group-accent" />
               <span className="text-[13px] text-zinc-300 group-hover:text-white transition-colors">{chip.label}</span>
             </button>
           );

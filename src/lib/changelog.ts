@@ -9,6 +9,25 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-06T18:00:00',
+    agent: 'claude-code',
+    summary: 'Sprint 2: Theme System — 6 presets (solvys-gold, ios, project-x, dark-trading, miami-heat, monocolor), CSS variable architecture, ThemeProvider context, ThemeSettings panel with live preview + custom HEX inputs, localStorage persistence. Migrated key components to CSS variables.',
+    files: [
+      'frontend/lib/theme.ts',
+      'frontend/contexts/ThemeContext.tsx',
+      'frontend/components/settings/ThemeSettings.tsx',
+      'frontend/index.css',
+      'frontend/App.tsx',
+      'frontend/components/chat/ChatHeader.tsx',
+      'frontend/components/chat/ChatGreeting.tsx',
+      'frontend/components/chat/ChatMessageBubble.tsx',
+      'frontend/components/chat/PulseThinkingIndicator.tsx',
+      'frontend/components/chat/PulseSkillsPopup.tsx',
+      'frontend/components/layout/NavSidebar.tsx',
+      'frontend/components/SettingsPanel.tsx',
+    ],
+  },
+  {
     date: '2026-03-05T20:30:00',
     agent: 'claude-code',
     summary: 'RiskFlow layout fix: removed RiskFlow from Mission Control panel, gave Mission Control full right panel height. Added Proposals filter tab to RiskFlow section (NewsSection) alongside All/High/Medium filters. Updated DMG.',

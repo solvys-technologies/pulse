@@ -56,8 +56,8 @@ export function PulseSkillsPopup({ open, onClose, activeSkill, onSelectSkill, ac
   };
 
   return (
-    <div className="absolute bottom-full mb-2 left-0 w-72 rounded-lg border border-[#D4AF37]/20 bg-[#0a0a00] shadow-xl z-50 overflow-hidden">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-[#D4AF37]/10">
+    <div className="absolute bottom-full mb-2 left-0 w-72 rounded-lg border shadow-xl z-50 overflow-hidden pulse-accent-border" style={{ backgroundColor: 'var(--pulse-surface)' }}>
+      <div className="flex items-center justify-between px-3 py-2 border-b pulse-accent-border">
         <span className="text-[12px] font-semibold text-gray-400 uppercase tracking-wider">Skills</span>
         <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
           <X size={13} />
@@ -71,7 +71,7 @@ export function PulseSkillsPopup({ open, onClose, activeSkill, onSelectSkill, ac
             <button
               key={skill.id}
               onClick={() => handleClick(skill.id)}
-              className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-[#D4AF37]/5 transition-colors"
+              className="w-full flex items-center gap-2.5 px-3 py-2 pulse-accent-hover transition-colors"
               style={active ? { backgroundColor: `${skill.color}15` } : undefined}
             >
               <div className="relative flex-shrink-0">
