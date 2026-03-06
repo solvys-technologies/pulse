@@ -9,6 +9,26 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-06T20:00:00',
+    agent: 'claude-code',
+    summary: 'Sprint 4: Regime Tracker — institutional/session/report trading windows with W-L tracking. Mission Control mini-screener, dashboard preview card, full popup modal, backend API endpoint, localStorage persistence, skill prefix integration.',
+    files: [
+      'frontend/lib/regimes.ts',
+      'frontend/lib/regime-time.ts',
+      'frontend/lib/regime-store.ts',
+      'frontend/components/mission-control/RegimeMini.tsx',
+      'frontend/components/dashboard/RegimeCard.tsx',
+      'frontend/components/regimes/RegimeTrackerModal.tsx',
+      'backend-hono/src/routes/regimes/index.ts',
+      'backend-hono/src/routes/index.ts',
+      'frontend/components/mission-control/MissionControlPanel.tsx',
+      'frontend/components/layout/MainLayout.tsx',
+      'frontend/components/executive/ExecutiveDashboard.tsx',
+      'frontend/lib/layoutOrderStorage.ts',
+      'frontend/lib/skillPrefixes.ts',
+    ],
+  },
+  {
     date: '2026-03-06T18:00:00',
     agent: 'claude-code',
     summary: 'Sprint 2: Theme System — 6 presets (solvys-gold, ios, project-x, dark-trading, miami-heat, monocolor), CSS variable architecture, ThemeProvider context, ThemeSettings panel with live preview + custom HEX inputs, localStorage persistence. Migrated key components to CSS variables.',

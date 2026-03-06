@@ -35,6 +35,7 @@ import { ScheduleProvider } from '../../contexts/ScheduleContext';
 import { EconCalendarProvider } from '../../contexts/EconCalendarContext';
 import { EconCalendar } from '../econ/EconCalendar';
 import { SessionCountdownWidget } from '../mission-control/SessionCountdownWidget';
+import { RegimeMini } from '../mission-control/RegimeMini';
 import {
   DEFAULT_MISSION_WIDGET_ORDER,
   getMissionWidgetOrder,
@@ -316,6 +317,11 @@ export function MainLayout() {
       id: 'autopilot' as const,
       label: 'Autopilot',
       node: <AlgoStatusWidget />,
+    },
+    regime: {
+      id: 'regime' as const,
+      label: 'Regime Tracker',
+      node: <RegimeMini />,
     },
     account: {
       id: 'account' as const,

@@ -9,6 +9,8 @@ import { KanbanTitle } from '../ui/KanbanTitle';
 import { ExpandableTapeItem } from './ExpandableTapeItem';
 import { SessionCalendarList } from './SessionCalendarList';
 import TradeIdeaModal from '../TradeIdeaModal';
+import { RegimeCard } from '../dashboard/RegimeCard';
+import { RegimeTrackerModal } from '../regimes/RegimeTrackerModal';
 
 const DASHBOARD_PAGES = ['Briefing', 'The Tape'];
 
@@ -71,6 +73,7 @@ export function ExecutiveDashboard() {
   // The Tape: same feed as RiskFlow panel and MinimalFeedSection (RiskFlowContext)
   const { alerts, markAllSeen, isSeen, notionPollStatus } = useRiskFlow();
   const [selectedIdea, setSelectedIdea] = useState<TradeIdeaDetail | null>(null);
+  const [showRegimeTracker, setShowRegimeTracker] = useState(false);
   const tapeAlerts = useMemo(() => alerts.slice(0, 50), [alerts]);
 
   useEffect(() => {
@@ -118,6 +121,9 @@ export function ExecutiveDashboard() {
     <>
     {selectedIdea && (
       <TradeIdeaModal idea={selectedIdea} onClose={() => setSelectedIdea(null)} />
+    )}
+    {showRegimeTracker && (
+      <RegimeTrackerModal onClose={() => setShowRegimeTracker(false)} />
     )}
     <div className="h-full w-full flex relative">
       {/* Main scrollable area */}
@@ -196,6 +202,11 @@ export function ExecutiveDashboard() {
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Row 2.5: Regime Tracker preview */}
+          <div className="shrink-0 mb-5">
+            <RegimeCard onOpenTracker={() => setShowRegimeTracker(true)} />
           </div>
 
           {/* Row 3: The Tape — fills remaining space, expandable items, recency fade */}

@@ -20,6 +20,7 @@ import { createRithmicRoutes } from './rithmic/index.js';
 import { createNotionRoutes } from './notion/index.js';
 import { createERRoutes } from './er/index.js';
 import { createVoiceRoutes } from './voice/index.js';
+import { createRegimeRoutes } from './regimes/index.js';
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -28,6 +29,8 @@ export function registerRoutes(app: Hono): void {
   app.route('/api/boardroom', createBoardroomRoutes());
   // Notion polling routes — internal org data, no user auth required
   app.route('/api/notion', createNotionRoutes());
+  // Regime tracker — public, returns active trading regimes
+  app.route('/api/regimes', createRegimeRoutes());
 
   // Protected routes (auth required) — use base path so exact path (e.g. GET /api/account) is covered
   app.use('/api/account', authMiddleware);

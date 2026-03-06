@@ -4,7 +4,7 @@ import { EmotionalResonanceMonitor } from './EmotionalResonanceMonitor';
 import { BlindspotsWidget } from './BlindspotsWidget';
 import { AlgoStatusWidget } from './AlgoStatusWidget';
 import { AccountTrackerWidget } from './AccountTrackerWidget';
-
+import { RegimeMini } from './RegimeMini';
 
 import { PanelPosition } from '../layout/DraggablePanel';
 
@@ -143,6 +143,7 @@ export function MissionControlPanel({
         <div className="flex-1 overflow-y-auto p-2 space-y-2">
           <EmotionalResonanceMonitor onERScoreChange={setErScore} />
           <AlgoStatusWidget />
+          <RegimeMini />
           <AccountTrackerWidget />
           <BlindspotsWidget />
         </div>

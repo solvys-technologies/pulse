@@ -31,11 +31,12 @@ export const DEFAULT_TOOLBAR_ORDER: ToolbarItemId[] = [
   'ivScore',
 ];
 
-export type MissionWidgetId = 'er' | 'autopilot' | 'account' | 'blindspots';
+export type MissionWidgetId = 'er' | 'autopilot' | 'regime' | 'account' | 'blindspots';
 
 export const DEFAULT_MISSION_WIDGET_ORDER: MissionWidgetId[] = [
   'er',
   'autopilot',
+  'regime',
   'account',
   'blindspots',
 ];
