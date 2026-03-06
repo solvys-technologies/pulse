@@ -1,26 +1,16 @@
-// [claude-code 2026-02-26] Wire floating chat to persistent OpenClaw per-agent threads.
-import { useMemo, useRef, useEffect, useState, useCallback } from 'react';
+// [claude-code 2026-03-06] Refactored to use useChatSession + ChatMessageBubble
+import { useRef, useEffect, useState } from 'react';
 import { MessageSquare, X, Maximize2 } from 'lucide-react';
 import { usePulseAgents } from '../../contexts/PulseAgentContext';
 import { PulseChatInput } from './PulseChatInput';
-import { useOpenClawChat } from './hooks/useOpenClawChat';
-import { toOpenClawAgentOverride } from '../../lib/openclawAgentRouting';
-import { usePersistentOpenClawConversation } from '../../hooks/usePersistentOpenClawConversation';
 import { PulseThinkingIndicator } from './PulseThinkingIndicator';
-import { normalizeChatMessages } from '../../lib/chatMessageNormalizer';
-
-/* ------------------------------------------------------------------ */
-/*  Props                                                              */
-/* ------------------------------------------------------------------ */
+import { useChatSession } from './hooks/useChatSession';
+import { ChatMessageBubble } from './ChatMessageBubble';
 
 interface PulseFloatingChatProps {
   visible: boolean;
   onExpandToAnalysis: () => void;
 }
-
-/* ------------------------------------------------------------------ */
-/*  Component                                                          */
-/* ------------------------------------------------------------------ */
 
 export function PulseFloatingChat({ visible, onExpandToAnalysis }: PulseFloatingChatProps) {
   const [expanded, setExpanded] = useState(false);
@@ -28,43 +18,18 @@ export function PulseFloatingChat({ visible, onExpandToAnalysis }: PulseFloating
   const { activeAgent } = usePulseAgents();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const openclawAgentOverride = toOpenClawAgentOverride(activeAgent?.id);
-  const { conversationId, setConversationId } = usePersistentOpenClawConversation(activeAgent?.id);
-  const { messages: rawMessages, sendMessage, status, stop } = useOpenClawChat(
-    conversationId,
-    setConversationId as any,
-    openclawAgentOverride
-  );
-
-  const messages = useMemo(() => {
-    return normalizeChatMessages(rawMessages as any[]);
-  }, [rawMessages]);
-
-  const latestThinkingContent = useMemo(() => {
-    const lastUserIndex = messages.map((m) => m.role).lastIndexOf('user');
-    for (let i = messages.length - 1; i >= 0; i--) {
-      const message = messages[i];
-      if (message.role !== 'assistant') continue;
-      if (i < lastUserIndex) return undefined;
-      return message.reasoning.trim() || undefined;
-    }
-    return undefined;
-  }, [messages]);
+  const { messages, send, stop, isLoading, latestThinkingContent } =
+    useChatSession({ agentId: activeAgent?.id ?? 'default' });
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const isProcessing = status === 'submitted' || status === 'streaming';
-
-  const handleSend = useCallback(async (text: string) => {
+  const handleSend = (text: string) => {
     const trimmed = text.trim();
-    if (!trimmed || isProcessing) return;
-    await sendMessage(
-      { text: trimmed },
-      { body: { conversationId, agentOverride: openclawAgentOverride } }
-    );
-  }, [sendMessage, conversationId, openclawAgentOverride, isProcessing]);
+    if (!trimmed || isLoading) return;
+    send(trimmed);
+  };
 
   if (!visible) return null;
 
@@ -137,21 +102,10 @@ export function PulseFloatingChat({ visible, onExpandToAnalysis }: PulseFloating
             </div>
           </div>
         )}
-        {messages.map((msg, i) => (
-          <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div
-              className={`max-w-[85%] rounded-lg text-[12px] leading-relaxed ${
-                msg.role === 'user'
-                  ? 'bg-[#D4AF37]/15 text-white'
-                  : 'bg-[#111108] text-gray-300'
-              }`}
-              style={{ padding: '8px 12px' }}
-            >
-              {msg.text}
-            </div>
-          </div>
+        {messages.map((msg) => (
+          <ChatMessageBubble key={msg.id} message={msg} />
         ))}
-        {isProcessing && (
+        {isLoading && (
           <PulseThinkingIndicator
             isThinking
             thinkingContent={latestThinkingContent}
@@ -166,7 +120,7 @@ export function PulseFloatingChat({ visible, onExpandToAnalysis }: PulseFloating
         <PulseChatInput
           onSend={(msg) => handleSend(msg)}
           onStop={stop}
-          isProcessing={isProcessing}
+          isProcessing={isLoading}
           thinkHarder={thinkHarder}
           setThinkHarder={setThinkHarder}
           placeholder="Quick message..."

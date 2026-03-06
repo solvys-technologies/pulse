@@ -105,6 +105,3 @@ export function useOpenClawChat(
     clearError: () => setLastError(null),
   };
 }
-
-// Keep old name for backward compat
-export const useChatWithAuth = useOpenClawChat;
