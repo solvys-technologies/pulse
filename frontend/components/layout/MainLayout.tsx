@@ -34,6 +34,8 @@ import { EmbeddedBrowserFrame } from './EmbeddedBrowserFrame';
 import { ScheduleProvider } from '../../contexts/ScheduleContext';
 import { EconCalendarProvider } from '../../contexts/EconCalendarContext';
 import { EconCalendar } from '../econ/EconCalendar';
+import { NarrativeProvider } from '../../contexts/NarrativeContext';
+import { NarrativeFlow } from '../narrative/NarrativeFlow';
 import { SessionCountdownWidget } from '../mission-control/SessionCountdownWidget';
 import { RegimeMini } from '../mission-control/RegimeMini';
 import {
@@ -43,7 +45,7 @@ import {
   type MissionWidgetId,
 } from '../../lib/layoutOrderStorage';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'econ' | 'settings';
+type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'econ' | 'narrative' | 'settings';
 type LayoutOption = 'tickers-only' | 'combined';
 
 const MISSION_WIDGETS_PER_PAGE = 2;
@@ -150,6 +152,7 @@ export function MainLayout() {
       '4': 'chatroom',
       '5': 'econ',
       '6': 'notion',
+      '7': 'narrative',
     };
 
     const handler = (e: KeyboardEvent) => {
@@ -531,7 +534,7 @@ export function MainLayout() {
     // For 'tickers-only', no panels are shown (only floating widget)
   } else {
     // When TopStepX is disabled: right stack = Mission Control + collapsible RiskFlow
-    const hideRightPanel = activeTab === 'notion' || activeTab === 'chatroom' || activeTab === 'econ' || activeTab === 'settings';
+    const hideRightPanel = activeTab === 'notion' || activeTab === 'chatroom' || activeTab === 'econ' || activeTab === 'narrative' || activeTab === 'settings';
     if (!hideRightPanel) {
       if (riskFlowCollapsed) {
         rightPanels.push(
@@ -663,6 +666,13 @@ export function MainLayout() {
                   <EconCalendarProvider>
                     <EconCalendar />
                   </EconCalendarProvider>
+                </div>
+              )}
+              {activeTab === 'narrative' && (
+                <div key="narrative" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                  <NarrativeProvider>
+                    <NarrativeFlow />
+                  </NarrativeProvider>
                 </div>
               )}
               {activeTab === 'notion' && (

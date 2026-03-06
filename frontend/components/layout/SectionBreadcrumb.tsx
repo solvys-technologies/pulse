@@ -1,6 +1,6 @@
 import { ChevronLeft, ChevronRight, ChevronRight as Separator } from 'lucide-react';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'econ' | 'settings';
+type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'econ' | 'narrative' | 'settings';
 
 const TAB_META: Record<NavTab, { label: string; parent?: string }> = {
   executive: { label: 'Dashboard' },
@@ -10,6 +10,7 @@ const TAB_META: Record<NavTab, { label: string; parent?: string }> = {
   chatroom: { label: 'Board Room' },
   notion: { label: 'Research Department' },
   econ: { label: 'Economic Calendar' },
+  narrative: { label: 'NarrativeFlow' },
   settings: { label: 'Settings' },
 };
 
