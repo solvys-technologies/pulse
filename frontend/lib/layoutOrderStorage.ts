@@ -5,7 +5,7 @@
 
 const SIDEBAR_ORDER_KEY = 'pulse_sidebar_nav_order';
 const TOOLBAR_ORDER_KEY = 'pulse_toolbar_order';
-const MISSION_WIDGET_ORDER_KEY = 'pulse_mission_widget_order';
+const MISSION_WIDGET_ORDER_KEY = 'pulse_mission_widget_order_v2'; // v2: riskflow-mini removed
 const RIGHT_PANEL_ORDER_KEY = 'pulse_right_panel_order';
 
 export type NavTabId = 'executive' | 'analysis' | 'news' | 'chatroom' | 'notion' | 'econ';
