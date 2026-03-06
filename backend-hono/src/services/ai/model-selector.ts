@@ -16,6 +16,7 @@ import {
   getCrossProviderEquivalent,
   isOpenRouterModel,
   isOpenClawModel,
+  isGitHubModelsModel,
   getOpenClawGatewayModel,
 } from '../../config/ai-config.js'
 
@@ -79,13 +80,26 @@ const TASK_MODEL_PREFERENCES: Record<string, AiModelKey[]> = {
   default: ['openrouter-grok', 'openrouter-llama', 'openrouter-sonnet'],
 }
 
+// Runtime token store for user-provided tokens (e.g. GitHub OAuth)
+let _runtimeGitHubToken: string | undefined
+
+/** Set the GitHub token for the current request context */
+export function setRuntimeGitHubToken(token: string | undefined): void {
+  _runtimeGitHubToken = token
+}
+
 /**
  * Check if a provider's API key is available
  */
 function hasApiKey(modelKey: AiModelKey): boolean {
   const config = defaultAiConfig.models[modelKey]
   if (!config) return false
-  
+
+  // GitHub Models uses runtime OAuth token, not env var
+  if (isGitHubModelsModel(modelKey)) {
+    return Boolean(_runtimeGitHubToken)
+  }
+
   const apiKey = process.env[config.apiKeyEnv]
   return Boolean(apiKey && apiKey.length > 0)
 }
@@ -254,6 +268,19 @@ export function createModelClient(modelKey: AiModelKey) {
         'HTTP-Referer': process.env.OPENROUTER_APP_URL ?? 'https://pulse-solvys.vercel.app',
         'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Pulse-AI-Gateway',
       },
+    })
+    return client(config.id)
+  }
+
+  // GitHub Models use OpenAI-compatible client with user's OAuth token
+  if (isGitHubModelsModel(modelKey)) {
+    const ghToken = _runtimeGitHubToken
+    if (!ghToken) {
+      throw new Error('GitHub Models requires authentication — sign in with GitHub first')
+    }
+    const client = createOpenAI({
+      apiKey: ghToken,
+      baseURL: config.baseUrl,
     })
     return client(config.id)
   }

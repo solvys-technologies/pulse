@@ -6,7 +6,7 @@
 
 import type { Context } from 'hono'
 import { createUIMessageStreamResponse, streamText } from 'ai'
-import { selectModel, createModelClient, logModelSelection, markProviderUnhealthy, getFallbackModel, type AiModelKey } from '../../../services/ai/model-selector.js'
+import { selectModel, createModelClient, logModelSelection, markProviderUnhealthy, getFallbackModel, setRuntimeGitHubToken, type AiModelKey } from '../../../services/ai/model-selector.js'
 import * as conversationStore from '../../../services/ai/conversation-store.js'
 import { defaultAiConfig } from '../../../config/ai-config.js'
 import type { ChatRequest } from '../../../types/ai-chat.js'
@@ -69,7 +69,11 @@ export async function handleChat(c: Context) {
   const requestId = `chat-${Date.now()}-${Math.random().toString(36).substring(7)}`
   const userId = c.get('userId') as string | undefined
 
-  console.log(`[OpenClaw][${requestId}] Request started (local mode: ${USE_LOCAL_OPENCLAW})`)
+  // Pass user's GitHub OAuth token for GitHub Models (Kimi K2)
+  const githubToken = c.req.header('X-GitHub-Token')
+  setRuntimeGitHubToken(githubToken || undefined)
+
+  console.log(`[OpenClaw][${requestId}] Request started (local mode: ${USE_LOCAL_OPENCLAW}, github: ${Boolean(githubToken)})`)
 
   if (!userId) {
     console.warn(`[OpenClaw][${requestId}] Unauthorized - no userId`)

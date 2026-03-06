@@ -10,6 +10,8 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { MainLayout } from './components/layout/MainLayout';
 import { NotificationContainer } from './components/NotificationToast';
 import { ToastContainer } from './components/ui/Toast';
+import { GitHubOAuthCallback } from './components/GitHubOAuthCallback';
+import { UpdateBanner } from './components/UpdateBanner';
 
 /**
  * Pulse - Local Single-User Trading Platform
@@ -63,6 +65,8 @@ export default function App() {
                       pointer-events: none;
                     }
                   `}</style>
+                  <UpdateBanner />
+                  <GitHubOAuthCallback />
                   <MainLayout />
                   <NotificationContainer />
                   <ToastContainer />

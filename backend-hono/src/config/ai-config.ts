@@ -23,6 +23,8 @@ export type AiModelKey =
   | 'openclaw-research'  // Deep research (Sonnet)
   | 'openclaw-fast'      // Fast analysis (Llama)
   | 'openclaw-realtime'  // Real-time news (Grok)
+  // GitHub Models (free, OAuth-powered)
+  | 'github-kimi-k2'    // Kimi K2 via GitHub Models
 
 export type AiProvider = 'openai-compatible'
 
@@ -65,6 +67,9 @@ export interface AiProviderSettings {
     baseUrl: string
     appName: string
   }
+  githubModels: {
+    baseUrl: string
+  }
 }
 
 export interface AiConversationConfig {
@@ -89,6 +94,7 @@ const vercelGatewayBaseUrl =
   getEnv('VERCEL_AI_GATEWAY_BASE_URL') ?? 'https://ai-gateway.vercel.sh/v1/chat/completions'
 
 const openRouterBaseUrl = 'https://openrouter.ai/api/v1'
+const githubModelsBaseUrl = 'https://models.inference.ai.azure.com'
 
 const normalizeOpenClawGatewayBaseUrl = (value: string): string => {
   const trimmed = value.trim().replace(/\/+$/, '')
@@ -135,7 +141,12 @@ const modelAliases: Record<string, AiModelKey> = {
   'pic-fast': 'openclaw-fast',
   'openclaw-realtime': 'openclaw-realtime',
   'pic-realtime': 'openclaw-realtime',
-  'pma': 'openclaw-realtime'
+  'pma': 'openclaw-realtime',
+  // GitHub Models
+  'github-kimi-k2': 'github-kimi-k2',
+  'kimi': 'github-kimi-k2',
+  'kimi-k2': 'github-kimi-k2',
+  'github-kimi': 'github-kimi-k2'
 }
 
 export const resolveModelKey = (value?: string): AiModelKey | undefined => {
@@ -341,6 +352,24 @@ export const defaultAiConfig: AiConfig = {
       contextWindow: 128_000,
       supportsStreaming: true,
       supportsVision: false
+    },
+
+    // GitHub Models (free via GitHub OAuth)
+    'github-kimi-k2': {
+      id: getEnv('GITHUB_MODELS_KIMI_ID') ?? 'moonshotai/Kimi-K2',
+      displayName: 'Kimi K2 (GitHub Models)',
+      provider: 'openai-compatible',
+      providerType: 'github-models',
+      apiKeyEnv: 'GITHUB_TOKEN',
+      baseUrl: githubModelsBaseUrl,
+      temperature: 0.4,
+      maxTokens: 4096,
+      timeoutMs: 60_000,
+      costPer1kInputUsd: 0,
+      costPer1kOutputUsd: 0,
+      contextWindow: 128_000,
+      supportsStreaming: true,
+      supportsVision: false
     }
   },
 
@@ -392,7 +421,9 @@ export const defaultAiConfig: AiConfig = {
       'openclaw-cao': 'openrouter-opus',
       'openclaw-research': 'openrouter-sonnet',
       'openclaw-fast': 'openrouter-llama',
-      'openclaw-realtime': 'openrouter-grok'
+      'openclaw-realtime': 'openrouter-grok',
+      // GitHub Models fallback to OpenRouter
+      'github-kimi-k2': 'openrouter-llama'
     },
     // Cross-provider fallbacks (all within OpenRouter now)
     crossProviderFallbacks: []
@@ -412,6 +443,9 @@ export const defaultAiConfig: AiConfig = {
     openClaw: {
       baseUrl: getOpenClawOpenAIBaseUrl(),
       appName: getEnv('OPENCLAW_APP_NAME') ?? 'Pulse-PIC-Gateway'
+    },
+    githubModels: {
+      baseUrl: githubModelsBaseUrl
     }
   },
 
@@ -434,6 +468,11 @@ export const isOpenRouterModel = (modelKey: AiModelKey): boolean => {
 // Helper to check if a model uses OpenClaw
 export const isOpenClawModel = (modelKey: AiModelKey): boolean => {
   return modelKey.startsWith('openclaw-')
+}
+
+// Helper to check if a model uses GitHub Models
+export const isGitHubModelsModel = (modelKey: AiModelKey): boolean => {
+  return modelKey.startsWith('github-')
 }
 
 // Translate OpenClaw model ID for the Clawdbot gateway

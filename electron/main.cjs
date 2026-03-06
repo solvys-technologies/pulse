@@ -21,6 +21,10 @@ const shouldAllowInAppPopup = (urlString) => {
     if (host === "app.tradesea.ai") return true;
     if (host === "tradesea.ai") return true;
 
+    // GitHub OAuth (GitHub Models — Kimi K2)
+    if (host === "github.com") return true;
+    if (host.endsWith(".github.com")) return true;
+
     return false;
   } catch {
     return false;
