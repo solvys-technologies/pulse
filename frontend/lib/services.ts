@@ -844,6 +844,88 @@ export class NotionService {
   }
 }
 
+// Narratives Service
+export type NarrativeVolatility = 'low' | 'gaining' | 'hot';
+export type NarrativeStatus = 'Active' | 'Resolved' | 'Watching';
+
+export interface NarrativeItem {
+  id: string;
+  title: string;
+  tags: string[];
+  week: string;
+  volatility: NarrativeVolatility;
+  instruments: string[];
+  catalysts: string;
+  status: NarrativeStatus;
+  impact: number;
+  connections: string[];
+  notionUrl: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateNarrativeParams {
+  title: string;
+  tags?: string[];
+  week: string;
+  volatility?: NarrativeVolatility;
+  instruments?: string[];
+  catalysts?: string;
+  status?: NarrativeStatus;
+  impact?: number;
+}
+
+export interface UpdateNarrativeParams {
+  title?: string;
+  tags?: string[];
+  week?: string;
+  volatility?: NarrativeVolatility;
+  instruments?: string[];
+  catalysts?: string;
+  status?: NarrativeStatus;
+  impact?: number;
+}
+
+export class NarrativesService {
+  constructor(private client: ApiClient) {}
+
+  async list(week?: string): Promise<{ narratives: NarrativeItem[]; week: string }> {
+    try {
+      const suffix = week ? `?week=${encodeURIComponent(week)}` : '';
+      return await this.client.get<{ narratives: NarrativeItem[]; week: string }>(`/api/narratives${suffix}`);
+    } catch {
+      return { narratives: [], week: '' };
+    }
+  }
+
+  async get(id: string): Promise<NarrativeItem | null> {
+    try {
+      const res = await this.client.get<{ narrative: NarrativeItem }>(`/api/narratives/${id}`);
+      return res.narrative ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  async create(data: CreateNarrativeParams): Promise<NarrativeItem | null> {
+    try {
+      const res = await this.client.post<{ narrative: NarrativeItem }>('/api/narratives', data);
+      return res.narrative ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  async update(id: string, data: UpdateNarrativeParams): Promise<NarrativeItem | null> {
+    try {
+      const res = await this.client.patch<{ narrative: NarrativeItem }>(`/api/narratives/${id}`, data);
+      return res.narrative ?? null;
+    } catch {
+      return null;
+    }
+  }
+}
+
 // Trade Idea types
 export type TradeDirection = 'long' | 'short' | 'neutral';
 export type ConvictionLevel = 'low' | 'medium' | 'high' | 'max';
@@ -913,6 +995,7 @@ export interface BackendClient {
   boardroom: BoardroomService;
   notion: NotionService;
   econCalendar: EconCalendarService;
+  narratives: NarrativesService;
 }
 
 // Create backend client from API client
@@ -934,5 +1017,6 @@ export function createBackendClient(client: ApiClient): BackendClient {
     boardroom: new BoardroomService(client),
     notion: new NotionService(client),
     econCalendar: new EconCalendarService(client),
+    narratives: new NarrativesService(client),
   };
 }

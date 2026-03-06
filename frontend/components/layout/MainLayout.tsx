@@ -35,6 +35,9 @@ import { ScheduleProvider } from '../../contexts/ScheduleContext';
 import { EconCalendarProvider } from '../../contexts/EconCalendarContext';
 import { EconCalendar } from '../econ/EconCalendar';
 import { SessionCountdownWidget } from '../mission-control/SessionCountdownWidget';
+import { RegimeMini } from '../mission-control/RegimeMini';
+import { NarrativesPanel } from '../narratives/NarrativesPanel';
+import { NarrativesSidebar } from '../narratives/NarrativesSidebar';
 import {
   DEFAULT_MISSION_WIDGET_ORDER,
   getMissionWidgetOrder,
@@ -42,7 +45,7 @@ import {
   type MissionWidgetId,
 } from '../../lib/layoutOrderStorage';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'econ' | 'settings';
+type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'econ' | 'narratives' | 'settings';
 type LayoutOption = 'tickers-only' | 'combined';
 
 const MISSION_WIDGETS_PER_PAGE = 2;
@@ -80,6 +83,7 @@ export function MainLayout() {
   const [combinedPanelAlgoEnabled, setCombinedPanelAlgoEnabled] = useState(false);
   const [riskFlowCollapsed, setRiskFlowCollapsed] = useState(false);
   const [showAskHarp, setShowAskHarp] = useState(false);
+  const [showNarrativesSidebar, setShowNarrativesSidebar] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [sidebarOverlayVisible, setSidebarOverlayVisible] = useState(false);
   const [missionWidgetOrder, setMissionWidgetOrderState] = useState<MissionWidgetId[]>(() =>
@@ -317,6 +321,11 @@ export function MainLayout() {
       label: 'Autopilot',
       node: <AlgoStatusWidget />,
     },
+    regime: {
+      id: 'regime' as const,
+      label: 'Regime Tracker',
+      node: <RegimeMini />,
+    },
     account: {
       id: 'account' as const,
       label: 'Account Tracker',
@@ -525,7 +534,7 @@ export function MainLayout() {
     // For 'tickers-only', no panels are shown (only floating widget)
   } else {
     // When TopStepX is disabled: right stack = Mission Control + collapsible RiskFlow
-    const hideRightPanel = activeTab === 'notion' || activeTab === 'chatroom' || activeTab === 'econ' || activeTab === 'settings';
+    const hideRightPanel = activeTab === 'notion' || activeTab === 'chatroom' || activeTab === 'econ' || activeTab === 'narratives' || activeTab === 'settings';
     if (!hideRightPanel) {
       if (riskFlowCollapsed) {
         rightPanels.push(
@@ -580,6 +589,8 @@ export function MainLayout() {
         onLayoutOptionChange={setLayoutOption}
         askHarpOpen={showAskHarp}
         onAskHarpToggle={() => setShowAskHarp(prev => !prev)}
+        narrativesSidebarOpen={showNarrativesSidebar}
+        onNarrativesSidebarToggle={() => setShowNarrativesSidebar(prev => !prev)}
         activeTab={activeTab}
         tabHistory={tabHistory}
         historyIndex={historyIndex}
@@ -662,6 +673,11 @@ export function MainLayout() {
               {activeTab === 'notion' && (
                 <div key="notion" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <ResearchDepartment />
+                </div>
+              )}
+              {activeTab === 'narratives' && (
+                <div key="narratives" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                  <NarrativesPanel />
                 </div>
               )}
               {activeTab === 'settings' && (
@@ -766,6 +782,16 @@ export function MainLayout() {
         open={showSearchModal}
         onClose={() => setShowSearchModal(false)}
         onNavigateTab={(tab) => navigateTab(tab as NavTab)}
+      />
+
+      {/* Narratives sidebar pop-out */}
+      <NarrativesSidebar
+        open={showNarrativesSidebar}
+        onClose={() => setShowNarrativesSidebar(false)}
+        onExpandToFull={() => {
+          setShowNarrativesSidebar(false);
+          navigateTab('narratives' as NavTab);
+        }}
       />
     </div>
     </ScheduleProvider>

@@ -8,13 +8,14 @@ const TOOLBAR_ORDER_KEY = 'pulse_toolbar_order';
 const MISSION_WIDGET_ORDER_KEY = 'pulse_mission_widget_order_v2'; // v2: riskflow-mini removed
 const RIGHT_PANEL_ORDER_KEY = 'pulse_right_panel_order';
 
-export type NavTabId = 'executive' | 'analysis' | 'news' | 'chatroom' | 'notion' | 'econ';
+export type NavTabId = 'executive' | 'analysis' | 'news' | 'chatroom' | 'notion' | 'econ' | 'narratives';
 
 export const DEFAULT_SIDEBAR_ORDER: NavTabId[] = [
   'executive',
   'analysis',
   'news',
   'econ',
+  'narratives',
   'chatroom',
   'notion',
 ];
@@ -31,11 +32,12 @@ export const DEFAULT_TOOLBAR_ORDER: ToolbarItemId[] = [
   'ivScore',
 ];
 
-export type MissionWidgetId = 'er' | 'autopilot' | 'account' | 'blindspots';
+export type MissionWidgetId = 'er' | 'autopilot' | 'regime' | 'account' | 'blindspots';
 
 export const DEFAULT_MISSION_WIDGET_ORDER: MissionWidgetId[] = [
   'er',
   'autopilot',
+  'regime',
   'account',
   'blindspots',
 ];

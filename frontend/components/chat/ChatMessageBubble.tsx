@@ -34,7 +34,7 @@ export const ChatMessageBubble = forwardRef<HTMLDivElement, ChatMessageBubblePro
           className={[
             'max-w-[82%] rounded-2xl p-4 backdrop-blur-md border transition-colors',
             message.role === 'user'
-              ? 'bg-[#D4AF37]/12 border-[#D4AF37]/35 shadow-[0_12px_26px_rgba(212,175,55,0.08)]'
+              ? 'pulse-user-bubble'
               : message.cancelled
               ? 'bg-white/[0.03] border-white/5 opacity-50'
               : 'bg-[#0f0f0b]/92 border-white/10 shadow-[0_12px_28px_rgba(0,0,0,0.35)]',
@@ -63,7 +63,7 @@ export const ChatMessageBubble = forwardRef<HTMLDivElement, ChatMessageBubblePro
             {message.role === 'assistant' && !message.cancelled && onCheckpoint && (
               <button
                 onClick={() => onCheckpoint(message.id, textContent)}
-                className="opacity-60 hover:opacity-100 transition-opacity text-zinc-500 hover:text-[#D4AF37]"
+                className="opacity-60 hover:opacity-100 transition-opacity text-zinc-500 pulse-accent-hover"
                 title="Create checkpoint"
               >
                 <CalendarCheck className="w-3.5 h-3.5" />

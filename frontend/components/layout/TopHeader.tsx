@@ -10,10 +10,10 @@ import { useBackend } from '../../lib/backend';
 import { isElectron } from '../../lib/platform';
 import { getToolbarOrder, setToolbarOrder, type ToolbarItemId } from '../../lib/layoutOrderStorage';
 import { HeaderVoiceControl } from '../voice/HeaderVoiceControl';
-import { GripVertical, Layers, ChevronDown, ChevronLeft, ChevronRight, Monitor, MessageCircle, Power } from 'lucide-react';
+import { GripVertical, Layers, ChevronDown, ChevronLeft, ChevronRight, Monitor, MessageCircle, Power, Network } from 'lucide-react';
 import type { TradingPlatform } from '../TopStepXBrowser';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'econ' | 'settings';
+type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'econ' | 'narratives' | 'settings';
 
 const TAB_LABELS: Record<NavTab, string> = {
   executive: 'Dashboard',
@@ -23,6 +23,7 @@ const TAB_LABELS: Record<NavTab, string> = {
   chatroom: 'Board Room',
   notion: 'Research Department',
   econ: 'Economic Calendar',
+  narratives: 'Narratives',
   settings: 'Settings',
 };
 
@@ -38,6 +39,8 @@ interface TopHeaderProps {
   onLayoutOptionChange?: (option: LayoutOption) => void;
   askHarpOpen?: boolean;
   onAskHarpToggle?: () => void;
+  narrativesSidebarOpen?: boolean;
+  onNarrativesSidebarToggle?: () => void;
   activeTab?: NavTab;
   tabHistory?: NavTab[];
   historyIndex?: number;
@@ -58,6 +61,8 @@ export function TopHeader({
   onLayoutOptionChange,
   askHarpOpen = false,
   onAskHarpToggle,
+  narrativesSidebarOpen = false,
+  onNarrativesSidebarToggle,
   activeTab = 'executive',
   tabHistory = [],
   historyIndex = 0,
@@ -378,17 +383,32 @@ export function TopHeader({
             }
             if (id === 'chat' && onAskHarpToggle) {
               return wrapper(
-                <button
-                  onClick={onAskHarpToggle}
-                  className={`p-2 rounded-lg text-xs font-medium transition-colors ${
-                    askHarpOpen
-                      ? 'bg-[#6366f1] text-white hover:bg-[#6366f1]/90'
-                      : 'bg-[#050500] border border-[#6366f1]/30 text-[#6366f1] hover:bg-[#6366f1]/10 hover:border-[#6366f1]/50'
-                  }`}
-                  title="Chat"
-                >
-                  <MessageCircle className="w-3.5 h-3.5" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={onAskHarpToggle}
+                    className={`p-2 rounded-lg text-xs font-medium transition-colors ${
+                      askHarpOpen
+                        ? 'bg-[#6366f1] text-white hover:bg-[#6366f1]/90'
+                        : 'bg-[#050500] border border-[#6366f1]/30 text-[#6366f1] hover:bg-[#6366f1]/10 hover:border-[#6366f1]/50'
+                    }`}
+                    title="Chat"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" />
+                  </button>
+                  {onNarrativesSidebarToggle && (
+                    <button
+                      onClick={onNarrativesSidebarToggle}
+                      className={`p-2 rounded-lg text-xs font-medium transition-colors ${
+                        narrativesSidebarOpen
+                          ? 'bg-[#D4AF37] text-black hover:bg-[#FFD060]'
+                          : 'bg-[#050500] border border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50'
+                      }`}
+                      title="Narratives"
+                    >
+                      <Network className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
               );
             }
             if (id === 'voice') {

@@ -14,6 +14,16 @@
 }
 
 :root {
+  /* Pulse theme variables — set by ThemeProvider, defaults to Solvys Gold */
+  --pulse-accent: #D4AF37;
+  --pulse-bg: #050402;
+  --pulse-text: #f0ead6;
+  --pulse-bullish: #34D399;
+  --pulse-bearish: #EF4444;
+  --pulse-surface: #0a0a00;
+  --pulse-border: #D4AF37;
+  --pulse-muted: #6B7280;
+
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -304,9 +314,80 @@
   transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Pulse theme utility classes */
+.pulse-accent-hover:hover {
+  color: var(--pulse-accent);
+  background-color: color-mix(in srgb, var(--pulse-accent) 10%, transparent);
+}
+
+.pulse-accent-border {
+  border-color: color-mix(in srgb, var(--pulse-accent) 20%, transparent);
+}
+
+.pulse-accent-border-hover:hover {
+  border-color: color-mix(in srgb, var(--pulse-accent) 40%, transparent);
+  background-color: color-mix(in srgb, var(--pulse-accent) 5%, transparent);
+}
+
+.group:hover .pulse-group-accent {
+  color: var(--pulse-accent);
+}
+
+.pulse-thinking-container {
+  border: 1px solid color-mix(in srgb, var(--pulse-accent) 25%, transparent);
+  background-color: var(--pulse-surface);
+}
+
+.pulse-thinking-ring {
+  border: 1px solid color-mix(in srgb, var(--pulse-accent) 60%, transparent);
+}
+
+.pulse-thinking-ring-inner {
+  border: 1px solid color-mix(in srgb, var(--pulse-accent) 40%, transparent);
+}
+
+.pulse-thinking-dot {
+  background-color: color-mix(in srgb, var(--pulse-accent) 70%, transparent);
+}
+
+.pulse-settings-icon {
+  background-color: color-mix(in srgb, var(--pulse-accent) 10%, transparent);
+  color: var(--pulse-accent);
+}
+
+.group:hover .pulse-settings-icon {
+  background-color: color-mix(in srgb, var(--pulse-accent) 20%, transparent);
+}
+
+.pulse-nav-active {
+  background-color: var(--pulse-accent);
+  color: black;
+}
+
+.pulse-nav-inactive {
+  color: color-mix(in srgb, var(--pulse-accent) 60%, transparent);
+}
+
+.pulse-nav-inactive:hover {
+  color: var(--pulse-accent);
+  background-color: color-mix(in srgb, var(--pulse-accent) 10%, transparent);
+}
+
+.pulse-nav-active-light {
+  border-color: color-mix(in srgb, var(--pulse-accent) 50%, transparent);
+  color: var(--pulse-accent);
+  background-color: color-mix(in srgb, var(--pulse-accent) 10%, transparent);
+}
+
+.pulse-user-bubble {
+  background-color: color-mix(in srgb, var(--pulse-accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--pulse-accent) 35%, transparent);
+  box-shadow: 0 12px 26px color-mix(in srgb, var(--pulse-accent) 8%, transparent);
+}
+
 /* Subtle gold background glow on bottom corners — applied as box-shadow to avoid extra height */
 .section-fade-corners {
   box-shadow:
-    inset 80px -60px 80px -60px rgba(212, 175, 55, 0.03),
-    inset -80px -60px 80px -60px rgba(212, 175, 55, 0.03);
+    inset 80px -60px 80px -60px color-mix(in srgb, var(--pulse-accent) 3%, transparent),
+    inset -80px -60px 80px -60px color-mix(in srgb, var(--pulse-accent) 3%, transparent);
 }

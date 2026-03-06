@@ -7,6 +7,9 @@
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
+// [claude-code 2026-03-06] Bypass auth circuit breaker in local single-user mode
+const BYPASS_AUTH = import.meta.env.VITE_BYPASS_AUTH === 'true';
+
 // Global auth failure state - stops all polling when auth fails
 let authFailed = false;
 let authFailedTimestamp: number | null = null;
@@ -39,6 +42,7 @@ export function resetAuthState() {
 
 // Check if auth has failed and we should skip requests
 function shouldSkipRequest(): boolean {
+  if (BYPASS_AUTH) return false;
   if (!authFailed) return false;
   
   // Reset if enough time has passed
@@ -54,6 +58,7 @@ function shouldSkipRequest(): boolean {
 
 // Track 401 errors to prevent flooding
 function handle401Error(): void {
+  if (BYPASS_AUTH) return;
   const now = Date.now();
   
   // Reset counter if it's been more than 1 minute since last 401

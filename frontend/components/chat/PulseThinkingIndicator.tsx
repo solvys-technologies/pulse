@@ -43,18 +43,18 @@ export function PulseThinkingIndicator({ isThinking, thinkingContent, agentName 
   if (!isThinking) return null;
 
   return (
-    <div className="w-full rounded-xl border border-[#D4AF37]/25 bg-[#090904] px-3 py-2.5">
+    <div className="w-full rounded-xl px-3 py-2.5 pulse-accent-border pulse-thinking-container">
       <div className="flex items-start gap-3">
         {/* Radar pulse */}
         <div className="relative mt-0.5 h-6 w-6 flex-shrink-0">
-          <div className="absolute inset-0 rounded-full border border-[#D4AF37]/60 pulse-radar-ring-1" />
-          <div className="absolute inset-[3px] rounded-full border border-[#D4AF37]/40 pulse-radar-ring-2" />
-          <div className="absolute inset-[7px] rounded-full bg-[#D4AF37]/70 pulse-radar-dot" />
+          <div className="absolute inset-0 rounded-full pulse-radar-ring-1 pulse-thinking-ring" />
+          <div className="absolute inset-[3px] rounded-full pulse-radar-ring-2 pulse-thinking-ring-inner" />
+          <div className="absolute inset-[7px] rounded-full pulse-radar-dot pulse-thinking-dot" />
         </div>
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="text-[12px] font-medium text-[#D4AF37]">{phrase}</span>
+            <span className="text-[12px] font-medium" style={{ color: 'var(--pulse-accent)' }}>{phrase}</span>
             {agentName && <span className="text-[10px] text-zinc-500">({agentName})</span>}
           </div>
 
@@ -68,7 +68,7 @@ export function PulseThinkingIndicator({ isThinking, thinkingContent, agentName 
                 {expanded ? 'Hide thinking pane' : 'Show thinking pane'}
               </button>
               {expanded && (
-                <div className="mt-1.5 max-h-[180px] overflow-y-auto border-l border-[#D4AF37]/25 pl-2 text-[11px] leading-relaxed text-zinc-400 whitespace-pre-wrap">
+                <div className="mt-1.5 max-h-[180px] overflow-y-auto border-l pl-2 text-[11px] leading-relaxed text-zinc-400 whitespace-pre-wrap pulse-accent-border">
                   {thinkingContent}
                 </div>
               )}

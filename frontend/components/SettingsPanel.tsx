@@ -9,6 +9,7 @@ import { useBackend } from '../lib/backend';
 import { HEALING_BOWL_SOUNDS, healingBowlPlayer } from '../utils/healingBowlSounds';
 
 import { ClawnalystDesk } from './settings/ClawnalystDesk';
+import { ThemeSettings } from './settings/ThemeSettings';
 
 type SettingsTab = 'general' | 'gateway' | 'appearance' | 'desk' | 'notifications' | 'trading' | 'api' | 'developer' | 'danger';
 
@@ -191,7 +192,7 @@ export function SettingsPage() {
                       className={`group text-left p-4 rounded-lg border transition-all hover:scale-[1.01] ${
                         isDanger
                           ? 'border-red-500/15 hover:border-red-500/30 hover:bg-red-500/5'
-                          : 'border-[#D4AF37]/10 hover:border-[#D4AF37]/30 hover:bg-[#D4AF37]/5'
+                          : 'pulse-accent-border pulse-accent-border-hover'
                       }`}
                       style={{ backgroundColor: 'rgba(10,10,0,0.4)' }}
                     >
@@ -199,7 +200,7 @@ export function SettingsPage() {
                         <div className={`mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
                           isDanger
                             ? 'bg-red-500/10 text-red-400 group-hover:bg-red-500/20'
-                            : 'bg-[#D4AF37]/10 text-[#D4AF37] group-hover:bg-[#D4AF37]/20'
+                            : 'pulse-settings-icon'
                         } transition-colors`}>
                           <Icon className="w-4 h-4" />
                         </div>
@@ -734,10 +735,7 @@ export function SettingsPage() {
 
             {activeTab === 'appearance' && (
               <div key="appearance" className={tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}>
-                <section>
-                  <h3 className="text-sm font-semibold text-[#D4AF37] mb-3">Theme</h3>
-                  <p className="text-sm text-gray-500">Dark mode is the default and only theme. Additional themes coming soon.</p>
-                </section>
+                <ThemeSettings />
               </div>
             )}
 

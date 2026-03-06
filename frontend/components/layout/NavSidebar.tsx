@@ -1,8 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Newspaper, Settings, LogOut, Sparkles, LayoutDashboard, MessagesSquare, NotebookText, CalendarDays, GripVertical, ChevronsRight, ChevronsLeft } from 'lucide-react';
+import { Newspaper, Settings, LogOut, Sparkles, LayoutDashboard, MessagesSquare, NotebookText, CalendarDays, GripVertical, ChevronsRight, ChevronsLeft, Network } from 'lucide-react';
 import { getSidebarOrder, setSidebarOrder, type NavTabId } from '../../lib/layoutOrderStorage';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'econ' | 'settings';
+type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'econ' | 'narratives' | 'settings';
 
 interface NavSidebarProps {
   activeTab: NavTab;
@@ -20,6 +20,7 @@ const NAV_ITEMS_MAP: Record<NavTabId, { id: NavTab; icon: typeof LayoutDashboard
   econ: { id: 'econ', icon: CalendarDays, label: 'Calendar', description: 'Economic calendar' },
   chatroom: { id: 'chatroom', icon: MessagesSquare, label: 'Board Room', description: 'Multi-agent boardroom' },
   notion: { id: 'notion', icon: NotebookText, label: 'Research', description: 'Notion research corpus' },
+  narratives: { id: 'narratives', icon: Network, label: 'Narratives', description: 'Market narrative tracker' },
 };
 
 // Icon size: original was w-6 h-6 (24px). 35% smaller = ~15.6px → w-4 h-4 (16px)
@@ -114,7 +115,8 @@ export function NavSidebar({
 
   const sidebarContent = (
     <div
-      className={`h-full bg-[#0a0a00] border-r border-[#D4AF37]/20 flex flex-col py-3 transition-all duration-200 ease-out ${
+      style={{ backgroundColor: 'var(--pulse-surface)' }}
+      className={`h-full border-r pulse-accent-border flex flex-col py-3 transition-all duration-200 ease-out ${
         expanded ? 'w-48' : 'w-11'
       }`}
       onMouseEnter={handleMouseEnter}
@@ -125,7 +127,7 @@ export function NavSidebar({
         <button
           type="button"
           onClick={() => setManualExpand((v) => !v)}
-          className="w-full flex items-center justify-center py-1 rounded-md text-[#D4AF37]/50 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-colors"
+          className="w-full flex items-center justify-center py-1 rounded-md pulse-nav-inactive transition-colors"
           title={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
         >
           {expanded ? <ChevronsLeft className="w-3.5 h-3.5" /> : <ChevronsRight className="w-3.5 h-3.5" />}
@@ -139,8 +141,8 @@ export function NavSidebar({
             onClick={() => setEditMode((v) => !v)}
             className={`text-[10px] px-2 py-0.5 rounded border transition-colors ${
               editMode
-                ? 'border-[#D4AF37]/50 text-[#D4AF37] bg-[#D4AF37]/10'
-                : 'border-zinc-700 text-zinc-400 hover:text-[#D4AF37] hover:border-[#D4AF37]/30'
+                ? 'pulse-accent-border pulse-nav-active-light'
+                : 'border-zinc-700 text-zinc-400 pulse-accent-hover'
             }`}
             title={editMode ? 'Finish reordering' : 'Enable drag reorder'}
           >
@@ -162,7 +164,7 @@ export function NavSidebar({
             >
               {expanded && editMode && (
                 <div
-                  className="cursor-grab active:cursor-grabbing touch-none shrink-0 p-0.5 text-gray-500 hover:text-[#D4AF37]"
+                  className="cursor-grab active:cursor-grabbing touch-none shrink-0 p-0.5 text-gray-500 pulse-accent-hover"
                   title="Drag to reorder"
                 >
                   <GripVertical className="w-3 h-3" />
@@ -174,8 +176,8 @@ export function NavSidebar({
                   expanded ? 'px-2 py-1.5' : 'justify-center py-1.5 px-0'
                 } ${
                   isActive
-                    ? 'bg-[#D4AF37] text-black'
-                    : 'text-[#D4AF37]/60 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10'
+                    ? 'pulse-nav-active'
+                    : 'pulse-nav-inactive'
                 }`}
                 title={expanded ? undefined : label}
               >
@@ -203,8 +205,8 @@ export function NavSidebar({
             expanded ? 'px-2 py-1.5' : 'justify-center py-1.5'
           } ${
             activeTab === 'settings'
-              ? 'bg-[#D4AF37] text-black'
-              : 'text-[#D4AF37]/60 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10'
+              ? 'pulse-nav-active'
+              : 'pulse-nav-inactive'
           }`}
           title={expanded ? undefined : 'Settings'}
         >
