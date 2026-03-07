@@ -24,17 +24,27 @@ export function ExecutiveDashboard() {
   const [ntnLoaded, setNtnLoaded] = useState(false);
   const [kpisLoaded, setKpisLoaded] = useState(false);
 
-  // Morning Daily Brief from Notion / AI-only sources
+  // Brief type based on time: MDB (<11AM), ADB (11AM-5:29PM), PMDB (5:30PM+)
+  const getBriefLabel = () => {
+    const now = new Date();
+    const t = now.getHours() * 60 + now.getMinutes();
+    if (t >= 17 * 60 + 30) return 'Post-Market Brief';
+    if (t >= 11 * 60) return 'Afternoon Brief';
+    return 'Morning Brief';
+  };
+  const [briefLabel, setBriefLabel] = useState(getBriefLabel);
+
+  // Daily Brief from Notion — rotates MDB/ADB/PMDB
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       try {
+        if (!cancelled) setBriefLabel(getBriefLabel());
         const items = await backend.notion.getMdbBrief();
         if (cancelled) return;
-        setNtnText(items.map((i) => `• ${i.title} — ${i.detail}`).join('\n\n'));
+        setNtnText(items.map((i) => i.detail).join('\n\n'));
       } catch (error) {
-        console.warn('[Dashboard] MDB brief fetch failed:', error);
-        if (!cancelled) setNtnText('');
+        console.warn('[Dashboard] Brief fetch failed:', error);
       } finally {
         if (!cancelled) setNtnLoaded(true);
       }
@@ -138,7 +148,7 @@ export function ExecutiveDashboard() {
           <div className="shrink-0 grid grid-cols-1 xl:grid-cols-2 gap-6 mb-5" style={{ height: '380px' }}>
             {/* Need-to-Know Brief */}
             <div className="flex flex-col h-full min-h-0">
-              <KanbanTitle title="Need-to-Know Brief" tone="gold" />
+              <KanbanTitle title={briefLabel} tone="gold" />
               <textarea
                 value={ntnText}
                 readOnly

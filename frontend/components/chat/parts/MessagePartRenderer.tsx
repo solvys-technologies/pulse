@@ -42,7 +42,8 @@ export function MessagePartRenderer({ parts, isStreaming }: MessagePartRendererP
               />
             );
           case 'reasoning':
-            return <ReasoningPartRenderer key={key} text={part.text} />;
+            // Reasoning is shown by PulseThinkingIndicator — skip inline rendering
+            return null;
           case 'tool-invocation':
             return (
               <ToolCallPartRenderer

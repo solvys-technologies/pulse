@@ -1,4 +1,4 @@
-// [claude-code 2026-03-06] GitHub OAuth routes for GitHub Models integration (Kimi K2)
+// [claude-code 2026-03-06] GitHub OAuth routes for GitHub Models integration (DeepSeek R1)
 import { Hono } from 'hono'
 
 const GITHUB_AUTHORIZE_URL = 'https://github.com/login/oauth/authorize'

@@ -38,7 +38,7 @@ async function generateOpenClawDescription(idea: NotionTradeIdea): Promise<strin
     ? ` Entry ~${idea.entry}${idea.stopLoss ? `, SL ${idea.stopLoss}` : ''}${idea.takeProfit ? `, TP ${idea.takeProfit}` : ''}.`
     : '';
   const rr = idea.riskRewardRatio ? ` R/R ${idea.riskRewardRatio.toFixed(1)}:1.` : '';
-  const prompt = `Write a 2-sentence trade brief for a ${idea.direction.toUpperCase()} on ${idea.ticker}.${slTp}${rr} Confidence: ${idea.confidence ?? 'unknown'}. Timeframe: ${idea.timeframe ?? 'unspecified'}. Be concise and professional.`;
+  const prompt = `Write a 2-sentence trade brief for: "${idea.title}" (${idea.direction.toUpperCase()}).${slTp}${rr} Confidence: ${idea.confidence ?? 'unknown'}. Timeframe: ${idea.timeframe ?? 'unspecified'}. Be concise and professional.`;
 
   try {
     const res = await fetch(url, {

@@ -1,4 +1,4 @@
-// [claude-code 2026-03-06] Added GitHub OAuth state for GitHub Models (Kimi K2) integration
+// [claude-code 2026-03-06] GitHub OAuth state for GitHub Models (DeepSeek R1) — popup window flow
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 
 export type UserTier = 'free' | 'pulse' | 'pulse_plus' | 'pulse_pro';
@@ -68,9 +68,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     else localStorage.removeItem('github_user');
   }, [ghUser]);
 
+  // Listen for OAuth popup messages (popup shares the same AuthContext via localStorage)
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      if (e.data?.type === 'github-oauth-success') {
+        // Popup already called handleCallback which updated state — reload from localStorage
+        const token = localStorage.getItem('github_token');
+        const user = localStorage.getItem('github_user');
+        if (token) setGhToken(token);
+        if (user) setGhUser(JSON.parse(user));
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, []);
+
   const connectGitHub = useCallback(() => {
-    // Redirect to backend GitHub OAuth endpoint
-    window.location.href = `${API_BASE}/api/auth/github`;
+    // Open GitHub OAuth in a popup window to avoid white-screen in Electron/embedded contexts
+    const width = 500;
+    const height = 700;
+    const left = window.screenX + (window.innerWidth - width) / 2;
+    const top = window.screenY + (window.innerHeight - height) / 2;
+    window.open(
+      `${API_BASE}/api/auth/github`,
+      'github-oauth',
+      `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no`
+    );
   }, []);
 
   const disconnectGitHub = useCallback(() => {

@@ -24,7 +24,7 @@ export type AiModelKey =
   | 'openclaw-fast'      // Fast analysis (Llama)
   | 'openclaw-realtime'  // Real-time news (Grok)
   // GitHub Models (free, OAuth-powered)
-  | 'github-kimi-k2'    // Kimi K2 via GitHub Models
+  | 'github-deepseek'   // DeepSeek R1 via GitHub Models
 
 export type AiProvider = 'openai-compatible'
 
@@ -142,11 +142,11 @@ const modelAliases: Record<string, AiModelKey> = {
   'openclaw-realtime': 'openclaw-realtime',
   'pic-realtime': 'openclaw-realtime',
   'pma': 'openclaw-realtime',
-  // GitHub Models
-  'github-kimi-k2': 'github-kimi-k2',
-  'kimi': 'github-kimi-k2',
-  'kimi-k2': 'github-kimi-k2',
-  'github-kimi': 'github-kimi-k2'
+  // GitHub Models (GPT-4o fallback)
+  'github-deepseek': 'github-deepseek',
+  'github-gpt4o': 'github-deepseek',
+  'github-models': 'github-deepseek',
+  'gpt4o-free': 'github-deepseek'
 }
 
 export const resolveModelKey = (value?: string): AiModelKey | undefined => {
@@ -354,22 +354,22 @@ export const defaultAiConfig: AiConfig = {
       supportsVision: false
     },
 
-    // GitHub Models (free via GitHub OAuth)
-    'github-kimi-k2': {
-      id: getEnv('GITHUB_MODELS_KIMI_ID') ?? 'moonshotai/Kimi-K2',
-      displayName: 'Kimi K2 (GitHub Models)',
+    // GitHub Models (free via GitHub OAuth) — fallback model
+    'github-deepseek': {
+      id: getEnv('GITHUB_MODELS_MODEL_ID') ?? 'gpt-4o',
+      displayName: 'GPT-4o (GitHub Models)',
       provider: 'openai-compatible',
       providerType: 'github-models',
       apiKeyEnv: 'GITHUB_TOKEN',
       baseUrl: githubModelsBaseUrl,
       temperature: 0.4,
       maxTokens: 4096,
-      timeoutMs: 60_000,
+      timeoutMs: 30_000,
       costPer1kInputUsd: 0,
       costPer1kOutputUsd: 0,
       contextWindow: 128_000,
       supportsStreaming: true,
-      supportsVision: false
+      supportsVision: true
     }
   },
 
@@ -423,7 +423,7 @@ export const defaultAiConfig: AiConfig = {
       'openclaw-fast': 'openrouter-llama',
       'openclaw-realtime': 'openrouter-grok',
       // GitHub Models fallback to OpenRouter
-      'github-kimi-k2': 'openrouter-llama'
+      'github-deepseek': 'openrouter-llama'
     },
     // Cross-provider fallbacks (all within OpenRouter now)
     crossProviderFallbacks: []

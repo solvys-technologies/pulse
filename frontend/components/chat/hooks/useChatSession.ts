@@ -95,37 +95,22 @@ export function useChatSession({ agentId, activeSkill }: UseChatSessionOptions) 
     setUseChatMessages((prev: any[]) => {
       const lastMessage = prev[prev.length - 1];
 
-      if (lastMessage && lastMessage.role === 'assistant' && status === 'streaming') {
-        const cancelledMessage: any = {
+      if (lastMessage && lastMessage.role === 'assistant') {
+        // Replace partial/streaming assistant message with cancelled marker
+        return [...prev.slice(0, -1), {
           id: `cancelled-${Date.now()}`,
           role: 'assistant',
-          content: 'This message was cancelled',
+          content: 'Stopped.',
           createdAt: new Date(),
           cancelled: true,
-        };
-        return [...prev.slice(0, -1), cancelledMessage];
-      }
-
-      const lastUserMessage = [...prev].reverse().find((msg: any) => msg.role === 'user');
-      if (lastUserMessage) {
-        const cancelledMessage: any = {
-          id: `cancelled-${Date.now()}`,
-          role: 'assistant',
-          content: 'This message was cancelled',
-          createdAt: new Date(),
-          cancelled: true,
-        };
-        return [...prev, cancelledMessage];
+        }];
       }
 
       return prev;
     });
 
-    // Restore the last sent message
-    if (lastSentMessage) {
-      setLastSentMessage('');
-    }
-  }, [rawStop, setIsStreaming, setUseChatMessages, status, lastSentMessage]);
+    setLastSentMessage('');
+  }, [rawStop, setIsStreaming, setUseChatMessages]);
 
   const newChat = useCallback(() => {
     setUseChatMessages([]);

@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect, useCallback, type KeyboardEvent, type ChangeEvent, type ClipboardEvent } from 'react';
-import { Send, Plus, Wrench, Brain, ChevronDown, X } from 'lucide-react';
-import { usePulseAgents, type PulseAgent } from '../../contexts/PulseAgentContext';
+import { ArrowUp, Square, Plus, Wrench, Brain, X } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
 /*  Props                                                              */
@@ -35,12 +34,9 @@ export function PulseChatInput({
   disabled = false,
   draftKey = 'pulse_draft_analysis',
 }: PulseChatInputProps) {
-  const { agents, activeAgent, setActiveAgent } = usePulseAgents();
   const [text, setText] = useState('');
   const [images, setImages] = useState<string[]>([]);
-  const [showAgentPicker, setShowAgentPicker] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const pickerRef = useRef<HTMLDivElement>(null);
 
   /* Draft persistence — load on mount */
   useEffect(() => {
@@ -65,17 +61,6 @@ export function PulseChatInput({
     el.style.height = 'auto';
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   }, [text]);
-
-  /* Close agent picker on outside click */
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
-        setShowAgentPicker(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
 
   /* Send */
   const handleSend = useCallback(() => {
@@ -189,7 +174,7 @@ export function PulseChatInput({
 
         {/* Bottom bar */}
         <div className="flex items-center justify-between border-t border-white/5" style={{ padding: '8px 10px 10px' }}>
-          {/* Left: Attach + Skills */}
+          {/* Left: Attach + Skills + Think Harder */}
           <div className="flex items-center gap-1">
             <button
               onClick={onOpenAttach}
@@ -207,86 +192,38 @@ export function PulseChatInput({
             >
               <Wrench size={14} />
             </button>
-          </div>
-
-          {/* Right: Agent selector + Think Harder + Send */}
-          <div className="flex items-center gap-1.5">
-            {/* Agent selector pill */}
-            <div className="relative" ref={pickerRef}>
-              <button
-                onClick={() => setShowAgentPicker(!showAgentPicker)}
-                className="flex items-center gap-1 rounded-lg border border-[#D4AF37]/25 bg-black/25 text-zinc-300 hover:text-white hover:border-[#D4AF37]/45 transition-colors"
-                style={{ padding: '4px 10px 4px 8px', fontSize: '12px' }}
-              >
-                <span
-                  className="flex items-center justify-center rounded-md bg-[#D4AF37]/10 text-[#D4AF37] font-semibold"
-                  style={{ width: '18px', height: '18px', fontSize: '10px' }}
-                >
-                  {activeAgent?.icon || '?'}
-                </span>
-                <span className="max-w-[80px] truncate">{activeAgent?.name || 'Select'}</span>
-                <ChevronDown size={12} className="flex-shrink-0" />
-              </button>
-
-              {showAgentPicker && (
-                <div
-                  className="absolute bottom-full mb-1 right-0 w-52 rounded-lg border border-[#D4AF37]/20 bg-[#0a0a00] shadow-xl overflow-hidden z-50"
-                >
-                  {agents.map((a) => (
-                    <button
-                      key={a.id}
-                      onClick={() => { setActiveAgent(a); setShowAgentPicker(false); }}
-                      className={`w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-[#D4AF37]/10 transition-colors ${a.id === activeAgent?.id ? 'bg-[#D4AF37]/15' : ''}`}
-                    >
-                      <span
-                        className="flex items-center justify-center rounded-md bg-[#D4AF37]/10 text-[#D4AF37] font-semibold"
-                        style={{ width: '22px', height: '22px', fontSize: '11px', flexShrink: 0 }}
-                      >
-                        {a.icon}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[12px] text-white truncate">{a.name}</div>
-                        <div className="text-[10px] text-gray-500 truncate">{a.sector}</div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Think Harder toggle */}
             <button
               onClick={() => setThinkHarder(!thinkHarder)}
               title={thinkHarder ? 'Extended thinking ON' : 'Extended thinking OFF'}
-              className={`flex items-center justify-center rounded-lg border transition-all ${
+              className={`flex items-center justify-center rounded-lg transition-all ${
                 thinkHarder
-                  ? 'border-[#D4AF37] bg-[#D4AF37]/20 text-[#D4AF37] shadow-[0_0_10px_rgba(212,175,55,0.32)]'
-                  : 'border-[#D4AF37]/20 text-zinc-500 hover:text-[#D4AF37] hover:border-[#D4AF37]/40'
+                  ? 'text-[#D4AF37] bg-[#D4AF37]/15'
+                  : 'text-zinc-500 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10'
               }`}
               style={{ width: '32px', height: '32px' }}
             >
               <Brain size={14} />
             </button>
-
-            {/* Send button */}
-            <button
-              onClick={isProcessing && onStop ? onStop : handleSend}
-              disabled={!text.trim() && images.length === 0 && !isProcessing}
-              className={`flex items-center justify-center rounded-lg transition-all ${
-                isProcessing
-                  ? 'bg-red-500 hover:bg-red-600 text-white shadow-[0_0_0_1px_rgba(255,255,255,0.2)]'
-                  : 'bg-[#D4AF37] hover:bg-[#C5A030] text-black disabled:opacity-30 disabled:hover:bg-[#D4AF37] shadow-[0_8px_20px_rgba(212,175,55,0.25)]'
-              }`}
-              style={{ width: '34px', height: '34px' }}
-              title={isProcessing ? 'Stop' : 'Send'}
-            >
-              {isProcessing ? (
-                <div className="w-3 h-3 rounded-sm bg-white" />
-              ) : (
-                <Send size={14} />
-              )}
-            </button>
           </div>
+
+          {/* Right: Send / Stop */}
+          <button
+            onClick={isProcessing && onStop ? onStop : handleSend}
+            disabled={!text.trim() && images.length === 0 && !isProcessing}
+            className={`flex items-center justify-center rounded-full transition-all ${
+              isProcessing
+                ? 'bg-[#D4AF37] hover:bg-[#C5A030] text-black'
+                : 'bg-[#D4AF37] hover:bg-[#C5A030] text-black disabled:opacity-30 disabled:hover:bg-[#D4AF37] shadow-[0_8px_20px_rgba(212,175,55,0.25)]'
+            }`}
+            style={{ width: '34px', height: '34px' }}
+            title={isProcessing ? 'Stop' : 'Send'}
+          >
+            {isProcessing ? (
+              <Square size={12} fill="currentColor" />
+            ) : (
+              <ArrowUp size={16} strokeWidth={2.5} />
+            )}
+          </button>
         </div>
       </div>
     </div>

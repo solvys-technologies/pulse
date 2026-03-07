@@ -69,7 +69,7 @@ export async function handleChat(c: Context) {
   const requestId = `chat-${Date.now()}-${Math.random().toString(36).substring(7)}`
   const userId = c.get('userId') as string | undefined
 
-  // Pass user's GitHub OAuth token for GitHub Models (Kimi K2)
+  // Pass user's GitHub OAuth token for GitHub Models (GPT-4o)
   const githubToken = c.req.header('X-GitHub-Token')
   setRuntimeGitHubToken(githubToken || undefined)
 
@@ -136,8 +136,13 @@ export async function handleChat(c: Context) {
     const agentInfo = detectAgent(message)
     console.log(`[OpenClaw][${requestId}] Routed to agent: ${agentInfo.agent} (intent: ${agentInfo.intent}, confidence: ${agentInfo.confidence})`)
 
-    // USE LOCAL OPENCLAW PROCESSING (no external API calls)
-    if (USE_LOCAL_OPENCLAW) {
+    // LOCAL OPENCLAW is always the primary path.
+    // GitHub Models (GPT-4o) is available as a fallback when the Clawdbot gateway is down.
+    // Only use GitHub Models if explicitly requested via model param.
+    const useGitHubModel = Boolean(githubToken) && model === 'github-deepseek'
+
+    // PRIMARY PATH: Local OpenClaw processing via P.I.C. agent network
+    if (USE_LOCAL_OPENCLAW && !useGitHubModel) {
       console.log(`[OpenClaw][${requestId}] Using LOCAL processing via P.I.C. agents`)
 
       // Generate response locally through OpenClaw
@@ -231,18 +236,19 @@ export async function handleChat(c: Context) {
       })
     }
 
-    // FALLBACK: Use external API (when USE_LOCAL_OPENCLAW=false)
-    console.log(`[OpenClaw][${requestId}] Falling back to external API`)
+    // External API — GitHub Models (GPT-4o) fallback when explicitly requested
+    const preferredModel = useGitHubModel ? 'github-deepseek' : model
+    console.log(`[OpenClaw][${requestId}] Using external API (preferred: ${preferredModel ?? 'auto'})`)
 
     // Select model based on agent task type
     const selection = selectModel({
-      preferredModel: model,
+      preferredModel,
       taskType: agentInfo.intent || taskType || 'chat',
       messageCount: history.length,
       inputChars: message.length,
     })
 
-    logModelSelection(selection, { preferredModel: model, taskType })
+    logModelSelection(selection, { preferredModel, taskType })
     console.log(`[OpenClaw][${requestId}] Selected model: ${selection.model} (provider: ${selection.provider})`)
 
     const systemPrompt = defaultAiConfig.systemPrompt ?? 'You are a helpful AI trading assistant.'
@@ -254,7 +260,15 @@ export async function handleChat(c: Context) {
     } catch (err) {
       console.error(`[OpenClaw][${requestId}] Failed to create model client:`, err)
 
-      // Try fallback model
+      // When GitHub model was explicitly selected, don't silently fallback — return clean error
+      if (useGitHubModel) {
+        return c.json({
+          error: 'Connected but error — GPT-4o via GitHub Models is unavailable right now.',
+          requestId,
+        }, 503)
+      }
+
+      // Try fallback model for non-GitHub routes
       const fallback = getFallbackModel(selection.model as AiModelKey)
       if (fallback) {
         console.log(`[OpenClaw][${requestId}] Trying fallback model: ${fallback.model}`)
@@ -329,14 +343,17 @@ export async function handleChat(c: Context) {
     const duration = Date.now() - startTime
     console.error(`[OpenClaw][${requestId}] Fatal error after ${duration}ms:`, error)
 
-    let errorMessage = 'Failed to process chat message'
+    // Clean error messages — no raw fallback info
+    let errorMessage = 'Connected but error — try again in a moment.'
     if (error instanceof Error) {
       if (error.name === 'AbortError' || error.message.includes('timeout')) {
         errorMessage = 'Request timed out. Please try again.'
-      } else if (error.message.includes('API key')) {
-        errorMessage = 'AI service configuration error.'
+      } else if (error.message.includes('API key') || error.message.includes('authentication')) {
+        errorMessage = 'Connected but error — check model configuration.'
       } else if (error.message.includes('rate limit')) {
-        errorMessage = 'Rate limit exceeded. Please wait.'
+        errorMessage = 'Rate limit exceeded. Please wait a moment.'
+      } else if (error.message.includes('GitHub Models')) {
+        errorMessage = 'Connected but error — GPT-4o is temporarily unavailable.'
       }
     }
 

@@ -11,6 +11,8 @@ import { getEnvConfig, isDev } from './config/env.js';
 import { registerRoutes } from './routes/index.js';
 import { createHealthService } from './services/health-service.js';
 import { startFeedPoller } from './services/riskflow/feed-poller.js';
+import { startNotionPoller } from './services/notion-poller.js';
+import { startEconEnricher } from './services/cron/econ-enricher.js';
 const app = new Hono();
 const healthService = createHealthService();
 const config = getEnvConfig();
@@ -55,5 +57,9 @@ console.log(`[API] Server started on port ${config.PORT}`);
 console.log(`[API] Environment: ${config.NODE_ENV}`);
 // Start background feed poller for real-time Level 4 detection
 startFeedPoller();
+// Start Notion polling (trade ideas + daily P&L)
+startNotionPoller();
+// Start econ calendar enricher (writes FMP actuals to Notion)
+startEconEnricher();
 export default app;
 //# sourceMappingURL=index.js.map

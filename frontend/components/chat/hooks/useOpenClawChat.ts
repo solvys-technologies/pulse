@@ -23,7 +23,7 @@ export function useOpenClawChat(
     const headers = new Headers(init?.headers);
     headers.set('Content-Type', 'application/json');
 
-    // Attach GitHub OAuth token for GitHub Models (Kimi K2)
+    // Attach GitHub OAuth token for GitHub Models (DeepSeek R1)
     const ghToken = localStorage.getItem('github_token');
     if (ghToken) headers.set('X-GitHub-Token', ghToken);
 

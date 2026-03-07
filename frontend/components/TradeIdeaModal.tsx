@@ -73,7 +73,7 @@ export default function TradeIdeaModal({ idea, onClose }: TradeIdeaModalProps) {
                   )}
                 </div>
                 <div className="text-sm font-semibold text-[#f0ead6] truncate mt-0.5">
-                  {idea.ticker}
+                  {idea.title}
                 </div>
                 {idea.sourceAgent && (
                   <div className="text-[10px] text-zinc-600 mt-0.5">

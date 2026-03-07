@@ -9,6 +9,7 @@ import { decodeHtmlEntities } from './html-entities';
 export type AlertSeverity = 'low' | 'medium' | 'high';
 
 export interface TradeIdeaDetail {
+  title: string;
   ticker: string;
   direction: 'long' | 'short' | 'neutral';
   entry?: number;

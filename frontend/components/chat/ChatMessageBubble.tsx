@@ -13,8 +13,13 @@ interface ChatMessageBubbleProps {
 
 export const ChatMessageBubble = forwardRef<HTMLDivElement, ChatMessageBubbleProps>(
   function ChatMessageBubble({ message, isStreaming, onCheckpoint }, ref) {
-    const formatTime = (date: Date) =>
-      date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+    const formatTimestamp = (date: Date) => {
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const dd = String(date.getDate()).padStart(2, '0');
+      const yy = String(date.getFullYear()).slice(-2);
+      const time = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+      return `${mm}/${dd}/${yy} ${time}`;
+    };
 
     // Extract full text content for checkpoint excerpt
     const textContent = message.parts
@@ -28,7 +33,7 @@ export const ChatMessageBubble = forwardRef<HTMLDivElement, ChatMessageBubblePro
       : null;
 
     return (
-      <div className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+      <div className={`group/msg flex flex-col ${message.role === 'user' ? 'items-end' : 'items-start'}`}>
         <div
           ref={ref}
           className={[
@@ -41,7 +46,7 @@ export const ChatMessageBubble = forwardRef<HTMLDivElement, ChatMessageBubblePro
           ].join(' ')}
         >
           {message.role === 'assistant' ? (
-            <div className={`text-sm mb-2 max-w-none ${message.cancelled ? 'text-zinc-500 italic' : 'text-zinc-300'}`}>
+            <div className={`text-sm max-w-none ${message.cancelled ? 'text-zinc-500 italic' : 'text-zinc-300'}`}>
               {message.cancelled ? (
                 <p className="text-xs">{textContent || 'This message was cancelled'}</p>
               ) : reportHtml ? (
@@ -54,22 +59,23 @@ export const ChatMessageBubble = forwardRef<HTMLDivElement, ChatMessageBubblePro
               )}
             </div>
           ) : (
-            <p className="text-sm text-zinc-300 mb-2 whitespace-pre-wrap">{textContent}</p>
+            <p className="text-sm text-zinc-300 whitespace-pre-wrap">{textContent}</p>
           )}
-          <div className="flex items-center justify-between gap-3">
-            <span className={`text-[9px] font-mono ${message.cancelled ? 'text-zinc-700' : 'text-zinc-600'}`}>
-              {formatTime(message.createdAt)}
-            </span>
-            {message.role === 'assistant' && !message.cancelled && onCheckpoint && (
-              <button
-                onClick={() => onCheckpoint(message.id, textContent)}
-                className="opacity-60 hover:opacity-100 transition-opacity text-zinc-500 pulse-accent-hover"
-                title="Create checkpoint"
-              >
-                <CalendarCheck className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
+        </div>
+        {/* Timestamp + checkpoint — visible on hover beneath bubble */}
+        <div className="flex items-center gap-2 mt-1 px-2 opacity-0 group-hover/msg:opacity-100 transition-opacity duration-200">
+          <span className={`text-[9px] font-mono ${message.cancelled ? 'text-zinc-700' : 'text-zinc-600'}`}>
+            {formatTimestamp(message.createdAt)}
+          </span>
+          {message.role === 'assistant' && !message.cancelled && onCheckpoint && (
+            <button
+              onClick={() => onCheckpoint(message.id, textContent)}
+              className="text-zinc-600 hover:text-[color:var(--pulse-accent)] transition-colors"
+              title="Create checkpoint"
+            >
+              <CalendarCheck className="w-3 h-3" />
+            </button>
+          )}
         </div>
       </div>
     );

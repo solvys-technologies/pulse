@@ -11,7 +11,7 @@ const HARPER_MESSAGES_DB = '30c141b0da7d81ba8bb6e319a0c4c309';
 const DAILY_BRIEFS_DB = '704074dcba7d4eec9b7acb1514765761';
 const TRADE_IDEAS_DB = '136fa9a2069e4afc835e0e139ead49f2';
 const DAILY_PNL_DB = 'ee7d03052a424dcb95f6406c166e7584';
-export const ECONOMIC_EVENTS_DB = process.env.NOTION_ECONOMIC_EVENTS_DB ?? '3cbc448583e540c78effba6c5346483f';
+export const ECONOMIC_EVENTS_DB = process.env.NOTION_ECONOMIC_EVENTS_DB ?? 'ee319e74caf648f6843ba3019a8de97d';
 export const ECON_PRINTS_DB = process.env.NOTION_ECON_PRINTS_DB ?? '';
 
 const SCHEDULE_TITLE_ALIASES = ['Name', 'Title', 'Event', 'Calendar Event'];
@@ -146,47 +146,85 @@ export async function notionUpdatePage(
 
 // ── Public API ──────────────────────────────────────────────────────────────
 
+// Brief rotation schedule:
+//   MDB  (Morning Daily Brief)    — 12:00 AM to 10:59 AM
+//   ADB  (Afternoon Daily Brief)  — 11:00 AM to 5:29 PM
+//   PMDB (Post-Market Daily Brief) — 5:30 PM to 11:59 PM
+export type BriefType = 'MDB' | 'ADB' | 'PMDB';
+
+export function getCurrentBriefType(): BriefType {
+  const now = new Date();
+  const timeVal = now.getHours() * 60 + now.getMinutes();
+  if (timeVal >= 17 * 60 + 30) return 'PMDB';
+  if (timeVal >= 11 * 60) return 'ADB';
+  return 'MDB';
+}
+
+// Brief cache — persists so the brief doesn't disappear between fetches
+let _briefCache: { items: MDBBriefItem[]; briefType: BriefType; fetchedAt: number } | null = null;
+const BRIEF_CACHE_TTL_MS = 5 * 60_000;
+
 export async function fetchMDBBrief(): Promise<MDBBriefItem[]> {
   const key = getNotionKey();
   if (!key) {
-    console.error('[Notion] NOTION_API_KEY missing — MDB brief unavailable');
-    return [];
+    console.error('[Notion] NOTION_API_KEY missing — brief unavailable');
+    return _briefCache?.items ?? [];
+  }
+
+  const currentType = getCurrentBriefType();
+
+  // Return cache if fresh and same brief type
+  if (_briefCache && _briefCache.briefType === currentType && Date.now() - _briefCache.fetchedAt < BRIEF_CACHE_TTL_MS) {
+    return _briefCache.items;
   }
 
   try {
-    // Primary: Daily Briefs DB (structured MDB reports)
-    const pages = await notionQuery(DAILY_BRIEFS_DB, {
-      filter: {
-        property: 'Status',
-        status: { equals: 'Published' },
-      },
-      sorts: [{ property: 'Date', direction: 'descending' }],
-      pageSize: 6,
-    });
+    // Category keywords per brief type
+    const categoryKeywords: Record<BriefType, string[]> = {
+      MDB: ['MDB', 'MORNING', 'EOD BRIEF'],
+      ADB: ['ADB', 'AFTERNOON'],
+      PMDB: ['PMDB', 'POST-MARKET', 'POST MARKET', 'EOD'],
+    };
 
-    if (pages.length > 0) {
-      return pages.map((page: any) => ({
-        title: getPropText(page, 'Title') || 'Untitled',
-        detail: getPropText(page, 'Summary') || getPropText(page, 'Key Events') || '',
-      }));
-    }
-
-    // Fallback: Harper Messages DB (legacy)
-    const fallback = await notionQuery(HARPER_MESSAGES_DB, {
+    // Query Harper Messages DB — source: Harper-Notion, sorted by recency
+    const pages = await notionQuery(HARPER_MESSAGES_DB, {
       filter: {
         property: 'Source',
-        select: { equals: 'Harper-Kimi' },
+        select: { equals: 'Harper-Notion' },
       },
-      pageSize: 12,
+      sorts: [{ timestamp: 'last_edited_time', direction: 'descending' } as any],
+      pageSize: 20,
     });
 
-    return fallback.slice(0, 6).map((page: any) => ({
-      title: getPropText(page, 'Name') || getPropText(page, 'Title') || 'Untitled',
-      detail: getPropText(page, 'Summary') || getPropText(page, 'Content') || '',
-    }));
+    if (pages.length === 0) {
+      return _briefCache?.items ?? [];
+    }
+
+    // Find briefs matching current type
+    const keywords = categoryKeywords[currentType];
+    const matchingPages = pages.filter((page: any) => {
+      const message = getPropText(page, 'Message').toUpperCase();
+      const category = getPropText(page, 'Category').toUpperCase();
+      return keywords.some((kw) => message.includes(kw) || category.includes(kw));
+    });
+
+    // Use matching pages, or fall back to most recent briefs
+    const briefPages = matchingPages.length > 0 ? matchingPages.slice(0, 3) : pages.slice(0, 3);
+
+    const items = briefPages.map((page: any) => {
+      const message = getPropText(page, 'Message');
+      const category = getPropText(page, 'Category');
+      return {
+        title: `${currentType} — ${category || 'Brief'}`,
+        detail: message,
+      };
+    });
+
+    _briefCache = { items, briefType: currentType, fetchedAt: Date.now() };
+    return items;
   } catch (err) {
     console.error('[Notion] fetchMDBBrief error:', err);
-    return [];
+    return _briefCache?.items ?? [];
   }
 }
 
@@ -198,6 +236,9 @@ export async function fetchSchedule(): Promise<ScheduleItem[]> {
 
   try {
     const pages = await notionQuery(ECONOMIC_EVENTS_DB, { pageSize: 100 });
+    if (pages.length === 0) {
+      console.warn(`[Schedule] 0 pages from DB ${ECONOMIC_EVENTS_DB} — ensure it's shared with the integration`);
+    }
     const mapped = pages.map((page: any) => {
       const title = toText(extractPropValue(getPropByAlias(page, SCHEDULE_TITLE_ALIASES)));
       const detail = toText(extractPropValue(getPropByAlias(page, SCHEDULE_DETAIL_ALIASES)));
@@ -231,6 +272,7 @@ export async function fetchSchedule(): Promise<ScheduleItem[]> {
 
 export interface NotionTradeIdea {
   id: string;
+  title: string;
   ticker: string;
   direction: 'long' | 'short' | 'neutral';
   entry?: number;
@@ -310,7 +352,7 @@ export async function queryTradeIdeas(): Promise<NotionTradeIdea[]> {
         // Title of the trade idea (e.g. "Fed Zero Rate Cuts in 2026 — Long YES")
         const tradeTitle = String(extractPropValue(props['Trade Idea']) ?? '');
         // Ticker / instrument (e.g. "RATECUTCOUNT-26-0")
-        const ticker = String(extractPropValue(props['Ticker']) ?? tradeTitle);
+        const ticker = String(extractPropValue(props['Ticker']) || '') || tradeTitle;
         // Direction: "Long" | "Short" → normalize to lowercase
         const rawDir = String(extractPropValue(props['Direction']) ?? 'neutral').toLowerCase();
         const direction: 'long' | 'short' | 'neutral' =
@@ -344,6 +386,7 @@ export async function queryTradeIdeas(): Promise<NotionTradeIdea[]> {
 
         return {
           id: page.id as string,
+          title: tradeTitle || ticker || 'Untitled Trade',
           ticker: ticker || tradeTitle || 'UNKNOWN',
           direction,
           entry: entry ?? undefined,

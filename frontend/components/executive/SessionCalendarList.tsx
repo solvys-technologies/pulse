@@ -1,24 +1,43 @@
 // [claude-code 2026-03-05] Extracted from ExecutiveDashboard — session calendar with progressive date fade
+// [claude-code 2026-03-07] After 9PM, discard today's releases and show upcoming first
 import { useMemo } from 'react';
 import type { ExecutiveScheduleItem } from './mockExecutiveData';
 
+/** Get the "session date" — after 9PM local, roll forward to tomorrow */
+function getSessionDate(): string {
+  const now = new Date();
+  if (now.getHours() >= 21) {
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().slice(0, 10);
+  }
+  return now.toISOString().slice(0, 10);
+}
+
 /** Group schedule items by date and render with progressive fade for future days */
 export function SessionCalendarList({ items }: { items: ExecutiveScheduleItem[] }) {
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const sessionDate = getSessionDate();
 
   const grouped = useMemo(() => {
+    // Filter out dates before the session date (past releases)
+    const filtered = items.filter((item) => {
+      const d = item.date ?? sessionDate;
+      return d >= sessionDate;
+    });
     const map = new Map<string, ExecutiveScheduleItem[]>();
-    for (const item of items) {
-      const key = item.date ?? todayStr;
+    for (const item of filtered) {
+      const key = item.date ?? sessionDate;
       const arr = map.get(key) ?? [];
       arr.push(item);
       map.set(key, arr);
     }
     return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
-  }, [items, todayStr]);
+  }, [items, sessionDate]);
 
   function formatDateLabel(dateStr: string): string {
-    if (dateStr === todayStr) return 'Today';
+    const realToday = new Date().toISOString().slice(0, 10);
+    if (dateStr === realToday) return 'Today';
+    if (dateStr === sessionDate && dateStr !== realToday) return 'Next Session';
     const d = new Date(dateStr + 'T12:00:00');
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -31,7 +50,7 @@ export function SessionCalendarList({ items }: { items: ExecutiveScheduleItem[] 
   return (
     <div className="space-y-1">
       {grouped.map(([dateStr, events], groupIdx) => {
-        const isToday = dateStr === todayStr;
+        const isToday = dateStr === sessionDate;
         const opacity = opacitySteps[Math.min(groupIdx, opacitySteps.length - 1)];
 
         return (

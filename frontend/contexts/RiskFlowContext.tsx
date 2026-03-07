@@ -81,21 +81,24 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
         baseBackend.notion.getTradeIdeas(),
         baseBackend.notion.getPollStatus(),
       ]);
-      const converted: RiskFlowAlert[] = ideas.map((idea) => ({
+      const converted: RiskFlowAlert[] = ideas.map((idea) => {
+        const displayName = idea.title || idea.ticker || 'Trade Idea';
+        return {
         id: `notion-ti-${idea.id}`,
-        headline: decodeHtmlEntities(`${idea.direction.toUpperCase()} ${idea.ticker}${idea.entry ? ` @ ${idea.entry}` : ''}`),
+        headline: decodeHtmlEntities(`${idea.direction.toUpperCase()} — ${displayName}${idea.entry ? ` @ ${idea.entry}` : ''}`),
         summary: decodeHtmlEntities(
           idea.openclawDescription
-          ?? `${idea.ticker} — ${idea.direction} trade idea${idea.confidence ? ` (${idea.confidence} confidence)` : ''}`
+          ?? `${displayName} — ${idea.direction} trade idea${idea.confidence ? ` (${idea.confidence} confidence)` : ''}`
         ),
         url: idea.notionUrl,
         publishedAt: idea.createdAt,
         source: 'notion-trade-idea' as const,
         severity: (idea.confidence === 'high' || idea.confidence === 'max') ? 'high'
           : idea.confidence === 'medium' ? 'medium' : 'low',
-        tags: [idea.ticker, idea.direction, idea.timeframe ?? ''].filter(Boolean),
+        tags: [idea.direction, idea.timeframe ?? ''].filter(Boolean),
         tradeIdea: {
-          ticker: idea.ticker,
+          title: displayName,
+          ticker: idea.ticker || displayName,
           direction: idea.direction,
           entry: idea.entry,
           stopLoss: idea.stopLoss,
@@ -109,7 +112,8 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
           openclawDescription: idea.openclawDescription,
           notionUrl: idea.notionUrl,
         },
-      }));
+      };
+      });
       setNotionAlerts(converted);
       setNotionPollStatus(pollStatus);
       console.debug(

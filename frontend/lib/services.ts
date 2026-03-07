@@ -762,6 +762,7 @@ export class EconCalendarService {
 // Notion Service
 export interface NotionTradeIdeaItem {
   id: string;
+  title: string;
   ticker: string;
   direction: 'long' | 'short' | 'neutral';
   entry?: number;

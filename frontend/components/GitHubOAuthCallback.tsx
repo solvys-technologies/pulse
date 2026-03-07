@@ -1,9 +1,10 @@
-// [claude-code 2026-03-06] Handles GitHub OAuth redirect callback
+// [claude-code 2026-03-06] Handles GitHub OAuth redirect callback — popup window flow
 import { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
 /**
  * Intercepts GitHub OAuth callback URL and exchanges code for token.
+ * When running in a popup window, posts the result back to the opener and closes.
  * Renders nothing when not on callback URL.
  */
 export function GitHubOAuthCallback() {
@@ -23,11 +24,22 @@ export function GitHubOAuthCallback() {
 
     gitHub.handleCallback(code, state ?? '')
       .then(() => {
-        // Clean URL and redirect to main app
-        window.history.replaceState({}, '', '/');
+        // If opened as popup, notify the opener and close
+        if (window.opener) {
+          window.opener.postMessage({ type: 'github-oauth-success' }, '*');
+          window.close();
+        } else {
+          // Fallback: direct navigation — clean URL
+          window.history.replaceState({}, '', '/');
+        }
       })
       .catch((err) => {
-        setError(err.message);
+        if (window.opener) {
+          window.opener.postMessage({ type: 'github-oauth-error', error: err.message }, '*');
+          window.close();
+        } else {
+          setError(err.message);
+        }
       })
       .finally(() => setProcessing(false));
   }, []);

@@ -1,7 +1,19 @@
 // [claude-code 2026-03-05] Economic Calendar context — polls Notion econ events on 60s interval.
+// [claude-code 2026-03-07] Session date snaps to next day after 9PM
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import baseBackend from '../lib/backend';
 import type { EconEventItem, EconPrintItem } from '../lib/services';
+
+/** After 9PM local, the "session date" rolls to tomorrow */
+function getSessionDate(): string {
+  const now = new Date();
+  if (now.getHours() >= 21) {
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().slice(0, 10);
+  }
+  return now.toISOString().slice(0, 10);
+}
 
 interface EconCalendarContextValue {
   events: EconEventItem[];
@@ -17,7 +29,7 @@ const EconCalendarContext = createContext<EconCalendarContextValue>({
   events: [],
   loading: true,
   error: null,
-  selectedDate: new Date().toISOString().slice(0, 10),
+  selectedDate: getSessionDate(),
   setSelectedDate: () => {},
   fetchPrints: async () => [],
   refresh: async () => {},
@@ -42,7 +54,7 @@ export function EconCalendarProvider({ children }: { children: React.ReactNode }
   const [events, setEvents] = useState<EconEventItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [selectedDate, setSelectedDate] = useState(getSessionDate);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchEvents = useCallback(async () => {

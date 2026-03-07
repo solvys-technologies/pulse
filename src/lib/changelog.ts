@@ -9,6 +9,60 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-07T04:00:00',
+    agent: 'claude-code',
+    summary: 'Fix chat: local OpenClaw is now primary path (was broken by GitHub OAuth token routing all requests to non-existent DeepSeek R1). Enable chatCompletions endpoint on OpenClaw gateway. Replace Kalshi contract codes with Notion Trade Idea titles in all UI surfaces. Rename GitHub Models model from DeepSeek R1 to GPT-4o.',
+    files: [
+      'backend-hono/src/routes/ai/handlers/chat.ts',
+      'backend-hono/src/config/ai-config.ts',
+      'backend-hono/src/services/notion-service.ts',
+      'backend-hono/src/services/notion-poller.ts',
+      'frontend/components/TradeIdeaModal.tsx',
+      'frontend/contexts/RiskFlowContext.tsx',
+      'frontend/lib/riskflow-feed.ts',
+    ],
+  },
+  {
+    date: '2026-03-07T03:30:00',
+    agent: 'claude-code',
+    summary: 'Footer toolbar slide-up panel with Terminal and Changelog tabs. Terminal has CLI input/output history. Changelog pulls live from changelog.ts. Panel animates open/closed with tab switching.',
+    files: [
+      'frontend/components/layout/FooterToolbar.tsx',
+    ],
+  },
+  {
+    date: '2026-03-07T03:00:00',
+    agent: 'claude-code',
+    summary: 'Session date logic: after 9PM, dashboard calendar discards past releases and shows upcoming. EconCalendar snaps to next day after 9PM. SessionCalendarList filters past dates and shows "Next Session" label.',
+    files: [
+      'frontend/components/executive/SessionCalendarList.tsx',
+      'frontend/contexts/EconCalendarContext.tsx',
+    ],
+  },
+  {
+    date: '2026-03-07T02:30:00',
+    agent: 'claude-code',
+    summary: 'Fix Trade Ideas "undefined" ticker — empty Ticker rich_text now falls back to Trade Idea title. Frontend RiskFlowContext uses displayName fallback for headline/summary/tradeIdea fields.',
+    files: [
+      'backend-hono/src/services/notion-service.ts',
+      'frontend/contexts/RiskFlowContext.tsx',
+    ],
+  },
+  {
+    date: '2026-03-07T01:00:00',
+    agent: 'claude-code',
+    summary: 'Switched GitHub Models from Kimi K2 to DeepSeek R1. OAuth popup window flow (fixes white screen). Removed Kimi branding from CTA. GitHub-authenticated users now route to DeepSeek R1 instead of local OpenClaw. Clean error messages on model failure instead of silent fallback.',
+    files: [
+      'backend-hono/src/config/ai-config.ts',
+      'backend-hono/src/routes/ai/handlers/chat.ts',
+      'backend-hono/src/routes/auth/github.ts',
+      'frontend/components/chat/ChatHeader.tsx',
+      'frontend/components/chat/hooks/useOpenClawChat.ts',
+      'frontend/components/GitHubOAuthCallback.tsx',
+      'frontend/contexts/AuthContext.tsx',
+    ],
+  },
+  {
     date: '2026-03-06T23:30:00',
     agent: 'claude-code',
     summary: 'Renamed NTN → MDB (Morning Daily Brief) throughout codebase. Settings save fix (skip backend call when unauthenticated). RiskFlow panel smooth collapse/expand transition. Regime Tracker modal rounded edges. Chat error message improved for backend-unavailable state. iFrames settings section added to SettingsPanel.',
