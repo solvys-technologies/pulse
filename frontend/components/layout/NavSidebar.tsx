@@ -15,7 +15,7 @@ interface NavSidebarProps {
 
 const NAV_ITEMS_MAP: Record<NavTabId, { id: NavTab; icon: typeof LayoutDashboard; label: string; description: string }> = {
   executive: { id: 'executive', icon: LayoutDashboard, label: 'Dashboard', description: 'KPIs, calendar, The Tape' },
-  analysis: { id: 'analysis', icon: Sparkles, label: 'Analysis', description: 'AI-powered trade analysis' },
+  analysis: { id: 'analysis', icon: Sparkles, label: 'Chat', description: 'AI-powered trade analysis' },
   news: { id: 'news', icon: Newspaper, label: 'RiskFlow', description: 'Market news & events' },
   econ: { id: 'econ', icon: CalendarDays, label: 'Calendar', description: 'Economic calendar' },
   chatroom: { id: 'chatroom', icon: MessagesSquare, label: 'Board Room', description: 'Multi-agent boardroom' },
