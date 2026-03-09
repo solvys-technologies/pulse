@@ -9,6 +9,20 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-09T22:00:00',
+    agent: 'claude-code',
+    summary: 'Chat reliability hardening: throw on error responses instead of passing to SSE parser (was causing silent failures), add 65s frontend timeout, wire lastError through useOpenClawRuntime to ChatInterface and AskHarpChatPanel (was hardcoded null), add console warnings for silent catches, defensive try/catch in PulseComposer. Created endpoint parity matrix (7 mismatches documented) and trading blackout policy.',
+    files: [
+      'frontend/components/chat/hooks/useOpenClawChat.ts',
+      'frontend/components/chat/useOpenClawRuntime.ts',
+      'frontend/components/ChatInterface.tsx',
+      'frontend/components/chat/AskHarpChatPanel.tsx',
+      'frontend/components/chat/PulseComposer.tsx',
+      'docs/ENDPOINT-PARITY-MATRIX.md',
+      'docs/BLACKOUT-POLICY.md',
+    ],
+  },
+  {
     date: '2026-03-09T15:15:00.000Z',
     agent: 'openclaw',
     summary:
