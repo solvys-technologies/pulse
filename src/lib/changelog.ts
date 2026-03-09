@@ -9,6 +9,15 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-09T15:15:00.000Z',
+    agent: 'openclaw',
+    summary:
+      'Stabilized chat steer queue to prevent thread blanking/timeouts: replaced assistant-ui internal queued append during active runs with a local single-item steer queue that flushes only after the current run completes.',
+    files: [
+      'frontend/components/chat/PulseComposer.tsx',
+    ],
+  },
+  {
     date: '2026-03-07T04:00:00',
     agent: 'claude-code',
     summary: 'Fix chat: local OpenClaw is now primary path (was broken by GitHub OAuth token routing all requests to non-existent DeepSeek R1). Enable chatCompletions endpoint on OpenClaw gateway. Replace Kalshi contract codes with Notion Trade Idea titles in all UI surfaces. Rename GitHub Models model from DeepSeek R1 to GPT-4o.',
