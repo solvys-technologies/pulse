@@ -34,12 +34,22 @@ export function PulseComposer({
     setQueuedSteer(null);
   }, [isRunning, queuedSteer, runtime]);
 
-  const handleSend = (msg: string) => {
+  const handleSend = (msg: string, images?: string[]) => {
     let finalText = msg;
     if (activeSkill && SKILL_PREFIXES[activeSkill]) {
       finalText = SKILL_PREFIXES[activeSkill] + '\n\n' + msg;
     }
-    runtime.append({ role: 'user', content: [{ type: 'text', text: finalText }] });
+    const content: Array<{ type: string; text?: string; image?: string }> = [
+      { type: 'text', text: finalText },
+    ];
+    if (images?.length) {
+      images.forEach((img) => content.push({ type: 'image', image: img }));
+    }
+    try {
+      runtime.append({ role: 'user', content: content as any });
+    } catch (err) {
+      console.error('[PulseComposer] Failed to append message:', err);
+    }
   };
 
   const handleStop = () => {
@@ -73,6 +83,7 @@ export function PulseComposer({
       onSelectSkill={onSelectSkill}
       showSkills={showSkills}
       onToggleSkills={onToggleSkills}
+      onAttachImage={undefined}
     />
   );
 }

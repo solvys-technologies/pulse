@@ -35,13 +35,18 @@ export function useOpenClawChat(
           bodyObj.conversationId = conversationId;
           body = JSON.stringify(bodyObj);
         }
-      } catch {
-        // Ignore
+      } catch (e) {
+        console.warn('[useOpenClawChat] Could not inject conversationId:', e);
       }
     }
 
+    // [claude-code 2026-03-09] Added 65s frontend timeout + throw on error response
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 65_000);
+
     try {
-      const response = await fetch(fullUrl, { ...init, headers, body });
+      const response = await fetch(fullUrl, { ...init, headers, body, signal: controller.signal });
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         let errText = `Chat request failed (${response.status})`;
@@ -49,20 +54,25 @@ export function useOpenClawChat(
           const json = await response.clone().json();
           if (json?.error) errText = String(json.error);
           else if (json?.message) errText = String(json.message);
-        } catch {
-          // no-op
-        }
+        } catch { /* response may not be JSON */ }
         setLastError(errText);
-      } else {
-        setLastError(null);
+        throw new Error(errText);
       }
 
+      setLastError(null);
       const convId = response.headers.get('X-Conversation-Id');
       if (convId) setConversationId(convId);
 
       return response;
     } catch (error) {
-      setLastError('Cannot reach chat backend (expected on localhost:8080).');
+      clearTimeout(timeoutId);
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        setLastError('Request timed out — please try again.');
+        throw error;
+      }
+      if (!(error instanceof Error) || !error.message.startsWith('Chat request failed')) {
+        setLastError('Cannot reach chat backend (expected on localhost:8080).');
+      }
       throw error;
     }
   }, [conversationId, setConversationId]);
@@ -73,16 +83,35 @@ export function useOpenClawChat(
     status,
     setMessages: setUseChatMessages,
     stop,
+    regenerate,
+    resumeStream,
+    addToolResult,
+    addToolOutput,
+    addToolApprovalResponse,
   } = useChat({
     transport: new DefaultChatTransport({
       api: `${API_BASE_URL}/api/ai/chat`,
       fetch: fetchFn,
       prepareSendMessagesRequest: ({ messages }) => ({
         body: {
-          messages: messages.map((msg) => ({
-            role: msg.role,
-            content: msg.parts?.filter((p: any) => p.type === 'text').map((p: any) => p.text).join('') || '',
-          })),
+          messages: messages.map((msg) => {
+            const parts = msg.parts ?? [];
+            const hasImages = parts.some((p: any) => p.type === 'image');
+            if (hasImages) {
+              const contentParts = parts
+                .filter((p: any) => p.type === 'text' || p.type === 'image')
+                .map((p: any) =>
+                  p.type === 'text'
+                    ? { type: 'text' as const, text: p.text }
+                    : { type: 'image_url' as const, image_url: { url: p.image } }
+                );
+              return { role: msg.role, content: contentParts };
+            }
+            return {
+              role: msg.role,
+              content: parts.filter((p: any) => p.type === 'text').map((p: any) => p.text).join('') || '',
+            };
+          }),
           ...(conversationId && { conversationId }),
           ...(agentOverride && { agentOverride }),
         },
@@ -111,6 +140,11 @@ export function useOpenClawChat(
     isLoading: isStreaming || status === 'streaming' || status === 'submitted',
     setIsStreaming,
     stop,
+    regenerate,
+    resumeStream,
+    addToolResult,
+    addToolOutput,
+    addToolApprovalResponse,
     lastError,
     clearError: () => setLastError(null),
   };

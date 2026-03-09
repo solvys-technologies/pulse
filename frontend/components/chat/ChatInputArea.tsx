@@ -1,11 +1,14 @@
-// [claude-code 2026-03-06] Input area wrapper — extracted from ChatInterface
+// [claude-code 2026-03-09] Input area wrapper — images, attach panel, slash picker
+import { useState, useCallback } from 'react';
 import { PulseChatInput } from './PulseChatInput';
 import { PulseSkillsPopup } from './PulseSkillsPopup';
+import { PulseAttachPopup } from './PulseAttachPopup';
 import { SkillBadge } from './SkillBadge';
 
 interface ChatInputAreaProps {
-  onSend: (msg: string) => void;
+  onSend: (msg: string, images?: string[]) => void;
   onStop: () => void;
+  onSteer?: (msg: string) => void;
   isLoading: boolean;
   thinkHarder: boolean;
   setThinkHarder: (v: boolean) => void;
@@ -14,11 +17,13 @@ interface ChatInputAreaProps {
   onSelectSkill: (id: string | null) => void;
   showSkills: boolean;
   onToggleSkills: () => void;
+  onAttachImage?: (dataUrl: string) => void;
 }
 
 export function ChatInputArea({
   onSend,
   onStop,
+  onSteer,
   isLoading,
   thinkHarder,
   setThinkHarder,
@@ -27,9 +32,16 @@ export function ChatInputArea({
   onSelectSkill,
   showSkills,
   onToggleSkills,
+  onAttachImage,
 }: ChatInputAreaProps) {
+  const [showAttach, setShowAttach] = useState(false);
+
+  const handleAttachImage = useCallback((dataUrl: string) => {
+    onAttachImage?.(dataUrl);
+  }, [onAttachImage]);
+
   return (
-    <div className="pt-4 pb-4 px-4 bg-[linear-gradient(180deg,rgba(5,5,0,0.15),rgba(5,5,0,0.88))] backdrop-blur-xl border-t border-white/5">
+    <div className="pt-4 pb-4 px-4 bg-[linear-gradient(180deg,rgba(5,5,0,0.15),rgba(5,5,0,0.88))] backdrop-blur-xl">
       <div className="relative w-full max-w-3xl mx-auto">
         {activeSkill && (
           <div className="mb-2">
@@ -49,12 +61,20 @@ export function ChatInputArea({
             {lastError}
           </div>
         )}
+        {/* Slide-up attach panel — anchored above input */}
+        <PulseAttachPopup
+          open={showAttach}
+          onClose={() => setShowAttach(false)}
+          onAttachImage={handleAttachImage}
+        />
         <PulseChatInput
-          onSend={(msg) => onSend(msg)}
+          onSend={(msg, imgs) => onSend(msg, imgs)}
           onStop={onStop}
+          onSteer={onSteer}
           isProcessing={isLoading}
           thinkHarder={thinkHarder}
           setThinkHarder={setThinkHarder}
+          onOpenAttach={() => setShowAttach((v) => !v)}
           onOpenSkills={onToggleSkills}
           placeholder="Analyze your performance, the news, or the markets..."
         />

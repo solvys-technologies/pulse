@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, type KeyboardEvent, type ChangeEvent, type ClipboardEvent } from 'react';
-import { ArrowUp, Square, Plus, Wrench, Brain, X } from 'lucide-react';
+import { ArrowUp, Square, Plus, Wrench, Brain, X, GitBranch } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
 /*  Props                                                              */
@@ -8,6 +8,7 @@ import { ArrowUp, Square, Plus, Wrench, Brain, X } from 'lucide-react';
 export interface PulseChatInputProps {
   onSend: (message: string, images: string[]) => void;
   onStop?: () => void;
+  onSteer?: (message: string) => void;
   isProcessing?: boolean;
   placeholder?: string;
   thinkHarder: boolean;
@@ -25,6 +26,7 @@ export interface PulseChatInputProps {
 export function PulseChatInput({
   onSend,
   onStop,
+  onSteer,
   isProcessing = false,
   placeholder = 'Message your analysts...',
   thinkHarder,
@@ -36,6 +38,7 @@ export function PulseChatInput({
 }: PulseChatInputProps) {
   const [text, setText] = useState('');
   const [images, setImages] = useState<string[]>([]);
+  const [steerText, setSteerText] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   /* Draft persistence — load on mount */
@@ -124,8 +127,37 @@ export function PulseChatInput({
     setImages((prev) => prev.filter((_, i) => i !== idx));
   };
 
+  const handleSteerKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && steerText.trim() && onSteer) {
+      e.preventDefault();
+      onSteer(steerText.trim());
+      setSteerText('');
+    }
+    if (e.key === 'Escape') setSteerText('');
+  };
+
   return (
     <div className="w-full">
+      {/* Steer queue strip — shown while processing */}
+      {isProcessing && onSteer && (
+        <div className="flex items-center gap-2 mb-2 px-3 h-9 rounded-xl border border-[#D4AF37]/20 bg-[#0d0c09]/80 backdrop-blur-sm">
+          <GitBranch size={12} className="text-[#D4AF37]/50 shrink-0" />
+          <input
+            type="text"
+            value={steerText}
+            onChange={(e) => setSteerText(e.target.value)}
+            onKeyDown={handleSteerKeyDown}
+            placeholder="Steer Harper... (Enter to queue)"
+            className="flex-1 bg-transparent text-[12px] text-zinc-300 placeholder:text-zinc-600 focus:outline-none"
+          />
+          {steerText && (
+            <button onClick={() => setSteerText('')} className="text-zinc-600 hover:text-zinc-400 transition-colors">
+              <X size={12} />
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Image preview strip */}
       {images.length > 0 && (
         <div className="flex gap-2 mb-2 px-2 overflow-x-auto">
@@ -195,10 +227,10 @@ export function PulseChatInput({
             <button
               onClick={() => setThinkHarder(!thinkHarder)}
               title={thinkHarder ? 'Extended thinking ON' : 'Extended thinking OFF'}
-              className={`flex items-center justify-center rounded-lg transition-all ${
+              className={`flex items-center justify-center transition-all ${
                 thinkHarder
-                  ? 'text-[#D4AF37] bg-[#D4AF37]/15'
-                  : 'text-zinc-500 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10'
+                  ? 'text-[#D4AF37] bg-[#D4AF37]/15 rounded-lg'
+                  : 'text-zinc-500 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 rounded-lg'
               }`}
               style={{ width: '32px', height: '32px' }}
             >

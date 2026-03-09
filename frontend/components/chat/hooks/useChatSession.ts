@@ -90,27 +90,8 @@ export function useChatSession({ agentId, activeSkill }: UseChatSessionOptions) 
   const stop = useCallback(() => {
     rawStop();
     setIsStreaming(false);
-
-    // Remove partial assistant message and add cancelled indicator
-    setUseChatMessages((prev: any[]) => {
-      const lastMessage = prev[prev.length - 1];
-
-      if (lastMessage && lastMessage.role === 'assistant') {
-        // Replace partial/streaming assistant message with cancelled marker
-        return [...prev.slice(0, -1), {
-          id: `cancelled-${Date.now()}`,
-          role: 'assistant',
-          content: 'Stopped.',
-          createdAt: new Date(),
-          cancelled: true,
-        }];
-      }
-
-      return prev;
-    });
-
     setLastSentMessage('');
-  }, [rawStop, setIsStreaming, setUseChatMessages]);
+  }, [rawStop, setIsStreaming]);
 
   const newChat = useCallback(() => {
     setUseChatMessages([]);

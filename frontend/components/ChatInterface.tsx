@@ -1,24 +1,21 @@
-// [claude-code 2026-03-06] Decomposed ChatInterface — slim orchestrator using extracted components + useChatSession
+// [claude-code 2026-03-07] Refactored — assistant-ui AssistantRuntimeProvider + useOpenClawRuntime
 import { useState, useRef, useCallback, useMemo } from 'react';
 import { AlertTriangle, CalendarCheck, X, Bookmark, Trash2 } from 'lucide-react';
+import { AssistantRuntimeProvider, useThread, useThreadRuntime } from '@assistant-ui/react';
 import { usePulseAgents } from '../contexts/PulseAgentContext';
-import { useSettings } from '../contexts/SettingsContext';
-import { useChatSession } from './chat/hooks/useChatSession';
+import { useOpenClawRuntime } from './chat/useOpenClawRuntime';
 import { ChatHeader } from './chat/ChatHeader';
-import { ChatMessageList } from './chat/ChatMessageList';
-import { ChatInputArea } from './chat/ChatInputArea';
+import { PulseThread } from './chat/PulseThread';
+import { PulseComposer } from './chat/PulseComposer';
 import QuickPulseModal from './analysis/QuickPulseModal';
 import { addCheckpoint, deleteCheckpoint, listCheckpoints, type ChatCheckpoint } from '../lib/chatCheckpoints';
 
-// [claude-code 2026-03-03] Phase 2: panel memory helper — persists open/closed state across sessions
 function usePanelState(key: string, defaultValue: boolean): [boolean, (v: boolean | ((p: boolean) => boolean)) => void] {
   const [state, setState] = useState<boolean>(() => {
     try {
       const stored = localStorage.getItem(key);
       return stored !== null ? JSON.parse(stored) : defaultValue;
-    } catch {
-      return defaultValue;
-    }
+    } catch { return defaultValue; }
   });
 
   const setAndPersist = useCallback((value: boolean | ((prev: boolean) => boolean)) => {
@@ -32,70 +29,51 @@ function usePanelState(key: string, defaultValue: boolean): [boolean, (v: boolea
   return [state, setAndPersist];
 }
 
-// [claude-code 2026-03-03] Phase 1B: date-grouped checkpoint sidebar with improved UX
 function groupCheckpointsByDate(items: ChatCheckpoint[]): { label: string; items: ChatCheckpoint[] }[] {
   const now = new Date();
   const todayStr = now.toDateString();
   const yesterday = new Date(now);
   yesterday.setDate(yesterday.getDate() - 1);
   const yesterdayStr = yesterday.toDateString();
-
   const groups: Record<string, ChatCheckpoint[]> = {};
   const order: string[] = [];
-
   for (const cp of items) {
     const d = new Date(cp.createdAt).toDateString();
     const label = d === todayStr ? 'Today' : d === yesterdayStr ? 'Yesterday' : d;
-    if (!groups[label]) {
-      groups[label] = [];
-      order.push(label);
-    }
+    if (!groups[label]) { groups[label] = []; order.push(label); }
     groups[label].push(cp);
   }
-
   return order.map((label) => ({ label, items: groups[label] }));
 }
 
-interface TiltWarning {
-  detected: boolean;
-  score?: number;
-  message?: string;
-}
+interface TiltWarning { detected: boolean; score?: number; message?: string }
 
-export default function ChatInterface() {
+function ChatInterfaceInner({ conversationId, clearConversationId, lastError }: { conversationId: string | undefined; clearConversationId: () => void; lastError: string | null }) {
   const { activeAgent } = usePulseAgents();
+  const runtime = useThreadRuntime();
+  const isRunning = useThread((t) => t.isRunning);
+
   const [activeSkill, setActiveSkill] = useState<string | null>(null);
   const [showSkills, setShowSkills] = useState(false);
   const [thinkHarder, setThinkHarder] = useState(false);
-  const [tiltWarning, setTiltWarning] = useState<TiltWarning | undefined>();
+  const [tiltWarning] = useState<TiltWarning | undefined>();
   const [showCheckpoints, setShowCheckpoints] = usePanelState('pulse:panel:checkpoints', false);
   const [checkpointVersion, setCheckpointVersion] = useState(0);
-  const [showQuickPulseModal, setShowQuickPulseModal] = useState(false);
+  const [showQuickPulseModal] = useState(false);
   const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  const {
-    messages,
-    send,
-    stop,
-    newChat,
-    isLoading,
-    latestThinkingContent,
-    hasUserMessages,
-    lastError,
-    conversationId,
-  } = useChatSession({ agentId: activeAgent?.id ?? 'default', activeSkill });
-
-  const handleSend = useCallback((msg: string) => { send(msg); }, [send]);
-
-  const handleNewChat = useCallback(() => {
-    newChat();
-  }, [newChat]);
-
-  // Checkpoints
   const checkpointItems = useMemo<ChatCheckpoint[]>(
     () => listCheckpoints(conversationId),
     [conversationId, showCheckpoints, checkpointVersion]
   );
+
+  const handleSend = useCallback((msg: string) => {
+    runtime.append({ role: 'user', content: [{ type: 'text', text: msg }] });
+  }, [runtime]);
+
+  const handleNewChat = useCallback(() => {
+    clearConversationId();
+  }, [clearConversationId]);
 
   const createCheckpointFromMessage = useCallback((messageId: string, content: string) => {
     if (!conversationId) return;
@@ -115,21 +93,18 @@ export default function ChatInterface() {
   return (
     <div className="h-full flex flex-col">
       <ChatHeader
-        onRunMDB={() => send('Run the MDB report')}
+        onRunMDB={() => handleSend('Run the MDB report')}
         onNewChat={handleNewChat}
         onToggleCheckpoints={() => setShowCheckpoints((v) => !v)}
         showCheckpoints={showCheckpoints}
-        isLoading={isLoading}
+        isLoading={isRunning}
       />
 
-      {/* Tilt Warning Banner */}
       {tiltWarning?.detected && (
         <div className="bg-orange-500/10 border-b border-orange-500/30 px-4 py-3 flex items-center gap-3">
           <AlertTriangle className="w-5 h-5 text-orange-500" />
           <div className="flex-1">
-            <p className="text-sm font-medium text-orange-500">
-              Emotional Tilt Detected (Score: {((tiltWarning.score ?? 0) * 100).toFixed(0)}%)
-            </p>
+            <p className="text-sm font-medium text-orange-500">Emotional Tilt Detected (Score: {((tiltWarning.score ?? 0) * 100).toFixed(0)}%)</p>
             <p className="text-xs text-orange-400/80">{tiltWarning.message}</p>
           </div>
         </div>
@@ -137,20 +112,14 @@ export default function ChatInterface() {
 
       <div className="flex-1 flex min-h-0 overflow-hidden">
         <div className="flex-1 flex flex-col min-h-0">
-          <ChatMessageList
-            messages={messages}
-            isLoading={isLoading}
-            latestThinkingContent={latestThinkingContent}
-            agentName={activeAgent?.name}
-            showGreeting={!hasUserMessages}
+          <PulseThread
             onSend={handleSend}
+            isLoading={isRunning}
+            agentName={activeAgent?.name}
             onCheckpoint={createCheckpointFromMessage}
             messageRefs={messageRefs}
           />
-          <ChatInputArea
-            onSend={handleSend}
-            onStop={stop}
-            isLoading={isLoading}
+          <PulseComposer
             thinkHarder={thinkHarder}
             setThinkHarder={setThinkHarder}
             lastError={lastError}
@@ -161,31 +130,21 @@ export default function ChatInterface() {
           />
         </div>
 
-        {/* RIGHT: Checkpoints — docked, slides in/out */}
+        {/* Checkpoints sidebar */}
         <div className={`flex-shrink-0 overflow-hidden transition-[width] duration-[240ms] ease-in-out ${showCheckpoints ? 'w-80' : 'w-0'} border-l border-[#D4AF37]/20`}>
           <div className="w-80 h-full flex flex-col bg-[#0a0a00]">
-            {/* Header */}
             <div className="h-14 border-b border-[#D4AF37]/20 flex items-center justify-between px-4">
               <div className="flex items-center gap-2">
                 <Bookmark className="w-4 h-4 text-[#D4AF37]" />
                 <h2 className="text-base font-semibold text-[#D4AF37] tracking-wide">Checkpoints</h2>
               </div>
-              <button
-                onClick={() => setShowCheckpoints(false)}
-                className="p-1.5 hover:bg-[#D4AF37]/10 rounded transition-colors"
-              >
+              <button onClick={() => setShowCheckpoints(false)} className="p-1.5 hover:bg-[#D4AF37]/10 rounded transition-colors">
                 <X className="w-4 h-4 text-[#D4AF37]/70" />
               </button>
             </div>
-
-            {/* Hint bar */}
             <div className="px-4 py-2.5 border-b border-white/5">
-              <p className="text-[11px] text-zinc-500 leading-snug">
-                Bookmark key moments — hover any assistant reply and tap the checkpoint icon.
-              </p>
+              <p className="text-[11px] text-zinc-500 leading-snug">Bookmark key moments — hover any assistant reply and tap the checkpoint icon.</p>
             </div>
-
-            {/* Checkpoint list — date grouped */}
             <div className="flex-1 overflow-y-auto px-3 py-3">
               {!conversationId ? (
                 <div className="text-center text-zinc-500 text-sm py-8">Start a chat to create checkpoints.</div>
@@ -193,17 +152,13 @@ export default function ChatInterface() {
                 <div className="flex flex-col items-center text-center py-10 px-4 gap-3">
                   <CalendarCheck className="w-8 h-8 text-zinc-700" />
                   <p className="text-sm text-zinc-500">No checkpoints yet.</p>
-                  <p className="text-[11px] text-zinc-600 leading-relaxed">
-                    Hover an assistant message and click the <span className="text-[#D4AF37]/80">checkpoint</span> icon to save it here.
-                  </p>
+                  <p className="text-[11px] text-zinc-600 leading-relaxed">Hover an assistant message and click the <span className="text-[#D4AF37]/80">checkpoint</span> icon to save it here.</p>
                 </div>
               ) : (
                 groupCheckpointsByDate(checkpointItems).map((group) => (
                   <div key={group.label} className="mb-4 last:mb-0">
                     <div className="flex items-center gap-2 mb-2 px-1">
-                      <span className="text-[10px] font-semibold uppercase tracking-widest text-[#D4AF37]/50">
-                        {group.label}
-                      </span>
+                      <span className="text-[10px] font-semibold uppercase tracking-widest text-[#D4AF37]/50">{group.label}</span>
                       <div className="flex-1 h-px bg-[#D4AF37]/10" />
                       <span className="text-[10px] text-zinc-600">{group.items.length}</span>
                     </div>
@@ -215,32 +170,13 @@ export default function ChatInterface() {
                           onClick={() => jumpToMessage(cp.messageId)}
                         >
                           <div className="flex items-baseline gap-2 mb-0.5">
-                            <span className="text-[10px] text-zinc-500 tabular-nums shrink-0">
-                              {new Date(cp.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </span>
+                            <span className="text-[10px] text-zinc-500 tabular-nums shrink-0">{new Date(cp.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                             <span className="text-sm text-zinc-200 font-medium truncate">{cp.title}</span>
                           </div>
-                          <p className="text-[11px] text-zinc-500 line-clamp-2 leading-relaxed pl-[calc(10px+0.5rem)]">
-                            {cp.excerpt}
-                          </p>
+                          <p className="text-[11px] text-zinc-500 line-clamp-2 leading-relaxed pl-[calc(10px+0.5rem)]">{cp.excerpt}</p>
                           <div className="mt-1.5 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity pl-[calc(10px+0.5rem)]">
-                            <button
-                              onClick={(e) => { e.stopPropagation(); jumpToMessage(cp.messageId); }}
-                              className="px-2 py-0.5 bg-[#D4AF37]/15 text-[#D4AF37] rounded text-[11px] font-medium hover:bg-[#D4AF37]/25 transition-colors"
-                            >
-                              Jump
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteCheckpoint(cp.id);
-                                setCheckpointVersion((v) => v + 1);
-                              }}
-                              className="ml-auto p-1 hover:bg-[#D4AF37]/10 rounded transition-colors"
-                              title="Delete checkpoint"
-                            >
-                              <Trash2 className="w-3 h-3 text-zinc-600 hover:text-[#D4AF37]" />
-                            </button>
+                            <button onClick={(e) => { e.stopPropagation(); jumpToMessage(cp.messageId); }} className="px-2 py-0.5 bg-[#D4AF37]/15 text-[#D4AF37] rounded text-[11px] font-medium hover:bg-[#D4AF37]/25 transition-colors">Jump</button>
+                            <button onClick={(e) => { e.stopPropagation(); deleteCheckpoint(cp.id); setCheckpointVersion((v) => v + 1); }} className="ml-auto p-1 hover:bg-[#D4AF37]/10 rounded transition-colors"><Trash2 className="w-3 h-3 text-zinc-600 hover:text-[#D4AF37]" /></button>
                           </div>
                         </div>
                       ))}
@@ -249,8 +185,6 @@ export default function ChatInterface() {
                 ))
               )}
             </div>
-
-            {/* Footer count */}
             {checkpointItems.length > 0 && (
               <div className="px-4 py-2 border-t border-white/5 text-[10px] text-zinc-600 text-center">
                 {checkpointItems.length} checkpoint{checkpointItems.length !== 1 ? 's' : ''} saved
@@ -258,14 +192,20 @@ export default function ChatInterface() {
             )}
           </div>
         </div>
-
       </div>
 
-      <QuickPulseModal
-        isOpen={showQuickPulseModal}
-        onClose={() => setShowQuickPulseModal(false)}
-        onAnalysisComplete={() => {}}
-      />
+      <QuickPulseModal isOpen={showQuickPulseModal} onClose={() => {}} onAnalysisComplete={() => {}} />
     </div>
+  );
+}
+
+export default function ChatInterface() {
+  const { activeAgent } = usePulseAgents();
+  const { runtime, conversationId, clearConversationId, lastError } = useOpenClawRuntime(activeAgent?.id ?? 'default');
+
+  return (
+    <AssistantRuntimeProvider runtime={runtime}>
+      <ChatInterfaceInner conversationId={conversationId} clearConversationId={clearConversationId} lastError={lastError} />
+    </AssistantRuntimeProvider>
   );
 }
