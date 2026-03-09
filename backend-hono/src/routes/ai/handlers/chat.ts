@@ -11,7 +11,7 @@ import * as conversationStore from '../../../services/ai/conversation-store.js'
 import { defaultAiConfig } from '../../../config/ai-config.js'
 import type { ChatRequest } from '../../../types/ai-chat.js'
 import type { OpenClawAgentRole } from '../../../services/openclaw-service.js'
-import { handleOpenClawChat, detectAgent } from '../../../services/openclaw-handler.js'
+import { handleOpenClawChat, detectAgent, type ContentPart } from '../../../services/openclaw-handler.js'
 
 // Timeout for streaming responses (60 seconds)
 const STREAM_TIMEOUT_MS = 60_000
@@ -87,10 +87,26 @@ export async function handleChat(c: Context) {
     })
 
     // Support both 'message' (string) and 'messages' (array from Vercel AI SDK)
+    // Content can be string or multimodal array [{type:'text',text:''},{type:'image_url',image_url:{url:''}}]
     let message = body?.message?.trim() ?? ''
+    let multimodalContent: ContentPart[] | undefined
     if (!message && body?.messages?.length) {
       const lastUserMsg = [...body.messages].reverse().find(m => m.role === 'user')
-      message = lastUserMsg?.content?.trim() ?? ''
+      const rawContent = lastUserMsg?.content
+      if (typeof rawContent === 'string') {
+        message = rawContent.trim()
+      } else if (Array.isArray(rawContent)) {
+        // Multimodal content array
+        message = rawContent
+          .filter((p: any) => p.type === 'text')
+          .map((p: any) => p.text)
+          .join('')
+          .trim()
+        const hasImages = rawContent.some((p: any) => p.type === 'image_url')
+        if (hasImages) {
+          multimodalContent = rawContent as ContentPart[]
+        }
+      }
     }
 
     if (!message) {
@@ -148,6 +164,7 @@ export async function handleChat(c: Context) {
       // Generate response locally through OpenClaw
       const openclawResponse = await handleOpenClawChat({
         message,
+        multimodalContent,
         conversationId: conversation.id,
         history: history.map(h => ({ role: h.role as 'user' | 'assistant', content: h.content })),
         agentOverride: agentOverride as OpenClawAgentRole | undefined,

@@ -8,16 +8,22 @@
 
 import type { OpenClawAgentRole } from './openclaw-service.js'
 
+export type ContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'image_url'; image_url: { url: string } }
+
 export interface OpenClawMessage {
   role: 'user' | 'assistant' | 'system'
-  content: string
+  content: string | ContentPart[]
 }
 
 export interface OpenClawChatRequest {
   message: string
+  multimodalContent?: ContentPart[]
   conversationId?: string
   history?: OpenClawMessage[]
   agentOverride?: OpenClawAgentRole
+  thinkHarder?: boolean
 }
 
 export interface OpenClawChatResponse {
@@ -453,8 +459,12 @@ export async function handleOpenClawChat(request: OpenClawChatRequest): Promise<
     messages.push(...request.history.map(h => ({ role: h.role, content: h.content })))
   }
 
-  // Add current user message
-  messages.push({ role: 'user', content: request.message })
+  // Add current user message (multimodal if images present)
+  if (request.multimodalContent?.length) {
+    messages.push({ role: 'user', content: request.multimodalContent })
+  } else {
+    messages.push({ role: 'user', content: request.message })
+  }
 
   // Call Clawdbot gateway
   const normalizeGatewayBaseUrl = (value: string): string => {
