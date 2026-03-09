@@ -160,7 +160,6 @@ export function BoardroomView() {
           onSend={sendIntervention}
           onMention={sendMention}
           active={status.interventionActive}
-          title="Intervention"
         />
       </div>
     </div>

@@ -24,10 +24,9 @@ interface InterventionSidebarProps {
   onSend: (message: string) => Promise<void>;
   onMention?: (message: string, agent: string) => Promise<void>;
   active: boolean;
-  title?: string;
 }
 
-export function InterventionSidebar({ messages, sending, onSend, onMention, active, title = 'Intervention' }: InterventionSidebarProps) {
+export function InterventionSidebar({ messages, sending, onSend, onMention, active }: InterventionSidebarProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const [thinkHarder, setThinkHarder] = useState(false);
   const { activeAgent } = usePulseAgents();
@@ -59,13 +58,6 @@ export function InterventionSidebar({ messages, sending, onSend, onMention, acti
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-[#070704]">
-      {/* Header */}
-      <div className="flex items-center px-5 py-4">
-        <span className="text-[10px] font-semibold text-[#D4AF37] tracking-[0.18em] uppercase">
-          {title}
-        </span>
-      </div>
-
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
         {messages.length === 0 ? (
@@ -88,28 +80,21 @@ export function InterventionSidebar({ messages, sending, onSend, onMention, acti
           messages.map((m) => {
             const isUser = m.sender === 'User';
             return (
-              <div key={m.id} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+              <div key={m.id} className={`group/msg flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
                 <div
-                  className={`max-w-[85%] px-3 py-2 border-l-2 ${
+                  className={`max-w-[85%] rounded-xl px-3 py-2 text-[12px] leading-relaxed ${
                     isUser
-                      ? 'bg-[#D4AF37]/10 border-[#D4AF37]/40'
-                      : 'bg-[#6366f1]/10 border-[#6366f1]/40'
+                      ? 'pulse-user-bubble text-white'
+                      : 'bg-[#0f0f0b]/92 border border-white/10 text-zinc-300'
                   }`}
                 >
-                  <div className="flex items-baseline gap-2 mb-1">
-                    <span
-                      className={`text-[10px] font-semibold tracking-[0.18em] uppercase ${
-                        isUser ? 'text-[#D4AF37]' : 'text-[#6366f1]'
-                      }`}
-                    >
-                      {isUser ? 'You' : m.sender}
-                    </span>
-                    <span className="text-[10px] text-gray-500">{formatTimestamp(m.timestamp)}</span>
-                  </div>
-                  <div className="text-sm text-gray-200 prose prose-invert prose-sm max-w-none break-words">
+                  <div className="text-sm prose prose-invert prose-sm max-w-none break-words">
                     <ReactMarkdown>{m.content}</ReactMarkdown>
                   </div>
                 </div>
+                <span className="text-[10px] text-zinc-700 mt-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity tabular-nums">
+                  {formatTimestamp(m.timestamp)}
+                </span>
               </div>
             );
           })
