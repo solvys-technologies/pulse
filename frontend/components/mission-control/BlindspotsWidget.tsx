@@ -16,11 +16,11 @@ export function BlindspotsWidget() {
   const [blindspots, setBlindspots] = useState(INITIAL_BLINDSPOTS);
 
   const content = (
-    <div className="bg-[#050500] p-4">
+    <div className="bg-[var(--pulse-bg)] p-4">
       <div className="flex items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-2">
-          <Eye className="w-4 h-4 text-[#D4AF37]" />
-          <h3 className="text-sm font-semibold text-[#D4AF37]">Blindspots</h3>
+          <Eye className="w-4 h-4 text-[var(--pulse-accent)]" />
+          <h3 className="text-sm font-semibold text-[var(--pulse-accent)]">Blindspots</h3>
         </div>
       </div>
       {blindspots.length === 0 ? (

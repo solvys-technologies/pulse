@@ -38,12 +38,12 @@ const DOT_RADIUS = 5;
 function readThemeColors(): ThemeColors {
   const styles = getComputedStyle(document.documentElement);
   return {
-    bg: styles.getPropertyValue('--pulse-bg').trim() || '#050402',
-    accent: styles.getPropertyValue('--pulse-accent').trim() || '#D4AF37',
+    bg: styles.getPropertyValue('--pulse-bg').trim() || 'var(--pulse-bg)',
+    accent: styles.getPropertyValue('--pulse-accent').trim() || 'var(--pulse-accent)',
     bullish: styles.getPropertyValue('--pulse-bullish').trim() || '#34D399',
     bearish: styles.getPropertyValue('--pulse-bearish').trim() || '#EF4444',
-    surface: styles.getPropertyValue('--pulse-surface').trim() || '#0a0a00',
-    text: styles.getPropertyValue('--pulse-text').trim() || '#f0ead6',
+    surface: styles.getPropertyValue('--pulse-surface').trim() || 'var(--pulse-surface)',
+    text: styles.getPropertyValue('--pulse-text').trim() || 'var(--pulse-text)',
     muted: styles.getPropertyValue('--pulse-muted').trim() || '#6B7280',
   };
 }

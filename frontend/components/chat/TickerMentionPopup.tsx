@@ -86,7 +86,7 @@ export function TickerMentionPopup({ query, triggerChar, position, onSelect, onC
 
   return (
     <div
-      className="fixed z-[100] w-52 max-h-[200px] overflow-y-auto rounded-lg border border-[#D4AF37]/20 bg-[#0a0a00] shadow-xl"
+      className="fixed z-[100] w-52 max-h-[200px] overflow-y-auto rounded-lg border border-[var(--pulse-accent)]/20 bg-[var(--pulse-surface)] shadow-xl"
       style={{ top: position.top, left: position.left }}
       ref={listRef}
     >
@@ -96,7 +96,7 @@ export function TickerMentionPopup({ query, triggerChar, position, onSelect, onC
           onClick={() => onSelect(item)}
           onMouseEnter={() => setSelectedIndex(idx)}
           className={`w-full flex items-center gap-2 px-3 py-2 text-left transition-colors ${
-            idx === selectedIndex ? 'bg-[#D4AF37]/10' : 'hover:bg-[#D4AF37]/5'
+            idx === selectedIndex ? 'bg-[var(--pulse-accent)]/10' : 'hover:bg-[var(--pulse-accent)]/5'
           }`}
         >
           <span className="text-[12px] font-medium text-white">{item.label}</span>

@@ -1,8 +1,14 @@
-// [claude-code 2026-03-10] Instrumented with cognition events + queue-aware requestId header
+// [claude-code 2026-03-10] Claude SDK bridge path + 21st API fallback for thinkHarder
 /**
  * AI Chat Handler
  * Handle chat messages and AI responses - OpenClaw Local Processing
  * Routes through P.I.C. agent network for local single-user mode
+ *
+ * Inference priority chain:
+ *   1. OpenClaw/Groq (fast, free) — default for all chat
+ *   2. Claude SDK Bridge (Opus, free via Max) — for thinkHarder or explicit claude-local model
+ *   3. 21st API (deep thinking fallback) — when Claude SDK unavailable + thinkHarder
+ *   4. OpenRouter (paid) — last resort
  */
 
 import type { Context } from 'hono'
@@ -17,6 +23,15 @@ import { exaSearch, formatExaContext, isExaAvailable } from '../../../services/e
 import { extractSkillFromMessage, isSkillEnabled, getSkillDisabledReason } from '../../../config/feature-flags.js'
 import { createRequestCognition } from '../../../services/cognition-emitter.js'
 import { enqueue, completeJob } from '../../../services/chat-queue.js'
+import { isBridgeAvailable, bridgeChat, type BridgeStreamEvent } from '../../../services/claude-sdk/bridge.js'
+import { deepThink, is21stAvailable } from '../../../services/twenty-first/deep-think.js'
+import { resolveModelKey } from '../../../config/ai-config.js'
+
+// File attachment content part types
+type FileContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'image_url'; image_url: { url: string } }
+  | { type: 'file'; file: { name: string; mimeType: string; data: string } }
 
 // Timeout for streaming responses (60 seconds)
 const STREAM_TIMEOUT_MS = 60_000
@@ -107,15 +122,49 @@ export async function handleChat(c: Context) {
       if (typeof rawContent === 'string') {
         message = rawContent.trim()
       } else if (Array.isArray(rawContent)) {
-        // Multimodal content array
-        message = rawContent
-          .filter((p: any) => p.type === 'text')
-          .map((p: any) => p.text)
-          .join('')
-          .trim()
-        const hasImages = rawContent.some((p: any) => p.type === 'image_url')
-        if (hasImages) {
-          multimodalContent = rawContent as ContentPart[]
+        // Multimodal content array — supports text, images, and file attachments
+        const textParts: string[] = []
+        const fileParts: string[] = []
+        const imageParts: ContentPart[] = []
+
+        for (const part of rawContent as FileContentPart[]) {
+          if (part.type === 'text') {
+            textParts.push(part.text)
+          } else if (part.type === 'image_url') {
+            imageParts.push(part as ContentPart)
+          } else if (part.type === 'file' && part.file) {
+            const { name, mimeType, data } = part.file
+            if (mimeType.startsWith('image/')) {
+              // Images → base64 vision input
+              imageParts.push({ type: 'image_url', image_url: { url: `data:${mimeType};base64,${data}` } })
+            } else if (
+              mimeType.startsWith('text/') ||
+              mimeType === 'application/json' ||
+              mimeType === 'application/javascript' ||
+              mimeType === 'application/typescript' ||
+              mimeType === 'application/xml'
+            ) {
+              // Text/code → inline context
+              const decoded = Buffer.from(data, 'base64').toString('utf-8')
+              fileParts.push(`--- File: ${name} ---\n${decoded}\n--- End: ${name} ---`)
+            } else if (mimeType === 'application/pdf') {
+              // PDFs → extract text (base64 decode, best-effort UTF-8)
+              const decoded = Buffer.from(data, 'base64').toString('utf-8')
+              const cleaned = decoded.replace(/[^\x20-\x7E\n\r\t]/g, ' ').replace(/\s{3,}/g, '\n')
+              fileParts.push(`--- PDF: ${name} ---\n${cleaned.slice(0, 50_000)}\n--- End: ${name} ---`)
+            }
+          }
+        }
+
+        message = textParts.join('').trim()
+        if (fileParts.length > 0) {
+          message = `${fileParts.join('\n\n')}\n\n${message}`
+        }
+        if (imageParts.length > 0) {
+          multimodalContent = [
+            ...imageParts,
+            { type: 'text' as const, text: message },
+          ]
         }
       }
     }
@@ -312,7 +361,189 @@ export async function handleChat(c: Context) {
       })
     }
 
-    // External API — GitHub Models (GPT-4o) fallback when explicitly requested
+    // ── PATH 2: Claude SDK Bridge (Opus via Max subscription, $0 cost) ──────
+    // Triggered by: thinkHarder=true OR model='claude-local'/'claude-sdk'/'claude-max'
+    const useClaudeSDK = model === 'claude-local' || resolveModelKey(model) === 'claude-local'
+    const shouldUseClaudeSDK = (thinkHarder || useClaudeSDK) && !useGitHubModel
+
+    if (shouldUseClaudeSDK && await isBridgeAvailable()) {
+      console.log(`[ClaudeSDK][${requestId}] Routing through Claude SDK bridge (thinkHarder: ${thinkHarder}, model: ${model ?? 'auto'})`)
+      cognition.step('agent-route', 'Claude SDK Bridge', 'Opus via Max subscription ($0 API cost)')
+
+      // Deep research via Exa when thinkHarder is enabled
+      let researchContext = ''
+      if (thinkHarder && isExaAvailable()) {
+        cognition.step('tool-dispatch', 'Exa deep research', 'ThinkHarder — searching live sources')
+        const results = await exaSearch(message, { numResults: 5 })
+        researchContext = formatExaContext(results)
+        if (researchContext) {
+          cognition.step('tool-dispatch', `Exa: ${results.length} sources found`)
+        }
+      }
+
+      const bridgeResult = bridgeChat({
+        message,
+        conversationId: conversation.id,
+        history: history.map(h => ({ role: h.role as 'user' | 'assistant', content: h.content })),
+        thinkHarder,
+        researchContext: researchContext || undefined,
+      })
+
+      cognition.step('gateway-call', 'Streaming from Claude Opus', 'Local CLI bridge, MCP tools available')
+
+      let cancelled = false
+      const stream = new ReadableStream({
+        start(controller) {
+          ;(async () => {
+            let fullText = ''
+            for await (const event of bridgeResult.stream) {
+              if (cancelled) break
+              if (event.type === 'text-delta' && event.delta) {
+                fullText += event.delta
+              }
+              if (event.type === 'error') {
+                console.error(`[ClaudeSDK][${requestId}] Stream error: ${event.delta}`)
+                cognition.step('error', 'Claude SDK error', event.delta ?? 'Unknown error')
+              }
+              // Pass through all events — they match the UI message stream format
+              controller.enqueue(event)
+            }
+
+            // Store the full response
+            if (fullText) {
+              await conversationStore.addMessage(conversation!.id, {
+                conversationId: conversation!.id,
+                role: 'assistant',
+                content: fullText,
+                model: 'claude-local',
+              })
+            }
+
+            const duration = Date.now() - startTime
+            console.log(`[ClaudeSDK][${requestId}] Complete (${duration}ms, ${fullText.length} chars)`)
+            cognition.step('response-ready', 'Response complete', `${fullText.length} chars in ${duration}ms`)
+            cognition.done()
+            if (!cancelled) controller.close()
+          })().catch((error) => {
+            console.error(`[ClaudeSDK][${requestId}] Fatal stream error:`, error)
+            cognition.step('error', 'Stream error', error instanceof Error ? error.message : String(error))
+            cognition.done()
+            if (!cancelled) controller.error(error)
+          })
+        },
+        cancel() {
+          cancelled = true
+          bridgeResult.abort()
+        },
+      })
+
+      c.header('X-Conversation-Id', conversation.id)
+      c.header('X-OpenClaw-Agent', 'claude-opus-local')
+
+      return createUIMessageStreamResponse({
+        stream,
+        headers: {
+          'X-Conversation-Id': conversation.id,
+          'X-OpenClaw-Agent': 'claude-opus-local',
+          'Access-Control-Allow-Origin': c.req.header('Origin') || '*',
+          'Access-Control-Allow-Credentials': 'true',
+          'Access-Control-Expose-Headers': 'X-Conversation-Id, X-OpenClaw-Agent',
+        },
+      })
+    }
+
+    // ── PATH 2B: 21st API deep thinking fallback ──────────────────────────
+    // When Claude SDK is unavailable AND thinkHarder is requested
+    if (thinkHarder && !useGitHubModel && is21stAvailable()) {
+      console.log(`[21stAPI][${requestId}] Claude SDK unavailable, falling back to 21st API deep thinking`)
+      cognition.step('agent-route', '21st API Deep Thinking', 'Claude SDK unavailable, using 21st fallback')
+
+      try {
+        // Run Exa research if available
+        let researchContext = ''
+        if (isExaAvailable()) {
+          const results = await exaSearch(message, { numResults: 3 })
+          researchContext = formatExaContext(results)
+        }
+
+        const deepResult = await deepThink(
+          { message, context: researchContext || undefined },
+          userId,
+        )
+
+        cognition.step('response-ready', '21st API response', `${deepResult.content.length} chars in ${deepResult.durationMs}ms`)
+
+        // Store assistant message
+        await conversationStore.addMessage(conversation.id, {
+          conversationId: conversation.id,
+          role: 'assistant',
+          content: deepResult.content,
+          model: '21st-deep-think',
+        })
+
+        // Stream the response
+        const uiMessageId = `assistant-${Date.now()}`
+        const uiReasoningId = `reasoning-${Date.now()}`
+        const content = deepResult.content
+
+        let streamCancelled = false
+        const stream = new ReadableStream({
+          start(controller) {
+            ;(async () => {
+              controller.enqueue({ type: 'reasoning-start', id: uiReasoningId })
+              controller.enqueue({
+                type: 'reasoning-delta',
+                id: uiReasoningId,
+                delta: `Deep thinking via 21st API (Claude SDK unavailable).\nProcessed in ${deepResult.durationMs}ms.\n`,
+              })
+              controller.enqueue({ type: 'reasoning-end', id: uiReasoningId })
+
+              controller.enqueue({ type: 'text-start', id: uiMessageId })
+              for (let i = 0; i < content.length; i += LOCAL_STREAM_CHUNK_SIZE) {
+                if (streamCancelled) return
+                controller.enqueue({
+                  type: 'text-delta',
+                  id: uiMessageId,
+                  delta: content.slice(i, i + LOCAL_STREAM_CHUNK_SIZE),
+                })
+                await new Promise((resolve) => setTimeout(resolve, LOCAL_STREAM_CHUNK_DELAY_MS))
+              }
+
+              if (!streamCancelled) {
+                controller.enqueue({ type: 'text-end', id: uiMessageId })
+                cognition.done()
+                controller.close()
+              }
+            })().catch((error) => {
+              cognition.step('error', '21st stream error', error instanceof Error ? error.message : String(error))
+              cognition.done()
+              if (!streamCancelled) controller.error(error)
+            })
+          },
+          cancel() { streamCancelled = true },
+        })
+
+        c.header('X-Conversation-Id', conversation.id)
+        c.header('X-OpenClaw-Agent', '21st-deep-think')
+
+        return createUIMessageStreamResponse({
+          stream,
+          headers: {
+            'X-Conversation-Id': conversation.id,
+            'X-OpenClaw-Agent': '21st-deep-think',
+            'Access-Control-Allow-Origin': c.req.header('Origin') || '*',
+            'Access-Control-Allow-Credentials': 'true',
+            'Access-Control-Expose-Headers': 'X-Conversation-Id, X-OpenClaw-Agent',
+          },
+        })
+      } catch (err) {
+        console.warn(`[21stAPI][${requestId}] Deep think failed, falling through to external API:`, err)
+        cognition.step('error', '21st API failed', err instanceof Error ? err.message : String(err))
+        // Fall through to external API path
+      }
+    }
+
+    // ── PATH 3: External API — GitHub Models (GPT-4o) / OpenRouter (paid) ──
     const preferredModel = useGitHubModel ? 'github-deepseek' : model
     console.log(`[OpenClaw][${requestId}] Using external API (preferred: ${preferredModel ?? 'auto'})`)
 

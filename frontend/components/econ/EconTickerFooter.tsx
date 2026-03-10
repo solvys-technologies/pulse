@@ -56,13 +56,13 @@ export function EconTickerFooter() {
   const tickerText = tickerItems.join('  \u2022  ');
 
   return (
-    <div className="flex-shrink-0 h-7 border-t border-[#D4AF37]/15 bg-[#080800] overflow-hidden relative">
+    <div className="flex-shrink-0 h-7 border-t border-[var(--pulse-accent)]/15 bg-[#080800] overflow-hidden relative">
       <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-[#080800] to-transparent z-10" />
       <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-[#080800] to-transparent z-10" />
       <div className="h-full flex items-center">
         <div className="animate-ticker whitespace-nowrap text-[10px] font-mono">
-          <span className="text-[#D4AF37]/70">{tickerText}</span>
-          <span className="text-[#D4AF37]/70 ml-16">{tickerText}</span>
+          <span className="text-[var(--pulse-accent)]/70">{tickerText}</span>
+          <span className="text-[var(--pulse-accent)]/70 ml-16">{tickerText}</span>
         </div>
       </div>
     </div>

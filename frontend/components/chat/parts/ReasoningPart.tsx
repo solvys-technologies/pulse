@@ -11,16 +11,16 @@ export function ReasoningPartRenderer({ text, defaultOpen = false }: ReasoningPa
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className="bg-[#D4AF37]/5 rounded-lg p-2 border border-[#D4AF37]/15">
+    <div className="bg-[var(--pulse-accent)]/5 rounded-lg p-2 border border-[var(--pulse-accent)]/15">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 text-xs text-[#D4AF37]/70 hover:text-[#D4AF37] transition-colors w-full text-left"
+        className="flex items-center gap-1.5 text-xs text-[var(--pulse-accent)]/70 hover:text-[var(--pulse-accent)] transition-colors w-full text-left"
       >
         {isOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
         <span>Thinking...</span>
       </button>
       {isOpen && (
-        <div className="border-l-2 border-[#D4AF37]/20 pl-3 mt-2 text-xs text-zinc-500 font-mono whitespace-pre-wrap">
+        <div className="border-l-2 border-[var(--pulse-accent)]/20 pl-3 mt-2 text-xs text-zinc-500 font-mono whitespace-pre-wrap">
           {text}
         </div>
       )}

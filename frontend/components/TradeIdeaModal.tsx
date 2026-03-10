@@ -18,9 +18,9 @@ interface TradeIdeaModalProps {
 
 function StatBox({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="bg-[#0a0a06] border border-[#c79f4a]/20 px-2.5 py-2">
-      <div className="text-[9px] tracking-[0.22em] uppercase text-[#c79f4a]/60 mb-0.5">{label}</div>
-      <div className="text-xs font-semibold text-[#f0ead6]">{value}</div>
+    <div className="bg-[#0a0a06] border border-[var(--pulse-accent)]/20 px-2.5 py-2">
+      <div className="text-[9px] tracking-[0.22em] uppercase text-[var(--pulse-accent)]/60 mb-0.5">{label}</div>
+      <div className="text-xs font-semibold text-[var(--pulse-text)]">{value}</div>
       {sub && <div className="text-[10px] text-zinc-500 mt-0.5">{sub}</div>}
     </div>
   );
@@ -31,7 +31,7 @@ export default function TradeIdeaModal({ idea, onClose }: TradeIdeaModalProps) {
   const isShort = idea.direction === 'short';
 
   const confidenceColor =
-    idea.confidence === 'high' ? 'text-[#c79f4a]' :
+    idea.confidence === 'high' ? 'text-[var(--pulse-accent)]' :
     idea.confidence === 'medium' ? 'text-zinc-400' :
     'text-zinc-600';
 
@@ -46,14 +46,14 @@ export default function TradeIdeaModal({ idea, onClose }: TradeIdeaModalProps) {
       {/* Modal card */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
         <div
-          className="pointer-events-auto w-full max-w-lg bg-[#050402] border border-[#c79f4a]/40 shadow-[0_0_40px_rgba(199,159,74,0.15)] flex flex-col max-h-[85vh]"
+          className="pointer-events-auto w-full max-w-lg bg-[var(--pulse-bg)] border border-[var(--pulse-accent)]/40 shadow-[0_0_40px_rgba(199,159,74,0.15)] flex flex-col max-h-[85vh]"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-start justify-between px-4 py-3 border-b border-[#c79f4a]/20 shrink-0">
+          <div className="flex items-start justify-between px-4 py-3 border-b border-[var(--pulse-accent)]/20 shrink-0">
             <div className="flex items-center gap-3 min-w-0">
               <div className={`flex-shrink-0 p-1.5 border ${
-                isLong ? 'border-[#c79f4a]/40 text-[#c79f4a]' :
+                isLong ? 'border-[var(--pulse-accent)]/40 text-[var(--pulse-accent)]' :
                 isShort ? 'border-zinc-600/40 text-zinc-400' :
                 'border-zinc-700/40 text-zinc-600'
               }`}>
@@ -62,7 +62,7 @@ export default function TradeIdeaModal({ idea, onClose }: TradeIdeaModalProps) {
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <span className={`text-[10px] font-bold tracking-[0.2em] uppercase ${
-                    isLong ? 'text-[#c79f4a]' : isShort ? 'text-zinc-400' : 'text-zinc-600'
+                    isLong ? 'text-[var(--pulse-accent)]' : isShort ? 'text-zinc-400' : 'text-zinc-600'
                   }`}>
                     {idea.direction.toUpperCase()}
                   </span>
@@ -72,7 +72,7 @@ export default function TradeIdeaModal({ idea, onClose }: TradeIdeaModalProps) {
                     </span>
                   )}
                 </div>
-                <div className="text-sm font-semibold text-[#f0ead6] truncate mt-0.5">
+                <div className="text-sm font-semibold text-[var(--pulse-text)] truncate mt-0.5">
                   {idea.title}
                 </div>
                 {idea.sourceAgent && (
@@ -86,7 +86,7 @@ export default function TradeIdeaModal({ idea, onClose }: TradeIdeaModalProps) {
             <button
               type="button"
               onClick={onClose}
-              className="flex-shrink-0 p-1.5 text-zinc-500 hover:text-[#f0ead6] hover:bg-zinc-800/50 transition-colors"
+              className="flex-shrink-0 p-1.5 text-zinc-500 hover:text-[var(--pulse-text)] hover:bg-zinc-800/50 transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
@@ -96,8 +96,8 @@ export default function TradeIdeaModal({ idea, onClose }: TradeIdeaModalProps) {
           <div className="flex-1 overflow-y-auto px-4 py-3.5 space-y-3.5">
             {/* OpenClaw description */}
             {idea.openclawDescription && (
-              <div className="border-l-2 border-[#c79f4a]/50 pl-3">
-                <div className="text-[9px] tracking-[0.2em] uppercase text-[#c79f4a]/60 mb-1.5">
+              <div className="border-l-2 border-[var(--pulse-accent)]/50 pl-3">
+                <div className="text-[9px] tracking-[0.2em] uppercase text-[var(--pulse-accent)]/60 mb-1.5">
                   Trade Brief
                 </div>
                 <p className="text-xs text-zinc-300 leading-relaxed">
@@ -162,7 +162,7 @@ export default function TradeIdeaModal({ idea, onClose }: TradeIdeaModalProps) {
                 href={idea.notionUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1 text-[10px] text-[#c79f4a]/60 hover:text-[#c79f4a] transition-colors"
+                className="flex items-center gap-1 text-[10px] text-[var(--pulse-accent)]/60 hover:text-[var(--pulse-accent)] transition-colors"
               >
                 View in Notion
                 <ExternalLink className="w-3 h-3" />

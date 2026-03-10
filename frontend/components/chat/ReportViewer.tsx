@@ -42,14 +42,14 @@ export function ReportViewer({ html, onClose, onPopOut, onExpandPanel }: ReportV
   };
 
   return (
-    <div className="rounded-lg border border-[#D4AF37]/20 overflow-hidden">
+    <div className="rounded-lg border border-[var(--pulse-accent)]/20 overflow-hidden">
       {/* Toolbar */}
-      <div className="flex items-center gap-2 px-3 py-2 bg-[#0a0a00] border-b border-[#D4AF37]/10">
-        <span className="text-xs text-[#D4AF37] font-semibold">Report</span>
+      <div className="flex items-center gap-2 px-3 py-2 bg-[var(--pulse-surface)] border-b border-[var(--pulse-accent)]/10">
+        <span className="text-xs text-[var(--pulse-accent)] font-semibold">Report</span>
         <span className="flex-1" />
         <button
           onClick={handlePopOut}
-          className="flex items-center gap-1 text-xs text-zinc-400 hover:text-[#D4AF37] transition-colors"
+          className="flex items-center gap-1 text-xs text-zinc-400 hover:text-[var(--pulse-accent)] transition-colors"
           title="Pop out"
         >
           <ExternalLink size={12} />
@@ -58,7 +58,7 @@ export function ReportViewer({ html, onClose, onPopOut, onExpandPanel }: ReportV
         {onExpandPanel && (
           <button
             onClick={onExpandPanel}
-            className="flex items-center gap-1 text-xs text-zinc-400 hover:text-[#D4AF37] transition-colors"
+            className="flex items-center gap-1 text-xs text-zinc-400 hover:text-[var(--pulse-accent)] transition-colors"
             title="Expand"
           >
             <Maximize2 size={12} />
@@ -67,7 +67,7 @@ export function ReportViewer({ html, onClose, onPopOut, onExpandPanel }: ReportV
         )}
         <button
           onClick={onClose}
-          className="flex items-center justify-center text-zinc-400 hover:text-[#D4AF37] transition-colors"
+          className="flex items-center justify-center text-zinc-400 hover:text-[var(--pulse-accent)] transition-colors"
           title="Close"
         >
           <X size={14} />

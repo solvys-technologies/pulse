@@ -111,9 +111,9 @@ export function BoardroomView() {
       {/* Main panel: Notion iframe + countdown */}
       <div className="flex-[2] min-w-0 flex flex-col">
         {/* Header strip */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-[#D4AF37]/10">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--pulse-accent)]/10">
           <div className="flex items-baseline gap-3 min-w-0">
-            <div className="text-xs font-semibold tracking-[0.18em] uppercase text-[#D4AF37]">
+            <div className="text-xs font-semibold tracking-[0.18em] uppercase text-[var(--pulse-accent)]">
               Board Room
             </div>
             <div className="text-xs text-gray-300 truncate" title={countdownText}>
@@ -145,7 +145,7 @@ export function BoardroomView() {
             href={notionBoardroomUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="absolute bottom-2 right-2 text-[10px] text-gray-500 hover:text-[#D4AF37] transition-colors"
+            className="absolute bottom-2 right-2 text-[10px] text-gray-500 hover:text-[var(--pulse-accent)] transition-colors"
           >
             Open in browser
           </a>
@@ -153,7 +153,7 @@ export function BoardroomView() {
       </div>
 
       {/* Intervention sidebar */}
-      <div className="w-[360px] border-l border-[#D4AF37]/15">
+      <div className="w-[360px] border-l border-[var(--pulse-accent)]/15">
         <InterventionSidebar
           messages={interventionMessages}
           sending={sending}

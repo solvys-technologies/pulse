@@ -68,7 +68,7 @@ export function DraggablePanel({
     onPositionChange?.(newPosition);
   };
 
-  const baseClasses = 'bg-[#0a0a00] border border-[#D4AF37]/20 flex flex-col';
+  const baseClasses = 'bg-[var(--pulse-surface)] border border-[var(--pulse-accent)]/20 flex flex-col';
   
   if (position === 'floating') {
     return (
@@ -78,22 +78,22 @@ export function DraggablePanel({
         style={{ width: '320px', height: '400px' }}
         onMouseDown={handleMouseDown}
       >
-        <div className="h-10 flex items-center justify-between px-3 border-b border-[#D4AF37]/20 cursor-move">
+        <div className="h-10 flex items-center justify-between px-3 border-b border-[var(--pulse-accent)]/20 cursor-move">
           <div className="flex items-center gap-2">
-            <GripVertical className="w-4 h-4 text-[#D4AF37]/60" />
-            <h3 className="text-sm font-semibold text-[#D4AF37]">{title}</h3>
+            <GripVertical className="w-4 h-4 text-[var(--pulse-accent)]/60" />
+            <h3 className="text-sm font-semibold text-[var(--pulse-accent)]">{title}</h3>
           </div>
           <div className="flex items-center gap-1">
             <button
               onClick={() => handlePositionChange('right')}
-              className="p-1 hover:bg-[#D4AF37]/10 rounded text-[#D4AF37]/60 hover:text-[#D4AF37] text-xs"
+              className="p-1 hover:bg-[var(--pulse-accent)]/10 rounded text-[var(--pulse-accent)]/60 hover:text-[var(--pulse-accent)] text-xs"
               title="Dock Right"
             >
               →
             </button>
             <button
               onClick={() => handlePositionChange('left')}
-              className="p-1 hover:bg-[#D4AF37]/10 rounded text-[#D4AF37]/60 hover:text-[#D4AF37] text-xs"
+              className="p-1 hover:bg-[var(--pulse-accent)]/10 rounded text-[var(--pulse-accent)]/60 hover:text-[var(--pulse-accent)] text-xs"
               title="Dock Left"
             >
               ←
@@ -101,7 +101,7 @@ export function DraggablePanel({
             {onClose && (
               <button
                 onClick={onClose}
-                className="p-1 hover:bg-[#D4AF37]/10 rounded text-[#D4AF37]/60 hover:text-[#D4AF37]"
+                className="p-1 hover:bg-[var(--pulse-accent)]/10 rounded text-[var(--pulse-accent)]/60 hover:text-[var(--pulse-accent)]"
                 title="Close"
               >
                 <X className="w-4 h-4" />
@@ -116,19 +116,19 @@ export function DraggablePanel({
 
   return (
     <div className={`${baseClasses} ${className}`}>
-      <div className="h-10 flex items-center justify-between px-3 border-b border-[#D4AF37]/20">
-        <h3 className="text-sm font-semibold text-[#D4AF37]">{title}</h3>
+      <div className="h-10 flex items-center justify-between px-3 border-b border-[var(--pulse-accent)]/20">
+        <h3 className="text-sm font-semibold text-[var(--pulse-accent)]">{title}</h3>
         <div className="flex items-center gap-1">
           <button
             onClick={() => handlePositionChange(position === 'left' ? 'right' : 'left')}
-            className="p-1 hover:bg-[#D4AF37]/10 rounded text-[#D4AF37]/60 hover:text-[#D4AF37] text-xs"
+            className="p-1 hover:bg-[var(--pulse-accent)]/10 rounded text-[var(--pulse-accent)]/60 hover:text-[var(--pulse-accent)] text-xs"
             title={position === 'left' ? 'Move Right' : 'Move Left'}
           >
             {position === 'left' ? '→' : '←'}
           </button>
           <button
             onClick={() => handlePositionChange('floating')}
-            className="p-1 hover:bg-[#D4AF37]/10 rounded text-[#D4AF37]/60 hover:text-[#D4AF37]"
+            className="p-1 hover:bg-[var(--pulse-accent)]/10 rounded text-[var(--pulse-accent)]/60 hover:text-[var(--pulse-accent)]"
             title="Float"
           >
             <GripVertical className="w-4 h-4" />
@@ -136,7 +136,7 @@ export function DraggablePanel({
           {onClose && (
             <button
               onClick={onClose}
-              className="p-1 hover:bg-[#D4AF37]/10 rounded text-[#D4AF37]/60 hover:text-[#D4AF37]"
+              className="p-1 hover:bg-[var(--pulse-accent)]/10 rounded text-[var(--pulse-accent)]/60 hover:text-[var(--pulse-accent)]"
               title="Hide"
             >
               <X className="w-4 h-4" />

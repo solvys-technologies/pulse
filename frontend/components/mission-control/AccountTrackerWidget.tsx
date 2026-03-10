@@ -123,10 +123,10 @@ export function AccountTrackerWidget({ currentPnL: propPnL }: AccountTrackerWidg
     : (projectxAccounts.length > 0 ? 'Select an account' : 'No uplink');
 
   return (
-    <div className="bg-[#050500] p-2.5">
+    <div className="bg-[var(--pulse-bg)] p-2.5">
       <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-1.5">
-          <h3 className="text-xs font-semibold text-[#D4AF37]">Account Tracker</h3>
+          <h3 className="text-xs font-semibold text-[var(--pulse-accent)]">Account Tracker</h3>
           {uplinked && (
             <div className="relative">
               <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
@@ -144,12 +144,12 @@ export function AccountTrackerWidget({ currentPnL: propPnL }: AccountTrackerWidg
             <>
               <button
                 onClick={() => setShowAccountDropdown(!showAccountDropdown)}
-                className="w-full px-2 py-1 rounded bg-[#0a0a00] border border-[#D4AF37]/30 text-[10px] text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-colors text-left"
+                className="w-full px-2 py-1 rounded bg-[var(--pulse-surface)] border border-[var(--pulse-accent)]/30 text-[10px] text-[var(--pulse-accent)] hover:bg-[var(--pulse-accent)]/10 transition-colors text-left"
               >
                 {projectxAccounts.find(a => a.accountId === selectedAccount)?.accountName || 'Select Account'}
               </button>
               {showAccountDropdown && (
-                <div className="absolute left-0 right-0 top-full mt-1 bg-[#0a0a00] border border-[#D4AF37]/30 rounded shadow-lg z-10 min-w-[180px]">
+                <div className="absolute left-0 right-0 top-full mt-1 bg-[var(--pulse-surface)] border border-[var(--pulse-accent)]/30 rounded shadow-lg z-10 min-w-[180px]">
                   {projectxAccounts.map(account => (
                     <button
                       key={account.accountId}
@@ -157,7 +157,7 @@ export function AccountTrackerWidget({ currentPnL: propPnL }: AccountTrackerWidg
                         setSelectedAccount(account.accountId);
                         setShowAccountDropdown(false);
                       }}
-                      className={`w-full text-left px-3 py-2 text-xs hover:bg-[#D4AF37]/10 transition-colors ${selectedAccount === account.accountId ? 'text-[#D4AF37]' : 'text-gray-400'
+                      className={`w-full text-left px-3 py-2 text-xs hover:bg-[var(--pulse-accent)]/10 transition-colors ${selectedAccount === account.accountId ? 'text-[var(--pulse-accent)]' : 'text-gray-400'
                         }`}
                     >
                       <div className="font-medium">{account.accountName}</div>
@@ -183,7 +183,7 @@ No accounts
           disabled={uplinking || uplinked}
           className={`w-full px-2 py-1.5 rounded font-medium text-[11px] transition-all flex items-center justify-center gap-1.5 ${uplinked
             ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-            : 'bg-[#D4AF37] hover:bg-[#D4AF37]/90 text-black border border-[#D4AF37]'
+            : 'bg-[var(--pulse-accent)] hover:bg-[var(--pulse-accent)]/90 text-black border border-[var(--pulse-accent)]'
             } disabled:opacity-50 disabled:cursor-not-allowed`}
         >
           <Radio className={`w-3 h-3 ${uplinked ? 'animate-pulse' : ''}`} />

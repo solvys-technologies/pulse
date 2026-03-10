@@ -30,8 +30,8 @@ export function MessageQueue({ queue, onEdit, onRemove }: MessageQueueProps) {
   return (
     <div className="mb-3">
       <div className="flex items-center gap-1.5 mb-2">
-        <ListOrdered size={12} className="text-[#D4AF37]" />
-        <span className="text-[11px] font-medium text-[#D4AF37]">
+        <ListOrdered size={12} className="text-[var(--pulse-accent)]" />
+        <span className="text-[11px] font-medium text-[var(--pulse-accent)]">
           Queued ({queue.length})
         </span>
       </div>
@@ -39,7 +39,7 @@ export function MessageQueue({ queue, onEdit, onRemove }: MessageQueueProps) {
         {queue.map((msg) => (
           <div
             key={msg.id}
-            className="flex items-start gap-2 rounded-lg border border-[#D4AF37]/10 bg-[#0b0b08] group"
+            className="flex items-start gap-2 rounded-lg border border-[var(--pulse-accent)]/10 bg-[#0b0b08] group"
             style={{ padding: '8px 10px' }}
           >
             {editingId === msg.id ? (
@@ -56,11 +56,11 @@ export function MessageQueue({ queue, onEdit, onRemove }: MessageQueueProps) {
                     }
                     if (e.key === 'Escape') setEditingId(null);
                   }}
-                  className="flex-1 bg-transparent text-[12px] text-white border-b border-[#D4AF37]/30 focus:outline-none pb-0.5"
+                  className="flex-1 bg-transparent text-[12px] text-white border-b border-[var(--pulse-accent)]/30 focus:outline-none pb-0.5"
                 />
                 <button
                   onClick={() => { onEdit(msg.id, editText); setEditingId(null); }}
-                  className="text-[#D4AF37] hover:text-white transition-colors"
+                  className="text-[var(--pulse-accent)] hover:text-white transition-colors"
                 >
                   <Check size={13} />
                 </button>
@@ -71,7 +71,7 @@ export function MessageQueue({ queue, onEdit, onRemove }: MessageQueueProps) {
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={() => { setEditingId(msg.id); setEditText(msg.text); }}
-                    className="text-gray-500 hover:text-[#D4AF37] transition-colors"
+                    className="text-gray-500 hover:text-[var(--pulse-accent)] transition-colors"
                     title="Edit"
                   >
                     <Edit3 size={12} />

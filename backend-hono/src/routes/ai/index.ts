@@ -25,12 +25,17 @@ import {
   handleQueueCancel,
   handleCognitionStream,
 } from './handlers/queue.js'
+import { handleGetSkills } from './handlers/skills.js'
 
 export function createAiRoutes(): Hono {
   const router = new Hono()
 
   // Feature flags endpoint
   router.get('/features', (c) => c.json(getFeatureFlags()))
+
+  // Skills endpoint — dynamic skill list with enabled/disabled state
+  // GET /api/ai/skills
+  router.get('/skills', handleGetSkills)
 
   // QuickPulse — multimodal chart analysis
   // POST /api/ai/quick-pulse

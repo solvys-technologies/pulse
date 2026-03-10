@@ -32,6 +32,7 @@ function scoreColor(score: number) {
 }
 
 const SEVERITY_LABELS: Record<string, { label: string; color: string }> = {
+  critical: { label: 'CRIT', color: '#F97316' },
   high: { label: 'HIGH', color: '#EF4444' },
   medium: { label: 'MED', color: 'var(--pulse-accent)' },
   low: { label: 'LOW', color: 'var(--pulse-muted)' },

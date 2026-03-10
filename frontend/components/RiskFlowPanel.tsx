@@ -1,6 +1,7 @@
 // [claude-code 2026-02-26] Make RiskFlow subsection collapsible in Mission Control stack.
 // [claude-code 2026-03-03] Add trade idea row rendering (gold border, click-to-modal).
 // [claude-code 2026-03-10] Status dots (Notion + X CLI), dropdown filters (Priority + Source), X filter.
+// [claude-code 2026-03-10] T3: critical severity renders same as high (pulse + red text)
 import React, { useState } from 'react';
 import { useRiskFlow } from '../contexts/RiskFlowContext';
 import { Zap, ExternalLink, ChevronDown, ChevronUp, Trash2, X, TrendingUp, TrendingDown } from 'lucide-react';
@@ -42,7 +43,7 @@ function TradeIdeaRow({
 
   return (
     <div
-      className={`group flex items-start gap-2 px-3 py-2.5 border-b border-zinc-800/50 border-l-2 border-l-[#c79f4a]/50 hover:bg-[#c79f4a]/5 transition-colors cursor-pointer ${
+      className={`group flex items-start gap-2 px-3 py-2.5 border-b border-zinc-800/50 border-l-2 border-l-[var(--pulse-accent)]/50 hover:bg-[var(--pulse-accent)]/5 transition-colors cursor-pointer ${
         seen ? 'opacity-70' : ''
       }`}
       onClick={() => {
@@ -51,14 +52,14 @@ function TradeIdeaRow({
       }}
     >
       <div className="flex-1 min-w-0 flex items-start gap-2">
-        <span className="flex-shrink-0 mt-0.5 inline-flex items-center justify-center w-5 h-5 border border-[#c79f4a]/40 bg-[#c79f4a]/10">
+        <span className="flex-shrink-0 mt-0.5 inline-flex items-center justify-center w-5 h-5 border border-[var(--pulse-accent)]/40 bg-[var(--pulse-accent)]/10">
           {isLong
-            ? <TrendingUp className="w-3 h-3 text-[#c79f4a]" />
+            ? <TrendingUp className="w-3 h-3 text-[var(--pulse-accent)]" />
             : <TrendingDown className="w-3 h-3 text-zinc-400" />
           }
         </span>
         <div className="flex-1 min-w-0">
-          <p className="text-xs leading-snug font-medium line-clamp-2 text-[#f0ead6] group-hover:text-white transition-colors">
+          <p className="text-xs leading-snug font-medium line-clamp-2 text-[var(--pulse-text)] group-hover:text-white transition-colors">
             {alert.headline}
           </p>
           {alert.summary && alert.summary !== alert.headline && (
@@ -67,7 +68,7 @@ function TradeIdeaRow({
           <div className="flex items-center gap-2 mt-1">
             <span className="text-[10px] text-zinc-600">{timeAgo(alert.publishedAt)}</span>
             <span className="text-[10px] text-zinc-700">•</span>
-            <span className="text-[10px] text-[#c79f4a]/60 uppercase tracking-wider">
+            <span className="text-[10px] text-[var(--pulse-accent)]/60 uppercase tracking-wider">
               {idea.sourceAgent ?? 'Trade Idea'}
             </span>
             {idea.riskRewardRatio && (
@@ -105,10 +106,10 @@ function AlertRow({
   seen: boolean;
 }) {
   const sev = SEVERITY_CONFIG[alert.severity];
-  const isHigh = alert.severity === 'high';
+  const isHigh = alert.severity === 'high' || alert.severity === 'critical';
 
   return (
-    <div className={`group flex items-start gap-2 px-3 py-2.5 border-b border-zinc-800/50 hover:bg-[#D4AF37]/5 transition-colors ${isHigh ? 'riskflow-pulse-row' : ''} ${seen ? 'opacity-70' : ''}`}>
+    <div className={`group flex items-start gap-2 px-3 py-2.5 border-b border-zinc-800/50 hover:bg-[var(--pulse-accent)]/5 transition-colors ${isHigh ? 'riskflow-pulse-row' : ''} ${seen ? 'opacity-70' : ''}`}>
       <a
         href={alert.url}
         target="_blank"
@@ -120,13 +121,13 @@ function AlertRow({
           {sev.label}
         </span>
         <div className="flex-1 min-w-0">
-          <p className={`text-xs leading-snug font-medium line-clamp-3 break-words ${isHigh ? 'text-red-300' : 'text-zinc-300'} group-hover:text-white transition-colors`}>
+          <p className={`text-xs leading-snug font-medium line-clamp-3 break-words ${alert.severity === 'critical' ? 'text-orange-300' : isHigh ? 'text-red-300' : 'text-zinc-300'} group-hover:text-white transition-colors`}>
             {alert.headline}
           </p>
           <div className="flex items-center gap-2 mt-1">
             <span className="text-[10px] text-zinc-600">{timeAgo(alert.publishedAt)}</span>
             <span className="text-[10px] text-zinc-700">•</span>
-            <span className="text-[10px] text-[#D4AF37]/60 uppercase tracking-wider">{alert.source}</span>
+            <span className="text-[10px] text-[var(--pulse-accent)]/60 uppercase tracking-wider">{alert.source}</span>
             <ExternalLink className="w-2.5 h-2.5 text-zinc-700 opacity-0 group-hover:opacity-100 transition-opacity ml-auto flex-shrink-0" />
           </div>
         </div>
@@ -172,7 +173,7 @@ function FilterDropdown<T extends string>({
     <select
       value={value}
       onChange={(e) => onChange(e.target.value as T)}
-      className="px-1.5 py-0.5 bg-[#050402] border border-zinc-800 rounded text-[10px] text-zinc-400 focus:outline-none focus:border-[#D4AF37]/40 cursor-pointer"
+      className="px-1.5 py-0.5 bg-[var(--pulse-bg)] border border-zinc-800 rounded text-[10px] text-zinc-400 focus:outline-none focus:border-[var(--pulse-accent)]/40 cursor-pointer"
     >
       {options.map((opt) => (
         <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -207,7 +208,7 @@ export default function RiskFlowPanel({
   const filtered = (() => {
     let base = alerts;
     if (showProposals) return base.filter((a) => a.source === 'notion-trade-idea');
-    if (priorityFilter === 'high') base = base.filter((a) => a.severity === 'high');
+    if (priorityFilter === 'high') base = base.filter((a) => a.severity === 'high' || a.severity === 'critical');
     else if (priorityFilter === 'medium') base = base.filter((a) => a.severity === 'medium');
     if (sourceFilter === 'notion') base = base.filter((a) => a.source === 'notion-trade-idea' || (a.source as string).toLowerCase().includes('notion'));
     else if (sourceFilter === 'twitter') base = base.filter((a) => (a.source as string).toLowerCase().includes('twitter') || (a.source as string) === 'TwitterCli' || (a.source as string) === 'FinancialJuice');
@@ -227,19 +228,19 @@ export default function RiskFlowPanel({
         <TradeIdeaModal idea={selectedIdea} onClose={() => setSelectedIdea(null)} />
       )}
 
-      <div className="h-full flex flex-col bg-[#0a0a00]">
+      <div className="h-full flex flex-col bg-[var(--pulse-surface)]">
         {/* Header */}
-        <div className="flex items-center justify-between px-3 py-2.5 border-b border-[#D4AF37]/20">
+        <div className="flex items-center justify-between px-3 py-2.5 border-b border-[var(--pulse-accent)]/20">
           <div className="flex items-center gap-2">
-            <Zap className="w-3.5 h-3.5 text-[#D4AF37]" />
-            <h3 className="text-xs font-semibold tracking-[0.15em] uppercase text-[#D4AF37]">RiskFlow</h3>
+            <Zap className="w-3.5 h-3.5 text-[var(--pulse-accent)]" />
+            <h3 className="text-xs font-semibold tracking-[0.15em] uppercase text-[var(--pulse-accent)]">RiskFlow</h3>
             {highCount > 0 && (
               <span className="riskflow-pulse-badge inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-500/30 text-red-400 text-[9px] font-bold">
                 {highCount}
               </span>
             )}
             {ideaCount > 0 && (
-              <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-sm bg-[#c79f4a]/20 text-[#c79f4a] text-[9px] font-bold tracking-wider">
+              <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-sm bg-[var(--pulse-accent)]/20 text-[var(--pulse-accent)] text-[9px] font-bold tracking-wider">
                 {ideaCount} proposal{ideaCount !== 1 ? 's' : ''}
               </span>
             )}
@@ -256,7 +257,7 @@ export default function RiskFlowPanel({
             )}
             <button
               onClick={() => { if (onToggleCollapsed) onToggleCollapsed(); else setExpandedInternal(!expandedInternal); }}
-              className="p-1 rounded hover:bg-[#D4AF37]/10 text-zinc-500 hover:text-[#D4AF37] transition-colors"
+              className="p-1 rounded hover:bg-[var(--pulse-accent)]/10 text-zinc-500 hover:text-[var(--pulse-accent)] transition-colors"
             >
               {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
             </button>
@@ -288,7 +289,7 @@ export default function RiskFlowPanel({
                 onClick={() => setShowProposals((v) => !v)}
                 className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
                   showProposals
-                    ? 'bg-[#c79f4a]/20 text-[#c79f4a]'
+                    ? 'bg-[var(--pulse-accent)]/20 text-[var(--pulse-accent)]'
                     : 'text-zinc-600 hover:text-zinc-400 hover:bg-zinc-800/50'
                 }`}
               >
@@ -335,7 +336,7 @@ export default function RiskFlowPanel({
                 No recent items
               </div>
             ) : (
-              <div className="rounded border border-[#D4AF37]/20 bg-[#080806] overflow-hidden">
+              <div className="rounded border border-[var(--pulse-accent)]/20 bg-[#080806] overflow-hidden">
                 {collapsedPreviewItems.map((item, idx) => {
                   const sev = SEVERITY_CONFIG[item.severity];
                   const seen = isSeen(item.id);

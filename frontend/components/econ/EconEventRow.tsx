@@ -6,7 +6,7 @@ import type { EconEventItem, EconPrintItem } from '../../lib/services';
 
 const IMPORTANCE_DOTS: Record<number, { count: number; color: string }> = {
   1: { count: 1, color: 'bg-zinc-500' },
-  2: { count: 2, color: 'bg-[#D4AF37]' },
+  2: { count: 2, color: 'bg-[var(--pulse-accent)]' },
   3: { count: 3, color: 'bg-red-400' },
 };
 
@@ -61,11 +61,11 @@ export function EconEventRow({ event }: EconEventRowProps) {
       {/* Main row */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center gap-2 px-4 py-2.5 text-left hover:bg-[#D4AF37]/5 transition-colors"
+        className="w-full flex items-center gap-2 px-4 py-2.5 text-left hover:bg-[var(--pulse-accent)]/5 transition-colors"
       >
         {/* Expand icon */}
         {expanded
-          ? <ChevronDown className="w-3 h-3 text-[#D4AF37]/60 shrink-0" />
+          ? <ChevronDown className="w-3 h-3 text-[var(--pulse-accent)]/60 shrink-0" />
           : <ChevronRight className="w-3 h-3 text-zinc-600 shrink-0" />
         }
 
@@ -101,7 +101,7 @@ export function EconEventRow({ event }: EconEventRowProps) {
           <div className="w-14 text-right text-zinc-400" title="Forecast">
             {event.forecast ?? '-'}
           </div>
-          <div className={`w-14 text-right font-semibold ${hasActual ? 'text-[#D4AF37]' : 'text-zinc-600'}`} title="Actual">
+          <div className={`w-14 text-right font-semibold ${hasActual ? 'text-[var(--pulse-accent)]' : 'text-zinc-600'}`} title="Actual">
             {event.actual ?? '-'}
           </div>
         </div>
@@ -109,7 +109,7 @@ export function EconEventRow({ event }: EconEventRowProps) {
 
       {/* Expanded detail */}
       {expanded && (
-        <div className="px-4 pb-3 pt-1 ml-6 border-l border-[#D4AF37]/15 space-y-2">
+        <div className="px-4 pb-3 pt-1 ml-6 border-l border-[var(--pulse-accent)]/15 space-y-2">
           {/* Definition */}
           {event.definition && (
             <p className="text-[10px] text-zinc-400 leading-relaxed">

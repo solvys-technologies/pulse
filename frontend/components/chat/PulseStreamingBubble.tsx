@@ -22,7 +22,7 @@ export function PulseStreamingBubble({ content, agentName, compact = false }: Pu
         style={{ padding: compact ? '8px 10px' : '12px 16px' }}
       >
         {agentName && (
-          <div className="text-[10px] text-[#D4AF37] font-medium mb-1">{agentName}</div>
+          <div className="text-[10px] text-[var(--pulse-accent)] font-medium mb-1">{agentName}</div>
         )}
         <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
           {content}
@@ -30,7 +30,7 @@ export function PulseStreamingBubble({ content, agentName, compact = false }: Pu
             className="inline-block w-[2px] ml-0.5 animate-pulse"
             style={{
               height: compact ? '12px' : '14px',
-              backgroundColor: '#D4AF37',
+              backgroundColor: 'var(--pulse-accent)',
               verticalAlign: 'text-bottom',
             }}
           />

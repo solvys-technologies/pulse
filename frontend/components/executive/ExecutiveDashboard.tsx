@@ -152,7 +152,7 @@ export function ExecutiveDashboard() {
               <textarea
                 value={ntnText}
                 readOnly
-                className="mt-2 flex-1 min-h-0 w-full resize-none bg-[#0b0b08] px-4 py-3 text-sm text-gray-200 border-l-2 border-[#D4AF37]/40 focus:outline-none focus:border-[#D4AF37]"
+                className="mt-2 flex-1 min-h-0 w-full resize-none bg-[#0b0b08] px-4 py-3 text-sm text-gray-200 border-l-2 border-[var(--pulse-accent)]/40 focus:outline-none focus:border-[var(--pulse-accent)]"
                 placeholder={ntnLoaded ? 'Awaiting AI-generated brief...' : 'Loading brief...'}
               />
               {ntnLoaded && !ntnText.trim() && (
@@ -203,7 +203,7 @@ export function ExecutiveDashboard() {
                 {kpis.map((kpi) => (
                   <div
                     key={kpi.label}
-                    className="bg-[#0b0b08] px-4 py-3 border-l-2 border-[#D4AF37]/35"
+                    className="bg-[#0b0b08] px-4 py-3 border-l-2 border-[var(--pulse-accent)]/35"
                   >
                     <div className="text-[10px] tracking-[0.2em] uppercase text-gray-500">{kpi.label}</div>
                     <div className="mt-1.5 text-2xl font-semibold text-white">{kpi.value}</div>
@@ -297,7 +297,7 @@ export function ExecutiveDashboard() {
             <div
               className={`transition-all duration-300 rounded-full ${
                 activePage === idx
-                  ? 'w-[3px] h-8 bg-[#D4AF37]'
+                  ? 'w-[3px] h-8 bg-[var(--pulse-accent)]'
                   : 'w-[2px] h-5 bg-gray-700 hover:bg-gray-500'
               }`}
             />

@@ -10,7 +10,7 @@ interface ToolCallPartProps {
 
 const TOOL_COLORS: Record<string, string> = {
   web_search: '#A78BFA',
-  market_scanner: '#D4AF37',
+  market_scanner: 'var(--pulse-accent)',
   research: '#60A5FA',
   code_exec: '#34D399',
   browser: '#F59E0B',
@@ -51,7 +51,7 @@ function BashBlock({ part, result }: ToolCallPartProps) {
   };
 
   return (
-    <div className="bg-[#0a0a00] rounded-lg border border-zinc-800 overflow-hidden">
+    <div className="bg-[var(--pulse-surface)] rounded-lg border border-zinc-800 overflow-hidden">
       <div className="flex items-center gap-2 px-3 py-2 border-b border-zinc-800">
         <StatusIcon state={part.state} />
         <span

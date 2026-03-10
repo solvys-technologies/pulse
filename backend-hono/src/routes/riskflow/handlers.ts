@@ -4,6 +4,7 @@
  */
 
 // [claude-code 2026-03-10] Added handleGetSources for RiskFlow connection status indicators
+// [claude-code 2026-03-10] handlePreload: lowered minMacroLevel 3→2 (Medium+ threshold)
 import type { Context } from 'hono';
 import * as feedService from '../../services/riskflow/feed-service.js';
 import * as watchlistService from '../../services/riskflow/watchlist-service.js';
@@ -159,7 +160,7 @@ export async function handleGetBreaking(c: Context) {
 
 /**
  * GET /api/riskflow/preload
- * Pre-load 15 tweets from last 48 hours, level 3+ only
+ * Pre-load 15 tweets from last 48 hours, level 2+ only
  */
 export async function handlePreload(c: Context) {
   const userId = c.get('userId') as string | undefined;
@@ -171,7 +172,7 @@ export async function handlePreload(c: Context) {
   try {
     const feed = await feedService.getFeed(userId, {
       limit: 15,
-      minMacroLevel: 3,
+      minMacroLevel: 2,
     });
     return c.json({
       ...feed,

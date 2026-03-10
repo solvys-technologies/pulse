@@ -34,15 +34,15 @@ export function UpdateBanner() {
   if (!update?.updateAvailable || dismissed) return null;
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-center gap-4 px-4 py-2 bg-[#c79f4a]/10 border-b border-[#c79f4a]/20 backdrop-blur-sm">
-      <span className="text-[12px] text-[#c79f4a]">
+    <div className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-center gap-4 px-4 py-2 bg-[var(--pulse-accent)]/10 border-b border-[var(--pulse-accent)]/20 backdrop-blur-sm">
+      <span className="text-[12px] text-[var(--pulse-accent)]">
         Pulse {update.latest} is available (you're on {update.current})
       </span>
       <a
         href="https://github.com/solvys-technologies/pulse/releases"
         target="_blank"
         rel="noopener noreferrer"
-        className="px-3 py-0.5 rounded text-[11px] font-medium bg-[#c79f4a]/20 text-[#c79f4a] hover:bg-[#c79f4a]/30 transition-colors"
+        className="px-3 py-0.5 rounded text-[11px] font-medium bg-[var(--pulse-accent)]/20 text-[var(--pulse-accent)] hover:bg-[var(--pulse-accent)]/30 transition-colors"
       >
         Update
       </a>

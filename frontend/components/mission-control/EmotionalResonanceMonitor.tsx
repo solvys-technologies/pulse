@@ -420,9 +420,9 @@ export function EmotionalResonanceMonitor({ onERScoreChange }: EmotionalResonanc
   }, [erScore]);
 
   return (
-    <div className="bg-[#050500] p-2.5">
+    <div className="bg-[var(--pulse-bg)] p-2.5">
       <div className="flex items-center justify-between mb-1.5">
-        <h3 className="text-xs font-semibold text-[#D4AF37]">PsychAssist</h3>
+        <h3 className="text-xs font-semibold text-[var(--pulse-accent)]">PsychAssist</h3>
         {isMonitoring ? (
           <Mic className="w-3 h-3 text-emerald-400 animate-pulse" />
         ) : (
@@ -431,7 +431,7 @@ export function EmotionalResonanceMonitor({ onERScoreChange }: EmotionalResonanc
       </div>
 
       <div className="space-y-1.5">
-        <div className="relative h-16 bg-black/50 rounded border border-[#D4AF37]/10 overflow-hidden">
+        <div className="relative h-16 bg-black/50 rounded border border-[var(--pulse-accent)]/10 overflow-hidden">
           <div className="absolute inset-0 scanline-overlay" />
           {isMonitoring && analyser ? (
             <WaveformCanvas analyser={analyser} tiltMode={resonanceState === 'Tilt'} />

@@ -22,6 +22,8 @@ export type AiModelKey =
   | 'openclaw-research'  // Deep research
   | 'openclaw-fast'      // Fast analysis (Groq Llama 3.3 70B)
   | 'openclaw-realtime'  // Real-time news
+  // Claude Code SDK Bridge (free via Max subscription)
+  | 'claude-local'      // Claude Opus via local CLI bridge
   // GitHub Models (free, OAuth-powered)
   | 'github-deepseek'   // DeepSeek R1 via GitHub Models
 
@@ -73,6 +75,8 @@ export interface AiProviderSettings {
 
 export interface AiConversationConfig {
   maxHistoryMessages: number
+  maxContextTokens: number
+  summarizationThreshold: number
 }
 
 export interface AiPerformanceConfig {
@@ -141,6 +145,11 @@ const modelAliases: Record<string, AiModelKey> = {
   'openclaw-realtime': 'openclaw-realtime',
   'pic-realtime': 'openclaw-realtime',
   'pma': 'openclaw-realtime',
+  // Claude Code SDK Bridge (Max subscription)
+  'claude-local': 'claude-local',
+  'claude-sdk': 'claude-local',
+  'claude-max': 'claude-local',
+  'opus-local': 'claude-local',
   // GitHub Models (GPT-4o fallback)
   'github-deepseek': 'github-deepseek',
   'github-gpt4o': 'github-deepseek',
@@ -354,6 +363,24 @@ export const defaultAiConfig: AiConfig = {
       contextWindow: 128_000,
       supportsStreaming: true,
       supportsVision: true
+    },
+
+    // Claude Code SDK Bridge (free via Max subscription — $0 per-token cost)
+    // [claude-code 2026-03-10] Local CLI bridge using claude --print --output-format stream-json
+    'claude-local': {
+      id: 'claude-opus-4-6',
+      displayName: 'Claude Opus (Local SDK)',
+      provider: 'openai-compatible',
+      providerType: 'claude-local',
+      apiKeyEnv: '', // No API key needed — uses Max subscription via CLI
+      temperature: 0.4,
+      maxTokens: 16384,
+      timeoutMs: 120_000,
+      costPer1kInputUsd: 0,
+      costPer1kOutputUsd: 0,
+      contextWindow: 200_000,
+      supportsStreaming: true,
+      supportsVision: true
     }
   },
 
@@ -405,6 +432,8 @@ export const defaultAiConfig: AiConfig = {
       'openclaw-research': 'openrouter-sonnet',
       'openclaw-fast': 'openrouter-llama',
       'openclaw-realtime': 'openrouter-grok',
+      // Claude Local SDK fallback to OpenRouter Opus
+      'claude-local': 'openrouter-opus',
       // GitHub Models fallback to OpenRouter
       'github-deepseek': 'openrouter-llama'
     },
@@ -433,7 +462,9 @@ export const defaultAiConfig: AiConfig = {
   },
 
   conversation: {
-    maxHistoryMessages: Number.parseInt(getEnv('AI_MAX_HISTORY_MESSAGES') ?? '24', 10)
+    maxHistoryMessages: Number.parseInt(getEnv('AI_MAX_HISTORY_MESSAGES') ?? '50', 10),
+    maxContextTokens: Number.parseInt(getEnv('AI_MAX_CONTEXT_TOKENS') ?? '100000', 10),
+    summarizationThreshold: Number.parseInt(getEnv('AI_SUMMARIZATION_THRESHOLD') ?? '80000', 10),
   },
 
   performance: {
@@ -456,6 +487,11 @@ export const isOpenClawModel = (modelKey: AiModelKey): boolean => {
 // Helper to check if a model uses GitHub Models
 export const isGitHubModelsModel = (modelKey: AiModelKey): boolean => {
   return modelKey.startsWith('github-')
+}
+
+// Helper to check if a model uses Claude Local SDK bridge
+export const isClaudeLocalModel = (modelKey: AiModelKey): boolean => {
+  return modelKey === 'claude-local'
 }
 
 // Translate OpenClaw model ID for the Clawdbot gateway

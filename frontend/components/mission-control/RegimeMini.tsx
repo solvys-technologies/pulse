@@ -39,13 +39,13 @@ export function RegimeMini({ onOpenFullTracker }: RegimeMiniProps) {
   const upcoming = getUpcomingRegimes(regimes, 120, now);
 
   return (
-    <div className="bg-[#050500] p-3">
+    <div className="bg-[var(--pulse-bg)] p-3">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
-          <Clock className="w-3.5 h-3.5 text-[#D4AF37]" />
-          <h3 className="text-[11px] font-semibold text-[#D4AF37] tracking-wide uppercase">Regimes</h3>
+          <Clock className="w-3.5 h-3.5 text-[var(--pulse-accent)]" />
+          <h3 className="text-[11px] font-semibold text-[var(--pulse-accent)] tracking-wide uppercase">Regimes</h3>
           {active.length > 0 && (
-            <span className="inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full bg-[#D4AF37]/20 text-[#D4AF37] text-[9px] font-bold">
+            <span className="inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full bg-[var(--pulse-accent)]/20 text-[var(--pulse-accent)] text-[9px] font-bold">
               {active.length}
             </span>
           )}
@@ -53,7 +53,7 @@ export function RegimeMini({ onOpenFullTracker }: RegimeMiniProps) {
         {onOpenFullTracker && (
           <button
             onClick={onOpenFullTracker}
-            className="text-[9px] text-[#D4AF37]/60 hover:text-[#D4AF37] transition-colors tracking-wider uppercase"
+            className="text-[9px] text-[var(--pulse-accent)]/60 hover:text-[var(--pulse-accent)] transition-colors tracking-wider uppercase"
           >
             View All
           </button>
@@ -72,14 +72,14 @@ export function RegimeMini({ onOpenFullTracker }: RegimeMiniProps) {
         return (
           <div
             key={r.id}
-            className="mb-1.5 px-2 py-1.5 border border-[#D4AF37]/30 bg-[#D4AF37]/5"
+            className="mb-1.5 px-2 py-1.5 border border-[var(--pulse-accent)]/30 bg-[var(--pulse-accent)]/5"
           >
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-semibold text-[#f0ead6] truncate">{r.name}</span>
+              <span className="text-[10px] font-semibold text-[var(--pulse-text)] truncate">{r.name}</span>
               <BiasBadge bias={r.bias} />
             </div>
             <div className="flex items-center justify-between mt-1">
-              <span className="text-[9px] text-[#D4AF37]/70">{getTimeRemaining(r, now)}</span>
+              <span className="text-[9px] text-[var(--pulse-accent)]/70">{getTimeRemaining(r, now)}</span>
               <div className="flex items-center gap-2">
                 <span className="text-[9px] text-zinc-500">{r.record.wins}W-{r.record.losses}L ({winRate}%)</span>
                 <span className={`text-[9px] font-semibold ${r.confidence >= 70 ? 'text-emerald-400' : r.confidence >= 50 ? 'text-yellow-500' : 'text-red-400'}`}>

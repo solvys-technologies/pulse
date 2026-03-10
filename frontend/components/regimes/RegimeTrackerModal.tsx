@@ -65,15 +65,15 @@ function RegimeCard({
   const winRate = totalTrades > 0 ? Math.round((regime.record.wins / totalTrades) * 100) : 0;
 
   return (
-    <div className={`bg-[#0a0a06] border px-3 py-2.5 ${isActive ? 'border-[#D4AF37]/50 shadow-[0_0_12px_rgba(212,175,55,0.1)]' : 'border-zinc-800/60'}`}>
+    <div className={`bg-[#0a0a06] border px-3 py-2.5 ${isActive ? 'border-[var(--pulse-accent)]/50 shadow-[0_0_12px_rgba(212,175,55,0.1)]' : 'border-zinc-800/60'}`}>
       {/* Header */}
       <div className="flex items-start justify-between mb-1.5">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-[#f0ead6] truncate">{regime.name}</span>
+            <span className="text-xs font-semibold text-[var(--pulse-text)] truncate">{regime.name}</span>
             {isActive && (
-              <span className="shrink-0 inline-flex items-center gap-1 text-[8px] font-bold tracking-wider uppercase text-[#D4AF37] bg-[#D4AF37]/10 px-1.5 py-0.5">
-                <span className="w-1 h-1 rounded-full bg-[#D4AF37] animate-pulse" />
+              <span className="shrink-0 inline-flex items-center gap-1 text-[8px] font-bold tracking-wider uppercase text-[var(--pulse-accent)] bg-[var(--pulse-accent)]/10 px-1.5 py-0.5">
+                <span className="w-1 h-1 rounded-full bg-[var(--pulse-accent)] animate-pulse" />
                 LIVE
               </span>
             )}
@@ -120,7 +120,7 @@ function RegimeCard({
             <span className="text-zinc-600 ml-1">({winRate}%)</span>
           </span>
           <span className="text-[9px] text-zinc-600">{regime.daysObserved}d observed</span>
-          <span className="text-[9px] text-[#D4AF37]/60">{timeInfo}</span>
+          <span className="text-[9px] text-[var(--pulse-accent)]/60">{timeInfo}</span>
         </div>
         <div className="flex items-center gap-1">
           <button
@@ -171,11 +171,11 @@ function AddRegimeForm({ onAdd, onCancel }: { onAdd: (r: TradingRegime) => void;
     onAdd(regime);
   };
 
-  const inputClass = 'w-full bg-[#0a0a06] border border-zinc-800 text-xs text-[#f0ead6] px-2 py-1.5 focus:outline-none focus:border-[#D4AF37]/40';
+  const inputClass = 'w-full bg-[#0a0a06] border border-zinc-800 text-xs text-[var(--pulse-text)] px-2 py-1.5 focus:outline-none focus:border-[var(--pulse-accent)]/40';
 
   return (
-    <div className="bg-[#0a0a06] border border-[#D4AF37]/30 p-3 space-y-2">
-      <div className="text-[10px] font-semibold text-[#D4AF37] tracking-wider uppercase mb-1">New Custom Regime</div>
+    <div className="bg-[#0a0a06] border border-[var(--pulse-accent)]/30 p-3 space-y-2">
+      <div className="text-[10px] font-semibold text-[var(--pulse-accent)] tracking-wider uppercase mb-1">New Custom Regime</div>
       <input className={inputClass} placeholder="Regime name" value={name} onChange={(e) => setName(e.target.value)} />
       <input className={inputClass} placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
       <div className="grid grid-cols-2 gap-2">
@@ -207,7 +207,7 @@ function AddRegimeForm({ onAdd, onCancel }: { onAdd: (r: TradingRegime) => void;
       <div className="flex items-center gap-2 pt-1">
         <button
           onClick={handleSubmit}
-          className="px-3 py-1 text-[10px] font-semibold bg-[#D4AF37] text-black hover:bg-[#FBC717] transition-colors"
+          className="px-3 py-1 text-[10px] font-semibold bg-[var(--pulse-accent)] text-black hover:bg-[color-mix(in_srgb,var(--pulse-accent)_80%,white)] transition-colors"
         >
           Add Regime
         </button>
@@ -257,23 +257,23 @@ export function RegimeTrackerModal({ onClose }: RegimeTrackerModalProps) {
       <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm" onClick={onClose} />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
         <div
-          className="pointer-events-auto w-full max-w-2xl bg-[#050402] border border-[#c79f4a]/40 rounded-xl shadow-[0_0_40px_rgba(199,159,74,0.15)] flex flex-col max-h-[85vh] overflow-hidden"
+          className="pointer-events-auto w-full max-w-2xl bg-[var(--pulse-bg)] border border-[var(--pulse-accent)]/40 rounded-xl shadow-[0_0_40px_rgba(199,159,74,0.15)] flex flex-col max-h-[85vh] overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-[#c79f4a]/20 shrink-0">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--pulse-accent)]/20 shrink-0">
             <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-[#D4AF37]" />
-              <h2 className="text-sm font-bold text-[#D4AF37]">Regime Tracker</h2>
+              <Clock className="w-4 h-4 text-[var(--pulse-accent)]" />
+              <h2 className="text-sm font-bold text-[var(--pulse-accent)]">Regime Tracker</h2>
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowAddForm((v) => !v)}
-                className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold text-[#D4AF37] border border-[#D4AF37]/30 hover:bg-[#D4AF37]/10 transition-colors"
+                className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold text-[var(--pulse-accent)] border border-[var(--pulse-accent)]/30 hover:bg-[var(--pulse-accent)]/10 transition-colors"
               >
                 <Plus className="w-3 h-3" /> Add Regime
               </button>
-              <button onClick={onClose} className="p-1 text-zinc-500 hover:text-[#f0ead6] transition-colors">
+              <button onClick={onClose} className="p-1 text-zinc-500 hover:text-[var(--pulse-text)] transition-colors">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -301,15 +301,15 @@ export function RegimeTrackerModal({ onClose }: RegimeTrackerModalProps) {
                     className="flex items-center gap-2 mb-2 group w-full text-left"
                   >
                     {isCollapsed
-                      ? <ChevronRight className="w-3 h-3 text-[#D4AF37]/60" />
-                      : <ChevronDown className="w-3 h-3 text-[#D4AF37]/60" />
+                      ? <ChevronRight className="w-3 h-3 text-[var(--pulse-accent)]/60" />
+                      : <ChevronDown className="w-3 h-3 text-[var(--pulse-accent)]/60" />
                     }
-                    <span className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[#D4AF37]">
+                    <span className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[var(--pulse-accent)]">
                       {CATEGORY_LABELS[cat]}
                     </span>
                     <span className="text-[9px] text-zinc-600">{items.length} regime{items.length !== 1 ? 's' : ''}</span>
                     {activeCount > 0 && (
-                      <span className="text-[9px] font-bold text-[#D4AF37]">{activeCount} active</span>
+                      <span className="text-[9px] font-bold text-[var(--pulse-accent)]">{activeCount} active</span>
                     )}
                   </button>
 

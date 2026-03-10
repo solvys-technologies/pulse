@@ -17,7 +17,7 @@ export const SKILLS: readonly SkillDef[] = [
   { id: 'track', label: 'Track', icon: GitBranch, color: '#34D399', description: 'Start a new narrative thread', keywords: ['track', 'narrative', 'thread', 'thesis'] },
   { id: 'psych_assist', label: 'PsychAssist', icon: Brain, color: '#E879F9', description: 'Psych analysis, performance review, trading activity', keywords: ['psych', 'mental', 'tilt', 'emotion', 'performance'] },
   { id: 'maintenance', label: 'Maintenance', icon: Wrench, color: '#9CA3AF', description: 'Self-update app and changelog', keywords: ['maintenance', 'update', 'changelog', 'fix'] },
-  { id: 'quick_pulse', label: 'QuickPulse', icon: Activity, color: '#D4AF37', description: 'Chart screenshot analysis: bias, entries, stop, target', keywords: ['quick', 'pulse', 'chart', 'screenshot', 'snap'] },
+  { id: 'quick_pulse', label: 'QuickPulse', icon: Activity, color: 'var(--pulse-accent)', description: 'Chart screenshot analysis: bias, entries, stop, target', keywords: ['quick', 'pulse', 'chart', 'screenshot', 'snap'] },
 ] as const;
 
 export type SkillId = (typeof SKILLS)[number]['id'];

@@ -1,5 +1,6 @@
 // [claude-code 2026-03-05] Add filter tabs: All, High, Medium, Proposals
 // [claude-code 2026-03-10] Dropdown filters (Priority + Source), X/FJ filter, X CLI status dot.
+// [claude-code 2026-03-10] T3: critical severity support in labels, points, color display
 import { useEffect, useState, useMemo } from 'react';
 import { Bell, BellOff } from 'lucide-react';
 import { useRiskFlow } from '../../contexts/RiskFlowContext';
@@ -9,7 +10,8 @@ import { useSourceStatus } from '../../hooks/useSourceStatus';
 type PriorityFilter = 'all' | 'high' | 'medium';
 type SourceFilter = 'all' | 'notion' | 'twitter';
 
-function severityLabel(severity: 'high' | 'medium' | 'low'): string {
+function severityLabel(severity: 'critical' | 'high' | 'medium' | 'low'): string {
+  if (severity === 'critical') return 'CRITICAL';
   if (severity === 'high') return 'HIGH';
   if (severity === 'medium') return 'MEDIUM';
   return 'LOW';
@@ -62,11 +64,11 @@ function classifyCycle(tag: FlowTag): FlowCycle {
 }
 
 function impliedPoints(
-  severity: 'high' | 'medium' | 'low',
+  severity: 'critical' | 'high' | 'medium' | 'low',
   bias: FlowBias,
   tag: FlowTag
 ): number {
-  const base = severity === 'high' ? 18 : severity === 'medium' ? 10 : 6;
+  const base = severity === 'critical' ? 24 : severity === 'high' ? 18 : severity === 'medium' ? 10 : 6;
   const multiplier = tag === 'Geopol' ? 1.4 : tag === 'Econ' ? 1.2 : 1.0;
   const signed = bias === 'Bullish' ? 1 : bias === 'Bearish' ? -1 : 0;
   return Number((base * multiplier * signed).toFixed(1));
@@ -137,7 +139,7 @@ export function NewsSection() {
         </div>
         <button
           onClick={requestNotifications}
-          className="flex items-center gap-2 text-xs text-gray-400 hover:text-[#D4AF37] transition-colors px-2 py-1"
+          className="flex items-center gap-2 text-xs text-gray-400 hover:text-[var(--pulse-accent)] transition-colors px-2 py-1"
         >
           {notificationsEnabled ? (
             <Bell className="w-3.5 h-3.5" />
@@ -153,7 +155,7 @@ export function NewsSection() {
         <select
           value={showProposals ? 'all' : priorityFilter}
           onChange={(e) => { setShowProposals(false); setPriorityFilter(e.target.value as PriorityFilter); }}
-          className="text-[10px] px-2 py-1 rounded bg-[#050500] border border-zinc-800 text-zinc-400 focus:outline-none focus:border-[#D4AF37]/40 cursor-pointer"
+          className="text-[10px] px-2 py-1 rounded bg-[var(--pulse-bg)] border border-zinc-800 text-zinc-400 focus:outline-none focus:border-[var(--pulse-accent)]/40 cursor-pointer"
         >
           <option value="all">Priority: All ({alerts.length})</option>
           <option value="high">High ({highCount})</option>
@@ -162,7 +164,7 @@ export function NewsSection() {
         <select
           value={showProposals ? 'all' : sourceFilter}
           onChange={(e) => { setShowProposals(false); setSourceFilter(e.target.value as SourceFilter); }}
-          className="text-[10px] px-2 py-1 rounded bg-[#050500] border border-zinc-800 text-zinc-400 focus:outline-none focus:border-[#D4AF37]/40 cursor-pointer"
+          className="text-[10px] px-2 py-1 rounded bg-[var(--pulse-bg)] border border-zinc-800 text-zinc-400 focus:outline-none focus:border-[var(--pulse-accent)]/40 cursor-pointer"
         >
           <option value="all">Source: All</option>
           <option value="notion">Notion</option>
@@ -172,8 +174,8 @@ export function NewsSection() {
           onClick={() => setShowProposals((v) => !v)}
           className={`text-[10px] px-2.5 py-1 rounded transition-colors border ${
             showProposals
-              ? 'bg-[#c79f4a]/20 text-[#c79f4a] border-[#c79f4a]/40'
-              : 'text-zinc-500 hover:text-[#D4AF37] border-transparent'
+              ? 'bg-[var(--pulse-accent)]/20 text-[var(--pulse-accent)] border-[var(--pulse-accent)]/40'
+              : 'text-zinc-500 hover:text-[var(--pulse-accent)] border-transparent'
           }`}
         >
           Proposals{proposalCount > 0 ? ` (${proposalCount})` : ''}
@@ -197,17 +199,18 @@ export function NewsSection() {
             return (
               <div
                 key={item.id}
-                className={`bg-[#050500] border rounded-lg p-4 transition-colors border-b-2 ${
+                className={`bg-[var(--pulse-bg)] border rounded-lg p-4 transition-colors border-b-2 ${
                   seen
                     ? 'border-zinc-800/60 opacity-70'
-                    : 'border-[#D4AF37]/20 hover:border-[#D4AF37]/40'
+                    : 'border-[var(--pulse-accent)]/20 hover:border-[var(--pulse-accent)]/40'
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs font-semibold text-[#D4AF37]">{item.source}</span>
+                      <span className="text-xs font-semibold text-[var(--pulse-accent)]">{item.source}</span>
                       <span className={`text-xs ${
+                        item.severity === 'critical' ? 'text-orange-400' :
                         item.severity === 'high' ? 'text-red-400' :
                         item.severity === 'medium' ? 'text-yellow-400' :
                         'text-blue-400'
@@ -234,7 +237,7 @@ export function NewsSection() {
                           href={item.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs text-[#D4AF37] hover:underline"
+                          className="text-xs text-[var(--pulse-accent)] hover:underline"
                         >
                           Read more →
                         </a>
@@ -243,7 +246,7 @@ export function NewsSection() {
                   </div>
                 </div>
 
-                <div className="flex gap-2 mt-4 pt-4 border-t border-[#D4AF37]/10">
+                <div className="flex gap-2 mt-4 pt-4 border-t border-[var(--pulse-accent)]/10">
                   <div className="flex-1 px-3 py-2 text-xs font-semibold text-center text-zinc-300">
                     {tag}
                   </div>

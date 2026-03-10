@@ -159,8 +159,8 @@ export function PulseChatInput({
     <div className="w-full">
       {/* Steer queue strip — shown while processing */}
       {isProcessing && onSteer && (
-        <div className="flex items-center gap-2 mb-2 px-3 h-9 rounded-xl border border-[#D4AF37]/20 bg-[#0d0c09]/80 backdrop-blur-sm">
-          <GitBranch size={12} className="text-[#D4AF37]/50 shrink-0" />
+        <div className="flex items-center gap-2 mb-2 px-3 h-9 rounded-xl border border-[var(--pulse-accent)]/20 bg-[#0d0c09]/80 backdrop-blur-sm">
+          <GitBranch size={12} className="text-[var(--pulse-accent)]/50 shrink-0" />
           <input
             type="text"
             value={steerText}
@@ -181,7 +181,7 @@ export function PulseChatInput({
       {images.length > 0 && (
         <div className="flex gap-2 mb-2 px-2 overflow-x-auto">
           {images.map((src, idx) => (
-            <div key={idx} className="relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-[#D4AF37]/20">
+            <div key={idx} className="relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-[var(--pulse-accent)]/20">
               <img src={src} alt="" className="w-full h-full object-cover" />
               <button
                 onClick={() => removeImage(idx)}
@@ -200,8 +200,8 @@ export function PulseChatInput({
           'relative flex flex-col rounded-2xl border transition-all duration-200',
           'backdrop-blur-xl shadow-[0_18px_40px_rgba(0,0,0,0.35)]',
           text
-            ? 'border-[#D4AF37]/55 ring-1 ring-[#D4AF37]/25'
-            : 'border-[#D4AF37]/20 hover:border-[#D4AF37]/35',
+            ? 'border-[var(--pulse-accent)]/55 ring-1 ring-[var(--pulse-accent)]/25'
+            : 'border-[var(--pulse-accent)]/20 hover:border-[var(--pulse-accent)]/35',
           disabled ? 'opacity-50 pointer-events-none' : '',
         ].join(' ')}
         style={{ background: 'linear-gradient(180deg, rgba(13,12,9,0.98), rgba(8,8,6,0.95))' }}
@@ -238,7 +238,7 @@ export function PulseChatInput({
           <div className="flex items-center gap-1">
             <button
               onClick={onOpenAttach}
-              className="flex items-center justify-center rounded-lg text-zinc-500 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-colors"
+              className="flex items-center justify-center rounded-lg text-zinc-500 hover:text-[var(--pulse-accent)] hover:bg-[var(--pulse-accent)]/10 transition-colors"
               style={{ width: '32px', height: '32px' }}
               title="Attach"
             >
@@ -247,20 +247,20 @@ export function PulseChatInput({
             <button
               type="button"
               onClick={onOpenConnectors}
-              className="relative flex items-center justify-center rounded-lg text-zinc-500 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-colors"
+              className="relative flex items-center justify-center rounded-lg text-zinc-500 hover:text-[var(--pulse-accent)] hover:bg-[var(--pulse-accent)]/10 transition-colors"
               style={{ width: '32px', height: '32px' }}
               title="Connectors"
             >
               <Plug2 size={14} />
               {connectorCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-[#c79f4a] text-[8px] text-[#050402] flex items-center justify-center font-bold leading-none">
+                <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-[var(--pulse-accent)] text-[8px] text-[var(--pulse-bg)] flex items-center justify-center font-bold leading-none">
                   {connectorCount > 9 ? '9+' : connectorCount}
                 </span>
               )}
             </button>
             <button
               onClick={onOpenSkills}
-              className="flex items-center justify-center rounded-lg text-zinc-500 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-colors"
+              className="flex items-center justify-center rounded-lg text-zinc-500 hover:text-[var(--pulse-accent)] hover:bg-[var(--pulse-accent)]/10 transition-colors"
               style={{ width: '32px', height: '32px' }}
               title="Skills"
             >
@@ -271,8 +271,8 @@ export function PulseChatInput({
               title={thinkHarder ? 'Extended thinking ON' : 'Extended thinking OFF'}
               className={`flex items-center justify-center transition-all ${
                 thinkHarder
-                  ? 'text-[#D4AF37] bg-[#D4AF37]/15 rounded-lg'
-                  : 'text-zinc-500 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 rounded-lg'
+                  ? 'text-[var(--pulse-accent)] bg-[var(--pulse-accent)]/15 rounded-lg'
+                  : 'text-zinc-500 hover:text-[var(--pulse-accent)] hover:bg-[var(--pulse-accent)]/10 rounded-lg'
               }`}
               style={{ width: '32px', height: '32px' }}
             >
@@ -286,8 +286,8 @@ export function PulseChatInput({
             disabled={!text.trim() && images.length === 0 && !isProcessing}
             className={`flex items-center justify-center rounded-full transition-all ${
               isProcessing
-                ? 'bg-[#D4AF37] hover:bg-[#C5A030] text-black'
-                : 'bg-[#D4AF37] hover:bg-[#C5A030] text-black disabled:opacity-30 disabled:hover:bg-[#D4AF37] shadow-[0_8px_20px_rgba(212,175,55,0.25)]'
+                ? 'bg-[var(--pulse-accent)] hover:bg-[#C5A030] text-black'
+                : 'bg-[var(--pulse-accent)] hover:bg-[#C5A030] text-black disabled:opacity-30 disabled:hover:bg-[var(--pulse-accent)] shadow-[0_8px_20px_rgba(212,175,55,0.25)]'
             }`}
             style={{ width: '34px', height: '34px' }}
             title={isProcessing ? 'Stop' : 'Send'}

@@ -1,8 +1,10 @@
-// [claude-code 2026-03-07] Composer wired to assistant-ui thread runtime — replaces ChatInputArea
-import { useEffect, useState } from 'react';
+// [claude-code 2026-03-10] Composer rewired to PromptBox — skills fetched from /api/ai/skills
+import { useEffect, useState, useCallback } from 'react';
 import { useThread, useThreadRuntime } from '@assistant-ui/react';
-import { ChatInputArea } from './ChatInputArea';
+import { PromptBox } from '../ui/chatgpt-prompt-input';
 import { SKILL_PREFIXES } from '../../lib/skillPrefixes';
+import { useVoiceAssistant } from '../../hooks/useVoiceAssistant';
+import { API_BASE_URL } from './constants';
 
 interface PulseComposerProps {
   thinkHarder: boolean;
@@ -13,6 +15,7 @@ interface PulseComposerProps {
   onToggleSkills: () => void;
   lastError: string | null;
   disabledSkills?: Record<string, { reason: string }>;
+  compact?: boolean;
 }
 
 export function PulseComposer({
@@ -23,20 +26,47 @@ export function PulseComposer({
   showSkills,
   onToggleSkills,
   lastError,
-  disabledSkills,
+  disabledSkills: propDisabledSkills,
+  compact,
 }: PulseComposerProps) {
   const runtime = useThreadRuntime();
   const isRunning = useThread((t) => t.isRunning);
   const [queuedSteer, setQueuedSteer] = useState<string | null>(null);
+  const [apiDisabledSkills, setApiDisabledSkills] = useState<Record<string, { reason: string }>>({});
+  const voice = useVoiceAssistant();
 
+  // Fetch skills from backend — merge with prop-level disabled skills
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/ai/skills`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const disabled: Record<string, { reason: string }> = {};
+        for (const skill of data.skills ?? []) {
+          if (!skill.enabled) {
+            disabled[skill.id] = { reason: skill.reason ?? 'Disabled' };
+          }
+        }
+        if (!cancelled) setApiDisabledSkills(disabled);
+      } catch {
+        // Skills endpoint not available — use prop defaults
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const mergedDisabledSkills = { ...apiDisabledSkills, ...propDisabledSkills };
+
+  // Flush queued steer after run finishes
   useEffect(() => {
     if (isRunning || !queuedSteer) return;
-
     runtime.append({ role: 'user', content: [{ type: 'text', text: queuedSteer }] });
     setQueuedSteer(null);
   }, [isRunning, queuedSteer, runtime]);
 
-  const handleSend = (msg: string, images?: string[]) => {
+  const handleSend = useCallback((msg: string, images?: string[]) => {
     let finalText = msg;
     if (activeSkill && SKILL_PREFIXES[activeSkill]) {
       finalText = SKILL_PREFIXES[activeSkill] + '\n\n' + msg;
@@ -52,32 +82,28 @@ export function PulseComposer({
     } catch (err) {
       console.error('[PulseComposer] Failed to append message:', err);
     }
-  };
+  }, [runtime, activeSkill]);
 
-  const handleStop = () => {
+  const handleStop = useCallback(() => {
     runtime.cancelRun();
-  };
+  }, [runtime]);
 
-  const handleSteer = (msg: string) => {
+  const handleSteer = useCallback((msg: string) => {
     const text = msg.trim();
     if (!text) return;
-
-    // Avoid assistant-ui internal queue edge cases that can blank the thread after timeout.
-    // Keep one local queued steer and flush it right after the active run finishes.
     if (isRunning) {
       setQueuedSteer(text);
       return;
     }
-
-    runtime.append({ role: 'user', content: [{ type: 'text', text: text }] });
-  };
+    runtime.append({ role: 'user', content: [{ type: 'text', text }] });
+  }, [isRunning, runtime]);
 
   return (
-    <ChatInputArea
+    <PromptBox
       onSend={handleSend}
       onStop={handleStop}
       onSteer={handleSteer}
-      isLoading={isRunning}
+      isProcessing={isRunning}
       thinkHarder={thinkHarder}
       setThinkHarder={setThinkHarder}
       lastError={lastError}
@@ -85,8 +111,11 @@ export function PulseComposer({
       onSelectSkill={onSelectSkill}
       showSkills={showSkills}
       onToggleSkills={onToggleSkills}
-      onAttachImage={undefined}
-      disabledSkills={disabledSkills}
+      disabledSkills={mergedDisabledSkills}
+      compact={compact}
+      voiceEnabled={voice.enabled}
+      voiceState={voice.runtimeState}
+      onToggleVoice={voice.toggleEnabled}
     />
   );
 }

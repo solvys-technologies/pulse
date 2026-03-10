@@ -19,8 +19,66 @@ import type {
 } from '../../types/ai-chat.js'
 
 const isDev = process.env.NODE_ENV !== 'production'
-const MAX_HISTORY_MESSAGES = 24
+const MAX_HISTORY_MESSAGES = 50
 const STALE_AFTER_HOURS = 4
+const MAX_CONTEXT_TOKENS = 100_000
+const SUMMARIZATION_THRESHOLD = 80_000
+const VERBATIM_TAIL = 30
+
+/**
+ * Estimate token count for a set of messages (~4 chars per token heuristic)
+ */
+export function estimateTokens(messages: { role: string; content: string }[]): number {
+  return messages.reduce((sum, m) => sum + Math.ceil(m.content.length / 4), 0)
+}
+
+/**
+ * Summarize older messages via OpenClaw gateway when context exceeds threshold
+ */
+async function summarizeOlderMessages(
+  messages: { role: 'user' | 'assistant'; content: string }[]
+): Promise<string | null> {
+  const olderMessages = messages.slice(0, messages.length - VERBATIM_TAIL)
+  if (olderMessages.length === 0) return null
+
+  const gatewayUrl = (process.env.OPENCLAW_BASE_URL ?? 'http://localhost:7787').replace(/\/+$/, '')
+  const apiKey = process.env.OPENCLAW_API_KEY ?? ''
+
+  const summaryPrompt = `Summarize this conversation history concisely, preserving key facts, decisions, and context:\n\n${olderMessages.map(m => `${m.role}: ${m.content}`).join('\n\n')}`
+
+  try {
+    const response = await fetch(`${gatewayUrl}/v1/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'clawdbot:main',
+        messages: [
+          { role: 'system', content: 'You are a concise conversation summarizer. Preserve key facts, trade ideas, decisions, and numbers. Be brief.' },
+          { role: 'user', content: summaryPrompt },
+        ],
+        max_tokens: 1024,
+      }),
+      signal: AbortSignal.timeout(15_000),
+    })
+
+    if (!response.ok) {
+      console.warn('[ConversationStore] Summarization gateway error:', response.status)
+      return null
+    }
+
+    const data = await response.json() as { choices?: { message?: { content?: string } }[] }
+    return data.choices?.[0]?.message?.content ?? null
+  } catch (err) {
+    console.warn('[ConversationStore] Summarization failed, using full history:', err)
+    return null
+  }
+}
+
+// Cache summaries per conversation to avoid re-summarizing
+const summaryCache = new Map<string, { summary: string; messageCount: number; expiresAt: number }>()
 
 // In-memory fallback for dev mode without database
 const memoryStore = {
@@ -318,15 +376,51 @@ export async function getMessages(
 
 /**
  * Get recent messages for context (for AI)
+ * Auto-summarizes older messages when token count exceeds threshold
  */
 export async function getRecentContext(
   conversationId: string
-): Promise<{ role: 'user' | 'assistant'; content: string }[]> {
+): Promise<{ role: 'user' | 'assistant' | 'system'; content: string }[]> {
   const messages = await getMessages(conversationId, MAX_HISTORY_MESSAGES)
-  
-  return messages
+
+  const filtered = messages
     .filter(m => m.role === 'user' || m.role === 'assistant')
     .map(m => ({ role: m.role as 'user' | 'assistant', content: m.content }))
+
+  const tokenEstimate = estimateTokens(filtered)
+
+  // Auto-summarize when context is large
+  if (tokenEstimate > SUMMARIZATION_THRESHOLD && filtered.length > VERBATIM_TAIL) {
+    // Check cache first
+    const cached = summaryCache.get(conversationId)
+    if (cached && cached.messageCount === filtered.length && cached.expiresAt > Date.now()) {
+      const verbatim = filtered.slice(-VERBATIM_TAIL)
+      return [
+        { role: 'system' as const, content: `[Conversation summary]\n${cached.summary}` },
+        ...verbatim,
+      ]
+    }
+
+    console.log(`[ConversationStore] Summarizing ${filtered.length} messages (${tokenEstimate} est. tokens)`)
+    const summary = await summarizeOlderMessages(filtered)
+
+    if (summary) {
+      // Cache for 5 minutes
+      summaryCache.set(conversationId, {
+        summary,
+        messageCount: filtered.length,
+        expiresAt: Date.now() + 5 * 60 * 1000,
+      })
+
+      const verbatim = filtered.slice(-VERBATIM_TAIL)
+      return [
+        { role: 'system' as const, content: `[Conversation summary]\n${summary}` },
+        ...verbatim,
+      ]
+    }
+  }
+
+  return filtered
 }
 
 /**

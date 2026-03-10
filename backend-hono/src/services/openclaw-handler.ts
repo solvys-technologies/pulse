@@ -8,6 +8,7 @@
 
 import type { OpenClawAgentRole } from './openclaw-service.js'
 import { buildACPProvenanceHeaders, type PulseACPChannel } from './openclaw-service.js'
+import { getAgentSystemPrompt, extractSkillTag } from './ai/agent-instructions.js'
 
 export type ContentPart =
   | { type: 'text'; text: string }
@@ -41,34 +42,8 @@ export interface OpenClawChatResponse {
   }
 }
 
-// P.I.C. Agent system prompts
-const AGENT_PROMPTS: Record<OpenClawAgentRole, string> = {
-  'harper-cao': `You are Harper, the Chief Agentic Officer (CAO) of Priced In Capital.
-You oversee all trading operations and provide executive-level guidance.
-You consolidate reports from PMA agents, Futures Desk, and Fundamentals Desk.
-Your role: Macro oversight, trade approvals, risk consolidation.
-Speak with authority and strategic vision. Reference the 13 Commandments when relevant.`,
-
-  'pma-1': `You are PMA-1, the S&P 500 & Crypto prediction market analyst.
-You specialize in Kalshi prediction markets for S&P/crypto price movements.
-Track ES futures, BTC, and related prediction contracts.
-Provide probability assessments and market-timing insights.`,
-
-  'pma-2': `You are PMA-2, the Economic & Political prediction market analyst.
-You specialize in Kalshi prediction markets for economic and political events.
-Track Fed decisions, elections, policy changes affecting markets.
-Provide probability assessments for macro events.`,
-
-  'futures-desk': `You are the Futures Desk analyst at Priced In Capital.
-You trade /NQ, /MNQ, /ES via TopStepX.
-Focus on technical analysis, FA Rippers, and intraday setups.
-Identify entry/exit levels, stops, and risk/reward ratios.`,
-
-  'fundamentals-desk': `You are the Fundamentals Desk analyst at Priced In Capital.
-You cover the Top 10 S&P/NDX mega-cap tech stocks.
-Track earnings, guidance, sector trends, and long-term catalysts.
-Provide fundamental analysis and fair value assessments.`
-}
+// [claude-code 2026-03-10] AGENT_PROMPTS moved to services/ai/agent-instructions.ts
+// Use getAgentSystemPrompt(role, context) for dynamic prompt building
 
 // Intent detection patterns
 const INTENT_PATTERNS: { pattern: RegExp; agent: OpenClawAgentRole; intent: string }[] = [
@@ -152,7 +127,8 @@ export function generateLocalResponse(
 ): OpenClawChatResponse {
   const { agent, intent } = agentInfo
   const symbols = extractSymbols(request.message)
-  const agentPrompt = AGENT_PROMPTS[agent]
+  const skillTag = extractSkillTag(request.message)
+  const agentPrompt = getAgentSystemPrompt(agent, { skillTag, thinkHarder: request.thinkHarder })
 
   // Build contextual response based on intent
   let content: string
@@ -457,7 +433,8 @@ export async function handleOpenClawChat(request: OpenClawChatRequest): Promise<
     : detectAgent(request.message)
 
   // Build messages array for the gateway
-  const systemPrompt = AGENT_PROMPTS[agentInfo.agent]
+  const skillTag = extractSkillTag(request.message)
+  const systemPrompt = getAgentSystemPrompt(agentInfo.agent, { skillTag, thinkHarder: request.thinkHarder })
   const messages: { role: string; content: string | ContentPart[] }[] = [
     { role: 'system', content: systemPrompt }
   ]

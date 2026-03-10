@@ -104,7 +104,7 @@ export default function NarrativeWeekView() {
         status: 'active',
         dateRange: { start: new Date().toISOString(), end: null },
         healthScore: 100,
-        color: '#c79f4a',
+        color: 'var(--pulse-accent)',
         order: lanesFiltered.length,
         parentId: null,
         forkDate: null,

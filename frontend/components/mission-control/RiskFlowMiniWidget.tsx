@@ -1,4 +1,5 @@
 // [claude-code 2026-03-05] Phase 3B: RiskFlow mini widget for Mission Control deck
+// [claude-code 2026-03-10] T3: critical severity dot (orange)
 import { useState } from 'react';
 import { Zap, ChevronDown, ChevronUp, ExternalLink, TrendingUp, TrendingDown } from 'lucide-react';
 import { useRiskFlow } from '../../contexts/RiskFlowContext';
@@ -36,8 +37,8 @@ export function RiskFlowMiniWidget() {
       <div className="h-full flex flex-col">
         {/* Header */}
         <div className="flex items-center gap-2 mb-2">
-          <Zap className="w-3.5 h-3.5 text-[#D4AF37]" />
-          <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[#D4AF37]">RiskFlow</span>
+          <Zap className="w-3.5 h-3.5 text-[var(--pulse-accent)]" />
+          <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[var(--pulse-accent)]">RiskFlow</span>
           {unseenCount > 0 && (
             <span className="inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-red-500/30 text-red-400 text-[9px] font-bold">
               {unseenCount}
@@ -59,7 +60,7 @@ export function RiskFlowMiniWidget() {
               return (
                 <div
                   key={alert.id}
-                  className={`rounded ${isTradeIdea ? 'border-l-2 border-l-[#c79f4a]/40' : ''} ${seen ? 'opacity-60' : ''}`}
+                  className={`rounded ${isTradeIdea ? 'border-l-2 border-l-[var(--pulse-accent)]/40' : ''} ${seen ? 'opacity-60' : ''}`}
                 >
                   <button
                     type="button"
@@ -72,12 +73,13 @@ export function RiskFlowMiniWidget() {
                     {/* Severity dot or direction icon */}
                     {isTradeIdea ? (
                       alert.tradeIdea!.direction === 'long'
-                        ? <TrendingUp className="w-2.5 h-2.5 text-[#c79f4a] shrink-0" />
+                        ? <TrendingUp className="w-2.5 h-2.5 text-[var(--pulse-accent)] shrink-0" />
                         : <TrendingDown className="w-2.5 h-2.5 text-zinc-400 shrink-0" />
                     ) : (
                       <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                        alert.severity === 'critical' ? 'bg-orange-400' :
                         alert.severity === 'high' ? 'bg-red-400' :
-                        alert.severity === 'medium' ? 'bg-[#D4AF37]' : 'bg-zinc-600'
+                        alert.severity === 'medium' ? 'bg-[var(--pulse-accent)]' : 'bg-zinc-600'
                       }`} />
                     )}
                     <span className="flex-1 min-w-0 text-[11px] text-zinc-300 truncate">
@@ -98,7 +100,7 @@ export function RiskFlowMiniWidget() {
                         <button
                           type="button"
                           onClick={() => setSelectedIdea(alert.tradeIdea!)}
-                          className="mt-1 text-[9px] text-[#c79f4a] hover:text-[#dbb85c] transition-colors uppercase tracking-wider"
+                          className="mt-1 text-[9px] text-[var(--pulse-accent)] hover:text-[#dbb85c] transition-colors uppercase tracking-wider"
                         >
                           View Proposal →
                         </button>

@@ -81,7 +81,7 @@ export default function NewsFeed() {
       case "high":
         return <AlertTriangle className="w-4 h-4 text-[#FF4040]" />;
       case "medium":
-        return <TrendingUp className="w-4 h-4 text-[#D4AF37]" />;
+        return <TrendingUp className="w-4 h-4 text-[var(--pulse-accent)]" />;
       default:
         return <Info className="w-4 h-4 text-zinc-500" />;
     }
@@ -92,7 +92,7 @@ export default function NewsFeed() {
       case "high":
         return "text-[#FF4040] bg-[#FF4040]/10";
       case "medium":
-        return "text-[#D4AF37] bg-[#D4AF37]/10";
+        return "text-[var(--pulse-accent)] bg-[var(--pulse-accent)]/10";
       default:
         return "text-zinc-500 bg-zinc-900/50";
     }
@@ -157,7 +157,7 @@ export default function NewsFeed() {
           {filteredRiskFlow.map((item) => (
             <div
               key={item.id}
-              className="bg-[#0a0a00] border border-zinc-900 rounded-lg p-4 hover:border-zinc-800 transition-colors"
+              className="bg-[var(--pulse-surface)] border border-zinc-900 rounded-lg p-4 hover:border-zinc-800 transition-colors"
             >
               <div className="flex items-start gap-3">
                 {getImpactIcon(item.impact || 'low')}
@@ -195,7 +195,7 @@ export default function NewsFeed() {
                     {item.category && (
                       <>
                         <span>•</span>
-                        <span className="text-[#D4AF37]/60">{item.category}</span>
+                        <span className="text-[var(--pulse-accent)]/60">{item.category}</span>
                       </>
                     )}
                     <span>•</span>

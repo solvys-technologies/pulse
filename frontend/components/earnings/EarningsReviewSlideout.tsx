@@ -67,21 +67,21 @@ export function EarningsReviewSlideout({ review, onClose, onUpdate, onDelete }: 
     <div className="fixed inset-0 z-50 flex justify-end" onClick={onClose}>
       <div className="absolute inset-0 bg-black/40" />
       <div
-        className="relative w-[420px] max-w-full h-full flex flex-col border-l border-[#c79f4a]/20 animate-slide-in-right"
+        className="relative w-[420px] max-w-full h-full flex flex-col border-l border-[var(--pulse-accent)]/20 animate-slide-in-right"
         style={{ backgroundColor: '#070704' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[#c79f4a]/15">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--pulse-accent)]/15">
           <div className="flex items-center gap-2 min-w-0">
             <DirectionBadge direction={review.direction} />
-            <span className="text-[14px] font-bold text-[#f0ead6] truncate">{review.symbol}</span>
+            <span className="text-[14px] font-bold text-[var(--pulse-text)] truncate">{review.symbol}</span>
           </div>
           <div className="flex items-center gap-1.5">
             {!editing ? (
               <button
                 onClick={() => setEditing(true)}
-                className="p-1.5 rounded text-zinc-500 hover:text-[#c79f4a] hover:bg-[#c79f4a]/10"
+                className="p-1.5 rounded text-zinc-500 hover:text-[var(--pulse-accent)] hover:bg-[var(--pulse-accent)]/10"
                 title="Edit"
               >
                 <Edit3 className="w-3.5 h-3.5" />
@@ -90,7 +90,7 @@ export function EarningsReviewSlideout({ review, onClose, onUpdate, onDelete }: 
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="p-1.5 rounded text-[#c79f4a] hover:bg-[#c79f4a]/10"
+                className="p-1.5 rounded text-[var(--pulse-accent)] hover:bg-[var(--pulse-accent)]/10"
                 title="Save"
               >
                 <Save className="w-3.5 h-3.5" />
@@ -116,22 +116,22 @@ export function EarningsReviewSlideout({ review, onClose, onUpdate, onDelete }: 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <div className="text-[9px] uppercase text-zinc-500 mb-0.5">Earnings Date</div>
-              <div className="text-[12px] text-[#f0ead6]">{review.earningsDate || '—'}</div>
+              <div className="text-[12px] text-[var(--pulse-text)]">{review.earningsDate || '—'}</div>
             </div>
             <div>
               <div className="text-[9px] uppercase text-zinc-500 mb-0.5">Setup</div>
-              <div className="text-[12px] text-[#f0ead6]">{review.setupType || '—'}</div>
+              <div className="text-[12px] text-[var(--pulse-text)]">{review.setupType || '—'}</div>
             </div>
             {review.entryPrice != null && (
               <div>
                 <div className="text-[9px] uppercase text-zinc-500 mb-0.5">Entry</div>
-                <div className="text-[12px] text-[#f0ead6] font-mono">${review.entryPrice.toFixed(2)}</div>
+                <div className="text-[12px] text-[var(--pulse-text)] font-mono">${review.entryPrice.toFixed(2)}</div>
               </div>
             )}
             {review.exitPrice != null && (
               <div>
                 <div className="text-[9px] uppercase text-zinc-500 mb-0.5">Exit</div>
-                <div className="text-[12px] text-[#f0ead6] font-mono">${review.exitPrice.toFixed(2)}</div>
+                <div className="text-[12px] text-[var(--pulse-text)] font-mono">${review.exitPrice.toFixed(2)}</div>
               </div>
             )}
             {review.pnl != null && (
@@ -148,13 +148,13 @@ export function EarningsReviewSlideout({ review, onClose, onUpdate, onDelete }: 
                 <select
                   value={grade}
                   onChange={(e) => setGrade(e.target.value)}
-                  className="bg-zinc-900 border border-zinc-700 rounded px-2 py-0.5 text-[11px] text-[#f0ead6] focus:border-[#c79f4a] focus:outline-none"
+                  className="bg-zinc-900 border border-zinc-700 rounded px-2 py-0.5 text-[11px] text-[var(--pulse-text)] focus:border-[var(--pulse-accent)] focus:outline-none"
                 >
                   <option value="">—</option>
                   {GRADE_OPTIONS.map((g) => <option key={g} value={g}>{g}</option>)}
                 </select>
               ) : (
-                <div className="text-[12px] text-[#f0ead6]">{review.grade || '—'}</div>
+                <div className="text-[12px] text-[var(--pulse-text)]">{review.grade || '—'}</div>
               )}
             </div>
           </div>
@@ -166,10 +166,10 @@ export function EarningsReviewSlideout({ review, onClose, onUpdate, onDelete }: 
               <input
                 value={emotionalState}
                 onChange={(e) => setEmotionalState(e.target.value)}
-                className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-[11px] text-[#f0ead6] focus:border-[#c79f4a] focus:outline-none"
+                className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-[11px] text-[var(--pulse-text)] focus:border-[var(--pulse-accent)] focus:outline-none"
               />
             ) : (
-              <div className="text-[11px] text-[#f0ead6]/80 leading-relaxed">
+              <div className="text-[11px] text-[var(--pulse-text)]/80 leading-relaxed">
                 {review.emotionalState || <span className="text-zinc-600 italic">Not recorded</span>}
               </div>
             )}
@@ -178,7 +178,7 @@ export function EarningsReviewSlideout({ review, onClose, onUpdate, onDelete }: 
           {/* Thesis */}
           <div>
             <div className="text-[9px] uppercase text-zinc-500 mb-1">Pre-ER Thesis</div>
-            <div className="text-[11px] text-[#f0ead6]/80 leading-relaxed whitespace-pre-wrap">
+            <div className="text-[11px] text-[var(--pulse-text)]/80 leading-relaxed whitespace-pre-wrap">
               {review.thesis || <span className="text-zinc-600 italic">No thesis recorded</span>}
             </div>
           </div>
@@ -191,11 +191,11 @@ export function EarningsReviewSlideout({ review, onClose, onUpdate, onDelete }: 
                 value={postReview}
                 onChange={(e) => setPostReview(e.target.value)}
                 rows={4}
-                className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-[11px] text-[#f0ead6] focus:border-[#c79f4a] focus:outline-none resize-none"
+                className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-[11px] text-[var(--pulse-text)] focus:border-[var(--pulse-accent)] focus:outline-none resize-none"
                 placeholder="Post-earnings reflection..."
               />
             ) : (
-              <div className="text-[11px] text-[#f0ead6]/80 leading-relaxed whitespace-pre-wrap">
+              <div className="text-[11px] text-[var(--pulse-text)]/80 leading-relaxed whitespace-pre-wrap">
                 {review.postReview || <span className="text-zinc-600 italic">No review yet — click edit to add</span>}
               </div>
             )}
@@ -209,7 +209,7 @@ export function EarningsReviewSlideout({ review, onClose, onUpdate, onDelete }: 
                 value={lessonsText}
                 onChange={(e) => setLessonsText(e.target.value)}
                 rows={3}
-                className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-[11px] text-[#f0ead6] focus:border-[#c79f4a] focus:outline-none resize-none"
+                className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-[11px] text-[var(--pulse-text)] focus:border-[var(--pulse-accent)] focus:outline-none resize-none"
                 placeholder="Separate with semicolons..."
               />
             ) : (
@@ -217,8 +217,8 @@ export function EarningsReviewSlideout({ review, onClose, onUpdate, onDelete }: 
                 {review.lessons.length > 0 ? (
                   <ul className="space-y-1">
                     {review.lessons.map((lesson, i) => (
-                      <li key={i} className="text-[11px] text-[#f0ead6]/80 flex items-start gap-1.5">
-                        <span className="text-[#c79f4a] mt-0.5">•</span>
+                      <li key={i} className="text-[11px] text-[var(--pulse-text)]/80 flex items-start gap-1.5">
+                        <span className="text-[var(--pulse-accent)] mt-0.5">•</span>
                         {lesson}
                       </li>
                     ))}
@@ -250,7 +250,7 @@ export function EarningsReviewSlideout({ review, onClose, onUpdate, onDelete }: 
               href={review.notionUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 text-[10px] text-[#c79f4a]/60 hover:text-[#c79f4a]"
+              className="flex items-center gap-1 text-[10px] text-[var(--pulse-accent)]/60 hover:text-[var(--pulse-accent)]"
             >
               <ExternalLink className="w-3 h-3" /> View in Notion
             </a>

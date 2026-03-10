@@ -112,8 +112,8 @@ Write 3-5 bullet points covering:
 
 Be direct, specific, and use financial shorthand. No filler. Max 200 words.`;
 
-      const { model, provider } = selectModel({ taskType: 'analysis', preferCheap: true });
-      const { text } = await generateText({ model, prompt, maxTokens: 400 });
+      const { model, provider } = selectModel({ taskType: 'analysis', maxBudgetUsd: 0.01 });
+      const { text } = await generateText({ model, prompt });
 
       // Store in Notion (archives previous same-type entry)
       const notionResult = await writeMDBReportToNotion(text, briefType);

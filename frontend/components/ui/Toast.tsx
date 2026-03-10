@@ -8,7 +8,7 @@ import { useToast, type ToastVariant } from '../../contexts/ToastContext';
 const VARIANT_CONFIG: Record<ToastVariant, { border: string; color: string; Icon: typeof Check }> = {
   success: { border: '#34D399', color: '#34D399', Icon: Check },
   error: { border: '#EF4444', color: '#EF4444', Icon: AlertTriangle },
-  updating: { border: '#D4AF37', color: '#D4AF37', Icon: Loader2 },
+  updating: { border: 'var(--pulse-accent)', color: 'var(--pulse-accent)', Icon: Loader2 },
   info: { border: 'rgba(212,175,55,0.4)', color: '#9CA3AF', Icon: Info },
 };
 
@@ -38,7 +38,7 @@ export function ToastContainer() {
               maxWidth: '400px',
               borderRadius: '10px',
               border: `1px solid ${cfg.border}`,
-              backgroundColor: '#0a0a00',
+              backgroundColor: 'var(--pulse-surface)',
               boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
               overflow: 'hidden',
             }}

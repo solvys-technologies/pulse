@@ -13,6 +13,8 @@ import { createHealthService } from './services/health-service.js';
 import { startFeedPoller } from './services/riskflow/feed-poller.js';
 import { startNotionPoller } from './services/notion-poller.js';
 import { startEconEnricher } from './services/cron/econ-enricher.js';
+import { startEconTwitterPoller } from './services/twitter-cli/index.js';
+import { initClaudeSDK } from './services/claude-sdk/process-manager.js';
 const app = new Hono();
 const healthService = createHealthService();
 const config = getEnvConfig();
@@ -61,5 +63,9 @@ startFeedPoller();
 startNotionPoller();
 // Start econ calendar enricher (writes FMP actuals to Notion)
 startEconEnricher();
+// Start econ-triggered twitter-cli poller (cookie-based, FJ emoji filtered)
+startEconTwitterPoller();
+// Initialize Claude SDK bridge (health check — non-blocking)
+initClaudeSDK().catch((err) => console.warn('[API] Claude SDK init failed (non-fatal):', err));
 export default app;
 //# sourceMappingURL=index.js.map

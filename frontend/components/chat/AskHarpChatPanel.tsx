@@ -1,14 +1,12 @@
-// [claude-code 2026-03-08] Migrated to AssistantRuntimeProvider + PulseThread (same as main ChatInterface)
+// [claude-code 2026-03-10] AskHarpChatPanel — now uses PulseComposer (which wraps PromptBox)
 import { useCallback, useState } from 'react';
 import { AssistantRuntimeProvider, useThread, useThreadRuntime } from '@assistant-ui/react';
 import { usePulseAgents } from '../../contexts/PulseAgentContext';
 import { useOpenClawRuntime } from './useOpenClawRuntime';
 import { PulseThread } from './PulseThread';
-import { ChatInputArea } from './ChatInputArea';
-import { SKILL_PREFIXES } from '../../lib/skillPrefixes';
+import { PulseComposer } from './PulseComposer';
 
-// [claude-code 2026-03-09] Lifted thinkHarder to outer scope so it reaches useOpenClawRuntime
-function AskHarpInner({ lastError, thinkHarder, setThinkHarder }: { lastError: string | null; thinkHarder: boolean; setThinkHarder: (v: boolean) => void }) {
+function AskHarpInner({ lastError, lastRequestId, thinkHarder, setThinkHarder }: { lastError: string | null; lastRequestId: string | null; thinkHarder: boolean; setThinkHarder: (v: boolean) => void }) {
   const { activeAgent } = usePulseAgents();
   const runtime = useThreadRuntime();
   const isRunning = useThread((t) => t.isRunning);
@@ -17,17 +15,6 @@ function AskHarpInner({ lastError, thinkHarder, setThinkHarder }: { lastError: s
   const [showSkills, setShowSkills] = useState(false);
 
   const handleSend = useCallback((msg: string) => {
-    let finalText = msg;
-    if (activeSkill && SKILL_PREFIXES[activeSkill]) {
-      finalText = SKILL_PREFIXES[activeSkill] + '\n\n' + msg;
-    }
-    runtime.append({ role: 'user', content: [{ type: 'text', text: finalText }] });
-  }, [runtime, activeSkill]);
-
-  const handleStop = useCallback(() => runtime.cancelRun(), [runtime]);
-
-  const handleSteer = useCallback((msg: string) => {
-    if (!msg.trim()) return;
     runtime.append({ role: 'user', content: [{ type: 'text', text: msg }] });
   }, [runtime]);
 
@@ -38,22 +25,17 @@ function AskHarpInner({ lastError, thinkHarder, setThinkHarder }: { lastError: s
         isLoading={isRunning}
         agentName={activeAgent?.name}
         lastError={lastError}
+        lastRequestId={lastRequestId}
       />
-      <div className="bg-[linear-gradient(180deg,rgba(7,7,4,0.2),rgba(7,7,4,0.88))]">
-        <ChatInputArea
-          onSend={handleSend}
-          onStop={handleStop}
-          onSteer={handleSteer}
-          isLoading={isRunning}
-          thinkHarder={thinkHarder}
-          setThinkHarder={setThinkHarder}
-          lastError={lastError}
-          activeSkill={activeSkill}
-          onSelectSkill={setActiveSkill}
-          showSkills={showSkills}
-          onToggleSkills={() => setShowSkills((v) => !v)}
-        />
-      </div>
+      <PulseComposer
+        thinkHarder={thinkHarder}
+        setThinkHarder={setThinkHarder}
+        lastError={lastError}
+        activeSkill={activeSkill}
+        onSelectSkill={setActiveSkill}
+        showSkills={showSkills}
+        onToggleSkills={() => setShowSkills((v) => !v)}
+      />
     </div>
   );
 }
@@ -61,11 +43,11 @@ function AskHarpInner({ lastError, thinkHarder, setThinkHarder }: { lastError: s
 export function AskHarpChatPanel() {
   const { activeAgent } = usePulseAgents();
   const [thinkHarder, setThinkHarder] = useState(false);
-  const { runtime, lastError } = useOpenClawRuntime(activeAgent?.id ?? 'default', thinkHarder, 'askharp');
+  const { runtime, lastError, lastRequestId } = useOpenClawRuntime(activeAgent?.id ?? 'default', thinkHarder, 'askharp');
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      <AskHarpInner lastError={lastError} thinkHarder={thinkHarder} setThinkHarder={setThinkHarder} />
+      <AskHarpInner lastError={lastError} lastRequestId={lastRequestId ?? null} thinkHarder={thinkHarder} setThinkHarder={setThinkHarder} />
     </AssistantRuntimeProvider>
   );
 }

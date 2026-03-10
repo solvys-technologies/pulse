@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+// [claude-code 2026-03-10] Added backend settings sync (source of truth when authenticated)
+import { createContext, useContext, useState, useRef, ReactNode, useEffect } from 'react';
 import type { HealingBowlSound } from '../utils/healingBowlSounds';
 
 export interface APIKeys {
@@ -85,6 +86,7 @@ interface SettingsContextType {
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 const STORAGE_KEY = 'pulse_settings';
+const BACKEND_SETTINGS_URL = '/api/settings';
 
 function loadFromStorage<T>(key: string, defaultValue: T): T {
   try {
@@ -95,6 +97,30 @@ function loadFromStorage<T>(key: string, defaultValue: T): T {
     }
   } catch { }
   return defaultValue;
+}
+
+async function fetchBackendSettings(): Promise<Record<string, unknown> | null> {
+  try {
+    const res = await fetch(BACKEND_SETTINGS_URL, { credentials: 'include' });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.settings ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function saveBackendSettings(settings: Record<string, unknown>): Promise<void> {
+  try {
+    await fetch(BACKEND_SETTINGS_URL, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ settings }),
+    });
+  } catch {
+    // Silently fail — localStorage is the fallback
+  }
 }
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
@@ -161,23 +187,50 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     })
   );
 
+  // Track whether initial backend fetch has completed to avoid saving back stale data
+  const backendSynced = useRef(false);
+
+  // On mount: fetch from backend, merge with localStorage (backend is source of truth)
   useEffect(() => {
+    fetchBackendSettings().then((remote) => {
+      if (remote && typeof remote === 'object') {
+        if (remote.apiKeys) setAPIKeys(prev => ({ ...prev, ...(remote.apiKeys as APIKeys) }));
+        if (remote.tradingModels) setTradingModels(prev => ({ ...prev, ...(remote.tradingModels as TradingModelToggles) }));
+        if (remote.alertConfig) setAlertConfig(prev => ({ ...prev, ...(remote.alertConfig as AlertConfig) }));
+        if (remote.mockDataEnabled !== undefined) setMockDataEnabled(remote.mockDataEnabled as boolean);
+        if (remote.selectedSymbol) setSelectedSymbol(prev => ({ ...prev, ...(remote.selectedSymbol as TradingSymbol) }));
+        if (remote.riskSettings) setRiskSettings(prev => ({ ...prev, ...(remote.riskSettings as RiskSettings) }));
+        if (remote.developerSettings) setDeveloperSettings(prev => ({ ...prev, ...(remote.developerSettings as DeveloperSettings) }));
+        if (remote.autoPilotSettings) setAutoPilotSettings(prev => ({ ...prev, ...(remote.autoPilotSettings as AutoPilotSettings) }));
+        if (remote.primaryBroker) setPrimaryBroker(remote.primaryBroker as PrimaryBroker);
+        if (remote.iframeUrls) setIframeUrls(prev => ({ ...prev, ...(remote.iframeUrls as IframeUrls) }));
+      }
+      backendSynced.current = true;
+    });
+  }, []);
+
+  // On save: write to both localStorage + backend
+  useEffect(() => {
+    const settings = {
+      apiKeys,
+      tradingModels,
+      alertConfig,
+      mockDataEnabled,
+      selectedSymbol,
+      riskSettings,
+      developerSettings,
+      autoPilotSettings,
+      primaryBroker,
+      iframeUrls,
+    };
     try {
-      const settings = {
-        apiKeys,
-        tradingModels,
-        alertConfig,
-        mockDataEnabled,
-        selectedSymbol,
-        riskSettings,
-        developerSettings,
-        autoPilotSettings,
-        primaryBroker,
-        iframeUrls,
-      };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
     } catch (error) {
       console.error('Failed to persist settings:', error);
+    }
+    // Only sync to backend after initial fetch completes
+    if (backendSynced.current) {
+      saveBackendSettings(settings);
     }
   }, [apiKeys, tradingModels, alertConfig, mockDataEnabled, selectedSymbol, riskSettings, developerSettings, autoPilotSettings, primaryBroker, iframeUrls]);
 

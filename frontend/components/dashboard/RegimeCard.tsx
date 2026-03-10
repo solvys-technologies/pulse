@@ -38,20 +38,20 @@ export function RegimeCard({ onOpenTracker }: RegimeCardProps) {
   const activeCount = regimes.filter((r) => isRegimeActive(r, now)).length;
 
   return (
-    <div className="bg-[#0b0b08] border-l-2 border-[#D4AF37]/35 px-4 py-3">
+    <div className="bg-[#0b0b08] border-l-2 border-[var(--pulse-accent)]/35 px-4 py-3">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
-          <Clock className="w-3 h-3 text-[#D4AF37]" />
-          <span className="text-[10px] tracking-[0.2em] uppercase text-[#D4AF37] font-semibold">Regime Tracker</span>
+          <Clock className="w-3 h-3 text-[var(--pulse-accent)]" />
+          <span className="text-[10px] tracking-[0.2em] uppercase text-[var(--pulse-accent)] font-semibold">Regime Tracker</span>
           {activeCount > 0 && (
-            <span className="inline-flex items-center justify-center min-w-[14px] h-[14px] px-0.5 bg-[#D4AF37]/20 text-[#D4AF37] text-[8px] font-bold">
+            <span className="inline-flex items-center justify-center min-w-[14px] h-[14px] px-0.5 bg-[var(--pulse-accent)]/20 text-[var(--pulse-accent)] text-[8px] font-bold">
               {activeCount}
             </span>
           )}
         </div>
         <button
           onClick={onOpenTracker}
-          className="text-[9px] text-[#D4AF37]/50 hover:text-[#D4AF37] transition-colors tracking-wider uppercase"
+          className="text-[9px] text-[var(--pulse-accent)]/50 hover:text-[var(--pulse-accent)] transition-colors tracking-wider uppercase"
         >
           Open
         </button>
@@ -66,7 +66,7 @@ export function RegimeCard({ onOpenTracker }: RegimeCardProps) {
             return (
               <div key={r.id} className="flex items-center gap-2">
                 <BiasIcon bias={r.bias} />
-                <span className={`text-[10px] flex-1 truncate ${active ? 'text-[#f0ead6] font-semibold' : 'text-zinc-500'}`}>
+                <span className={`text-[10px] flex-1 truncate ${active ? 'text-[var(--pulse-text)] font-semibold' : 'text-zinc-500'}`}>
                   {r.name}
                 </span>
                 <div className="flex items-center gap-1.5 shrink-0">

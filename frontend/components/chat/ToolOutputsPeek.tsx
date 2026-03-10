@@ -27,14 +27,14 @@ export function ToolOutputsPeek({ tools }: ToolOutputsPeekProps) {
       {/* Header pill */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex items-center gap-1.5 rounded-lg border border-[#D4AF37]/15 bg-[#0b0b08] hover:bg-[#D4AF37]/5 transition-colors"
+        className="flex items-center gap-1.5 rounded-lg border border-[var(--pulse-accent)]/15 bg-[#0b0b08] hover:bg-[var(--pulse-accent)]/5 transition-colors"
         style={{ padding: '5px 10px' }}
       >
         <Wrench size={12} className="text-gray-500" />
         <span className="text-[11px] font-medium text-gray-400">
           {running > 0 ? `${running} running` : `${done} tools`}
         </span>
-        {running > 0 && <Loader2 size={11} className="text-[#D4AF37] animate-spin" />}
+        {running > 0 && <Loader2 size={11} className="text-[var(--pulse-accent)] animate-spin" />}
         {expanded ? <ChevronDown size={12} className="text-gray-500 ml-1" /> : <ChevronRight size={12} className="text-gray-500 ml-1" />}
       </button>
 

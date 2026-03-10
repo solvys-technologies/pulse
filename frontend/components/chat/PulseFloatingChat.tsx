@@ -1,63 +1,54 @@
-// [claude-code 2026-03-06] Refactored to use useChatSession + ChatMessageBubble
-import { useRef, useEffect, useState } from 'react';
+// [claude-code 2026-03-10] Migrated to useOpenClawRuntime + AssistantRuntimeProvider + PulseThread + PulseComposer
+import { useState, useCallback } from 'react';
 import { MessageSquare, X, Maximize2 } from 'lucide-react';
+import { AssistantRuntimeProvider, useThread, useThreadRuntime } from '@assistant-ui/react';
 import { usePulseAgents } from '../../contexts/PulseAgentContext';
-import { PulseChatInput } from './PulseChatInput';
-import { PulseThinkingIndicator } from './PulseThinkingIndicator';
-import { useChatSession } from './hooks/useChatSession';
-import { ChatMessageBubble } from './ChatMessageBubble';
+import { useOpenClawRuntime } from './useOpenClawRuntime';
+import { PulseThread } from './PulseThread';
+import { PulseComposer } from './PulseComposer';
 
 interface PulseFloatingChatProps {
   visible: boolean;
   onExpandToAnalysis: () => void;
 }
 
-export function PulseFloatingChat({ visible, onExpandToAnalysis }: PulseFloatingChatProps) {
-  const [expanded, setExpanded] = useState(false);
-  const [thinkHarder, setThinkHarder] = useState(false);
+/* Inner component — must be inside AssistantRuntimeProvider */
+function FloatingInner({
+  onExpandToAnalysis,
+  onCollapse,
+  lastError,
+  lastRequestId,
+  thinkHarder,
+  setThinkHarder,
+}: {
+  onExpandToAnalysis: () => void;
+  onCollapse: () => void;
+  lastError: string | null;
+  lastRequestId: string | null;
+  thinkHarder: boolean;
+  setThinkHarder: (v: boolean) => void;
+}) {
   const { activeAgent } = usePulseAgents();
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const runtime = useThreadRuntime();
+  const isRunning = useThread((t) => t.isRunning);
 
-  const { messages, send, stop, isLoading, latestThinkingContent } =
-    useChatSession({ agentId: activeAgent?.id ?? 'default', surfaceId: 'floating' });
+  const [activeSkill, setActiveSkill] = useState<string | null>(null);
+  const [showSkills, setShowSkills] = useState(false);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  const handleSend = useCallback((msg: string) => {
+    runtime.append({ role: 'user', content: [{ type: 'text', text: msg }] });
+  }, [runtime]);
 
-  const handleSend = (text: string) => {
-    const trimmed = text.trim();
-    if (!trimmed || isLoading) return;
-    send(trimmed);
-  };
-
-  if (!visible) return null;
-
-  /* Collapsed state — 48x48 pill */
-  if (!expanded) {
-    return (
-      <button
-        onClick={() => setExpanded(true)}
-        className="fixed z-[90] flex items-center justify-center rounded-full bg-[#D4AF37] text-black hover:bg-[#C5A030] transition-all shadow-lg hover:shadow-xl"
-        style={{ bottom: '24px', right: '24px', width: '48px', height: '48px' }}
-        title="Open chat"
-      >
-        <MessageSquare size={20} />
-      </button>
-    );
-  }
-
-  /* Expanded state — panel */
   return (
     <div
-      className="fixed z-[90] flex flex-col rounded-xl border border-[#D4AF37]/20 bg-[#0a0a00] shadow-2xl overflow-hidden"
+      className="fixed z-[90] flex flex-col rounded-xl border border-[var(--pulse-accent)]/20 bg-[var(--pulse-surface)] shadow-2xl overflow-hidden"
       style={{ bottom: '24px', right: '24px', width: '380px', height: '560px' }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#D4AF37]/10">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--pulse-accent)]/10">
         <div className="flex items-center gap-2">
           <div
-            className="flex items-center justify-center rounded-md bg-[#D4AF37]/10 text-[#D4AF37] font-semibold"
+            className="flex items-center justify-center rounded-md bg-[var(--pulse-accent)]/10 text-[var(--pulse-accent)] font-semibold"
             style={{ width: '24px', height: '24px', fontSize: '12px' }}
           >
             {activeAgent?.icon || 'H'}
@@ -69,15 +60,15 @@ export function PulseFloatingChat({ visible, onExpandToAnalysis }: PulseFloating
         </div>
         <div className="flex items-center gap-1">
           <button
-            onClick={() => { setExpanded(false); onExpandToAnalysis(); }}
-            className="flex items-center justify-center rounded-md text-gray-500 hover:text-[#D4AF37] transition-colors"
+            onClick={() => { onCollapse(); onExpandToAnalysis(); }}
+            className="flex items-center justify-center rounded-md text-gray-500 hover:text-[var(--pulse-accent)] transition-colors"
             style={{ width: '28px', height: '28px' }}
             title="Expand to Analysis"
           >
             <Maximize2 size={13} />
           </button>
           <button
-            onClick={() => setExpanded(false)}
+            onClick={onCollapse}
             className="flex items-center justify-center rounded-md text-gray-500 hover:text-white transition-colors"
             style={{ width: '28px', height: '28px' }}
           >
@@ -86,47 +77,69 @@ export function PulseFloatingChat({ visible, onExpandToAnalysis }: PulseFloating
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-        {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-10 gap-2">
-            <p className="text-[12px] font-semibold text-white">{activeAgent?.name || 'Harper'}</p>
-            <div className="flex items-center gap-1.5">
-              <div
-                className="w-[12px] h-[12px] rounded-full flex items-center justify-center"
-                style={{ backgroundColor: '#D97757' }}
-              >
-                <span style={{ fontSize: '5.5px', color: 'white', fontWeight: 800, lineHeight: 1 }}>A</span>
-              </div>
-              <span className="text-[10px] font-medium" style={{ color: '#D97757' }}>Claude Opus 4.6</span>
-            </div>
-          </div>
-        )}
-        {messages.map((msg) => (
-          <ChatMessageBubble key={msg.id} message={msg} />
-        ))}
-        {isLoading && (
-          <PulseThinkingIndicator
-            isThinking
-            thinkingContent={latestThinkingContent}
-            agentName={activeAgent?.name}
-          />
-        )}
-        <div ref={messagesEndRef} />
-      </div>
+      {/* Thread (compact variant — no greeting, no cognition panel) */}
+      <PulseThread
+        onSend={handleSend}
+        isLoading={isRunning}
+        agentName={activeAgent?.name}
+        lastError={lastError}
+        lastRequestId={lastRequestId}
+        compact
+      />
 
-      {/* Input */}
-      <div className="px-3 pb-3">
-        <PulseChatInput
-          onSend={(msg) => handleSend(msg)}
-          onStop={stop}
-          isProcessing={isLoading}
-          thinkHarder={thinkHarder}
-          setThinkHarder={setThinkHarder}
-          placeholder="Quick message..."
-          draftKey="pulse_draft_floating"
-        />
-      </div>
+      {/* Composer (compact mode — fewer toolbar buttons) */}
+      <PulseComposer
+        thinkHarder={thinkHarder}
+        setThinkHarder={setThinkHarder}
+        lastError={lastError}
+        activeSkill={activeSkill}
+        onSelectSkill={setActiveSkill}
+        showSkills={showSkills}
+        onToggleSkills={() => setShowSkills((v) => !v)}
+        compact
+      />
     </div>
+  );
+}
+
+export function PulseFloatingChat({ visible, onExpandToAnalysis }: PulseFloatingChatProps) {
+  const [expanded, setExpanded] = useState(false);
+  const [thinkHarder, setThinkHarder] = useState(false);
+  const { activeAgent } = usePulseAgents();
+
+  const { runtime, lastError, lastRequestId } = useOpenClawRuntime(
+    activeAgent?.id ?? 'default',
+    thinkHarder,
+    'floating'
+  );
+
+  if (!visible) return null;
+
+  /* Collapsed state — 48x48 pill */
+  if (!expanded) {
+    return (
+      <button
+        onClick={() => setExpanded(true)}
+        className="fixed z-[90] flex items-center justify-center rounded-full bg-[var(--pulse-accent)] text-black hover:bg-[#C5A030] transition-all shadow-lg hover:shadow-xl"
+        style={{ bottom: '24px', right: '24px', width: '48px', height: '48px' }}
+        title="Open chat"
+      >
+        <MessageSquare size={20} />
+      </button>
+    );
+  }
+
+  /* Expanded state — wrapped in runtime provider */
+  return (
+    <AssistantRuntimeProvider runtime={runtime}>
+      <FloatingInner
+        onExpandToAnalysis={onExpandToAnalysis}
+        onCollapse={() => setExpanded(false)}
+        lastError={lastError}
+        lastRequestId={lastRequestId ?? null}
+        thinkHarder={thinkHarder}
+        setThinkHarder={setThinkHarder}
+      />
+    </AssistantRuntimeProvider>
   );
 }

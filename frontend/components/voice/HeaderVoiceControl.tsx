@@ -175,9 +175,9 @@ export function HeaderVoiceControl({ compact = false }: HeaderVoiceControlProps)
         className={`p-1.5 rounded-lg transition-colors ${
           enabled
             ? isBusy
-              ? 'bg-[#c79f4a]/18 text-[#c79f4a] hover:bg-[#c79f4a]/24'
+              ? 'bg-[var(--pulse-accent)]/18 text-[var(--pulse-accent)] hover:bg-[var(--pulse-accent)]/24'
               : 'bg-[#22c55e]/18 text-[#8cf5b0] hover:bg-[#22c55e]/24'
-            : 'bg-[#050500] text-zinc-300 hover:text-zinc-100'
+            : 'bg-[var(--pulse-bg)] text-zinc-300 hover:text-zinc-100'
         } ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         title={getTitle()}
       >

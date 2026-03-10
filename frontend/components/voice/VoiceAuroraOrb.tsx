@@ -50,7 +50,7 @@ export function VoiceAuroraOrb({ state, compact = false }: VoiceAuroraOrbProps) 
         {state === 'idle' && (
           <div
             className="absolute inset-0 rounded-full bg-[#070704]"
-            style={{ border: '1.5px solid #c79f4a' }}
+            style={{ border: '1.5px solid var(--pulse-accent)' }}
           />
         )}
 
@@ -94,7 +94,7 @@ export function VoiceAuroraOrb({ state, compact = false }: VoiceAuroraOrbProps) 
         {state === 'thinking' && (
           <div
             className="absolute inset-0 rounded-full bg-[#070704] overflow-hidden"
-            style={{ border: '1.5px solid #c79f4a' }}
+            style={{ border: '1.5px solid var(--pulse-accent)' }}
           >
             {[0, 0.6, 1.2].map((delay, i) => (
               <div

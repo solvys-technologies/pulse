@@ -137,7 +137,7 @@ export function BoardroomChat({ messages, loading, active }: BoardroomChatProps)
     <div className="flex h-full flex-col overflow-hidden">
       {/* Status bar — pill with divider, right-justified to sit beside Intervention title */}
       <div className="flex items-center justify-end px-5 py-4">
-        <div className="inline-flex items-center border border-[#D4AF37]/25 rounded-full px-2.5 py-1">
+        <div className="inline-flex items-center border border-[var(--pulse-accent)]/25 rounded-full px-2.5 py-1">
           <span
             className={`text-[10px] tracking-[0.22em] uppercase ${
               active ? 'text-emerald-300' : 'text-gray-400'
@@ -145,7 +145,7 @@ export function BoardroomChat({ messages, loading, active }: BoardroomChatProps)
           >
             {active ? 'Online' : 'Offline'}
           </span>
-          <div className="mx-2 w-px bg-[#D4AF37]/25" style={{ height: '10px' }} />
+          <div className="mx-2 w-px bg-[var(--pulse-accent)]/25" style={{ height: '10px' }} />
           <span className="text-[10px] tracking-[0.18em] uppercase text-gray-500">
             {messages.length} msgs
           </span>
@@ -190,15 +190,15 @@ export function BoardroomChat({ messages, loading, active }: BoardroomChatProps)
                 <div
                   className={`h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 border ${
                     isUser
-                      ? 'border-[#D4AF37]/40 bg-[#D4AF37]/10'
-                      : 'border-[#D4AF37]/20 bg-[#0a0a00]'
+                      ? 'border-[var(--pulse-accent)]/40 bg-[var(--pulse-accent)]/10'
+                      : 'border-[var(--pulse-accent)]/20 bg-[var(--pulse-surface)]'
                   }`}
                 >
-                  <span className="text-[#D4AF37]">{initial}</span>
+                  <span className="text-[var(--pulse-accent)]">{initial}</span>
                 </div>
-                <div className={`flex-1 px-1 py-1 min-w-0 border-l-2 ${isUser ? 'border-[#D4AF37]/40' : 'border-[#D4AF37]/20'}`}>
+                <div className={`flex-1 px-1 py-1 min-w-0 border-l-2 ${isUser ? 'border-[var(--pulse-accent)]/40' : 'border-[var(--pulse-accent)]/20'}`}>
                   <div className="flex items-baseline gap-3">
-                    <span className={`text-sm font-semibold ${isUser ? 'text-[#D4AF37]' : 'text-white'}`}>
+                    <span className={`text-sm font-semibold ${isUser ? 'text-[var(--pulse-accent)]' : 'text-white'}`}>
                       {displayName}
                     </span>
                     {agentData && !isUser && (

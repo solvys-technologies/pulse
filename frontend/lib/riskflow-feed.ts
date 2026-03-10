@@ -6,7 +6,16 @@ import { decodeHtmlEntities } from './html-entities';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
-export type AlertSeverity = 'low' | 'medium' | 'high';
+export type AlertSeverity = 'low' | 'medium' | 'high' | 'critical';
+export type AlertSource =
+  | 'marketwatch'
+  | 'notion-trade-idea'
+  | 'financial-juice'
+  | 'insider-wire'
+  | 'economic-calendar'
+  | 'polymarket'
+  | 'twitter-cli'
+  | 'backend';
 
 export interface TradeIdeaDetail {
   title: string;
@@ -29,11 +38,13 @@ export interface RiskFlowAlert {
   id: string;
   headline: string;
   summary: string;
-  url: string;
+  url?: string;
   publishedAt: string;
-  source: 'marketwatch' | 'notion-trade-idea';
+  source: AlertSource;
   severity: AlertSeverity;
   tags: string[];
+  symbols?: string[];
+  isBreaking?: boolean;
   tradeIdea?: TradeIdeaDetail;
 }
 

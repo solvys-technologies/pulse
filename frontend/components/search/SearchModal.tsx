@@ -140,11 +140,11 @@ export function SearchModal({ open, onClose, onNavigateTab }: SearchModalProps) 
 
       {/* Modal */}
       <div
-        className="relative w-full max-w-lg rounded-xl border border-[#D4AF37]/20 bg-[#0a0a00] shadow-2xl overflow-hidden"
+        className="relative w-full max-w-lg rounded-xl border border-[var(--pulse-accent)]/20 bg-[var(--pulse-surface)] shadow-2xl overflow-hidden"
         onKeyDown={handleKeyDown}
       >
         {/* Search input */}
-        <div className="flex items-center gap-3 border-b border-[#D4AF37]/10 px-4 py-3">
+        <div className="flex items-center gap-3 border-b border-[var(--pulse-accent)]/10 px-4 py-3">
           <Search size={16} className="text-gray-500 flex-shrink-0" />
           <input
             ref={inputRef}
@@ -171,7 +171,7 @@ export function SearchModal({ open, onClose, onNavigateTab }: SearchModalProps) 
                 onClick={() => item.action?.()}
                 onMouseEnter={() => setSelectedIndex(idx)}
                 className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
-                  isSelected ? 'bg-[#D4AF37]/10' : 'hover:bg-[#D4AF37]/5'
+                  isSelected ? 'bg-[var(--pulse-accent)]/10' : 'hover:bg-[var(--pulse-accent)]/5'
                 }`}
               >
                 <Icon size={15} className="text-gray-500 flex-shrink-0" />
@@ -192,7 +192,7 @@ export function SearchModal({ open, onClose, onNavigateTab }: SearchModalProps) 
         </div>
 
         {/* Footer */}
-        <div className="border-t border-[#D4AF37]/10 px-4 py-2 flex items-center gap-4">
+        <div className="border-t border-[var(--pulse-accent)]/10 px-4 py-2 flex items-center gap-4">
           <span className="text-[10px] text-gray-600 flex items-center gap-1">
             <kbd className="border border-gray-700 rounded px-1 py-0.5 font-mono text-[9px]">Tab</kbd> to navigate
           </span>

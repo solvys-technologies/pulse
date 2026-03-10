@@ -88,16 +88,16 @@ export function PulseAttachPopup({ open, onClose, onAttachImage, onAttachRiskFlo
 
   return (
     <div
-      className="w-full overflow-hidden rounded-xl border border-[#D4AF37]/20 transition-all duration-200"
+      className="w-full overflow-hidden rounded-xl border border-[var(--pulse-accent)]/20 transition-all duration-200"
       style={{
         maxHeight: open ? '220px' : '0px',
         opacity: open ? 1 : 0,
         marginBottom: open ? '8px' : '0px',
-        backgroundColor: '#0a0a00',
+        backgroundColor: 'var(--pulse-surface)',
       }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-[#D4AF37]/10">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--pulse-accent)]/10">
         <span className="text-[12px] font-semibold text-gray-400 uppercase tracking-wider">Attach</span>
         <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
           <X size={13} />
@@ -105,13 +105,13 @@ export function PulseAttachPopup({ open, onClose, onAttachImage, onAttachRiskFlo
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-[#D4AF37]/10">
+      <div className="flex border-b border-[var(--pulse-accent)]/10">
         {tabs.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             onClick={() => { setTab(id); setError(null); }}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-medium transition-colors ${
-              tab === id ? 'text-[#D4AF37] border-b-2 border-[#D4AF37]' : 'text-gray-500 hover:text-gray-300'
+              tab === id ? 'text-[var(--pulse-accent)] border-b-2 border-[var(--pulse-accent)]' : 'text-gray-500 hover:text-gray-300'
             }`}
           >
             <Icon size={12} />
@@ -137,8 +137,8 @@ export function PulseAttachPopup({ open, onClose, onAttachImage, onAttachRiskFlo
               onClick={() => fileInputRef.current?.click()}
               className={`cursor-pointer flex flex-col items-center gap-2 border-2 border-dashed rounded-lg p-4 w-full transition-colors ${
                 isDragging
-                  ? 'border-[#D4AF37]/60 bg-[#D4AF37]/5'
-                  : 'border-[#D4AF37]/20 hover:border-[#D4AF37]/40'
+                  ? 'border-[var(--pulse-accent)]/60 bg-[var(--pulse-accent)]/5'
+                  : 'border-[var(--pulse-accent)]/20 hover:border-[var(--pulse-accent)]/40'
               }`}
             >
               <Image size={24} className="text-gray-600" />

@@ -73,13 +73,13 @@ export function MinimalFeedSection({
 
   if (collapsed) {
     return (
-      <div className="h-full flex items-center justify-center p-4 relative bg-[#0a0a00]">
+      <div className="h-full flex items-center justify-center p-4 relative bg-[var(--pulse-surface)]">
         <div className="text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
-            <div className="text-xs text-[#D4AF37]/60">The Tape</div>
+            <div className="text-xs text-[var(--pulse-accent)]/60">The Tape</div>
             {unreadCount > 0 && (
-              <div className="backdrop-blur-sm bg-[#D4AF37]/20 border border-[#D4AF37]/40 rounded px-1.5 py-0.5">
-                <span className="text-[10px] font-mono text-[#D4AF37]">{unreadCount}</span>
+              <div className="backdrop-blur-sm bg-[var(--pulse-accent)]/20 border border-[var(--pulse-accent)]/40 rounded px-1.5 py-0.5">
+                <span className="text-[10px] font-mono text-[var(--pulse-accent)]">{unreadCount}</span>
               </div>
             )}
           </div>
@@ -88,9 +88,9 @@ export function MinimalFeedSection({
         {onToggleCollapse && (
           <button
             onClick={onToggleCollapse}
-            className="absolute top-2 right-2 p-1.5 hover:bg-[#D4AF37]/10 rounded transition-colors"
+            className="absolute top-2 right-2 p-1.5 hover:bg-[var(--pulse-accent)]/10 rounded transition-colors"
           >
-            <ChevronRight className="w-4 h-4 text-[#D4AF37]" />
+            <ChevronRight className="w-4 h-4 text-[var(--pulse-accent)]" />
           </button>
         )}
       </div>
@@ -99,12 +99,12 @@ export function MinimalFeedSection({
 
   return (
     <div className="h-full flex flex-col">
-      <div className="h-12 flex items-center justify-between px-3 border-b border-[#D4AF37]/20">
+      <div className="h-12 flex items-center justify-between px-3 border-b border-[var(--pulse-accent)]/20">
         <div className="flex items-center gap-2">
-          <h2 className="text-sm font-semibold text-[#D4AF37]">The Tape</h2>
+          <h2 className="text-sm font-semibold text-[var(--pulse-accent)]">The Tape</h2>
           {unreadCount > 0 && (
-            <div className="backdrop-blur-sm bg-[#D4AF37]/20 border border-[#D4AF37]/40 rounded px-1.5 py-0.5">
-              <span className="text-[10px] font-mono text-[#D4AF37]">{unreadCount}</span>
+            <div className="backdrop-blur-sm bg-[var(--pulse-accent)]/20 border border-[var(--pulse-accent)]/40 rounded px-1.5 py-0.5">
+              <span className="text-[10px] font-mono text-[var(--pulse-accent)]">{unreadCount}</span>
             </div>
           )}
         </div>
@@ -114,7 +114,7 @@ export function MinimalFeedSection({
               {position === 'right' && (
                 <button
                   onClick={() => onPositionChange('left')}
-                  className="p-1 hover:bg-[#D4AF37]/10 rounded text-[#D4AF37]/60 hover:text-[#D4AF37]"
+                  className="p-1 hover:bg-[var(--pulse-accent)]/10 rounded text-[var(--pulse-accent)]/60 hover:text-[var(--pulse-accent)]"
                   title="Move Left"
                 >
                   <MoveLeft className="w-3.5 h-3.5" />
@@ -123,7 +123,7 @@ export function MinimalFeedSection({
               {position === 'left' && (
                 <button
                   onClick={() => onPositionChange('right')}
-                  className="p-1 hover:bg-[#D4AF37]/10 rounded text-[#D4AF37]/60 hover:text-[#D4AF37]"
+                  className="p-1 hover:bg-[var(--pulse-accent)]/10 rounded text-[var(--pulse-accent)]/60 hover:text-[var(--pulse-accent)]"
                   title="Move Right"
                 >
                   <MoveRight className="w-3.5 h-3.5" />
@@ -131,7 +131,7 @@ export function MinimalFeedSection({
               )}
               <button
                 onClick={() => onPositionChange('floating')}
-                className="p-1 hover:bg-[#D4AF37]/10 rounded text-[#D4AF37]/60 hover:text-[#D4AF37]"
+                className="p-1 hover:bg-[var(--pulse-accent)]/10 rounded text-[var(--pulse-accent)]/60 hover:text-[var(--pulse-accent)]"
                 title="Float"
               >
                 <GripVertical className="w-3.5 h-3.5" />
@@ -141,7 +141,7 @@ export function MinimalFeedSection({
           {onHide && (
             <button
               onClick={onHide}
-              className="p-1 hover:bg-[#D4AF37]/10 rounded text-[#D4AF37]/60 hover:text-[#D4AF37]"
+              className="p-1 hover:bg-[var(--pulse-accent)]/10 rounded text-[var(--pulse-accent)]/60 hover:text-[var(--pulse-accent)]"
               title="Hide"
             >
               <X className="w-3.5 h-3.5" />
@@ -150,9 +150,9 @@ export function MinimalFeedSection({
           {onToggleCollapse && (
             <button
               onClick={onToggleCollapse}
-              className="p-1.5 hover:bg-[#D4AF37]/10 rounded transition-colors"
+              className="p-1.5 hover:bg-[var(--pulse-accent)]/10 rounded transition-colors"
             >
-              <ChevronLeft className="w-4 h-4 text-[#D4AF37]" />
+              <ChevronLeft className="w-4 h-4 text-[var(--pulse-accent)]" />
             </button>
           )}
         </div>

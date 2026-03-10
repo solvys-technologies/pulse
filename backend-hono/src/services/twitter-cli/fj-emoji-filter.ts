@@ -1,4 +1,4 @@
-// [claude-code 2026-03-10] Financial Juice emoji-tier filter — classifies posts by market impact level
+// [claude-code 2026-03-10] Financial Juice tier filter — emoji-first, keyword fallback for X/Twitter feed
 
 export type FJTier = 'critical' | 'high' | 'medium' | 'low';
 export type FJUrgency = 'immediate' | 'high' | 'normal';
@@ -7,21 +7,22 @@ export interface FJClassification {
   tier: FJTier;
   macroLevel: 1 | 2 | 3 | 4;
   urgency: FJUrgency;
-  shouldInclude: boolean; // false for low-tier noise
+  shouldInclude: boolean;
 }
 
 /**
- * Financial Juice emoji-to-impact tier mapping.
+ * FJ emoji tiers (Discord/Telegram format):
+ *   🔴 Critical — FOMC, NFP, CPI actuals, major geopolitical
+ *   ⚠️🚨 High  — Fed speakers, GDP, retail, earnings
+ *   🟡🟠 Medium — PMI, housing, jobless claims, sector
+ *   🔵 Low      — commentary → skip
  *
- * FJ posting conventions (confirmed from their feed):
- *   🔴 Red circle    — Critical: FOMC, NFP, CPI actual vs forecast, major geopolitical
- *   ⚠️  Warning      — High: Fed speakers, GDP, retail sales, important earnings
- *   🚨 Siren         — High: urgent market alerts
- *   🟡 Yellow circle — Medium: PMI, housing, jobless claims, sector news
- *   🟠 Orange circle — Medium: secondary macro data
- *   🔵 Blue circle   — Low: commentary / analysis → SKIP
- *   (none)           — Low: general noise → SKIP
+ * On X/Twitter, FJ does NOT use emoji prefixes.
+ * Fallback: keyword-based importance scoring.
  */
+
+// ── Emoji tier table ─────────────────────────────────────────────────────────
+
 const EMOJI_TIERS: Array<{
   emoji: string;
   tier: FJTier;
@@ -29,13 +30,79 @@ const EMOJI_TIERS: Array<{
   urgency: FJUrgency;
 }> = [
   { emoji: '🔴', tier: 'critical', macroLevel: 4, urgency: 'immediate' },
-  { emoji: '⚠️', tier: 'high', macroLevel: 3, urgency: 'high' },
-  { emoji: '🚨', tier: 'high', macroLevel: 3, urgency: 'high' },
-  { emoji: '🟡', tier: 'medium', macroLevel: 2, urgency: 'normal' },
-  { emoji: '🟠', tier: 'medium', macroLevel: 2, urgency: 'normal' },
+  { emoji: '⚠️', tier: 'high',     macroLevel: 3, urgency: 'high'      },
+  { emoji: '🚨', tier: 'high',     macroLevel: 3, urgency: 'high'      },
+  { emoji: '🟡', tier: 'medium',   macroLevel: 2, urgency: 'normal'    },
+  { emoji: '🟠', tier: 'medium',   macroLevel: 2, urgency: 'normal'    },
 ];
 
-const TIER_ORDER: Record<FJTier, number> = {
+// ── Keyword fallback (X/Twitter feed — no emojis) ─────────────────────────────
+
+/**
+ * Critical — prints that move markets immediately
+ * Match: "Actual X.X% (Forecast Y.Y%)" data release patterns + policy decisions
+ */
+const CRITICAL_PATTERNS = [
+  /\bActual\b/i,                             // economic data release
+  /\bFOMC\b/i, /\bFed\s+(raises|cuts|hikes|holds|decision)\b/i,
+  /\bNFP\b/i, /\bNon[\s-]?Farm\b/i,
+  /\bCPI\b.*\bActual\b/i, /\bPPI\b.*\bActual\b/i,
+  /\bGDP\b.*\bActual\b/i,
+  /\brate\s+(hike|cut|hold|decision)\b/i,
+  /\bemergency\s+(meeting|rate|action)\b/i,
+];
+
+/**
+ * High impact — major policy, geopolitical flash points, key speaker statements
+ */
+const HIGH_PATTERNS = [
+  /\b(Powell|Lagarde|Waller|Jefferson|Williams)\b/i,  // Fed speakers
+  /\b(ECB|BOE|BOJ|PBOC|RBA|Fed)\s+(says|warns|signals|confirms|cuts|raises)\b/i,
+  /\bsanction(s)?\b/i, /\bwar\b.*\b(Iran|Russia|China|Ukraine)\b/i,
+  /\b(Iran|Israel|China|Russia|North Korea)\b.*\b(attack|missile|nuclear|military)\b/i,
+  /\bGDP\b/i, /\bRetail\s+Sales\b/i,
+  /\bExisting\s+Home\s+Sales\b/i, /\bJobless\s+Claims\b/i,
+  /\bISM\b/i, /\bPMI\b.*\bActual\b/i,
+  /\bTreasury\b.*\b(auction|yield|bill|bond)\b/i,
+  /\bOPEC\b/i, /\bsupply\s+cut\b/i,
+  /\bCPI\b/i, /\bPPI\b/i,  // even without "Actual", CPI/PPI mentions are high
+  /\bDebt\s+ceiling\b/i, /\bdefault\b.*\b(US|Treasury|sovereign)\b/i,
+];
+
+/**
+ * Medium — sector news, secondary data, policy commentary
+ */
+const MEDIUM_PATTERNS = [
+  /\b(Housing|Building|Permits|Starts)\b/i,
+  /\bPMI\b/i, /\bMarkit\b/i,
+  /\bConsumer\s+Confidence\b/i, /\bSentiment\b/i,
+  /\bEarnings\b.*\b(beat|miss|EPS|revenue)\b/i,
+  /\b(Apple|Google|Microsoft|Tesla|Amazon|Meta|Nvidia|JPMorgan|Goldman)\b/i,
+  /\b(crude|oil|WTI|Brent)\b/i,
+  /\b(gold|silver|copper)\s+price\b/i,
+  /\bIEA\b/i, /\bOPEC\b/i,
+  /\bTrade\s+(war|tariff|deal|deficit|balance)\b/i,
+  /\b(Maersk|shipping|supply chain)\b/i,
+  /\b(fear|greed)\s+index\b/i,
+];
+
+function keywordClassify(text: string): FJClassification {
+  const t = text;
+  for (const pattern of CRITICAL_PATTERNS) {
+    if (pattern.test(t)) return { tier: 'critical', macroLevel: 4, urgency: 'immediate', shouldInclude: true };
+  }
+  for (const pattern of HIGH_PATTERNS) {
+    if (pattern.test(t)) return { tier: 'high', macroLevel: 3, urgency: 'high', shouldInclude: true };
+  }
+  for (const pattern of MEDIUM_PATTERNS) {
+    if (pattern.test(t)) return { tier: 'medium', macroLevel: 2, urgency: 'normal', shouldInclude: true };
+  }
+  return { tier: 'low', macroLevel: 1, urgency: 'normal', shouldInclude: false };
+}
+
+// ── Public API ────────────────────────────────────────────────────────────────
+
+export const TIER_ORDER: Record<FJTier, number> = {
   critical: 4,
   high: 3,
   medium: 2,
@@ -43,26 +110,20 @@ const TIER_ORDER: Record<FJTier, number> = {
 };
 
 /**
- * Classify a Financial Juice headline by its emoji prefix.
- * Returns shouldInclude=false for low/no-emoji posts (noise).
+ * Classify a tweet by emoji tier first; fall back to keyword scoring.
+ * Covers both Discord/Telegram (emoji) and X/Twitter (no emoji) formats.
  */
 export function classifyFJHeadline(text: string): FJClassification {
   for (const entry of EMOJI_TIERS) {
     if (text.includes(entry.emoji)) {
-      return {
-        tier: entry.tier,
-        macroLevel: entry.macroLevel,
-        urgency: entry.urgency,
-        shouldInclude: true,
-      };
+      return { tier: entry.tier, macroLevel: entry.macroLevel, urgency: entry.urgency, shouldInclude: true };
     }
   }
-  return { tier: 'low', macroLevel: 1, urgency: 'normal', shouldInclude: false };
+  return keywordClassify(text);
 }
 
 /**
  * Filter an array of tweet-like objects to only those at minTier or above.
- * Objects must have a `text` property.
  */
 export function filterByTier<T extends { text: string }>(
   items: T[],

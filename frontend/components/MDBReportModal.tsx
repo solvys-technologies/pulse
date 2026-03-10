@@ -71,11 +71,11 @@ export function MDBReportModal({ onClose }: MDBReportModalProps) {
 
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm ${isClosing ? 'animate-fade-out-backdrop' : 'animate-fade-in-backdrop'}`}>
-      <div className={`bg-[#0a0a00] border border-[#D4AF37]/30 rounded-lg shadow-[0_0_24px_rgba(255,192,56,0.2)] w-full max-w-3xl max-h-[80vh] flex flex-col ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`}>
+      <div className={`bg-[var(--pulse-surface)] border border-[var(--pulse-accent)]/30 rounded-lg shadow-[0_0_24px_rgba(255,192,56,0.2)] w-full max-w-3xl max-h-[80vh] flex flex-col ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`}>
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-zinc-900">
           <div className="flex items-center gap-3">
-            <h2 className="text-lg font-bold text-[#D4AF37]">MDB Report</h2>
+            <h2 className="text-lg font-bold text-[var(--pulse-accent)]">MDB Report</h2>
             <span className="text-xs text-zinc-500">Morning Daily Brief</span>
           </div>
           <button
@@ -91,10 +91,10 @@ export function MDBReportModal({ onClose }: MDBReportModalProps) {
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-12">
               {/* Claude logo SVG */}
-              <svg className="w-12 h-12 text-[#D4AF37] mb-4" viewBox="0 0 24 24" fill="currentColor">
+              <svg className="w-12 h-12 text-[var(--pulse-accent)] mb-4" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M17.7 9.7c-.4-.4-1-.4-1.4 0l-4.3 4.3-4.3-4.3c-.4-.4-1-.4-1.4 0-.4.4-.4 1 0 1.4l5 5c.2.2.4.3.7.3.3 0 .5-.1.7-.3l5-5c.4-.4.4-1 0-1.4z"/>
               </svg>
-              <p className="text-sm text-[#D4AF37] font-medium mb-2">Claude is thinking</p>
+              <p className="text-sm text-[var(--pulse-accent)] font-medium mb-2">Claude is thinking</p>
               <p className="text-sm text-zinc-500 italic animate-pulse">{thinkingText}</p>
             </div>
           ) : error ? (
@@ -111,7 +111,7 @@ export function MDBReportModal({ onClose }: MDBReportModalProps) {
             </div>
           ) : (
             <div className="prose prose-invert prose-sm max-w-none">
-              <div className="bg-[#050500] border border-zinc-900 rounded-lg p-4">
+              <div className="bg-[var(--pulse-bg)] border border-zinc-900 rounded-lg p-4">
                 <p className="text-sm text-zinc-300 whitespace-pre-wrap leading-relaxed">{report}</p>
               </div>
             </div>
@@ -125,7 +125,7 @@ export function MDBReportModal({ onClose }: MDBReportModalProps) {
           </span>
           <button
             onClick={handleClose}
-            className="px-4 py-2 bg-[#D4AF37] hover:bg-[#FFD060] text-black rounded-lg text-sm font-medium transition-lush"
+            className="px-4 py-2 bg-[var(--pulse-accent)] hover:bg-[#FFD060] text-black rounded-lg text-sm font-medium transition-lush"
           >
             Close
           </button>

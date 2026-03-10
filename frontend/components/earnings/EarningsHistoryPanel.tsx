@@ -46,25 +46,25 @@ function NewEntryForm({ onSubmit, onCancel }: { onSubmit: (data: EarningsReviewC
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-3 border border-[#c79f4a]/30 rounded-lg space-y-2 mb-3">
-      <div className="text-[11px] font-semibold text-[#c79f4a] mb-1">New Journal Entry</div>
+    <form onSubmit={handleSubmit} className="p-3 border border-[var(--pulse-accent)]/30 rounded-lg space-y-2 mb-3">
+      <div className="text-[11px] font-semibold text-[var(--pulse-accent)] mb-1">New Journal Entry</div>
       <div className="grid grid-cols-3 gap-2">
         <input
           value={symbol}
           onChange={(e) => setSymbol(e.target.value)}
           placeholder="Symbol *"
-          className="bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-[11px] text-[#f0ead6] placeholder-zinc-600 focus:border-[#c79f4a] focus:outline-none"
+          className="bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-[11px] text-[var(--pulse-text)] placeholder-zinc-600 focus:border-[var(--pulse-accent)] focus:outline-none"
         />
         <input
           type="date"
           value={earningsDate}
           onChange={(e) => setEarningsDate(e.target.value)}
-          className="bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-[11px] text-[#f0ead6] focus:border-[#c79f4a] focus:outline-none"
+          className="bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-[11px] text-[var(--pulse-text)] focus:border-[var(--pulse-accent)] focus:outline-none"
         />
         <select
           value={setupType}
           onChange={(e) => setSetupType(e.target.value)}
-          className="bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-[11px] text-[#f0ead6] focus:border-[#c79f4a] focus:outline-none"
+          className="bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-[11px] text-[var(--pulse-text)] focus:border-[var(--pulse-accent)] focus:outline-none"
         >
           {SETUP_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
@@ -76,7 +76,7 @@ function NewEntryForm({ onSubmit, onCancel }: { onSubmit: (data: EarningsReviewC
             type="button"
             onClick={() => setDirection(d as any)}
             className={`text-[10px] px-2 py-0.5 rounded border transition-colors ${
-              direction === d ? 'border-[#c79f4a] text-[#c79f4a]' : 'border-zinc-700 text-zinc-500 hover:text-zinc-300'
+              direction === d ? 'border-[var(--pulse-accent)] text-[var(--pulse-accent)]' : 'border-zinc-700 text-zinc-500 hover:text-zinc-300'
             }`}
           >
             {d}
@@ -87,14 +87,14 @@ function NewEntryForm({ onSubmit, onCancel }: { onSubmit: (data: EarningsReviewC
         value={emotionalState}
         onChange={(e) => setEmotionalState(e.target.value)}
         placeholder="Emotional state (how are you feeling?)"
-        className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-[11px] text-[#f0ead6] placeholder-zinc-600 focus:border-[#c79f4a] focus:outline-none"
+        className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-[11px] text-[var(--pulse-text)] placeholder-zinc-600 focus:border-[var(--pulse-accent)] focus:outline-none"
       />
       <textarea
         value={thesis}
         onChange={(e) => setThesis(e.target.value)}
         placeholder="Pre-earnings thesis / plan *"
         rows={2}
-        className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-[11px] text-[#f0ead6] placeholder-zinc-600 focus:border-[#c79f4a] focus:outline-none resize-none"
+        className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-[11px] text-[var(--pulse-text)] placeholder-zinc-600 focus:border-[var(--pulse-accent)] focus:outline-none resize-none"
       />
       <div className="flex gap-2 justify-end">
         <button type="button" onClick={onCancel} className="text-[10px] px-3 py-1 text-zinc-500 hover:text-zinc-300">
@@ -103,7 +103,7 @@ function NewEntryForm({ onSubmit, onCancel }: { onSubmit: (data: EarningsReviewC
         <button
           type="submit"
           disabled={!symbol || !earningsDate || !thesis}
-          className="text-[10px] px-3 py-1 rounded bg-[#c79f4a]/20 text-[#c79f4a] border border-[#c79f4a]/30 hover:bg-[#c79f4a]/30 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="text-[10px] px-3 py-1 rounded bg-[var(--pulse-accent)]/20 text-[var(--pulse-accent)] border border-[var(--pulse-accent)]/30 hover:bg-[var(--pulse-accent)]/30 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           Save Entry
         </button>
@@ -143,28 +143,28 @@ export function EarningsHistoryPanel() {
   const needsSetup = !loading && reviews.length === 0 && !filter.symbol && !filter.setupType && !filter.dateFrom;
 
   return (
-    <div className="h-full flex flex-col" style={{ backgroundColor: '#050402' }}>
+    <div className="h-full flex flex-col" style={{ backgroundColor: 'var(--pulse-bg)' }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[#c79f4a]/15">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--pulse-accent)]/15">
         <div className="flex items-center gap-2">
-          <BookOpenCheck className="w-4 h-4 text-[#c79f4a]" />
-          <span className="text-[13px] font-semibold text-[#f0ead6]">Trading Journal</span>
+          <BookOpenCheck className="w-4 h-4 text-[var(--pulse-accent)]" />
+          <span className="text-[13px] font-semibold text-[var(--pulse-text)]">Trading Journal</span>
           {total > 0 && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#c79f4a]/15 text-[#c79f4a]">
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--pulse-accent)]/15 text-[var(--pulse-accent)]">
               {total}
             </span>
           )}
         </div>
         <button
           onClick={() => setShowNewForm((v) => !v)}
-          className="flex items-center gap-1 text-[10px] px-2 py-1 rounded border border-[#c79f4a]/30 text-[#c79f4a] hover:bg-[#c79f4a]/10 transition-colors"
+          className="flex items-center gap-1 text-[10px] px-2 py-1 rounded border border-[var(--pulse-accent)]/30 text-[var(--pulse-accent)] hover:bg-[var(--pulse-accent)]/10 transition-colors"
         >
           <Plus className="w-3 h-3" /> New Entry
         </button>
       </div>
 
       {/* Filter bar */}
-      <div className="px-4 py-2 border-b border-[#c79f4a]/10 space-y-2">
+      <div className="px-4 py-2 border-b border-[var(--pulse-accent)]/10 space-y-2">
         <div className="flex gap-2 items-center">
           <div className="flex-1 flex items-center gap-1 bg-zinc-900 border border-zinc-700 rounded px-2">
             <Search className="w-3 h-3 text-zinc-500" />
@@ -173,7 +173,7 @@ export function EarningsHistoryPanel() {
               onChange={(e) => setSymbolSearch(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSymbolSearch()}
               placeholder="Search symbol..."
-              className="flex-1 bg-transparent text-[11px] text-[#f0ead6] placeholder-zinc-600 py-1 focus:outline-none"
+              className="flex-1 bg-transparent text-[11px] text-[var(--pulse-text)] placeholder-zinc-600 py-1 focus:outline-none"
             />
           </div>
           <button
@@ -189,7 +189,7 @@ export function EarningsHistoryPanel() {
             <select
               value={filter.setupType ?? ''}
               onChange={(e) => setFilter({ setupType: e.target.value || undefined })}
-              className="bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-[10px] text-[#f0ead6] focus:outline-none"
+              className="bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-[10px] text-[var(--pulse-text)] focus:outline-none"
             >
               <option value="">All setups</option>
               {SETUP_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -197,7 +197,7 @@ export function EarningsHistoryPanel() {
             <select
               value={filter.grade ?? ''}
               onChange={(e) => setFilter({ grade: e.target.value || undefined })}
-              className="bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-[10px] text-[#f0ead6] focus:outline-none"
+              className="bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-[10px] text-[var(--pulse-text)] focus:outline-none"
             >
               <option value="">All grades</option>
               {GRADE_OPTIONS.map((g) => <option key={g} value={g}>{g}</option>)}
@@ -205,7 +205,7 @@ export function EarningsHistoryPanel() {
             <select
               value={filter.direction ?? ''}
               onChange={(e) => setFilter({ direction: e.target.value || undefined })}
-              className="bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-[10px] text-[#f0ead6] focus:outline-none"
+              className="bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-[10px] text-[var(--pulse-text)] focus:outline-none"
             >
               <option value="">All directions</option>
               {DIRECTION_OPTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
@@ -214,14 +214,14 @@ export function EarningsHistoryPanel() {
               type="date"
               value={filter.dateFrom ?? ''}
               onChange={(e) => setFilter({ dateFrom: e.target.value || undefined })}
-              className="bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-[10px] text-[#f0ead6] focus:outline-none"
+              className="bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-[10px] text-[var(--pulse-text)] focus:outline-none"
               placeholder="From"
             />
             <input
               type="date"
               value={filter.dateTo ?? ''}
               onChange={(e) => setFilter({ dateTo: e.target.value || undefined })}
-              className="bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-[10px] text-[#f0ead6] focus:outline-none"
+              className="bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-[10px] text-[var(--pulse-text)] focus:outline-none"
               placeholder="To"
             />
             {(filter.symbol || filter.setupType || filter.grade || filter.direction || filter.dateFrom || filter.dateTo) && (
@@ -254,21 +254,21 @@ export function EarningsHistoryPanel() {
 
         {loading && reviews.length === 0 && (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-5 h-5 text-[#c79f4a] animate-spin" />
+            <Loader2 className="w-5 h-5 text-[var(--pulse-accent)] animate-spin" />
           </div>
         )}
 
         {needsSetup && (
           <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
-            <Database className="w-8 h-8 text-[#c79f4a]/40 mb-3" />
-            <div className="text-[12px] text-[#f0ead6]/60 mb-1">No ER scoring entries yet</div>
+            <Database className="w-8 h-8 text-[var(--pulse-accent)]/40 mb-3" />
+            <div className="text-[12px] text-[var(--pulse-text)]/60 mb-1">No ER scoring entries yet</div>
             <div className="text-[10px] text-zinc-500 mb-4 max-w-[280px]">
               Set up your Notion database to start logging ER scores for psych analysis.
             </div>
             <button
               onClick={handleSetup}
               disabled={settingUp}
-              className="flex items-center gap-1.5 text-[11px] px-4 py-2 rounded border border-[#c79f4a]/30 text-[#c79f4a] hover:bg-[#c79f4a]/10 disabled:opacity-50"
+              className="flex items-center gap-1.5 text-[11px] px-4 py-2 rounded border border-[var(--pulse-accent)]/30 text-[var(--pulse-accent)] hover:bg-[var(--pulse-accent)]/10 disabled:opacity-50"
             >
               {settingUp ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Database className="w-3.5 h-3.5" />}
               {settingUp ? 'Creating DB...' : 'Set Up Earnings DB'}
@@ -286,19 +286,19 @@ export function EarningsHistoryPanel() {
         )}
 
         {reviews.length > 0 && (
-          <div className="divide-y divide-[#c79f4a]/8">
+          <div className="divide-y divide-[var(--pulse-accent)]/8">
             {reviews.map((review) => (
               <button
                 key={review.id}
                 onClick={() => selectReview(review)}
-                className={`w-full text-left px-4 py-2.5 hover:bg-[#c79f4a]/5 transition-colors ${
-                  selectedReview?.id === review.id ? 'bg-[#c79f4a]/10' : ''
+                className={`w-full text-left px-4 py-2.5 hover:bg-[var(--pulse-accent)]/5 transition-colors ${
+                  selectedReview?.id === review.id ? 'bg-[var(--pulse-accent)]/10' : ''
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 min-w-0">
                     <DirectionIcon direction={review.direction} />
-                    <span className="text-[12px] font-semibold text-[#f0ead6] truncate">{review.symbol}</span>
+                    <span className="text-[12px] font-semibold text-[var(--pulse-text)] truncate">{review.symbol}</span>
                     <span className="text-[10px] text-zinc-500">{review.earningsDate}</span>
                     {review.setupType && (
                       <span className="text-[9px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">{review.setupType}</span>
@@ -328,7 +328,7 @@ export function EarningsHistoryPanel() {
             <button
               onClick={loadMore}
               disabled={loading}
-              className="text-[10px] px-4 py-1.5 rounded border border-zinc-700 text-zinc-400 hover:text-[#c79f4a] hover:border-[#c79f4a]/30 disabled:opacity-50"
+              className="text-[10px] px-4 py-1.5 rounded border border-zinc-700 text-zinc-400 hover:text-[var(--pulse-accent)] hover:border-[var(--pulse-accent)]/30 disabled:opacity-50"
             >
               {loading ? 'Loading...' : 'Load more'}
             </button>

@@ -53,11 +53,11 @@ export function SessionCountdownWidget() {
   const ss = String(totalSecs % 60).padStart(2, '0');
 
   // Urgency coloring: <2min = red, <5min = gold, else default
-  const urgencyBorder = totalSecs < 120 ? 'border-red-500/60' : totalSecs < 300 ? 'border-[#c79f4a]/60' : 'border-[#D4AF37]/30';
-  const urgencyText = totalSecs < 120 ? 'text-red-400' : totalSecs < 300 ? 'text-[#c79f4a]' : 'text-[#D4AF37]';
+  const urgencyBorder = totalSecs < 120 ? 'border-red-500/60' : totalSecs < 300 ? 'border-[var(--pulse-accent)]/60' : 'border-[var(--pulse-accent)]/30';
+  const urgencyText = totalSecs < 120 ? 'text-red-400' : totalSecs < 300 ? 'text-[var(--pulse-accent)]' : 'text-[var(--pulse-accent)]';
 
   return (
-    <div className={`flex items-center gap-2 px-3 py-1.5 border ${urgencyBorder} bg-[#0a0a00]`}>
+    <div className={`flex items-center gap-2 px-3 py-1.5 border ${urgencyBorder} bg-[var(--pulse-surface)]`}>
       <span className="text-sm" role="img" aria-label="US flag">&#x1F1FA;&#x1F1F8;</span>
       <span className="text-[11px] text-zinc-300 truncate flex-1">{nextEvent.name}</span>
       <span className={`text-sm font-mono font-semibold tracking-wider ${urgencyText}`}>

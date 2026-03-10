@@ -45,7 +45,7 @@ export function TopStepXBrowser({
   const secondaryUrl = platformUrls[secondaryPlatform];
 
   return (
-    <div className="h-full w-full bg-[#0a0a00] overflow-hidden">
+    <div className="h-full w-full bg-[var(--pulse-surface)] overflow-hidden">
       <div className={`h-full ${splitViewEnabled && allowSplitView ? 'grid grid-cols-2 gap-0' : ''}`}>
         <EmbeddedBrowserFrame
           title={PLATFORM_LABELS[primaryPlatform]}

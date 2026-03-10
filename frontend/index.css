@@ -450,3 +450,47 @@
   from { opacity: 1; }
   to { opacity: 0.35; }
 }
+
+/* Liquid glass + ambient motion */
+@keyframes moveBackground {
+  from { background-position: 0% 0%; }
+  to { background-position: 0% -1000%; }
+}
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Chat rebuild — vanish animation for PromptBox on send */
+@keyframes promptVanish {
+  0% { opacity: 1; filter: blur(0px); transform: scale(1); }
+  100% { opacity: 0; filter: blur(6px); transform: scale(0.98); }
+}
+
+.animate-prompt-vanish {
+  animation: promptVanish 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-fade-slide-in {
+  animation: fadeSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Think Harder toggle — accent glow pulse */
+@keyframes thinkGlow {
+  0%, 100% { box-shadow: 0 0 4px 0px var(--pulse-accent); }
+  50% { box-shadow: 0 0 10px 2px var(--pulse-accent); }
+}
+
+.think-harder-active {
+  animation: thinkGlow 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Scroll-to-bottom button fade */
+.scroll-to-bottom-btn {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.scroll-to-bottom-btn:hover {
+  transform: translateY(-1px);
+}

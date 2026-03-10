@@ -76,17 +76,17 @@ export function EconCalendar() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-[#050500]">
+    <div className="h-full flex flex-col bg-[var(--pulse-bg)]">
       {/* Header */}
-      <div className="flex-shrink-0 px-4 py-3 border-b border-[#D4AF37]/15">
+      <div className="flex-shrink-0 px-4 py-3 border-b border-[var(--pulse-accent)]/15">
         <div className="flex items-center justify-between mb-3">
-          <h1 className="text-sm font-semibold text-[#D4AF37] tracking-[0.15em] uppercase">
+          <h1 className="text-sm font-semibold text-[var(--pulse-accent)] tracking-[0.15em] uppercase">
             Economic Calendar
           </h1>
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="p-1.5 rounded hover:bg-[#D4AF37]/10 text-[#D4AF37]/60 hover:text-[#D4AF37] transition-colors disabled:opacity-50"
+            className="p-1.5 rounded hover:bg-[var(--pulse-accent)]/10 text-[var(--pulse-accent)]/60 hover:text-[var(--pulse-accent)] transition-colors disabled:opacity-50"
             title="Refresh"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
@@ -97,7 +97,7 @@ export function EconCalendar() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setSelectedDate(shiftWeek(selectedDate, -1))}
-            className="p-1 rounded hover:bg-[#D4AF37]/10 text-[#D4AF37]/60 hover:text-[#D4AF37] transition-colors"
+            className="p-1 rounded hover:bg-[var(--pulse-accent)]/10 text-[var(--pulse-accent)]/60 hover:text-[var(--pulse-accent)] transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -113,16 +113,16 @@ export function EconCalendar() {
                   onClick={() => setSelectedDate(date)}
                   className={`flex-1 py-1.5 px-1 rounded text-center transition-colors relative ${
                     isSelected
-                      ? 'bg-[#D4AF37] text-black'
+                      ? 'bg-[var(--pulse-accent)] text-black'
                       : isToday
-                        ? 'bg-[#D4AF37]/15 text-[#D4AF37]'
-                        : 'text-zinc-400 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10'
+                        ? 'bg-[var(--pulse-accent)]/15 text-[var(--pulse-accent)]'
+                        : 'text-zinc-400 hover:text-[var(--pulse-accent)] hover:bg-[var(--pulse-accent)]/10'
                   }`}
                 >
                   <div className="text-[10px] font-medium">{WEEKDAYS[d.getDay() === 0 ? 6 : d.getDay() - 1]}</div>
                   <div className="text-[11px] font-bold">{d.getDate()}</div>
                   {hasEvents && !isSelected && (
-                    <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#D4AF37]/60" />
+                    <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[var(--pulse-accent)]/60" />
                   )}
                 </button>
               );
@@ -130,7 +130,7 @@ export function EconCalendar() {
           </div>
           <button
             onClick={() => setSelectedDate(shiftWeek(selectedDate, 1))}
-            className="p-1 rounded hover:bg-[#D4AF37]/10 text-[#D4AF37]/60 hover:text-[#D4AF37] transition-colors"
+            className="p-1 rounded hover:bg-[var(--pulse-accent)]/10 text-[var(--pulse-accent)]/60 hover:text-[var(--pulse-accent)] transition-colors"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
@@ -145,8 +145,8 @@ export function EconCalendar() {
               onClick={() => setMinImportance(opt.value)}
               className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
                 minImportance === opt.value
-                  ? 'bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/40'
-                  : 'text-zinc-500 hover:text-[#D4AF37] border border-transparent'
+                  ? 'bg-[var(--pulse-accent)]/20 text-[var(--pulse-accent)] border border-[var(--pulse-accent)]/40'
+                  : 'text-zinc-500 hover:text-[var(--pulse-accent)] border border-transparent'
               }`}
             >
               {opt.label}
@@ -171,14 +171,14 @@ export function EconCalendar() {
           const dayEvents = grouped[date] ?? [];
           const isToday = date === today;
           return (
-            <div key={date} className="border-b border-[#D4AF37]/10 last:border-b-0">
+            <div key={date} className="border-b border-[var(--pulse-accent)]/10 last:border-b-0">
               {/* Day header */}
-              <div className={`px-4 py-2 flex items-center gap-2 ${isToday ? 'bg-[#D4AF37]/5' : 'bg-[#080800]'}`}>
-                <span className={`text-[11px] font-semibold tracking-wider uppercase ${isToday ? 'text-[#D4AF37]' : 'text-zinc-400'}`}>
+              <div className={`px-4 py-2 flex items-center gap-2 ${isToday ? 'bg-[var(--pulse-accent)]/5' : 'bg-[#080800]'}`}>
+                <span className={`text-[11px] font-semibold tracking-wider uppercase ${isToday ? 'text-[var(--pulse-accent)]' : 'text-zinc-400'}`}>
                   {formatDateLabel(date)}
                 </span>
                 {isToday && (
-                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#D4AF37]/20 text-[#D4AF37] font-medium">
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--pulse-accent)]/20 text-[var(--pulse-accent)] font-medium">
                     TODAY
                   </span>
                 )}
@@ -188,7 +188,7 @@ export function EconCalendar() {
               </div>
               {/* Events */}
               {dayEvents.length > 0 ? (
-                <div className="divide-y divide-[#D4AF37]/5">
+                <div className="divide-y divide-[var(--pulse-accent)]/5">
                   {dayEvents.map((event) => (
                     <EconEventRow key={event.id} event={event} />
                   ))}

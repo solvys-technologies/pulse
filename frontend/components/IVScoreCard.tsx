@@ -84,8 +84,8 @@ export function IVScoreCard({ score, variant = 'default', layoutOption, ivResult
   };
 
   const containerClasses = variant === 'frosted'
-    ? 'relative backdrop-blur-2xl bg-gradient-to-br from-[#050500]/60 to-[#050500]/40 border border-[#D4AF37]/30 rounded-xl px-3 h-8 flex items-center shadow-lg'
-    : 'relative bg-[#050500] border border-[#D4AF37]/20 rounded-lg px-3 h-8 flex items-center';
+    ? 'relative backdrop-blur-2xl bg-gradient-to-br from-[var(--pulse-bg)]/60 to-[var(--pulse-bg)]/40 border border-[var(--pulse-accent)]/30 rounded-xl px-3 h-8 flex items-center shadow-lg'
+    : 'relative bg-[var(--pulse-bg)] border border-[var(--pulse-accent)]/20 rounded-lg px-3 h-8 flex items-center';
   
   const frostedStyle = variant === 'frosted' ? {
     backdropFilter: 'blur(20px) saturate(150%)',
@@ -106,8 +106,8 @@ export function IVScoreCard({ score, variant = 'default', layoutOption, ivResult
         {ivResult && (
           <>
             <span className="text-gray-600">|</span>
-            <Activity className="w-3 h-3 text-[#D4AF37]" />
-            <span className="text-[10px] text-[#D4AF37] font-medium">
+            <Activity className="w-3 h-3 text-[var(--pulse-accent)]" />
+            <span className="text-[10px] text-[var(--pulse-accent)] font-medium">
               {ivResult.sizing.label} ({Math.round(ivResult.sizing.sizeMultiplier * 100)}%)
             </span>
           </>
@@ -115,8 +115,8 @@ export function IVScoreCard({ score, variant = 'default', layoutOption, ivResult
         {expectedMove && (
           <>
             <span className="text-gray-600">|</span>
-            <TrendingUp className="w-3 h-3 text-[#D4AF37]" />
-            <span className="text-[10px] text-[#D4AF37] font-medium">
+            <TrendingUp className="w-3 h-3 text-[var(--pulse-accent)]" />
+            <span className="text-[10px] text-[var(--pulse-accent)] font-medium">
               ±{expectedMove.points} pts ({selectedSymbol.symbol})
             </span>
           </>
@@ -132,7 +132,7 @@ export function IVScoreCard({ score, variant = 'default', layoutOption, ivResult
 
       {showTooltip && (
         <div 
-          className={`absolute top-full mt-2 w-80 bg-[#0a0a00] border border-[#D4AF37]/30 rounded-lg p-4 shadow-xl z-50 ${
+          className={`absolute top-full mt-2 w-80 bg-[var(--pulse-surface)] border border-[var(--pulse-accent)]/30 rounded-lg p-4 shadow-xl z-50 ${
             layoutOption === 'tickers-only' ? 'right-0' : 'left-0'
           }`}
           style={{
@@ -146,7 +146,7 @@ export function IVScoreCard({ score, variant = 'default', layoutOption, ivResult
             })
           }}
         >
-          <h4 className="text-sm font-semibold text-[#D4AF37] mb-2">Implied Volatility Score</h4>
+          <h4 className="text-sm font-semibold text-[var(--pulse-accent)] mb-2">Implied Volatility Score</h4>
           <p className="text-xs text-gray-400 mb-3">
             {ivResult
               ? 'Composite score based on VIX level, term structure, put/call ratio, and historical IV percentile.'
@@ -168,7 +168,7 @@ export function IVScoreCard({ score, variant = 'default', layoutOption, ivResult
                   <div className="flex items-center gap-2">
                     <div className="w-16 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-[#D4AF37]"
+                        className="h-full rounded-full bg-[var(--pulse-accent)]"
                         style={{ width: `${c.value}%` }}
                       />
                     </div>
@@ -178,15 +178,15 @@ export function IVScoreCard({ score, variant = 'default', layoutOption, ivResult
               ))}
               <div className="pt-2 border-t border-zinc-800 flex items-center justify-between">
                 <span className="text-[10px] text-gray-300 font-medium">Composite</span>
-                <span className="text-xs font-bold text-[#D4AF37]">{ivResult.score}/100</span>
+                <span className="text-xs font-bold text-[var(--pulse-accent)]">{ivResult.score}/100</span>
               </div>
             </div>
           )}
 
           {/* Sizing recommendation */}
           {ivResult && (
-            <div className="bg-[#D4AF37]/5 border border-[#D4AF37]/20 rounded-lg p-3 mb-3">
-              <h5 className="text-xs font-semibold text-[#D4AF37] mb-1">
+            <div className="bg-[var(--pulse-accent)]/5 border border-[var(--pulse-accent)]/20 rounded-lg p-3 mb-3">
+              <h5 className="text-xs font-semibold text-[var(--pulse-accent)] mb-1">
                 Sizing: {ivResult.sizing.label} ({Math.round(ivResult.sizing.sizeMultiplier * 100)}% of standard)
               </h5>
               <p className="text-[10px] text-gray-400">{ivResult.sizing.detail}</p>
@@ -194,8 +194,8 @@ export function IVScoreCard({ score, variant = 'default', layoutOption, ivResult
           )}
 
           {expectedMove && (
-            <div className="bg-[#D4AF37]/10 border border-[#D4AF37]/20 rounded-lg p-3 mb-3">
-              <h5 className="text-xs font-semibold text-[#D4AF37] mb-1">Expected Move for {selectedSymbol.symbol}</h5>
+            <div className="bg-[var(--pulse-accent)]/10 border border-[var(--pulse-accent)]/20 rounded-lg p-3 mb-3">
+              <h5 className="text-xs font-semibold text-[var(--pulse-accent)] mb-1">Expected Move for {selectedSymbol.symbol}</h5>
               <div className="flex items-baseline gap-2">
                 <span className="text-lg font-bold text-white">±{expectedMove.points}</span>
                 <span className="text-xs text-gray-400">points</span>

@@ -70,7 +70,7 @@ export function ResearchDepartment() {
           <div className="shrink-0 absolute top-2 right-3 z-10">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="backdrop-blur-md bg-black/20 rounded-lg p-1.5 text-gray-400 hover:text-[#D4AF37] transition-colors"
+              className="backdrop-blur-md bg-black/20 rounded-lg p-1.5 text-gray-400 hover:text-[var(--pulse-accent)] transition-colors"
               title="Open Research Assistance"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -90,15 +90,15 @@ export function ResearchDepartment() {
 
       {/* Research Assistance sidebar — collapsible */}
       {sidebarOpen && (
-        <div className="w-[340px] shrink-0 border-l border-[#D4AF37]/15 bg-[#070704] flex flex-col">
+        <div className="w-[340px] shrink-0 border-l border-[var(--pulse-accent)]/15 bg-[#070704] flex flex-col">
           {/* Sidebar header */}
           <div className="shrink-0 flex items-center justify-between px-5 py-4">
-            <h2 className="text-sm font-semibold text-[#D4AF37] tracking-[0.18em] uppercase">
+            <h2 className="text-sm font-semibold text-[var(--pulse-accent)] tracking-[0.18em] uppercase">
               Research Assistance
             </h2>
             <button
               onClick={() => setSidebarOpen(false)}
-              className="p-1 text-gray-400 hover:text-[#D4AF37] transition-colors"
+              className="p-1 text-gray-400 hover:text-[var(--pulse-accent)] transition-colors"
               title="Collapse sidebar"
             >
               <ChevronRight className="w-4 h-4" />
@@ -115,14 +115,14 @@ export function ResearchDepartment() {
                     <div
                       className={`max-w-[90%] px-3 py-2 border-l-2 ${
                         isUser
-                          ? 'bg-[#D4AF37]/10 border-[#D4AF37]/40'
+                          ? 'bg-[var(--pulse-accent)]/10 border-[var(--pulse-accent)]/40'
                           : 'bg-[#6366f1]/10 border-[#6366f1]/40'
                       }`}
                     >
                       <div className="flex items-baseline gap-2 mb-1">
                         <span
                           className={`text-[10px] font-semibold tracking-[0.18em] uppercase ${
-                            isUser ? 'text-[#D4AF37]' : 'text-[#6366f1]'
+                            isUser ? 'text-[var(--pulse-accent)]' : 'text-[#6366f1]'
                           }`}
                         >
                           {isUser ? 'You' : agent.name}
@@ -163,7 +163,7 @@ export function ResearchDepartment() {
           <div className="shrink-0 p-3">
             <div
               className={`relative flex flex-col rounded-[28px] border transition-colors ${
-                inputText ? 'border-[#D4AF37]/50' : 'border-[#D4AF37]/20'
+                inputText ? 'border-[var(--pulse-accent)]/50' : 'border-[var(--pulse-accent)]/20'
               }`}
               style={{ backgroundColor: '#0b0b08' }}
             >
@@ -193,14 +193,14 @@ export function ResearchDepartment() {
               <div className="flex items-center justify-between" style={{ padding: '4px 10px 8px' }}>
                 <div className="flex items-center gap-1">
                   <button
-                    className="flex items-center justify-center rounded-full text-gray-500 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-colors"
+                    className="flex items-center justify-center rounded-full text-gray-500 hover:text-[var(--pulse-accent)] hover:bg-[var(--pulse-accent)]/10 transition-colors"
                     style={{ width: '30px', height: '30px' }}
                     title="Attach"
                   >
                     <Plus size={16} />
                   </button>
                   <button
-                    className="flex items-center justify-center rounded-full text-gray-500 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-colors"
+                    className="flex items-center justify-center rounded-full text-gray-500 hover:text-[var(--pulse-accent)] hover:bg-[var(--pulse-accent)]/10 transition-colors"
                     style={{ width: '30px', height: '30px' }}
                     title="Skills"
                   >
@@ -214,8 +214,8 @@ export function ResearchDepartment() {
                     title={thinkHarder ? 'Extended thinking ON' : 'Extended thinking OFF'}
                     className={`flex items-center justify-center rounded-full border transition-all ${
                       thinkHarder
-                        ? 'border-[#D4AF37] bg-[#D4AF37]/20 text-[#D4AF37] shadow-[0_0_8px_rgba(212,175,55,0.3)]'
-                        : 'border-[#D4AF37]/15 text-gray-500 hover:text-[#D4AF37] hover:border-[#D4AF37]/30'
+                        ? 'border-[var(--pulse-accent)] bg-[var(--pulse-accent)]/20 text-[var(--pulse-accent)] shadow-[0_0_8px_rgba(212,175,55,0.3)]'
+                        : 'border-[var(--pulse-accent)]/15 text-gray-500 hover:text-[var(--pulse-accent)] hover:border-[var(--pulse-accent)]/30'
                     }`}
                     style={{ width: '30px', height: '30px' }}
                   >
@@ -227,7 +227,7 @@ export function ResearchDepartment() {
                     className={`flex items-center justify-center rounded-full transition-all ${
                       isStreaming
                         ? 'bg-red-500 hover:bg-red-600 text-white'
-                        : 'bg-[#D4AF37] hover:bg-[#C5A030] text-black disabled:opacity-30 disabled:hover:bg-[#D4AF37]'
+                        : 'bg-[var(--pulse-accent)] hover:bg-[#C5A030] text-black disabled:opacity-30 disabled:hover:bg-[var(--pulse-accent)]'
                     }`}
                     style={{ width: '30px', height: '30px' }}
                     title={isStreaming ? 'Stop' : 'Send'}

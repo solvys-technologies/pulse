@@ -80,7 +80,7 @@ export function NarrativeAgentPanel({
         <div className="flex gap-2">
           <button
             onClick={onManualApprove}
-            className="flex-1 px-3 py-1.5 bg-[#D4AF37] hover:brightness-110 text-black rounded text-xs font-medium transition-all"
+            className="flex-1 px-3 py-1.5 bg-[var(--pulse-accent)] hover:brightness-110 text-black rounded text-xs font-medium transition-all"
           >
             Approve
           </button>

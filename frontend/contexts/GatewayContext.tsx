@@ -1,3 +1,4 @@
+// [claude-code 2026-03-10] Gateway toast: show once per session only (sessionStorage guard)
 import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { useToast } from './ToastContext';
 
@@ -58,7 +59,11 @@ export function GatewayProvider({ children }: { children: ReactNode }) {
             dismissToast(connectingToastRef.current);
             connectingToastRef.current = null;
           }
-          addToast('Gateway connected', 'success');
+          // [claude-code 2026-03-10] Gateway toast: show once per session only
+          if (!sessionStorage.getItem('gateway_connected_shown')) {
+            sessionStorage.setItem('gateway_connected_shown', '1');
+            addToast('Gateway connected', 'success');
+          }
         }
       } else {
         throw new Error(`HTTP ${res.status}`);

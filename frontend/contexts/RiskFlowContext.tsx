@@ -1,5 +1,7 @@
 // [claude-code 2026-03-03] Extended: polls Notion trade ideas on 60s interval,
 // injects them as RiskFlowAlerts with source='notion-trade-idea' pinned at top.
+// [claude-code 2026-03-10] Added pollBackendFeed (30s) — wires /api/riskflow/feed into context.
+// Merge order: notionAlerts → backendAlerts → rssAlerts. minMacroLevel=2, limit=30.
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { riskFlowPoller, type RiskFlowAlert } from '../lib/riskflow-feed';
 import baseBackend from '../lib/backend';
@@ -33,6 +35,25 @@ const RiskFlowContext = createContext<RiskFlowContextValue>({
 });
 
 const NOTION_POLL_MS = 60_000;
+const BACKEND_FEED_POLL_MS = 30_000;
+
+function macroLevelToSeverity(level: number): RiskFlowAlert['severity'] {
+  if (level >= 4) return 'critical';
+  if (level >= 3) return 'high';
+  if (level >= 2) return 'medium';
+  return 'low';
+}
+
+function mapBackendSource(source: string): RiskFlowAlert['source'] {
+  const s = source.toLowerCase();
+  if (s === 'financialjuice') return 'financial-juice';
+  if (s === 'insiderwire') return 'insider-wire';
+  if (s === 'economiccalendar') return 'economic-calendar';
+  if (s === 'polymarket') return 'polymarket';
+  if (s === 'twittercli') return 'twitter-cli';
+  return 'backend';
+}
+
 const DISMISSED_STORAGE_KEY = 'pulse_riskflow_dismissed_ids:v1';
 const SEEN_STORAGE_KEY = 'pulse_riskflow_seen_ids:v1';
 
@@ -59,10 +80,12 @@ function persistIds(key: string, ids: Set<string>): void {
 export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   const [rssAlerts, setRssAlerts] = useState<RiskFlowAlert[]>([]);
   const [notionAlerts, setNotionAlerts] = useState<RiskFlowAlert[]>([]);
+  const [backendAlerts, setBackendAlerts] = useState<RiskFlowAlert[]>([]);
   const [notionPollStatus, setNotionPollStatus] = useState<NotionPollStatus | null>(null);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(() => loadStoredIds(DISMISSED_STORAGE_KEY));
   const [seenIds, setSeenIds] = useState<Set<string>>(() => loadStoredIds(SEEN_STORAGE_KEY));
   const notionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const backendIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // MarketWatch RSS polling (unchanged)
   useEffect(() => {
@@ -132,10 +155,43 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
     };
   }, [pollNotion]);
 
-  // Merge: Notion trade ideas pinned at top, then RSS alerts
-  const merged = [...notionAlerts, ...rssAlerts];
+  // Backend feed polling (twitter-cli, X API, Polymarket, Economic Calendar)
+  const pollBackendFeed = useCallback(async () => {
+    try {
+      const response = await baseBackend.riskflow.list({ minMacroLevel: 2, limit: 30 });
+      const alerts: RiskFlowAlert[] = response.items.map((item) => ({
+        id: `backend-${item.id}`,
+        headline: item.title,
+        summary: item.summary || item.content || '',
+        url: item.url,
+        publishedAt: item.publishedAt,
+        source: mapBackendSource(item.source),
+        severity: macroLevelToSeverity(item.macroLevel),
+        symbols: item.symbols ?? [],
+        tags: item.tags ?? [],
+        isBreaking: item.isBreaking ?? false,
+      }));
+      setBackendAlerts(alerts);
+      console.debug(`[RiskFlowContext] Backend feed poll: ${alerts.length} items`);
+    } catch (err) {
+      console.warn('[RiskFlowContext] Backend feed poll error:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    void pollBackendFeed();
+    backendIntervalRef.current = setInterval(() => { void pollBackendFeed(); }, BACKEND_FEED_POLL_MS);
+    return () => {
+      if (backendIntervalRef.current) clearInterval(backendIntervalRef.current);
+    };
+  }, [pollBackendFeed]);
+
+  // Merge: Notion (pinned) → Backend feed → RSS
+  const seenBackendIds = new Set(notionAlerts.map((a) => a.id));
+  const dedupedBackend = backendAlerts.filter((a) => !seenBackendIds.has(a.id));
+  const merged = [...notionAlerts, ...dedupedBackend, ...rssAlerts];
   const visibleAlerts = merged.filter((a) => !dismissedIds.has(a.id));
-  const highCount = visibleAlerts.filter((a) => a.severity === 'high').length;
+  const highCount = visibleAlerts.filter((a) => a.severity === 'high' || a.severity === 'critical').length;
   const mediumCount = visibleAlerts.filter((a) => a.severity === 'medium').length;
   const lowCount = visibleAlerts.filter((a) => a.severity === 'low').length;
 

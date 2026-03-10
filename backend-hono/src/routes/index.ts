@@ -27,6 +27,8 @@ import { createGitHubAuthRoutes } from './auth/github.js';
 import { createVersionRoutes } from './version/index.js';
 import { createMarketDataRoutes } from './market-data/index.js';
 import { createMcpRoutes } from './mcp/index.js';
+import { createSettingsRoutes } from './settings/index.js';
+import { createTwentyFirstRoutes } from './twenty-first/index.js';
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -82,6 +84,10 @@ export function registerRoutes(app: Hono): void {
   app.use('/api/er-scoring/*', authMiddleware);
   app.use('/api/mcp', authMiddleware);
   app.use('/api/mcp/*', authMiddleware);
+  app.use('/api/settings', authMiddleware);
+  app.use('/api/settings/*', authMiddleware);
+  app.use('/api/21st', authMiddleware);
+  app.use('/api/21st/*', authMiddleware);
 
   // Phase 1: Account routes
   app.route('/api/account', createAccountRoutes());
@@ -124,4 +130,10 @@ export function registerRoutes(app: Hono): void {
 
   // MCP server registry
   app.route('/api/mcp', createMcpRoutes());
+
+  // User settings persistence
+  app.route('/api/settings', createSettingsRoutes());
+
+  // 21st API token proxy (deep thinking fallback)
+  app.route('/api/21st', createTwentyFirstRoutes());
 }

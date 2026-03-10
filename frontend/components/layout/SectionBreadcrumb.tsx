@@ -40,7 +40,7 @@ export function SectionBreadcrumb({
       <button
         onClick={onBack}
         disabled={!canGoBack}
-        className="p-1 rounded text-gray-500 hover:text-[#D4AF37] disabled:text-gray-700 disabled:cursor-default transition-colors"
+        className="p-1 rounded text-gray-500 hover:text-[var(--pulse-accent)] disabled:text-gray-700 disabled:cursor-default transition-colors"
         title="Back"
       >
         <ChevronLeft className="w-3.5 h-3.5" />
@@ -48,7 +48,7 @@ export function SectionBreadcrumb({
       <button
         onClick={onForward}
         disabled={!canGoForward}
-        className="p-1 rounded text-gray-500 hover:text-[#D4AF37] disabled:text-gray-700 disabled:cursor-default transition-colors"
+        className="p-1 rounded text-gray-500 hover:text-[var(--pulse-accent)] disabled:text-gray-700 disabled:cursor-default transition-colors"
         title="Forward"
       >
         <ChevronRight className="w-3.5 h-3.5" />

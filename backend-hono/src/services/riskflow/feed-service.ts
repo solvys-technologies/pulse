@@ -5,6 +5,7 @@
  */
 
 // [claude-code 2026-03-10] Integrated twitter-cli (FJ emoji-filtered) as secondary social feed source
+// [claude-code 2026-03-10] Default minMacroLevel lowered 3→2 (Medium+ threshold per Track 1 spec)
 import type { FeedItem, FeedResponse, FeedFilters, NewsSource, UrgencyLevel, SentimentDirection, MacroLevel } from '../../types/riskflow.js';
 import { createXApiService, type ParsedTweetNews } from '../x-api-service.js';
 import { getWatchlist, matchesWatchlist } from './watchlist-service.js';
@@ -114,7 +115,8 @@ async function enrichWithAnalysis(item: FeedItem): Promise<FeedItem> {
       urgency: getHigherUrgency(item.urgency, analyzed.parsed.urgency),
       sentiment: ivResult.sentiment as SentimentDirection,
       ivScore: ivResult.score,
-      macroLevel: ivResult.macroLevel as MacroLevel,
+      // Preserve item's original macroLevel if it was explicitly set higher (e.g. from FJ keyword classifier)
+      macroLevel: Math.max(ivResult.macroLevel, item.macroLevel ?? 1) as MacroLevel,
       analyzedAt: new Date().toISOString(),
     };
 
@@ -220,7 +222,7 @@ async function fetchFreshFeed(): Promise<FeedItem[]> {
   try {
     const xApiService = createXApiService();
     const [tweets, econItems, polyResp, twitterCliItems] = await Promise.all([
-      xApiService.fetchLatestTweets(),
+      xApiService.fetchLatestTweets().catch(() => []),
       fetchEconomicFeed(),
       fetchPolymarket().catch(() => ({ markets: [], fetchedAt: new Date().toISOString() })),
       isTwitterCliInstalled().then(ok => ok ? pollTwitterForEconNews() : []).catch(() => []),
@@ -443,19 +445,19 @@ export async function getFeed(userId: string, filters?: FeedFilters): Promise<Fe
       console.warn(`[RiskFlow] Sample item:`, JSON.stringify(allItems[0], null, 2));
     }
 
-  // Default to macroLevel 3+ (high importance only)
+  // Default to macroLevel 2+ (medium importance and above)
   const effectiveFilters: FeedFilters = {
-    minMacroLevel: 3 as MacroLevel,
+    minMacroLevel: 2 as MacroLevel,
     ...filters,
   };
 
   // Apply filters (including macroLevel)
   items = applyFilters(items, effectiveFilters);
   console.log(`[RiskFlow] After filters (minMacroLevel: ${effectiveFilters.minMacroLevel}): ${items.length} items`);
-  
-  // If no items with minMacroLevel 3+, fall back to all items (for initial load)
+
+  // If no items with minMacroLevel 2+, fall back to all items (for initial load)
   // This ensures users see something even if database only has low-level items
-  if (items.length === 0 && effectiveFilters.minMacroLevel === 3 && !filters?.minMacroLevel) {
+  if (items.length === 0 && effectiveFilters.minMacroLevel === 2 && !filters?.minMacroLevel) {
     console.log(`[RiskFlow] No level 3+ items found, falling back to all items (level 1+)`);
     const fallbackItems = allItems.filter(item => matchesWatchlist(watchlist, item));
     const fallbackFilters = { ...effectiveFilters, minMacroLevel: 1 as MacroLevel };

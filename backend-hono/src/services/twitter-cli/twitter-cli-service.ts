@@ -2,8 +2,11 @@
 
 import { execFileNoThrow } from '../../utils/execFileNoThrow.js';
 
-// twitter-cli binary name (installed via: uv tool install twitter-cli)
-const TWITTER_BIN = 'twitter';
+// Absolute path required — Pulse backend runs with restricted PATH (/usr/local/bin only)
+// uv installs to ~/.local/bin which is not in the Pulse process PATH
+const TWITTER_BIN =
+  process.env.TWITTER_CLI_PATH ??
+  `${process.env.HOME ?? '/Users/tifos'}/.local/bin/twitter`;
 
 export interface TwitterCliTweet {
   id: string;
