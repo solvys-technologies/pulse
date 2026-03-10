@@ -19,7 +19,7 @@ export interface QueueState {
   depth: number
 }
 
-interface EnqueueResult {
+type EnqueueResult = {
   jobId: string
   position: number
   status: QueueJobStatus
