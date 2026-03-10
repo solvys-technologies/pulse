@@ -12,17 +12,16 @@ const getEnv = (key: string): string | undefined => {
 export type AiModelKey =
   | 'sonnet'
   | 'grok'
-  | 'groq'
   // OpenRouter alternative routes
   | 'openrouter-sonnet'  // Claude Sonnet 4.5 via OpenRouter
   | 'openrouter-opus'    // Claude Opus 4.5 via OpenRouter
   | 'openrouter-llama'   // Llama 3.3 70B via OpenRouter
   | 'openrouter-grok'    // Grok 4.1 via OpenRouter
-  // OpenClaw P.I.C. agents
-  | 'openclaw-cao'       // CAO/Harper reasoning (Opus)
-  | 'openclaw-research'  // Deep research (Sonnet)
-  | 'openclaw-fast'      // Fast analysis (Llama)
-  | 'openclaw-realtime'  // Real-time news (Grok)
+  // OpenClaw P.I.C. agents (Groq-powered via gateway)
+  | 'openclaw-cao'       // CAO/Harper reasoning
+  | 'openclaw-research'  // Deep research
+  | 'openclaw-fast'      // Fast analysis (Groq Llama 3.3 70B)
+  | 'openclaw-realtime'  // Real-time news
   // GitHub Models (free, OAuth-powered)
   | 'github-deepseek'   // DeepSeek R1 via GitHub Models
 
@@ -119,10 +118,10 @@ const modelAliases: Record<string, AiModelKey> = {
   grok: 'grok',
   'grok-4.1': 'grok',
   general: 'grok',
-  groq: 'groq',
-  'llama-3.3-70b': 'groq',
-  haiku: 'groq',
-  tech: 'groq',
+  groq: 'openclaw-fast',
+  'llama-3.3-70b': 'openclaw-fast',
+  haiku: 'openclaw-fast',
+  tech: 'openclaw-fast',
   // OpenRouter alternative routes
   'openrouter-sonnet': 'openrouter-sonnet',
   'openrouter-claude': 'openrouter-sonnet',
@@ -159,15 +158,16 @@ const getPrimaryProvider = (): AiProviderType => {
   const envValue = getEnv('AI_PRIMARY_PROVIDER')
   if (envValue === 'vercel-gateway') return 'vercel-gateway'
   if (envValue === 'openrouter') return 'openrouter'
+  if (envValue === 'openclaw') return 'openclaw'
   // Default to openrouter if API key is present
   return getEnv('OPENROUTER_API_KEY') ? 'openrouter' : 'vercel-gateway'
 }
 
 const enableProviderFallback = getEnv('AI_ENABLE_PROVIDER_FALLBACK') !== 'false'
 
-// Default to openrouter-llama since Vercel AI Gateway is not working
-// OpenRouter is available and configured
-const defaultModel = resolveModelKey(getEnv('AI_DEFAULT_MODEL')) ?? 'openrouter-llama'
+// Default to OpenClaw (Groq-powered) — falls back to OpenRouter
+const defaultModel = resolveModelKey(getEnv('AI_DEFAULT_MODEL'))
+  ?? (getEnv('OPENCLAW_API_KEY') ? 'openclaw-fast' as AiModelKey : 'openrouter-llama')
 
 export const defaultAiConfig: AiConfig = {
   models: {
@@ -204,23 +204,6 @@ export const defaultAiConfig: AiConfig = {
       supportsStreaming: true,
       supportsVision: false
     },
-    groq: {
-      id: getEnv('GROQ_TECHNICAL_MODEL') ?? 'groq/llama-3.3-70b-versatile',
-      displayName: 'Groq Llama 3.3 70B',
-      provider: 'openai-compatible',
-      providerType: 'vercel-gateway',
-      apiKeyEnv: 'VERCEL_AI_GATEWAY_API_KEY',
-      baseUrl: vercelGatewayBaseUrl,
-      temperature: 0.25,
-      maxTokens: 2048,
-      timeoutMs: 20_000,
-      costPer1kInputUsd: 0.00059,
-      costPer1kOutputUsd: 0.00079,
-      contextWindow: 128_000,
-      supportsStreaming: true,
-      supportsVision: false
-    },
-
     // OpenRouter alternative routes (same models, different provider)
     'openrouter-sonnet': {
       id: 'anthropic/claude-sonnet-4',
@@ -288,68 +271,69 @@ export const defaultAiConfig: AiConfig = {
       supportsVision: true
     },
 
-    // OpenClaw P.I.C. Agent Models
+    // OpenClaw P.I.C. Agent Models (Groq-powered via gateway, free tier)
+    // [claude-code 2026-03-09] Switched from llama-3.3-70b (100K TPD) to optimal Groq models
     'openclaw-cao': {
-      id: 'anthropic/claude-opus-4',
-      displayName: 'OpenClaw CAO (Opus)',
+      id: 'groq/moonshotai/kimi-k2-instruct',
+      displayName: 'OpenClaw CAO (Kimi K2)',
       provider: 'openai-compatible',
       providerType: 'openclaw',
       apiKeyEnv: 'OPENCLAW_API_KEY',
       baseUrl: getOpenClawOpenAIBaseUrl(),
       temperature: 0.3,
       maxTokens: 8192,
-      timeoutMs: 90_000,
-      costPer1kInputUsd: 0.015,
-      costPer1kOutputUsd: 0.075,
-      contextWindow: 200_000,
+      timeoutMs: 30_000,
+      costPer1kInputUsd: 0,
+      costPer1kOutputUsd: 0,
+      contextWindow: 131_072,
       supportsStreaming: true,
-      supportsVision: true
+      supportsVision: false
     },
     'openclaw-research': {
-      id: 'anthropic/claude-sonnet-4',
-      displayName: 'OpenClaw Research (Sonnet)',
+      id: 'groq/meta-llama/llama-4-maverick-17b-128e-instruct',
+      displayName: 'OpenClaw Research (Maverick 128E)',
       provider: 'openai-compatible',
       providerType: 'openclaw',
       apiKeyEnv: 'OPENCLAW_API_KEY',
       baseUrl: getOpenClawOpenAIBaseUrl(),
       temperature: 0.4,
-      maxTokens: 4096,
-      timeoutMs: 60_000,
-      costPer1kInputUsd: 0.003,
-      costPer1kOutputUsd: 0.015,
-      contextWindow: 200_000,
+      maxTokens: 8192,
+      timeoutMs: 30_000,
+      costPer1kInputUsd: 0,
+      costPer1kOutputUsd: 0,
+      contextWindow: 131_072,
       supportsStreaming: true,
-      supportsVision: true
+      supportsVision: false
     },
     'openclaw-fast': {
-      id: 'meta-llama/llama-3.3-70b-instruct',
-      displayName: 'OpenClaw Fast (Llama)',
+      id: 'groq/meta-llama/llama-4-scout-17b-16e-instruct',
+      displayName: 'OpenClaw Fast (Scout)',
       provider: 'openai-compatible',
       providerType: 'openclaw',
       apiKeyEnv: 'OPENCLAW_API_KEY',
       baseUrl: getOpenClawOpenAIBaseUrl(),
       temperature: 0.25,
-      maxTokens: 2048,
-      timeoutMs: 30_000,
-      costPer1kInputUsd: 0.00012,
-      costPer1kOutputUsd: 0.0003,
-      contextWindow: 128_000,
+      maxTokens: 8192,
+      timeoutMs: 20_000,
+      costPer1kInputUsd: 0,
+      costPer1kOutputUsd: 0,
+      contextWindow: 131_072,
       supportsStreaming: true,
       supportsVision: false
     },
     'openclaw-realtime': {
-      id: 'x-ai/grok-4',
-      displayName: 'OpenClaw Realtime (Grok)',
+      id: 'groq/meta-llama/llama-4-scout-17b-16e-instruct',
+      displayName: 'OpenClaw Realtime (Scout)',
       provider: 'openai-compatible',
       providerType: 'openclaw',
       apiKeyEnv: 'OPENCLAW_API_KEY',
       baseUrl: getOpenClawOpenAIBaseUrl(),
       temperature: 0.3,
-      maxTokens: 4096,
-      timeoutMs: 45_000,
-      costPer1kInputUsd: 0.003,
-      costPer1kOutputUsd: 0.015,
-      contextWindow: 128_000,
+      maxTokens: 8192,
+      timeoutMs: 25_000,
+      costPer1kInputUsd: 0,
+      costPer1kOutputUsd: 0,
+      contextWindow: 131_072,
       supportsStreaming: true,
       supportsVision: false
     },
@@ -376,24 +360,24 @@ export const defaultAiConfig: AiConfig = {
   routing: {
     defaultModel,
     taskModelMap: {
-      // All models via OpenRouter
+      // All tasks through OpenClaw gateway (Groq-powered, free tier)
       // Fast technical analysis
-      analysis: 'openrouter-llama',
-      // Deep research - Claude Opus 4.5
-      research: 'openrouter-opus',
-      // Complex reasoning - Claude Opus 4.5
-      reasoning: 'openrouter-opus',
-      // Ultra-fast technical - Llama
-      technical: 'openrouter-llama',
-      'quick-pulse': 'openrouter-llama',
-      quickpulse: 'openrouter-llama',
-      // Real-time news via Grok 4.1
-      news: 'openrouter-grok',
-      // Sentiment analysis via Grok 4.1
-      sentiment: 'openrouter-grok',
-      // General chat via Llama
-      chat: 'openrouter-llama',
-      general: 'openrouter-llama',
+      analysis: 'openclaw-fast',
+      // Deep research — OpenClaw CAO (Groq Llama 70B)
+      research: 'openclaw-cao',
+      // Complex reasoning — OpenClaw CAO
+      reasoning: 'openclaw-cao',
+      // Ultra-fast technical
+      technical: 'openclaw-fast',
+      'quick-pulse': 'openclaw-fast',
+      quickpulse: 'openclaw-fast',
+      // Real-time news
+      news: 'openclaw-realtime',
+      // Sentiment analysis
+      sentiment: 'openclaw-realtime',
+      // General chat
+      chat: 'openclaw-fast',
+      general: 'openclaw-fast',
       // OpenClaw P.I.C. agent-specific tasks
       'harper-cao': 'openclaw-cao',
       'cao-approval': 'openclaw-cao',
@@ -412,7 +396,6 @@ export const defaultAiConfig: AiConfig = {
     fallbackMap: {
       sonnet: 'openrouter-sonnet',
       grok: 'openrouter-grok',
-      groq: 'openrouter-llama',
       'openrouter-sonnet': 'openrouter-llama',
       'openrouter-llama': 'openrouter-grok',
       'openrouter-grok': 'openrouter-opus',

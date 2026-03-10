@@ -1,10 +1,12 @@
 // [claude-code 2026-02-26] Make RiskFlow subsection collapsible in Mission Control stack.
 // [claude-code 2026-03-03] Add trade idea row rendering (gold border, click-to-modal).
+// [claude-code 2026-03-10] Status dots (Notion + X CLI), dropdown filters (Priority + Source), X filter.
 import React, { useState } from 'react';
 import { useRiskFlow } from '../contexts/RiskFlowContext';
 import { Zap, ExternalLink, ChevronDown, ChevronUp, Trash2, X, TrendingUp, TrendingDown } from 'lucide-react';
 import type { RiskFlowAlert, TradeIdeaDetail } from '../lib/riskflow-feed';
 import TradeIdeaModal from './TradeIdeaModal';
+import { useSourceStatus } from '../hooks/useSourceStatus';
 
 import { SEVERITY_CONFIG } from '../lib/severity-config';
 
@@ -141,9 +143,48 @@ function AlertRow({
   );
 }
 
+// ── Status Dot ─────────────────────────────────────────────────────────────────
+
+function StatusDot({ active, label }: { active: boolean; label: string }) {
+  return (
+    <span
+      className="flex items-center gap-1"
+      title={`${label}: ${active ? 'connected' : 'disconnected'}`}
+    >
+      <span className={`w-1.5 h-1.5 rounded-full ${active ? 'bg-emerald-400' : 'bg-zinc-600'}`} />
+      <span className={`text-[9px] uppercase tracking-wider ${active ? 'text-emerald-400/60' : 'text-zinc-700'}`}>{label}</span>
+    </span>
+  );
+}
+
+// ── Filter Dropdown ────────────────────────────────────────────────────────────
+
+function FilterDropdown<T extends string>({
+  value,
+  options,
+  onChange,
+}: {
+  value: T;
+  options: { value: T; label: string }[];
+  onChange: (v: T) => void;
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value as T)}
+      className="px-1.5 py-0.5 bg-[#050402] border border-zinc-800 rounded text-[10px] text-zinc-400 focus:outline-none focus:border-[#D4AF37]/40 cursor-pointer"
+    >
+      {options.map((opt) => (
+        <option key={opt.value} value={opt.value}>{opt.label}</option>
+      ))}
+    </select>
+  );
+}
+
 // ── Panel ──────────────────────────────────────────────────────────────────────
 
-type FilterMode = 'all' | 'high' | 'medium' | 'ideas';
+type PriorityFilter = 'all' | 'high' | 'medium';
+type SourceFilter = 'all' | 'notion' | 'twitter';
 
 export default function RiskFlowPanel({
   collapsed,
@@ -153,18 +194,26 @@ export default function RiskFlowPanel({
   onToggleCollapsed?: () => void;
 }) {
   const { alerts, highCount, mediumCount, clearAll, removeAlert, markSeen, markAllSeen, isSeen } = useRiskFlow();
-  const [filter, setFilter] = useState<FilterMode>('all');
+  const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('all');
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
+  const [showProposals, setShowProposals] = useState(false);
   const [expandedInternal, setExpandedInternal] = useState(true);
   const [selectedIdea, setSelectedIdea] = useState<TradeIdeaDetail | null>(null);
+  const sourceStatus = useSourceStatus();
   const expanded = collapsed != null ? !collapsed : expandedInternal;
 
   const ideaCount = alerts.filter((a) => a.source === 'notion-trade-idea').length;
 
-  const filtered =
-    filter === 'all' ? alerts :
-    filter === 'high' ? alerts.filter((a) => a.severity === 'high') :
-    filter === 'medium' ? alerts.filter((a) => a.severity === 'medium') :
-    alerts.filter((a) => a.source === 'notion-trade-idea');
+  const filtered = (() => {
+    let base = alerts;
+    if (showProposals) return base.filter((a) => a.source === 'notion-trade-idea');
+    if (priorityFilter === 'high') base = base.filter((a) => a.severity === 'high');
+    else if (priorityFilter === 'medium') base = base.filter((a) => a.severity === 'medium');
+    if (sourceFilter === 'notion') base = base.filter((a) => a.source === 'notion-trade-idea' || (a.source as string).toLowerCase().includes('notion'));
+    else if (sourceFilter === 'twitter') base = base.filter((a) => (a.source as string).toLowerCase().includes('twitter') || (a.source as string) === 'TwitterCli' || (a.source as string) === 'FinancialJuice');
+    return base;
+  })();
+
   const collapsedPreviewItems = alerts.slice(0, 2);
 
   React.useEffect(() => {
@@ -194,6 +243,10 @@ export default function RiskFlowPanel({
                 {ideaCount} proposal{ideaCount !== 1 ? 's' : ''}
               </span>
             )}
+            <div className="flex items-center gap-2 ml-1">
+              <StatusDot active={sourceStatus.notion} label="NTN" />
+              <StatusDot active={sourceStatus.twitterCli} label="X" />
+            </div>
           </div>
           <div className="flex items-center gap-1">
             {alerts.length > 0 && (
@@ -211,33 +264,43 @@ export default function RiskFlowPanel({
         </div>
 
         <div className={`flex-1 min-h-0 flex flex-col transition-all duration-300 ease-in-out overflow-hidden ${expanded ? 'opacity-100' : 'max-h-0 opacity-0'}`}>
-            {/* Filter tabs */}
-            <div className="flex items-center gap-1 px-3 py-1.5 border-b border-zinc-800/50 flex-wrap">
-              {([
-                ['all', `All (${alerts.length})`],
-                ['high', `High (${highCount})`],
-                ['medium', `Med (${mediumCount})`],
-                ['ideas', `Proposals (${ideaCount})`],
-              ] as const).map(([key, label]) => (
-                <button
-                  key={key}
-                  onClick={() => setFilter(key as FilterMode)}
-                  className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
-                    filter === key
-                      ? key === 'ideas' ? 'bg-[#c79f4a]/20 text-[#c79f4a]' : 'bg-[#D4AF37]/20 text-[#D4AF37]'
-                      : 'text-zinc-600 hover:text-zinc-400 hover:bg-zinc-800/50'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
+            {/* Filter row */}
+            <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-zinc-800/50 flex-wrap">
+              <FilterDropdown<PriorityFilter>
+                value={showProposals ? 'all' : priorityFilter}
+                options={[
+                  { value: 'all', label: `Priority: All` },
+                  { value: 'high', label: `High (${highCount})` },
+                  { value: 'medium', label: `Med (${mediumCount})` },
+                ]}
+                onChange={(v) => { setShowProposals(false); setPriorityFilter(v); }}
+              />
+              <FilterDropdown<SourceFilter>
+                value={showProposals ? 'all' : sourceFilter}
+                options={[
+                  { value: 'all', label: 'Source: All' },
+                  { value: 'notion', label: 'Notion' },
+                  { value: 'twitter', label: 'X / FJ' },
+                ]}
+                onChange={(v) => { setShowProposals(false); setSourceFilter(v); }}
+              />
+              <button
+                onClick={() => setShowProposals((v) => !v)}
+                className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
+                  showProposals
+                    ? 'bg-[#c79f4a]/20 text-[#c79f4a]'
+                    : 'text-zinc-600 hover:text-zinc-400 hover:bg-zinc-800/50'
+                }`}
+              >
+                Proposals{ideaCount > 0 ? ` (${ideaCount})` : ''}
+              </button>
             </div>
 
             {/* Alert list */}
             <div className="flex-1 min-w-0 overflow-y-auto">
               {filtered.length === 0 ? (
                 <div className="flex items-center justify-center h-24 text-zinc-700 text-xs">
-                  {alerts.length === 0 ? 'Polling MarketWatch…' : 'No matching alerts'}
+                  {alerts.length === 0 ? 'Polling Sources…' : 'No matching alerts'}
                 </div>
               ) : (
                 filtered.map((alert) =>

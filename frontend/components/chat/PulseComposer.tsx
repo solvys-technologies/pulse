@@ -12,6 +12,7 @@ interface PulseComposerProps {
   showSkills: boolean;
   onToggleSkills: () => void;
   lastError: string | null;
+  disabledSkills?: Record<string, { reason: string }>;
 }
 
 export function PulseComposer({
@@ -22,6 +23,7 @@ export function PulseComposer({
   showSkills,
   onToggleSkills,
   lastError,
+  disabledSkills,
 }: PulseComposerProps) {
   const runtime = useThreadRuntime();
   const isRunning = useThread((t) => t.isRunning);
@@ -84,6 +86,7 @@ export function PulseComposer({
       showSkills={showSkills}
       onToggleSkills={onToggleSkills}
       onAttachImage={undefined}
+      disabledSkills={disabledSkills}
     />
   );
 }

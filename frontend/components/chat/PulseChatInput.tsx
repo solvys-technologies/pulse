@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, type KeyboardEvent, type ChangeEvent, type ClipboardEvent } from 'react';
-import { ArrowUp, Square, Plus, Wrench, Brain, X, GitBranch } from 'lucide-react';
+import { ArrowUp, Square, Plus, Wrench, Brain, X, GitBranch, Plug2 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
 /*  Props                                                              */
@@ -14,7 +14,13 @@ export interface PulseChatInputProps {
   thinkHarder: boolean;
   setThinkHarder: (v: boolean) => void;
   onOpenAttach?: () => void;
+  onOpenConnectors?: () => void;
+  connectorCount?: number;
   onOpenSkills?: () => void;
+  onSlashTrigger?: (query: string) => void;
+  onSlashDismiss?: () => void;
+  onSlashSelect?: (skillId: string) => void;
+  addExternalImage?: string | null;
   disabled?: boolean;
   draftKey?: string;
 }
@@ -32,7 +38,13 @@ export function PulseChatInput({
   thinkHarder,
   setThinkHarder,
   onOpenAttach,
+  onOpenConnectors,
+  connectorCount = 0,
   onOpenSkills,
+  onSlashTrigger,
+  onSlashDismiss,
+  onSlashSelect,
+  addExternalImage,
   disabled = false,
   draftKey = 'pulse_draft_analysis',
 }: PulseChatInputProps) {
@@ -56,6 +68,13 @@ export function PulseChatInput({
       localStorage.removeItem(draftKey);
     }
   }, [text, draftKey]);
+
+  /* External image attachment (from attach panel) */
+  useEffect(() => {
+    if (addExternalImage) {
+      setImages((prev) => [...prev, addExternalImage]);
+    }
+  }, [addExternalImage]);
 
   /* Auto-resize textarea */
   useEffect(() => {
@@ -191,7 +210,16 @@ export function PulseChatInput({
         <textarea
           ref={textareaRef}
           value={text}
-          onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setText(e.target.value)}
+          onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
+            const val = e.target.value;
+            setText(val);
+            // Slash-command detection: text starts with /
+            if (val.startsWith('/') && !val.includes(' ') && !val.includes('\n')) {
+              onSlashTrigger?.(val.slice(1));
+            } else {
+              onSlashDismiss?.();
+            }
+          }}
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
           placeholder={placeholder}
@@ -215,6 +243,20 @@ export function PulseChatInput({
               title="Attach"
             >
               <Plus size={16} />
+            </button>
+            <button
+              type="button"
+              onClick={onOpenConnectors}
+              className="relative flex items-center justify-center rounded-lg text-zinc-500 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-colors"
+              style={{ width: '32px', height: '32px' }}
+              title="Connectors"
+            >
+              <Plug2 size={14} />
+              {connectorCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-[#c79f4a] text-[8px] text-[#050402] flex items-center justify-center font-bold leading-none">
+                  {connectorCount > 9 ? '9+' : connectorCount}
+                </span>
+              )}
             </button>
             <button
               onClick={onOpenSkills}

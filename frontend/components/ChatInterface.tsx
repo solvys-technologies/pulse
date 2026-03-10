@@ -9,6 +9,7 @@ import { PulseThread } from './chat/PulseThread';
 import { PulseComposer } from './chat/PulseComposer';
 import QuickPulseModal from './analysis/QuickPulseModal';
 import { addCheckpoint, deleteCheckpoint, listCheckpoints, type ChatCheckpoint } from '../lib/chatCheckpoints';
+import { useFeatureFlags } from '../hooks/useFeatureFlags';
 
 function usePanelState(key: string, defaultValue: boolean): [boolean, (v: boolean | ((p: boolean) => boolean)) => void] {
   const [state, setState] = useState<boolean>(() => {
@@ -48,14 +49,14 @@ function groupCheckpointsByDate(items: ChatCheckpoint[]): { label: string; items
 
 interface TiltWarning { detected: boolean; score?: number; message?: string }
 
-function ChatInterfaceInner({ conversationId, clearConversationId, lastError }: { conversationId: string | undefined; clearConversationId: () => void; lastError: string | null }) {
+function ChatInterfaceInner({ conversationId, clearConversationId, lastError, thinkHarder, setThinkHarder, lastRequestId }: { conversationId: string | undefined; clearConversationId: () => void; lastError: string | null; thinkHarder: boolean; setThinkHarder: (v: boolean) => void; lastRequestId: string | null }) {
   const { activeAgent } = usePulseAgents();
   const runtime = useThreadRuntime();
   const isRunning = useThread((t) => t.isRunning);
 
   const [activeSkill, setActiveSkill] = useState<string | null>(null);
   const [showSkills, setShowSkills] = useState(false);
-  const [thinkHarder, setThinkHarder] = useState(false);
+  const { disabledSkills } = useFeatureFlags();
   const [tiltWarning] = useState<TiltWarning | undefined>();
   const [showCheckpoints, setShowCheckpoints] = usePanelState('pulse:panel:checkpoints', false);
   const [checkpointVersion, setCheckpointVersion] = useState(0);
@@ -118,6 +119,8 @@ function ChatInterfaceInner({ conversationId, clearConversationId, lastError }: 
             agentName={activeAgent?.name}
             onCheckpoint={createCheckpointFromMessage}
             messageRefs={messageRefs}
+            lastError={lastError}
+            lastRequestId={lastRequestId}
           />
           <PulseComposer
             thinkHarder={thinkHarder}
@@ -127,6 +130,7 @@ function ChatInterfaceInner({ conversationId, clearConversationId, lastError }: 
             onSelectSkill={setActiveSkill}
             showSkills={showSkills}
             onToggleSkills={() => setShowSkills((v) => !v)}
+            disabledSkills={disabledSkills}
           />
         </div>
 
@@ -201,11 +205,12 @@ function ChatInterfaceInner({ conversationId, clearConversationId, lastError }: 
 
 export default function ChatInterface() {
   const { activeAgent } = usePulseAgents();
-  const { runtime, conversationId, clearConversationId, lastError } = useOpenClawRuntime(activeAgent?.id ?? 'default');
+  const [thinkHarderState, setThinkHarderState] = useState(false);
+  const { runtime, conversationId, clearConversationId, lastError, lastRequestId } = useOpenClawRuntime(activeAgent?.id ?? 'default', thinkHarderState, 'analysis');
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      <ChatInterfaceInner conversationId={conversationId} clearConversationId={clearConversationId} lastError={lastError} />
+      <ChatInterfaceInner conversationId={conversationId} clearConversationId={clearConversationId} lastError={lastError} thinkHarder={thinkHarderState} setThinkHarder={setThinkHarderState} lastRequestId={lastRequestId} />
     </AssistantRuntimeProvider>
   );
 }

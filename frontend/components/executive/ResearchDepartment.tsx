@@ -25,7 +25,7 @@ export function ResearchDepartment() {
   }
   const agent = activeAgent || { name: 'Harper', icon: 'H' };
   const openclawAgentOverride = toOpenClawAgentOverride((activeAgent as any)?.id);
-  const { conversationId, setConversationId } = usePersistentOpenClawConversation((activeAgent as any)?.id);
+  const { conversationId, setConversationId } = usePersistentOpenClawConversation((activeAgent as any)?.id, 'research');
   const { messages, sendMessage, status, stop } = useOpenClawChat(conversationId, setConversationId as any, openclawAgentOverride);
 
   const uiMessages = useMemo(() => {

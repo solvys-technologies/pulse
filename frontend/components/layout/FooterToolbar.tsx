@@ -1,9 +1,11 @@
 // [claude-code 2026-03-05] Phase 2A: Added iframe controls + heartbeat status
 // [claude-code 2026-03-07] Slide-up panel with Terminal + Changelog tabs
+// [claude-code 2026-03-10] Notion + X CLI status indicators in toolbar strip.
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ChevronUp, ChevronDown, Terminal, ExternalLink, SplitSquareVertical, Power, FileText } from 'lucide-react';
 import { PLATFORM_LABELS, PLATFORM_URLS, type TradingPlatform } from '../TopStepXBrowser';
 import { changelog } from '../../../src/lib/changelog';
+import { useSourceStatus } from '../../hooks/useSourceStatus';
 
 type PanelTab = 'terminal' | 'changelog';
 
@@ -75,6 +77,7 @@ export function FooterToolbar({
     setCliHistory(newHistory);
   }, [cliInput, cliHistory]);
 
+  const sourceStatus = useSourceStatus();
   const togglePanel = () => setPanelOpen((v) => !v);
 
   const openTab = (tab: PanelTab) => {
@@ -273,6 +276,24 @@ export function FooterToolbar({
           </>
         )}
 
+        {/* Source status indicators */}
+        <div className="flex items-center gap-2 shrink-0">
+          <span
+            className="flex items-center gap-1 text-[10px]"
+            title={`Notion: ${sourceStatus.notion ? 'connected' : 'disconnected'}`}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full ${sourceStatus.notion ? 'bg-emerald-400' : 'bg-zinc-700'}`} />
+            <span className={sourceStatus.notion ? 'text-emerald-400/60' : 'text-zinc-700'}>NTN</span>
+          </span>
+          <span
+            className="flex items-center gap-1 text-[10px]"
+            title={`X CLI: ${sourceStatus.twitterCli ? 'connected' : 'disconnected'}`}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full ${sourceStatus.twitterCli ? 'bg-emerald-400' : 'bg-zinc-700'}`} />
+            <span className={sourceStatus.twitterCli ? 'text-emerald-400/60' : 'text-zinc-700'}>X</span>
+          </span>
+        </div>
+        <div className="w-px h-3.5 bg-[#D4AF37]/10" />
         {/* Heartbeat */}
         <div className="flex items-center gap-1.5 text-[10px] text-gray-700 shrink-0">
           <div className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse" />

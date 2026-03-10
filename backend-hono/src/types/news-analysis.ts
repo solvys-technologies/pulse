@@ -5,6 +5,7 @@ export type NewsSource =
   | 'TrendSpider'
   | 'Barchart'
   | 'Polymarket'
+  | 'TwitterCli'
   | 'Custom'
 
 export type UrgencyLevel = 'immediate' | 'high' | 'normal'

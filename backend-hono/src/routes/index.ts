@@ -22,8 +22,11 @@ import { createNarrativeRoutes } from './narrative/index.js';
 import { createERRoutes } from './er/index.js';
 import { createVoiceRoutes } from './voice/index.js';
 import { createRegimeRoutes } from './regimes/index.js';
+import { createEarningsRoutes } from './earnings/index.js';
 import { createGitHubAuthRoutes } from './auth/github.js';
 import { createVersionRoutes } from './version/index.js';
+import { createMarketDataRoutes } from './market-data/index.js';
+import { createMcpRoutes } from './mcp/index.js';
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -38,6 +41,8 @@ export function registerRoutes(app: Hono): void {
   app.route('/api/notion', createNotionRoutes());
   // Regime tracker — public, returns active trading regimes
   app.route('/api/regimes', createRegimeRoutes());
+  // Market data — FMP quotes/VIX + Unusual Whales GEX/walls/flow (public, agents consume directly)
+  app.route('/api/market-data', createMarketDataRoutes());
   // Narrative scoring — LLM-scored catalyst candidates
   app.route('/api/narrative', createNarrativeRoutes());
 
@@ -73,6 +78,10 @@ export function registerRoutes(app: Hono): void {
   app.use('/api/er/*', authMiddleware);
   app.use('/api/voice', authMiddleware);
   app.use('/api/voice/*', authMiddleware);
+  app.use('/api/er-scoring', authMiddleware);
+  app.use('/api/er-scoring/*', authMiddleware);
+  app.use('/api/mcp', authMiddleware);
+  app.use('/api/mcp/*', authMiddleware);
 
   // Phase 1: Account routes
   app.route('/api/account', createAccountRoutes());
@@ -109,4 +118,10 @@ export function registerRoutes(app: Hono): void {
 
   // Voice assistant routes
   app.route('/api/voice', createVoiceRoutes());
+
+  // ER Scoring history routes (psych journaling)
+  app.route('/api/er-scoring', createEarningsRoutes());
+
+  // MCP server registry
+  app.route('/api/mcp', createMcpRoutes());
 }

@@ -37,6 +37,8 @@ import { EconCalendarProvider } from '../../contexts/EconCalendarContext';
 import { EconCalendar } from '../econ/EconCalendar';
 import { NarrativeProvider } from '../../contexts/NarrativeContext';
 import { NarrativeFlow } from '../narrative/NarrativeFlow';
+import { ERScoringProvider } from '../../contexts/EarningsHistoryContext';
+import { EarningsHistoryPanel } from '../earnings/EarningsHistoryPanel';
 import { SessionCountdownWidget } from '../mission-control/SessionCountdownWidget';
 import { RegimeMini } from '../mission-control/RegimeMini';
 import {
@@ -46,7 +48,7 @@ import {
   type MissionWidgetId,
 } from '../../lib/layoutOrderStorage';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'econ' | 'narrative' | 'settings';
+type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'settings';
 type LayoutOption = 'tickers-only' | 'combined';
 
 const MISSION_WIDGETS_PER_PAGE = 2;
@@ -536,7 +538,7 @@ export function MainLayout() {
     // For 'tickers-only', no panels are shown (only floating widget)
   } else {
     // When TopStepX is disabled: right stack = Mission Control + collapsible RiskFlow
-    const hideRightPanel = activeTab === 'notion' || activeTab === 'chatroom' || activeTab === 'econ' || activeTab === 'narrative' || activeTab === 'settings';
+    const hideRightPanel = activeTab === 'notion' || activeTab === 'chatroom' || activeTab === 'econ' || activeTab === 'narrative' || activeTab === 'earnings' || activeTab === 'settings';
     if (!hideRightPanel) {
       if (riskFlowCollapsed) {
         rightPanels.push(
@@ -680,6 +682,13 @@ export function MainLayout() {
               {activeTab === 'notion' && (
                 <div key="notion" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <ResearchDepartment />
+                </div>
+              )}
+              {activeTab === 'earnings' && (
+                <div key="earnings" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                  <ERScoringProvider>
+                    <EarningsHistoryPanel />
+                  </ERScoringProvider>
                 </div>
               )}
               {activeTab === 'settings' && (

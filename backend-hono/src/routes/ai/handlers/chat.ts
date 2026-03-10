@@ -1,3 +1,4 @@
+// [claude-code 2026-03-10] Instrumented with cognition events + queue-aware requestId header
 /**
  * AI Chat Handler
  * Handle chat messages and AI responses - OpenClaw Local Processing
@@ -12,6 +13,10 @@ import { defaultAiConfig } from '../../../config/ai-config.js'
 import type { ChatRequest } from '../../../types/ai-chat.js'
 import type { OpenClawAgentRole } from '../../../services/openclaw-service.js'
 import { handleOpenClawChat, detectAgent, type ContentPart } from '../../../services/openclaw-handler.js'
+import { exaSearch, formatExaContext, isExaAvailable } from '../../../services/exa-service.js'
+import { extractSkillFromMessage, isSkillEnabled, getSkillDisabledReason } from '../../../config/feature-flags.js'
+import { createRequestCognition } from '../../../services/cognition-emitter.js'
+import { enqueue, completeJob } from '../../../services/chat-queue.js'
 
 // Timeout for streaming responses (60 seconds)
 const STREAM_TIMEOUT_MS = 60_000
@@ -73,7 +78,13 @@ export async function handleChat(c: Context) {
   const githubToken = c.req.header('X-GitHub-Token')
   setRuntimeGitHubToken(githubToken || undefined)
 
+  // Create scoped cognition emitter — frontend subscribes via /api/ai/cognition/stream?requestId=
+  const cognition = createRequestCognition(requestId, startTime)
+
   console.log(`[OpenClaw][${requestId}] Request started (local mode: ${USE_LOCAL_OPENCLAW}, github: ${Boolean(githubToken)})`)
+
+  // Expose requestId so frontend can open cognition SSE stream
+  c.header('X-Request-Id', requestId)
 
   if (!userId) {
     console.warn(`[OpenClaw][${requestId}] Unauthorized - no userId`)
@@ -114,9 +125,22 @@ export async function handleChat(c: Context) {
       return c.json({ error: 'Message is required' }, 400)
     }
 
+    // Enforce skill permissions
+    const detectedSkill = extractSkillFromMessage(message)
+    if (detectedSkill && !isSkillEnabled(detectedSkill)) {
+      const reason = getSkillDisabledReason(detectedSkill) || 'This skill is currently disabled.'
+      console.warn(`[OpenClaw][${requestId}] Blocked disabled skill: ${detectedSkill}`)
+      cognition.step('skill-check', `Skill blocked: ${detectedSkill}`, reason)
+      cognition.done()
+      return c.json({ error: 'Skill unavailable', reason }, 403)
+    }
+    if (detectedSkill) {
+      cognition.step('skill-check', `Skill active: ${detectedSkill}`)
+    }
+
     console.log(`[OpenClaw][${requestId}] Message: "${message.substring(0, 50)}..." (${message.length} chars)`)
 
-    const { conversationId, model, taskType, agentOverride } = body ?? {}
+    const { conversationId, model, taskType, agentOverride, thinkHarder } = body ?? {} as any
 
     // Get or create conversation
     let conversation = conversationId
@@ -147,10 +171,16 @@ export async function handleChat(c: Context) {
     // Get conversation history
     const history = await conversationStore.getRecentContext(conversation.id)
     console.log(`[OpenClaw][${requestId}] History: ${history.length} messages`)
+    cognition.step('context-build', `Context assembled`, `${history.length} messages in history`)
 
     // Detect which P.I.C. agent should handle this
     const agentInfo = detectAgent(message)
     console.log(`[OpenClaw][${requestId}] Routed to agent: ${agentInfo.agent} (intent: ${agentInfo.intent}, confidence: ${agentInfo.confidence})`)
+    cognition.step(
+      'agent-route',
+      `Routed → ${toAgentLabel(agentInfo.agent)}`,
+      `intent: ${agentInfo.intent}, confidence: ${Math.round(agentInfo.confidence * 100)}%`
+    )
 
     // LOCAL OPENCLAW is always the primary path.
     // GitHub Models (GPT-4o) is available as a fallback when the Clawdbot gateway is down.
@@ -161,16 +191,39 @@ export async function handleChat(c: Context) {
     if (USE_LOCAL_OPENCLAW && !useGitHubModel) {
       console.log(`[OpenClaw][${requestId}] Using LOCAL processing via P.I.C. agents`)
 
+      // Deep research via Exa when thinkHarder is enabled
+      let researchContext = ''
+      let researchSourceCount = 0
+      if (thinkHarder && isExaAvailable()) {
+        console.log(`[OpenClaw][${requestId}] ThinkHarder enabled — running Exa research`)
+        cognition.step('tool-dispatch', 'Exa deep research', 'ThinkHarder enabled — searching live sources')
+        const results = await exaSearch(message, { numResults: 5 })
+        researchSourceCount = results.length
+        researchContext = formatExaContext(results)
+        if (researchContext) {
+          console.log(`[OpenClaw][${requestId}] Exa returned ${results.length} sources`)
+          cognition.step('tool-dispatch', `Exa: ${results.length} sources found`, results.map(r => (r as any).url ?? '').filter(Boolean).slice(0, 2).join(', '))
+        }
+      }
+
+      // Augment message with research context if available
+      const augmentedMessage = researchContext
+        ? `${researchContext}\n\n${message}`
+        : message
+
       // Generate response locally through OpenClaw
+      cognition.step('gateway-call', 'Calling OpenClaw gateway', `model: clawdbot:main, agent: ${agentInfo.agent}`)
       const openclawResponse = await handleOpenClawChat({
-        message,
+        message: augmentedMessage,
         multimodalContent,
         conversationId: conversation.id,
         history: history.map(h => ({ role: h.role as 'user' | 'assistant', content: h.content })),
         agentOverride: agentOverride as OpenClawAgentRole | undefined,
+        thinkHarder,
       })
 
       console.log(`[OpenClaw][${requestId}] Local response generated by ${openclawResponse.agent}`)
+      cognition.step('response-ready', 'Response assembled', `${openclawResponse.content.length} chars, streaming now`)
 
       // Store assistant message
       await conversationStore.addMessage(conversation.id, {
@@ -186,6 +239,9 @@ export async function handleChat(c: Context) {
       // Set conversation ID header
       c.header('X-Conversation-Id', conversation.id)
       c.header('X-OpenClaw-Agent', openclawResponse.agent)
+      if (researchSourceCount > 0) {
+        c.header('X-Research-Sources', String(researchSourceCount))
+      }
 
       // Stream using AI SDK UI message event stream (SSE with JSON payloads).
       // This matches `DefaultChatTransport` on the frontend, which expects SSE JSON events.
@@ -229,10 +285,13 @@ export async function handleChat(c: Context) {
 
             if (!cancelled) {
               controller.enqueue({ type: 'text-end', id: uiMessageId })
+              cognition.done()
               controller.close()
             }
           })().catch((error) => {
             console.error(`[OpenClaw][${requestId}] Local stream error:`, error)
+            cognition.step('error', 'Stream error', error instanceof Error ? error.message : String(error))
+            cognition.done()
             if (!cancelled) controller.error(error)
           })
         },
@@ -359,6 +418,8 @@ export async function handleChat(c: Context) {
   } catch (error) {
     const duration = Date.now() - startTime
     console.error(`[OpenClaw][${requestId}] Fatal error after ${duration}ms:`, error)
+    cognition.step('error', 'Fatal error', error instanceof Error ? error.message : String(error))
+    cognition.done()
 
     // Clean error messages — no raw fallback info
     let errorMessage = 'Connected but error — try again in a moment.'

@@ -1,12 +1,15 @@
 // [claude-code 2026-03-07] Custom Thread built on ThreadPrimitive — replaces ChatMessageList
+// [claude-code 2026-03-09] Added empty-bubble gate, error banner in thread, partial-stream indicator
+// [claude-code 2026-03-10] Added CognitionPanel for agent step visualization
 import { type FC, type RefObject } from 'react';
 import { ThreadPrimitive, MessagePrimitive, useMessage } from '@assistant-ui/react';
 import { MarkdownTextPrimitive } from '@assistant-ui/react-markdown';
 import remarkGfm from 'remark-gfm';
-import { CalendarCheck } from 'lucide-react';
+import { CalendarCheck, AlertCircle } from 'lucide-react';
 import { ChatGreeting } from './ChatGreeting';
 import { PulseThinkingIndicator } from './PulseThinkingIndicator';
 import { usePulseAgents } from '../../contexts/PulseAgentContext';
+import { CognitionPanel } from './CognitionPanel';
 
 /* ------------------------------------------------------------------ */
 /*  Markdown renderer                                                   */
@@ -138,16 +141,24 @@ const PulseUserMessage: FC = () => {
 /*  Assistant message                                                   */
 /* ------------------------------------------------------------------ */
 
+// [claude-code 2026-03-09] Gate on content — no blank bubble before tokens stream
 const PulseAssistantMessage: FC<{ onCheckpoint?: (id: string, content: string) => void }> = ({ onCheckpoint }) => {
   const message = useMessage();
   const createdAt = (message as any).createdAt as Date | undefined;
   const id = (message as any).id as string | undefined;
+  const parts = (message as any).content ?? [];
 
   // Extract full text for checkpoint
-  const textContent = (message as any).content
-    ?.filter((p: any) => p.type === 'text')
+  const textContent = parts
+    .filter((p: any) => p.type === 'text')
     .map((p: any) => p.text)
     .join('\n') ?? '';
+
+  const hasReasoningContent = parts.some((p: any) => p.type === 'reasoning' && p.text);
+
+  // Don't render empty bubble while waiting for stream tokens.
+  // PulseThinkingIndicator (rendered separately via ThreadPrimitive.If) handles visual feedback.
+  if (!textContent && !hasReasoningContent) return null;
 
   return (
     <div className="group/msg flex flex-col items-start">
@@ -196,9 +207,11 @@ interface PulseThreadProps {
   agentName?: string;
   onCheckpoint?: (messageId: string, content: string) => void;
   messageRefs?: RefObject<Record<string, HTMLDivElement | null>>;
+  lastError?: string | null;
+  lastRequestId?: string | null;
 }
 
-export function PulseThread({ onSend, isLoading, agentName, onCheckpoint }: PulseThreadProps) {
+export function PulseThread({ onSend, isLoading, agentName, onCheckpoint, lastError, lastRequestId }: PulseThreadProps) {
   const { activeAgent } = usePulseAgents();
 
   const AssistantMsg = () => (
@@ -231,6 +244,21 @@ export function PulseThread({ onSend, isLoading, agentName, onCheckpoint }: Puls
               />
             </div>
           </ThreadPrimitive.If>
+
+          {/* Agent cognition panel — shows live pipeline steps */}
+          {lastRequestId && (
+            <CognitionPanel requestId={lastRequestId} isStreaming={isLoading} />
+          )}
+
+          {/* Error banner — visible in thread, not just input area */}
+          {lastError && !isLoading && (
+            <div className="flex items-start gap-2.5 rounded-xl border border-red-500/25 bg-red-500/8 px-4 py-3">
+              <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xs text-red-300 leading-relaxed">{lastError}</p>
+              </div>
+            </div>
+          )}
         </div>
       </ThreadPrimitive.Viewport>
     </ThreadPrimitive.Root>

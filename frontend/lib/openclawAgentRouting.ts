@@ -25,7 +25,14 @@ export function toOpenClawAgentOverride(pulseAgentId: PulseAgentId | undefined |
   }
 }
 
-export function openClawConversationStorageKey(pulseAgentId: PulseAgentId | undefined | null): string {
-  return `pulse_openclaw_conversation:${pulseAgentId ?? 'default'}`;
+// [claude-code 2026-03-09] Added surfaceId for per-surface session isolation (no context bleed)
+export function openClawConversationStorageKey(
+  pulseAgentId: PulseAgentId | undefined | null,
+  surfaceId?: string,
+): string {
+  const agent = pulseAgentId ?? 'default';
+  return surfaceId
+    ? `pulse_openclaw_conversation:${surfaceId}:${agent}`
+    : `pulse_openclaw_conversation:${agent}`;
 }
 

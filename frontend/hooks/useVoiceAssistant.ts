@@ -1,10 +1,12 @@
+// [claude-code 2026-03-09] Added: useMicPermission, useMicArbitration, error state with auto-recovery, cancel/interrupt support
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useBackend } from '../lib/backend';
 import { openClawConversationStorageKey } from '../lib/openclawAgentRouting';
-import type { VoiceRuntimeState } from '../types/voice';
+import type { VoiceRuntimeState, MicPermissionState } from '../types/voice';
 
 const VOICE_ENABLED_STORAGE_KEY = 'pulse_voice_assistant_enabled:v1';
 const HARPER_CONVERSATION_STORAGE_KEY = openClawConversationStorageKey('harper');
+const ERROR_AUTO_RECOVERY_MS = 5000;
 
 interface VoiceSendResult {
   conversationId?: string;
@@ -34,6 +36,85 @@ function safeLocalStorageSet(key: string, value: string): void {
   }
 }
 
+// ─── Mic Permission Hook ───────────────────────────────────────────────────────
+
+export function useMicPermission() {
+  const [permission, setPermission] = useState<MicPermissionState>('prompt');
+
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !navigator.permissions) return;
+
+    navigator.permissions
+      .query({ name: 'microphone' as PermissionName })
+      .then((status) => {
+        setPermission(status.state as MicPermissionState);
+        status.onchange = () => {
+          setPermission(status.state as MicPermissionState);
+        };
+      })
+      .catch(() => {
+        // Older browsers or permission API not available — remain 'prompt'
+      });
+  }, []);
+
+  return { permission };
+}
+
+// ─── Mic Arbitration ───────────────────────────────────────────────────────────
+
+interface MicHolder {
+  id: string;
+  priority: number;
+  release: () => void;
+}
+
+let currentMicHolder: MicHolder | null = null;
+
+export function useMicArbitration() {
+  const requestMic = useCallback(
+    (
+      id: string,
+      priority: number
+    ): { acquired: boolean; release: () => void } => {
+      // If no one holds the mic, grant immediately
+      if (!currentMicHolder) {
+        const release = () => {
+          if (currentMicHolder?.id === id) {
+            currentMicHolder = null;
+          }
+        };
+        currentMicHolder = { id, priority, release };
+        return { acquired: true, release };
+      }
+
+      // If same consumer, just return
+      if (currentMicHolder.id === id) {
+        return { acquired: true, release: currentMicHolder.release };
+      }
+
+      // If requesting with higher priority, preempt
+      if (priority > currentMicHolder.priority) {
+        currentMicHolder.release();
+        const release = () => {
+          if (currentMicHolder?.id === id) {
+            currentMicHolder = null;
+          }
+        };
+        currentMicHolder = { id, priority, release };
+        return { acquired: true, release };
+      }
+
+      // Lower priority — denied
+      return { acquired: false, release: () => {} };
+    },
+    []
+  );
+
+  return { requestMic, getCurrentHolder: () => currentMicHolder };
+}
+
+// ─── Voice Assistant Hook ──────────────────────────────────────────────────────
+
 export function useVoiceAssistant() {
   const backend = useBackend();
 
@@ -47,6 +128,12 @@ export function useVoiceAssistant() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const enabledRef = useRef(false);
   const busyRef = useRef(false);
+  const abortRef = useRef<AbortController | null>(null);
+  const micReleaseRef = useRef<(() => void) | null>(null);
+  const errorRecoveryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const { permission } = useMicPermission();
+  const { requestMic } = useMicArbitration();
 
   const speechRecognitionSupported = useMemo(
     () =>
@@ -55,6 +142,16 @@ export function useVoiceAssistant() {
         typeof (window as any).SpeechRecognition !== 'undefined'),
     []
   );
+
+  const setErrorWithRecovery = useCallback(() => {
+    setRuntimeState('error');
+    // Clear any existing recovery timer
+    if (errorRecoveryRef.current) clearTimeout(errorRecoveryRef.current);
+    errorRecoveryRef.current = setTimeout(() => {
+      errorRecoveryRef.current = null;
+      setRuntimeState(enabledRef.current ? 'listening' : 'idle');
+    }, ERROR_AUTO_RECOVERY_MS);
+  }, []);
 
   const stopPlayback = useCallback(() => {
     if (audioRef.current) {
@@ -76,6 +173,12 @@ export function useVoiceAssistant() {
       // ignore
     }
     recognitionRef.current = null;
+
+    // Release mic lock
+    if (micReleaseRef.current) {
+      micReleaseRef.current();
+      micReleaseRef.current = null;
+    }
   }, []);
 
   const persistConversationId = useCallback((id: string | null) => {
@@ -119,6 +222,24 @@ export function useVoiceAssistant() {
     });
   }, []);
 
+  const cancel = useCallback(() => {
+    // Abort any in-flight request
+    if (abortRef.current) {
+      abortRef.current.abort();
+      abortRef.current = null;
+    }
+    // Stop playback and recognition
+    stopPlayback();
+    stopRecognition();
+    busyRef.current = false;
+    // Clear error recovery timer
+    if (errorRecoveryRef.current) {
+      clearTimeout(errorRecoveryRef.current);
+      errorRecoveryRef.current = null;
+    }
+    setRuntimeState(enabledRef.current ? 'listening' : 'idle');
+  }, [stopPlayback, stopRecognition]);
+
   const sendText = useCallback(
     async (text: string, mode: 'chat' | 'infraction' = 'chat'): Promise<VoiceSendResult | null> => {
       const prompt = text.trim();
@@ -127,6 +248,10 @@ export function useVoiceAssistant() {
       busyRef.current = true;
       setLastUserText(prompt);
       setRuntimeState('thinking');
+
+      // Create abort controller for this request
+      const controller = new AbortController();
+      abortRef.current = controller;
 
       try {
         const response = (await backend.voice.speak({
@@ -137,6 +262,9 @@ export function useVoiceAssistant() {
           agent: 'harper-cao',
         })) as VoiceSendResult;
 
+        // Check if cancelled during the request
+        if (controller.signal.aborted) return null;
+
         if (response.conversationId) {
           persistConversationId(response.conversationId);
         }
@@ -146,6 +274,8 @@ export function useVoiceAssistant() {
 
         if (assistantText) {
           setRuntimeState('speaking');
+          if (controller.signal.aborted) return null;
+
           if (response.audioBase64) {
             await playAudio(response.audioBase64, response.audioMimeType);
           } else {
@@ -153,17 +283,23 @@ export function useVoiceAssistant() {
           }
         }
 
-        setRuntimeState(enabledRef.current ? 'listening' : 'idle');
+        if (!controller.signal.aborted) {
+          setRuntimeState(enabledRef.current ? 'listening' : 'idle');
+        }
         return response;
       } catch (error) {
+        if (controller.signal.aborted) return null;
         console.error('[VoiceAssistant] Failed to send text:', error);
-        setRuntimeState(enabledRef.current ? 'listening' : 'idle');
+        setErrorWithRecovery();
         return null;
       } finally {
         busyRef.current = false;
+        if (abortRef.current === controller) {
+          abortRef.current = null;
+        }
       }
     },
-    [backend, conversationId, persistConversationId, playAudio, playWithSpeechSynthesis]
+    [backend, conversationId, persistConversationId, playAudio, playWithSpeechSynthesis, setErrorWithRecovery]
   );
 
   const respondToInfraction = useCallback(
@@ -181,6 +317,21 @@ export function useVoiceAssistant() {
 
   const startRecognition = useCallback(() => {
     if (!enabledRef.current || !speechRecognitionSupported || recognitionRef.current) return;
+
+    // Check mic permission — if denied, show error state
+    if (permission === 'denied') {
+      setErrorWithRecovery();
+      console.warn('[VoiceAssistant] Microphone permission denied');
+      return;
+    }
+
+    // Acquire mic lock via arbitration (priority 10 = high for voice assistant)
+    const { acquired, release } = requestMic('voice-assistant', 10);
+    if (!acquired) {
+      console.warn('[VoiceAssistant] Mic arbitration denied — another consumer has priority');
+      return;
+    }
+    micReleaseRef.current = release;
 
     const SpeechRecognitionCtor =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -214,7 +365,13 @@ export function useVoiceAssistant() {
       void sendText(trimmed, 'chat');
     };
 
-    recognition.onerror = () => {
+    recognition.onerror = (event: any) => {
+      const errorType = event?.error;
+      // 'not-allowed' means mic denied, 'aborted' is intentional stop — don't error on those
+      if (errorType === 'not-allowed') {
+        setErrorWithRecovery();
+        return;
+      }
       if (enabledRef.current && !busyRef.current) {
         setRuntimeState('listening');
       }
@@ -225,6 +382,11 @@ export function useVoiceAssistant() {
 
       if (!enabledRef.current) {
         setRuntimeState('idle');
+        // Release mic lock
+        if (micReleaseRef.current) {
+          micReleaseRef.current();
+          micReleaseRef.current = null;
+        }
         return;
       }
 
@@ -241,7 +403,7 @@ export function useVoiceAssistant() {
 
     recognitionRef.current = recognition;
     recognition.start();
-  }, [sendText, speechRecognitionSupported, stopRecognition]);
+  }, [sendText, speechRecognitionSupported, stopRecognition, permission, requestMic, setErrorWithRecovery]);
 
   const setEnabled = useCallback(
     (nextEnabled: boolean) => {
@@ -250,15 +412,13 @@ export function useVoiceAssistant() {
       safeLocalStorageSet(VOICE_ENABLED_STORAGE_KEY, nextEnabled ? 'true' : 'false');
 
       if (!nextEnabled) {
-        stopRecognition();
-        stopPlayback();
-        setRuntimeState('idle');
+        cancel();
         return;
       }
 
       startRecognition();
     },
-    [startRecognition, stopPlayback, stopRecognition]
+    [startRecognition, cancel]
   );
 
   const toggleEnabled = useCallback(() => {
@@ -298,6 +458,7 @@ export function useVoiceAssistant() {
     return () => {
       stopRecognition();
       stopPlayback();
+      if (errorRecoveryRef.current) clearTimeout(errorRecoveryRef.current);
     };
   }, [stopPlayback, stopRecognition]);
 
@@ -308,9 +469,11 @@ export function useVoiceAssistant() {
     lastUserText,
     lastAssistantText,
     isSupported: speechRecognitionSupported,
+    micPermission: permission,
     setEnabled,
     toggleEnabled,
     sendText,
     respondToInfraction,
+    cancel,
   };
 }

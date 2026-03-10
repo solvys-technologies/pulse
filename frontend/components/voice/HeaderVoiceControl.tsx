@@ -1,3 +1,4 @@
+// [claude-code 2026-03-09] Added cancel on click during speaking/thinking, mic denied-state UI
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Mic, MicOff } from 'lucide-react';
 import { useVoiceAssistant } from '../../hooks/useVoiceAssistant';
@@ -38,8 +39,10 @@ export function HeaderVoiceControl({ compact = false }: HeaderVoiceControlProps)
     enabled,
     runtimeState,
     isSupported,
+    micPermission,
     toggleEnabled,
     respondToInfraction,
+    cancel,
   } = useVoiceAssistant();
 
   const [currentScore, setCurrentScore] = useState(0);
@@ -140,26 +143,43 @@ export function HeaderVoiceControl({ compact = false }: HeaderVoiceControlProps)
 
   const orbState = resolveVoiceOrbState(runtimeState, hasRecentInfraction);
 
+  const isBusy = runtimeState === 'thinking' || runtimeState === 'speaking';
+  const isMicDenied = micPermission === 'denied';
+  const isDisabled = !isSupported || isMicDenied;
+
+  const handleClick = useCallback(() => {
+    if (isBusy && enabled) {
+      // Cancel current operation instead of toggling
+      cancel();
+    } else {
+      toggleEnabled();
+    }
+  }, [isBusy, enabled, cancel, toggleEnabled]);
+
+  const getTitle = () => {
+    if (isMicDenied) return 'Microphone blocked. Enable in browser settings.';
+    if (!isSupported) return 'Voice recognition unavailable in this browser';
+    if (isBusy && enabled) return 'Cancel current voice operation';
+    if (runtimeState === 'error') return 'Voice error — recovering...';
+    return enabled ? 'Disable voice assistant' : 'Enable voice assistant';
+  };
+
   return (
     <div className="flex items-center gap-2">
       <VoiceAuroraOrb state={orbState} compact={compact} />
 
       <button
         type="button"
-        onClick={toggleEnabled}
-        disabled={!isSupported}
+        onClick={handleClick}
+        disabled={isDisabled}
         className={`p-1.5 rounded-lg transition-colors ${
           enabled
-            ? 'bg-[#22c55e]/18 text-[#8cf5b0] hover:bg-[#22c55e]/24'
+            ? isBusy
+              ? 'bg-[#c79f4a]/18 text-[#c79f4a] hover:bg-[#c79f4a]/24'
+              : 'bg-[#22c55e]/18 text-[#8cf5b0] hover:bg-[#22c55e]/24'
             : 'bg-[#050500] text-zinc-300 hover:text-zinc-100'
-        } ${!isSupported ? 'opacity-50 cursor-not-allowed' : ''}`}
-        title={
-          isSupported
-            ? enabled
-              ? 'Disable voice assistant'
-              : 'Enable voice assistant'
-            : 'Voice recognition unavailable in this browser'
-        }
+        } ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+        title={getTitle()}
       >
         {enabled ? <Mic className="w-3.5 h-3.5" /> : <MicOff className="w-3.5 h-3.5" />}
       </button>

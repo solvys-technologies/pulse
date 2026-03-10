@@ -1,6 +1,9 @@
-export type VoiceOrbState = 'idle' | 'listening' | 'thinking' | 'speaking' | 'infraction';
+// [claude-code 2026-03-09] Added 'error' to VoiceRuntimeState/VoiceOrbState, added error orb color, added MicPermissionState
+export type VoiceOrbState = 'idle' | 'listening' | 'thinking' | 'speaking' | 'infraction' | 'error';
 
-export type VoiceRuntimeState = Exclude<VoiceOrbState, 'infraction'>;
+export type VoiceRuntimeState = 'idle' | 'listening' | 'thinking' | 'speaking' | 'error';
+
+export type MicPermissionState = 'granted' | 'denied' | 'prompt';
 
 export const VOICE_ORB_COLORS = {
   idle: '#c79f4a',
@@ -8,10 +11,12 @@ export const VOICE_ORB_COLORS = {
   thinking: '#c79f4a',
   speaking: '#d4c9a8',
   infraction: '#ef4444',
+  error: '#ef4444',
 } as const;
 
 export function resolveVoiceOrbState(runtimeState: VoiceRuntimeState, hasRecentInfraction: boolean): VoiceOrbState {
   if (hasRecentInfraction) return 'infraction';
+  if (runtimeState === 'error') return 'error';
   if (runtimeState === 'thinking') return 'thinking';
   if (runtimeState === 'speaking') return 'speaking';
   if (runtimeState === 'listening') return 'listening';

@@ -7,6 +7,7 @@
  */
 
 import type { OpenClawAgentRole } from './openclaw-service.js'
+import { buildACPProvenanceHeaders, type PulseACPChannel } from './openclaw-service.js'
 
 export type ContentPart =
   | { type: 'text'; text: string }
@@ -24,6 +25,8 @@ export interface OpenClawChatRequest {
   history?: OpenClawMessage[]
   agentOverride?: OpenClawAgentRole
   thinkHarder?: boolean
+  /** ACP channel for provenance tracking (defaults to 'pulse:analysis') */
+  channel?: PulseACPChannel
 }
 
 export interface OpenClawChatResponse {
@@ -70,6 +73,7 @@ Provide fundamental analysis and fair value assessments.`
 // Intent detection patterns
 const INTENT_PATTERNS: { pattern: RegExp; agent: OpenClawAgentRole; intent: string }[] = [
   // Harper/CAO triggers
+  { pattern: /\b(earnings.?review|er.?journal|earnings.?journal|post.?earnings.?review)\b/i, agent: 'harper-cao', intent: 'earnings-psych' },
   { pattern: /\b(mdb|morning.?daily.?brief|daily.?report|morning.?brief)/i, agent: 'harper-cao', intent: 'mdb-report' },
   { pattern: /\b(trade.?approval|approve|reject|consolidat)/i, agent: 'harper-cao', intent: 'approval' },
   { pattern: /\b(commandment|rule|13|trading.?rules)/i, agent: 'harper-cao', intent: 'rules' },
@@ -166,6 +170,10 @@ export function generateLocalResponse(
 
     case 'psych-eval':
       content = generatePsychEval()
+      break
+
+    case 'earnings-psych':
+      content = generateFundamentalsAnalysis(symbols, request.message)
       break
 
     case 'rules':
@@ -450,7 +458,7 @@ export async function handleOpenClawChat(request: OpenClawChatRequest): Promise<
 
   // Build messages array for the gateway
   const systemPrompt = AGENT_PROMPTS[agentInfo.agent]
-  const messages: { role: string; content: string }[] = [
+  const messages: { role: string; content: string | ContentPart[] }[] = [
     { role: 'system', content: systemPrompt }
   ]
 
@@ -478,7 +486,15 @@ export async function handleOpenClawChat(request: OpenClawChatRequest): Promise<
   )
   const apiKey = process.env.OPENCLAW_API_KEY ?? ''
 
-  console.log(`[OpenClaw] Calling gateway at ${gatewayUrl} with ${messages.length} messages`)
+  // [claude-code 2026-03-09] ACP provenance headers (OpenClaw 3.8+)
+  const acpHeaders = buildACPProvenanceHeaders({
+    channel: request.channel ?? 'pulse:analysis',
+    sessionId: request.conversationId,
+    agentRole: agentInfo.agent,
+    traceId: `pulse-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  })
+
+  console.log(`[OpenClaw] Calling gateway at ${gatewayUrl} with ${messages.length} messages (ACP: ${acpHeaders['X-ACP-Provenance']}, channel: ${acpHeaders['X-ACP-Origin-Channel']})`)
 
   try {
     const response = await fetch(`${gatewayUrl}/v1/chat/completions`, {
@@ -486,7 +502,8 @@ export async function handleOpenClawChat(request: OpenClawChatRequest): Promise<
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'X-OpenClaw-App': process.env.OPENCLAW_APP_NAME ?? 'Pulse-PIC-Gateway',
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        ...acpHeaders,
       },
       body: JSON.stringify({
         model: 'clawdbot:main',

@@ -13,7 +13,7 @@ import { HeaderVoiceControl } from '../voice/HeaderVoiceControl';
 import { GripVertical, Layers, ChevronDown, ChevronLeft, ChevronRight, Monitor, MessageCircle, Power } from 'lucide-react';
 import type { TradingPlatform } from '../TopStepXBrowser';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'econ' | 'narrative' | 'settings';
+type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'settings';
 
 const TAB_LABELS: Record<NavTab, string> = {
   executive: 'Dashboard',
@@ -24,6 +24,7 @@ const TAB_LABELS: Record<NavTab, string> = {
   notion: 'Research Department',
   econ: 'Economic Calendar',
   narrative: 'NarrativeFlow',
+  earnings: 'Trading Journal',
   settings: 'Settings',
 };
 

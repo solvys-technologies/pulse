@@ -4,12 +4,13 @@ import { useOpenClawChat } from './hooks/useOpenClawChat';
 import { usePersistentOpenClawConversation } from '../../hooks/usePersistentOpenClawConversation';
 import { toOpenClawAgentOverride } from '../../lib/openclawAgentRouting';
 
-export function useOpenClawRuntime(agentId: string) {
+// [claude-code 2026-03-09] Added surfaceId for per-surface session isolation
+export function useOpenClawRuntime(agentId: string, thinkHarder?: boolean, surfaceId?: string) {
   const { conversationId, setConversationId, clearConversationId } =
-    usePersistentOpenClawConversation(agentId);
+    usePersistentOpenClawConversation(agentId, surfaceId);
 
   const agentOverride = toOpenClawAgentOverride(agentId);
-  const chat = useOpenClawChat(conversationId, setConversationId, agentOverride);
+  const chat = useOpenClawChat(conversationId, setConversationId, agentOverride, thinkHarder);
 
   // useAISDKRuntime expects UseChatHelpers shape — add missing fields
   const chatHelpers = {
@@ -19,5 +20,5 @@ export function useOpenClawRuntime(agentId: string) {
   };
   const runtime = useAISDKRuntime(chatHelpers);
 
-  return { runtime, conversationId, clearConversationId, lastError: chat.lastError, clearError: chat.clearError };
+  return { runtime, conversationId, clearConversationId, lastError: chat.lastError, clearError: chat.clearError, lastRequestId: chat.lastRequestId ?? null };
 }

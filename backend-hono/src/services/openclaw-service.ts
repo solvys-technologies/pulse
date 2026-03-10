@@ -96,6 +96,47 @@ export interface OpenClawHeaders {
   'Content-Type': string
 }
 
+// ── ACP Provenance (OpenClaw 3.8+) ──────────────────────────────────
+// Modes: 'off' | 'meta' | 'meta+receipt'
+//   meta         — gateway knows where the message came from
+//   meta+receipt — agent also sees visible receipt with origin + trace
+export type ACPProvenanceMode = 'off' | 'meta' | 'meta+receipt'
+
+export interface ACPProvenanceHeaders {
+  'X-ACP-Provenance': ACPProvenanceMode
+  'X-ACP-Origin-App': string
+  'X-ACP-Origin-Channel': string
+  'X-ACP-Origin-Session'?: string
+  'X-ACP-Origin-Agent'?: string
+  'X-ACP-Trace-Id'?: string
+}
+
+// Pulse ACP channels — isolates conversation surfaces
+export type PulseACPChannel = 'pulse:analysis' | 'pulse:boardroom' | 'pulse:intervention' | 'pulse:voice'
+
+/**
+ * Build ACP provenance headers for OpenClaw 3.8+ gateway calls.
+ * Ensures the gateway knows who sent the message and from which surface.
+ */
+export const buildACPProvenanceHeaders = (options: {
+  channel: PulseACPChannel
+  sessionId?: string
+  agentRole?: OpenClawAgentRole
+  traceId?: string
+  mode?: ACPProvenanceMode
+}): ACPProvenanceHeaders => {
+  const mode = options.mode ?? (process.env.OPENCLAW_ACP_PROVENANCE as ACPProvenanceMode) ?? 'meta+receipt'
+
+  return {
+    'X-ACP-Provenance': mode,
+    'X-ACP-Origin-App': process.env.OPENCLAW_APP_NAME ?? 'Pulse-PIC-Gateway',
+    'X-ACP-Origin-Channel': options.channel,
+    ...(options.sessionId && { 'X-ACP-Origin-Session': options.sessionId }),
+    ...(options.agentRole && { 'X-ACP-Origin-Agent': options.agentRole }),
+    ...(options.traceId && { 'X-ACP-Trace-Id': options.traceId }),
+  }
+}
+
 // Agent definitions following P.I.C. hierarchy
 const OPENCLAW_AGENTS: Record<OpenClawAgentRole, Omit<OpenClawAgent, 'id' | 'lastCheckin' | 'status'>> = {
   'harper-cao': {
@@ -130,38 +171,51 @@ const OPENCLAW_AGENTS: Record<OpenClawAgentRole, Omit<OpenClawAgent, 'id' | 'las
   }
 }
 
-// Agent-to-Model mapping for OpenClaw tasks
+// [claude-code 2026-03-09] All agents Groq-powered via OpenClaw gateway — optimal model per task
+// Scout (30K TPM, 500K TPD) = fast/realtime, Maverick (128E MoE, 500K TPD) = research,
+// Kimi K2 (10K TPM, 300K TPD) = reasoning/CAO, Qwen3 (reasoning mode) = backup
 export const OPENCLAW_TASK_MODEL_MAP: Record<string, string> = {
-  // CAO uses reasoning-capable models for executive decisions
-  'harper-cao': 'openrouter-opus',
-  'cao-approval': 'openrouter-opus',
-  'cao-consolidation': 'openrouter-sonnet',
+  // CAO uses Kimi K2 for executive reasoning
+  'harper-cao': 'groq/moonshotai/kimi-k2-instruct',
+  'cao-approval': 'groq/moonshotai/kimi-k2-instruct',
+  'cao-consolidation': 'groq/meta-llama/llama-4-maverick-17b-128e-instruct',
 
-  // PMA agents use fast models for prediction market analysis
-  'pma-1': 'openrouter-grok',
-  'pma-2': 'openrouter-grok',
-  'prediction-market': 'openrouter-grok',
+  // PMA agents use Scout for fast prediction market analysis
+  'pma-1': 'groq/meta-llama/llama-4-scout-17b-16e-instruct',
+  'pma-2': 'groq/meta-llama/llama-4-scout-17b-16e-instruct',
+  'prediction-market': 'groq/meta-llama/llama-4-scout-17b-16e-instruct',
 
-  // Futures desk uses technical analysis models
-  'futures-desk': 'openrouter-llama',
-  'fa-rippers': 'openrouter-llama',
-  'economic-analysis': 'openrouter-grok',
+  // Futures desk uses Scout for fast technical analysis
+  'futures-desk': 'groq/meta-llama/llama-4-scout-17b-16e-instruct',
+  'fa-rippers': 'groq/meta-llama/llama-4-scout-17b-16e-instruct',
+  'economic-analysis': 'groq/meta-llama/llama-4-scout-17b-16e-instruct',
 
-  // Fundamentals desk uses research-grade models
-  'fundamentals-desk': 'openrouter-opus',
-  'earnings-analysis': 'openrouter-opus',
-  'tech-mega-cap': 'openrouter-sonnet'
+  // Fundamentals desk uses Maverick 128E for deep research
+  'fundamentals-desk': 'groq/meta-llama/llama-4-maverick-17b-128e-instruct',
+  'earnings-analysis': 'groq/meta-llama/llama-4-maverick-17b-128e-instruct',
+  'tech-mega-cap': 'groq/meta-llama/llama-4-maverick-17b-128e-instruct'
 }
 
 /**
- * Build headers required by OpenClaw API
+ * Build headers required by OpenClaw API (includes ACP provenance by default)
  */
-export const buildOpenClawHeaders = (config?: { appName?: string }): Partial<OpenClawHeaders> => {
+export const buildOpenClawHeaders = (config?: {
+  appName?: string
+  channel?: PulseACPChannel
+  sessionId?: string
+  agentRole?: OpenClawAgentRole
+}): Record<string, string> => {
   const appName = config?.appName ?? process.env.OPENCLAW_APP_NAME ?? 'Pulse-PIC-Gateway'
+  const acpHeaders = buildACPProvenanceHeaders({
+    channel: config?.channel ?? 'pulse:analysis',
+    sessionId: config?.sessionId,
+    agentRole: config?.agentRole,
+  })
 
   return {
     'X-OpenClaw-App': appName,
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    ...acpHeaders,
   }
 }
 
@@ -190,8 +244,8 @@ export const createOpenClawClient = (modelId?: string) => {
     headers: headers as Record<string, string>
   })
 
-  // Default model for OpenClaw is claude-opus for CAO-level reasoning
-  return openclaw(modelId ?? 'anthropic/claude-opus-4')
+  // Default model: Scout (highest throughput — 30K TPM, 500K TPD)
+  return openclaw(modelId ?? 'groq/meta-llama/llama-4-scout-17b-16e-instruct')
 }
 
 /**
@@ -246,12 +300,12 @@ export const calculateOpenClawCost = (
   const outputTokens = usage.outputTokens ?? 0
   const totalTokens = inputTokens + outputTokens
 
-  // OpenClaw pricing (via OpenRouter passthrough)
+  // OpenClaw pricing (Groq free tier — $0)
   const pricing: Record<string, { input: number; output: number }> = {
-    'anthropic/claude-opus-4': { input: 0.015, output: 0.075 },
-    'anthropic/claude-sonnet-4': { input: 0.003, output: 0.015 },
-    'x-ai/grok-4': { input: 0.003, output: 0.015 },
-    'meta-llama/llama-3.3-70b-instruct': { input: 0.00012, output: 0.0003 }
+    'groq/meta-llama/llama-4-scout-17b-16e-instruct': { input: 0, output: 0 },
+    'groq/meta-llama/llama-4-maverick-17b-128e-instruct': { input: 0, output: 0 },
+    'groq/moonshotai/kimi-k2-instruct': { input: 0, output: 0 },
+    'groq/qwen/qwen3-32b': { input: 0, output: 0 }
   }
 
   const modelPricing = pricing[model] ?? { input: 0.003, output: 0.015 }
@@ -348,11 +402,11 @@ export const validateTradeProposal = (proposal: Partial<OpenClawTradeProposal>):
  * OpenClaw model IDs used by P.I.C.
  */
 export const OPENCLAW_MODELS = {
-  // Primary models via OpenClaw
-  CAO_REASONING: 'anthropic/claude-opus-4',
-  FAST_ANALYSIS: 'meta-llama/llama-3.3-70b-instruct',
-  NEWS_REALTIME: 'x-ai/grok-4',
-  RESEARCH: 'anthropic/claude-sonnet-4'
+  // [claude-code 2026-03-09] Task-optimized Groq models via OpenClaw gateway (free tier)
+  CAO_REASONING: 'groq/moonshotai/kimi-k2-instruct',
+  FAST_ANALYSIS: 'groq/meta-llama/llama-4-scout-17b-16e-instruct',
+  NEWS_REALTIME: 'groq/meta-llama/llama-4-scout-17b-16e-instruct',
+  RESEARCH: 'groq/meta-llama/llama-4-maverick-17b-128e-instruct'
 } as const
 
 export type OpenClawModelId = (typeof OPENCLAW_MODELS)[keyof typeof OPENCLAW_MODELS]

@@ -164,6 +164,68 @@ export function getCurrentBriefType(): BriefType {
 let _briefCache: { items: MDBBriefItem[]; briefType: BriefType; fetchedAt: number } | null = null;
 const BRIEF_CACHE_TTL_MS = 5 * 60_000;
 
+/** Bust the brief cache so the next fetchMDBBrief call hits Notion fresh */
+export function bustBriefCache(): void {
+  _briefCache = null;
+}
+
+/**
+ * Archive existing MDB pages for today and write a single new one.
+ * Keeps HARPER_MESSAGES_DB to exactly one active MDB per briefType.
+ */
+export async function writeMDBReportToNotion(
+  content: string,
+  briefType: BriefType
+): Promise<{ id: string; url: string } | null> {
+  const key = getNotionKey();
+  if (!key) return null;
+
+  const categoryMap: Record<BriefType, string> = { MDB: 'MDB', ADB: 'ADB', PMDB: 'PMDB' };
+  const category = categoryMap[briefType];
+
+  // Archive all existing pages for this brief type
+  try {
+    const existing = await notionQuery(HARPER_MESSAGES_DB, {
+      filter: {
+        property: 'Source',
+        select: { equals: 'Harper-Notion' },
+      },
+      pageSize: 50,
+    });
+    const toArchive = existing.filter((p: any) => {
+      const cat = getPropText(p, 'Category').toUpperCase();
+      return cat === category || cat.startsWith(category);
+    });
+    await Promise.all(
+      toArchive.map((p: any) =>
+        fetch(`${NOTION_API}/pages/${p.id}`, {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${key}`,
+            'Notion-Version': NOTION_VERSION,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ archived: true }),
+        }).catch(() => null)
+      )
+    );
+  } catch (err) {
+    console.warn('[Notion] writeMDBReportToNotion: archive step failed', err);
+  }
+
+  // Create the single new report page
+  const today = new Date().toISOString().slice(0, 10);
+  const page = await notionCreatePage(HARPER_MESSAGES_DB, {
+    Name: { title: [{ text: { content: `${category} — ${today}` } }] },
+    Message: { rich_text: [{ text: { content: content.slice(0, 2000) } }] },
+    Category: { select: { name: category } },
+    Source: { select: { name: 'Harper-Notion' } },
+  });
+
+  bustBriefCache();
+  return page;
+}
+
 export async function fetchMDBBrief(): Promise<MDBBriefItem[]> {
   const key = getNotionKey();
   if (!key) {

@@ -10,11 +10,13 @@ import type { ChatMessage } from '../types';
 export interface UseChatSessionOptions {
   agentId: string;
   activeSkill?: string | null;
+  surfaceId?: string;
 }
 
-export function useChatSession({ agentId, activeSkill }: UseChatSessionOptions) {
+// [claude-code 2026-03-09] Added surfaceId for per-surface session isolation
+export function useChatSession({ agentId, activeSkill, surfaceId }: UseChatSessionOptions) {
   const { conversationId, setConversationId, clearConversationId } =
-    usePersistentOpenClawConversation(agentId);
+    usePersistentOpenClawConversation(agentId, surfaceId);
 
   const agentOverride = toOpenClawAgentOverride(agentId);
 
@@ -28,6 +30,7 @@ export function useChatSession({ agentId, activeSkill }: UseChatSessionOptions) 
     stop: rawStop,
     lastError,
     clearError,
+    lastRequestId,
   } = useOpenClawChat(conversationId, setConversationId, agentOverride);
 
   const [lastSentMessage, setLastSentMessage] = useState('');
@@ -111,5 +114,6 @@ export function useChatSession({ agentId, activeSkill }: UseChatSessionOptions) 
     conversationId,
     status,
     lastSentMessage,
+    lastRequestId,
   };
 }

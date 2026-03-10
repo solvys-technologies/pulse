@@ -7,6 +7,7 @@
 
 import ApiClient from "./apiClient";
 import { decodeHtmlEntities } from './html-entities';
+import { McpService } from './mcp-service';
 
 // Type definitions (update these to match your Hono backend response types)
 export interface Account {
@@ -843,6 +844,123 @@ export class NotionService {
       return [];
     }
   }
+
+  async generateMdbReport(): Promise<{ content: string; briefType: string; generatedAt: string; notionUrl?: string | null }> {
+    try {
+      return await this.client.post<{ content: string; briefType: string; generatedAt: string; notionUrl?: string | null }>('/api/notion/mdb-report/generate', {});
+    } catch {
+      return { content: '', briefType: 'MDB', generatedAt: new Date().toISOString() };
+    }
+  }
+}
+
+// ER Scoring Service (psych scoring around earnings events)
+import type {
+  EarningsReview,
+  EarningsHistoryFilter,
+  EarningsHistoryPage,
+  EarningsReviewCreate,
+  EarningsReviewUpdate,
+  EarningsContextRequest,
+  EarningsContextResponse,
+} from '../types/earnings-history';
+
+export class ERScoringService {
+  constructor(private client: ApiClient) {}
+
+  async list(filter?: EarningsHistoryFilter): Promise<EarningsHistoryPage> {
+    try {
+      const query = new URLSearchParams();
+      if (filter?.symbol) query.append('symbol', filter.symbol);
+      if (filter?.setupType) query.append('setupType', filter.setupType);
+      if (filter?.dateFrom) query.append('dateFrom', filter.dateFrom);
+      if (filter?.dateTo) query.append('dateTo', filter.dateTo);
+      if (filter?.grade) query.append('grade', filter.grade);
+      if (filter?.direction) query.append('direction', filter.direction);
+      if (filter?.limit) query.append('limit', filter.limit.toString());
+      if (filter?.offset) query.append('offset', filter.offset.toString());
+      const suffix = query.toString() ? `?${query.toString()}` : '';
+      return await this.client.get<EarningsHistoryPage>(`/api/er-scoring${suffix}`);
+    } catch {
+      return { items: [], total: 0, hasMore: false };
+    }
+  }
+
+  async getById(id: string): Promise<EarningsReview | null> {
+    try {
+      return await this.client.get<EarningsReview>(`/api/er-scoring/${id}`);
+    } catch {
+      return null;
+    }
+  }
+
+  async create(data: EarningsReviewCreate): Promise<EarningsReview> {
+    return this.client.post<EarningsReview>('/api/er-scoring', data);
+  }
+
+  async update(id: string, data: EarningsReviewUpdate): Promise<EarningsReview | null> {
+    try {
+      return await this.client.patch<EarningsReview>(`/api/er-scoring/${id}`, data);
+    } catch {
+      return null;
+    }
+  }
+
+  async deleteReview(id: string): Promise<boolean> {
+    try {
+      await this.client.delete(`/api/er-scoring/${id}`);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async agentRetrieve(req: EarningsContextRequest): Promise<EarningsContextResponse> {
+    return this.client.post<EarningsContextResponse>('/api/er-scoring/agent-retrieve', req);
+  }
+
+  async setup(): Promise<{ success: boolean; dbId: string }> {
+    return this.client.post('/api/er-scoring/setup', {});
+  }
+}
+
+// Market Data Service
+import type {
+  StockQuote,
+  VixData,
+  GammaExposure,
+  OptionsWall,
+  OptionsFlow,
+  MarketContext,
+} from '../types/market-data';
+
+export class MarketDataService {
+  constructor(private client: ApiClient) {}
+
+  async getQuote(symbol: string): Promise<StockQuote> {
+    return this.client.get<StockQuote>(`/api/market-data/quote/${encodeURIComponent(symbol)}`);
+  }
+
+  async getVix(): Promise<VixData> {
+    return this.client.get<VixData>('/api/market-data/vix');
+  }
+
+  async getGex(symbol: string): Promise<GammaExposure> {
+    return this.client.get<GammaExposure>(`/api/market-data/gex/${encodeURIComponent(symbol)}`);
+  }
+
+  async getWalls(symbol: string): Promise<OptionsWall> {
+    return this.client.get<OptionsWall>(`/api/market-data/walls/${encodeURIComponent(symbol)}`);
+  }
+
+  async getFlow(symbol: string, limit?: number): Promise<OptionsFlow> {
+    const suffix = limit ? `?limit=${limit}` : '';
+    return this.client.get<OptionsFlow>(`/api/market-data/flow/${encodeURIComponent(symbol)}${suffix}`);
+  }
+
+  async getContext(symbol: string): Promise<MarketContext> {
+    return this.client.get<MarketContext>(`/api/market-data/context/${encodeURIComponent(symbol)}`);
+  }
 }
 
 // Narrative Scoring Service
@@ -941,6 +1059,9 @@ export interface BackendClient {
   narrative: NarrativeService;
   notion: NotionService;
   econCalendar: EconCalendarService;
+  erScoring: ERScoringService;
+  marketData: MarketDataService;
+  mcp: McpService;
 }
 
 // Create backend client from API client
@@ -963,5 +1084,8 @@ export function createBackendClient(client: ApiClient): BackendClient {
     narrative: new NarrativeService(client),
     notion: new NotionService(client),
     econCalendar: new EconCalendarService(client),
+    erScoring: new ERScoringService(client),
+    marketData: new MarketDataService(client),
+    mcp: new McpService(client),
   };
 }

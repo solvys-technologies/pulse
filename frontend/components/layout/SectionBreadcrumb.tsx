@@ -1,8 +1,8 @@
 import { ChevronLeft, ChevronRight, ChevronRight as Separator } from 'lucide-react';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'econ' | 'narrative' | 'settings';
+type NavTab = string;
 
-const TAB_META: Record<NavTab, { label: string; parent?: string }> = {
+const TAB_META: Record<string, { label: string; parent?: string }> = {
   executive: { label: 'Dashboard' },
   feed: { label: 'Dashboard' }, // feed removed from sidebar; fallback for history
   analysis: { label: 'Chat' },
@@ -11,6 +11,7 @@ const TAB_META: Record<NavTab, { label: string; parent?: string }> = {
   notion: { label: 'Research Department' },
   econ: { label: 'Economic Calendar' },
   narrative: { label: 'NarrativeFlow' },
+  earnings: { label: 'Trading Journal' },
   settings: { label: 'Settings' },
 };
 

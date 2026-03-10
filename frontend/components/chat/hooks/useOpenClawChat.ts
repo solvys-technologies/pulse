@@ -3,18 +3,33 @@
  * Simple chat hook for local OpenClaw processing
  */
 
-import { useCallback, useState } from 'react';
+// [claude-code 2026-03-09] Added conversation history hydration on remount
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
+import type { UIMessage } from 'ai';
 import { API_BASE_URL } from '../constants.js';
+
+/** Convert backend ChatMessage → UIMessage for useChat hydration */
+function backendToUIMessage(msg: { id: string; role: string; content: string; createdAt?: string }): UIMessage {
+  return {
+    id: msg.id,
+    role: msg.role as 'user' | 'assistant' | 'system',
+    parts: [{ type: 'text' as const, text: msg.content }],
+  };
+}
 
 export function useOpenClawChat(
   conversationId: string | undefined,
   setConversationId: (id: string) => void,
-  agentOverride?: string
+  agentOverride?: string,
+  thinkHarder?: boolean
 ) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
+  // [claude-code 2026-03-10] Track requestId from X-Request-Id header for cognition stream
+  const [lastRequestId, setLastRequestId] = useState<string | null>(null);
+  const hydratedRef = useRef<string | undefined>(undefined);
 
   const fetchFn = useCallback(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
@@ -62,6 +77,8 @@ export function useOpenClawChat(
       setLastError(null);
       const convId = response.headers.get('X-Conversation-Id');
       if (convId) setConversationId(convId);
+      const reqId = response.headers.get('X-Request-Id');
+      if (reqId) setLastRequestId(reqId);
 
       return response;
     } catch (error) {
@@ -114,6 +131,12 @@ export function useOpenClawChat(
           }),
           ...(conversationId && { conversationId }),
           ...(agentOverride && { agentOverride }),
+          ...(thinkHarder && { thinkHarder: true }),
+          // Active MCP connector IDs — backend uses these to scope available tools
+          mcpServers: (() => {
+            try { return JSON.parse(localStorage.getItem('pulse_mcp_active_connectors') ?? '[]'); }
+            catch { return []; }
+          })(),
         },
       }),
     }),
@@ -132,6 +155,37 @@ export function useOpenClawChat(
     },
   });
 
+  // [claude-code 2026-03-09] Hydrate messages from backend when remounting with persisted conversationId
+  useEffect(() => {
+    if (!conversationId || hydratedRef.current === conversationId) return;
+    // Only hydrate if the thread is currently empty (remount scenario)
+    if (useChatMessages.length > 0) {
+      hydratedRef.current = conversationId;
+      return;
+    }
+
+    let cancelled = false;
+    hydratedRef.current = conversationId;
+
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/ai/conversations/${conversationId}`);
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        const msgs: UIMessage[] = (data.messages ?? [])
+          .filter((m: any) => m.role === 'user' || m.role === 'assistant')
+          .map(backendToUIMessage);
+        if (!cancelled && msgs.length > 0) {
+          setUseChatMessages(msgs);
+        }
+      } catch {
+        // Backend unreachable — start with fresh thread, no error shown
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [conversationId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   return {
     messages: useChatMessages,
     sendMessage,
@@ -147,5 +201,6 @@ export function useOpenClawChat(
     addToolApprovalResponse,
     lastError,
     clearError: () => setLastError(null),
+    lastRequestId,
   };
 }

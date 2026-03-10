@@ -19,7 +19,7 @@ export function PulseFloatingChat({ visible, onExpandToAnalysis }: PulseFloating
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { messages, send, stop, isLoading, latestThinkingContent } =
-    useChatSession({ agentId: activeAgent?.id ?? 'default' });
+    useChatSession({ agentId: activeAgent?.id ?? 'default', surfaceId: 'floating' });
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

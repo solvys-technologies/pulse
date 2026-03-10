@@ -4,6 +4,7 @@
  * Day 17 - Phase 5 Integration
  */
 
+// [claude-code 2026-03-10] Integrated twitter-cli (FJ emoji-filtered) as secondary social feed source
 import type { FeedItem, FeedResponse, FeedFilters, NewsSource, UrgencyLevel, SentimentDirection, MacroLevel } from '../../types/riskflow.js';
 import { createXApiService, type ParsedTweetNews } from '../x-api-service.js';
 import { getWatchlist, matchesWatchlist } from './watchlist-service.js';
@@ -15,6 +16,7 @@ import { fetchEconomicFeed } from './economic-feed.js';
 import { fetchPolymarket } from '../polymarket-service.js';
 import type { PolymarketMarket } from '../../types/polymarket.js';
 import type { NewsSource as AnalysisNewsSource } from '../../types/news-analysis.js';
+import { isTwitterCliInstalled, pollTwitterForEconNews, getWarmCacheItems } from '../twitter-cli/index.js';
 
 const MAX_FEED_ITEMS = 50;
 const isDev = process.env.NODE_ENV !== 'production';
@@ -81,6 +83,7 @@ function mapToAnalysisSource(source: NewsSource): AnalysisNewsSource {
     TrendSpider: 'Custom',
     Barchart: 'Custom',
     Polymarket: 'Custom',
+    TwitterCli: 'FinancialJuice', // FJ emoji-filtered tweets treated as FJ quality
     Custom: 'Custom',
   };
   return sourceMap[source] ?? 'Custom';
@@ -216,21 +219,24 @@ function applyFilters(items: FeedItem[], filters: FeedFilters): FeedItem[] {
 async function fetchFreshFeed(): Promise<FeedItem[]> {
   try {
     const xApiService = createXApiService();
-    const [tweets, econItems, polyResp] = await Promise.all([
+    const [tweets, econItems, polyResp, twitterCliItems] = await Promise.all([
       xApiService.fetchLatestTweets(),
       fetchEconomicFeed(),
       fetchPolymarket().catch(() => ({ markets: [], fetchedAt: new Date().toISOString() })),
+      isTwitterCliInstalled().then(ok => ok ? pollTwitterForEconNews() : []).catch(() => []),
     ]);
 
     const tweetItems = tweets.map(tweetToFeedItem);
     const polyItems = polyResp.markets.map(polymarketToFeedItem);
+    // Include warm-cached Critical/High posts seeded at startup
+    const warmItems = getWarmCacheItems();
 
     // Merge and dedupe by id
-    const merged = [...econItems, ...polyItems, ...tweetItems].filter(
+    const merged = [...econItems, ...polyItems, ...tweetItems, ...twitterCliItems, ...warmItems].filter(
       (item, idx, arr) => idx === arr.findIndex(i => i.id === item.id)
     );
 
-    console.log(`[RiskFlow] fetchFreshFeed: Merged ${merged.length} items (${tweetItems.length} tweets, ${econItems.length} economic, ${polyItems.length} polymarket)`);
+    console.log(`[RiskFlow] fetchFreshFeed: Merged ${merged.length} items (${tweetItems.length} xapi, ${econItems.length} econ, ${polyItems.length} poly, ${twitterCliItems.length} twcli)`);
     return merged;
   } catch (error) {
     console.error('[RiskFlow] X API fetch error:', error);

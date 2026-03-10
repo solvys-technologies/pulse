@@ -1,12 +1,13 @@
+// [claude-code 2026-03-09] Added FrontendIVConfig type, computeIVScore now accepts optional config override
 /**
  * IV Scoring Engine for PULSE
- * 
+ *
  * Computes an Implied Volatility Score (0-100) based on:
  * - Current VIX vs 30-day average
  * - VIX term structure (contango/backwardation)
  * - Put/Call ratio trends
  * - Historical IV percentile
- * 
+ *
  * Follows the "22 VIX Fixer" playbook for trade sizing recommendations.
  */
 
@@ -58,18 +59,35 @@ export interface IVScoreResult {
   legacyScore: number;
 }
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+// ─── Config ──────────────────────────────────────────────────────────────────
+
+export interface FrontendIVConfig {
+  weights: {
+    vixVsAvg: number;
+    termStructure: number;
+    putCallSignal: number;
+    ivPercentile: number;
+  };
+  vixThresholds: {
+    low: number;
+    normal: number;
+    elevated: number;
+    crisis: number;
+  };
+}
+
+// ─── Constants (defaults) ────────────────────────────────────────────────────
 
 /** Component weights (must sum to 1.0) */
-const WEIGHTS = {
+const DEFAULT_WEIGHTS = {
   vixVsAvg: 0.35,
   termStructure: 0.20,
   putCallSignal: 0.15,
   ivPercentile: 0.30,
 } as const;
 
-/** VIX thresholds for the 22 VIX Fixer playbook */
-const VIX_THRESHOLDS = {
+/** VIX thresholds for the 22 VIX Fixer playbook — OPEN ITEM: awaiting Chief input on final values */
+const DEFAULT_VIX_THRESHOLDS = {
   low: 14,
   normal: 20,
   elevated: 28,
@@ -186,7 +204,7 @@ function getSizingRecommendation(score: number, vix: number): SizingRecommendati
 
 // ─── Main Scoring Function ───────────────────────────────────────────────────
 
-export function computeIVScore(input: IVScoringInput): IVScoreResult {
+export function computeIVScore(input: IVScoringInput, config?: Partial<FrontendIVConfig>): IVScoreResult {
   const {
     vixCurrent,
     vix30dAvg = 18,
@@ -195,6 +213,8 @@ export function computeIVScore(input: IVScoringInput): IVScoreResult {
     putCallAvg = 0.82,
     ivPercentile,
   } = input;
+
+  const weights = { ...DEFAULT_WEIGHTS, ...config?.weights };
 
   const resolvedPercentile = ivPercentile ?? deriveIvPercentile(vixCurrent);
 
@@ -206,10 +226,10 @@ export function computeIVScore(input: IVScoringInput): IVScoreResult {
   };
 
   const score = Math.round(
-    components.vixVsAvg * WEIGHTS.vixVsAvg +
-    components.termStructure * WEIGHTS.termStructure +
-    components.putCallSignal * WEIGHTS.putCallSignal +
-    components.ivPercentile * WEIGHTS.ivPercentile
+    components.vixVsAvg * weights.vixVsAvg +
+    components.termStructure * weights.termStructure +
+    components.putCallSignal * weights.putCallSignal +
+    components.ivPercentile * weights.ivPercentile
   );
 
   const clampedScore = Math.max(0, Math.min(100, score));
@@ -228,6 +248,6 @@ export function computeIVScore(input: IVScoringInput): IVScoreResult {
  * Quick score from just a VIX level (convenience function).
  * Uses sensible defaults for all other inputs.
  */
-export function quickIVScore(vix: number): IVScoreResult {
-  return computeIVScore({ vixCurrent: vix });
+export function quickIVScore(vix: number, config?: Partial<FrontendIVConfig>): IVScoreResult {
+  return computeIVScore({ vixCurrent: vix }, config);
 }

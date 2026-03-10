@@ -1,10 +1,13 @@
 // [claude-code 2026-03-05] Add filter tabs: All, High, Medium, Proposals
+// [claude-code 2026-03-10] Dropdown filters (Priority + Source), X/FJ filter, X CLI status dot.
 import { useEffect, useState, useMemo } from 'react';
 import { Bell, BellOff } from 'lucide-react';
 import { useRiskFlow } from '../../contexts/RiskFlowContext';
 import { useSettings } from '../../contexts/SettingsContext';
+import { useSourceStatus } from '../../hooks/useSourceStatus';
 
-type FilterMode = 'all' | 'high' | 'medium' | 'proposals';
+type PriorityFilter = 'all' | 'high' | 'medium';
+type SourceFilter = 'all' | 'notion' | 'twitter';
 
 function severityLabel(severity: 'high' | 'medium' | 'low'): string {
   if (severity === 'high') return 'HIGH';
@@ -82,8 +85,11 @@ function cycleColor(cycle: FlowCycle): string {
 export function NewsSection() {
   const { alerts, markAllSeen, isSeen, notionPollStatus } = useRiskFlow();
   const { selectedSymbol } = useSettings();
+  const sourceStatus = useSourceStatus();
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-  const [filter, setFilter] = useState<FilterMode>('all');
+  const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('all');
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
+  const [showProposals, setShowProposals] = useState(false);
 
   useEffect(() => {
     markAllSeen(alerts.slice(0, 50).map((a) => a.id));
@@ -107,20 +113,26 @@ export function NewsSection() {
   const proposalCount = alerts.filter((a) => a.source === 'notion-trade-idea').length;
 
   const items = useMemo(() => {
-    const base = alerts.slice(0, 50);
-    if (filter === 'high') return base.filter((a) => a.severity === 'high');
-    if (filter === 'medium') return base.filter((a) => a.severity === 'medium');
-    if (filter === 'proposals') return base.filter((a) => a.source === 'notion-trade-idea');
+    if (showProposals) return alerts.slice(0, 50).filter((a) => a.source === 'notion-trade-idea');
+    let base = alerts.slice(0, 50);
+    if (priorityFilter === 'high') base = base.filter((a) => a.severity === 'high');
+    else if (priorityFilter === 'medium') base = base.filter((a) => a.severity === 'medium');
+    if (sourceFilter === 'notion') base = base.filter((a) => a.source === 'notion-trade-idea' || (a.source as string).toLowerCase().includes('notion'));
+    else if (sourceFilter === 'twitter') base = base.filter((a) => (a.source as string) === 'TwitterCli' || (a.source as string) === 'FinancialJuice' || (a.source as string).toLowerCase().includes('twitter'));
     return base;
-  }, [alerts, filter]);
+  }, [alerts, priorityFilter, sourceFilter, showProposals]);
 
   return (
     <div className="h-full overflow-y-auto px-5 pt-4 pb-4">
       <div className="flex items-center justify-between mb-2 mt-1">
-        <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.12em]">
-          <span className={`w-1.5 h-1.5 rounded-full ${notionPollStatus?.running ? 'bg-emerald-400' : 'bg-zinc-600'}`} />
-          <span className={notionPollStatus?.running ? 'text-emerald-400/90' : 'text-zinc-500'}>
-            {notionPollStatus?.running ? 'Notion connected' : 'Notion disconnected'}
+        <div className="flex items-center gap-3 text-[10px] uppercase tracking-[0.12em]">
+          <span className="flex items-center gap-1.5">
+            <span className={`w-1.5 h-1.5 rounded-full ${notionPollStatus?.running ? 'bg-emerald-400' : 'bg-zinc-600'}`} />
+            <span className={notionPollStatus?.running ? 'text-emerald-400/90' : 'text-zinc-500'}>NTN</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className={`w-1.5 h-1.5 rounded-full ${sourceStatus.twitterCli ? 'bg-emerald-400' : 'bg-zinc-600'}`} />
+            <span className={sourceStatus.twitterCli ? 'text-emerald-400/90' : 'text-zinc-500'}>X CLI</span>
           </span>
         </div>
         <button
@@ -136,28 +148,36 @@ export function NewsSection() {
         </button>
       </div>
 
-      {/* Filter tabs */}
-      <div className="flex items-center gap-1.5 mb-3">
-        {([
-          ['all', `All (${alerts.length})`],
-          ['high', `High (${highCount})`],
-          ['medium', `Med (${medCount})`],
-          ['proposals', `Proposals (${proposalCount})`],
-        ] as const).map(([key, label]) => (
-          <button
-            key={key}
-            onClick={() => setFilter(key as FilterMode)}
-            className={`text-[10px] px-2.5 py-1 rounded transition-colors ${
-              filter === key
-                ? key === 'proposals'
-                  ? 'bg-[#c79f4a]/20 text-[#c79f4a] border border-[#c79f4a]/40'
-                  : 'bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/40'
-                : 'text-zinc-500 hover:text-[#D4AF37] border border-transparent'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+      {/* Filter row: Priority dropdown + Source dropdown + Proposals tab */}
+      <div className="flex items-center gap-2 mb-3">
+        <select
+          value={showProposals ? 'all' : priorityFilter}
+          onChange={(e) => { setShowProposals(false); setPriorityFilter(e.target.value as PriorityFilter); }}
+          className="text-[10px] px-2 py-1 rounded bg-[#050500] border border-zinc-800 text-zinc-400 focus:outline-none focus:border-[#D4AF37]/40 cursor-pointer"
+        >
+          <option value="all">Priority: All ({alerts.length})</option>
+          <option value="high">High ({highCount})</option>
+          <option value="medium">Medium ({medCount})</option>
+        </select>
+        <select
+          value={showProposals ? 'all' : sourceFilter}
+          onChange={(e) => { setShowProposals(false); setSourceFilter(e.target.value as SourceFilter); }}
+          className="text-[10px] px-2 py-1 rounded bg-[#050500] border border-zinc-800 text-zinc-400 focus:outline-none focus:border-[#D4AF37]/40 cursor-pointer"
+        >
+          <option value="all">Source: All</option>
+          <option value="notion">Notion</option>
+          <option value="twitter">X / FJ</option>
+        </select>
+        <button
+          onClick={() => setShowProposals((v) => !v)}
+          className={`text-[10px] px-2.5 py-1 rounded transition-colors border ${
+            showProposals
+              ? 'bg-[#c79f4a]/20 text-[#c79f4a] border-[#c79f4a]/40'
+              : 'text-zinc-500 hover:text-[#D4AF37] border-transparent'
+          }`}
+        >
+          Proposals{proposalCount > 0 ? ` (${proposalCount})` : ''}
+        </button>
       </div>
 
       <div className="space-y-3">
