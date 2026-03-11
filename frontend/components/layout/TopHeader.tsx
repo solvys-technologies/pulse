@@ -10,6 +10,7 @@ import { isElectron } from '../../lib/platform';
 import { getToolbarOrder, setToolbarOrder, type ToolbarItemId } from '../../lib/layoutOrderStorage';
 import { HeaderVoiceControl } from '../voice/HeaderVoiceControl';
 import { GripVertical, Layers, ChevronDown, ChevronLeft, ChevronRight, Monitor, MessageCircle, Power } from 'lucide-react';
+import { WhatsNewButton } from '../onboarding/FirstTimeTour';
 import type { IVScoreResponse } from '../../types/market-data';
 import type { TradingPlatform } from '../TopStepXBrowser';
 
@@ -234,6 +235,7 @@ export function TopHeader({
       
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-3">
+          <WhatsNewButton />
           {psychAssistHeadingWidget}
           <div className="bg-[var(--pulse-bg)] border border-zinc-800 rounded-lg px-2.5 h-8 flex items-center">
             <div className="flex items-center gap-1.5">

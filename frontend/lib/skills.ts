@@ -1,5 +1,5 @@
 // [claude-code 2026-03-11] T5: added /stop command to skills list
-import { Globe, ShieldCheck, FileBarChart, GitBranch, Brain, Wrench, Activity, StopCircle, type LucideIcon } from 'lucide-react';
+import { Globe, ShieldCheck, FileBarChart, GitBranch, Brain, Wrench, Activity, StopCircle, RefreshCw, type LucideIcon } from 'lucide-react';
 
 export interface SkillDef {
   id: string;
@@ -19,6 +19,7 @@ export const SKILLS: readonly SkillDef[] = [
   { id: 'maintenance', label: 'Maintenance', icon: Wrench, color: '#9CA3AF', description: 'Self-update app and changelog', keywords: ['maintenance', 'update', 'changelog', 'fix'] },
   { id: 'quick_pulse', label: 'QuickPulse', icon: Activity, color: 'var(--pulse-accent)', description: 'Chart screenshot analysis: bias, entries, stop, target', keywords: ['quick', 'pulse', 'chart', 'screenshot', 'snap'] },
   { id: 'stop', label: 'Stop', icon: StopCircle, color: '#EF4444', description: 'Cancel the current run immediately', keywords: ['stop', 'cancel', 'abort', 'halt'] },
+  { id: 'update_pulse', label: 'Update Pulse', icon: RefreshCw, color: '#38BDF8', description: 'Pull latest changes from repository and rebuild the app', keywords: ['update', 'pull', 'deploy', 'rebuild', 'upgrade'] },
 ] as const;
 
 export type SkillId = (typeof SKILLS)[number]['id'];

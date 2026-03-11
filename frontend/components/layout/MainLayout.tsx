@@ -6,6 +6,7 @@ import type { IVScoreResponse } from '../../types/market-data';
 import { TopHeader } from './TopHeader';
 import { NavSidebar } from './NavSidebar';
 import { MinimalFeedSection } from '../feed/MinimalFeedSection';
+import { CompactRiskFlowCard } from '../feed/CompactRiskFlowCard';
 import { KanbanTitle } from '../ui/KanbanTitle';
 import { MinimalTapeWidget } from '../feed/MinimalTapeWidget';
 import { NewsSection } from '../feed/NewsSection';
@@ -39,6 +40,7 @@ import { EconCalendar } from '../econ/EconCalendar';
 import { NarrativeProvider } from '../../contexts/NarrativeContext';
 import { NarrativeFlow } from '../narrative/NarrativeFlow';
 import { TradingJournal } from '../journal/TradingJournal';
+import { FirstTimeTour } from '../onboarding/FirstTimeTour';
 import { SessionCountdownWidget } from '../mission-control/SessionCountdownWidget';
 import { RegimeMini } from '../mission-control/RegimeMini';
 import { SessionCalendarMini } from '../mission-control/SessionCalendarMini';
@@ -504,8 +506,14 @@ export function MainLayout() {
                     </span>
                   </button>
                   {!combinedTapeCollapsed && (
-                    <div className="flex-1 min-h-0 overflow-y-auto p-3">
-                      <MinimalFeedSection collapsed={false} position="right" />
+                    <div className="flex-1 min-h-0 overflow-y-auto px-1 py-1.5 space-y-0.5">
+                      {riskFlowAlerts.length === 0 ? (
+                        <div className="text-center text-zinc-600 py-6 text-[10px]">No items</div>
+                      ) : (
+                        riskFlowAlerts.slice(0, 30).map((alert) => (
+                          <CompactRiskFlowCard key={alert.id} alert={alert} />
+                        ))
+                      )}
                     </div>
                   )}
                   {combinedTapeCollapsed && (
@@ -793,6 +801,9 @@ export function MainLayout() {
         onClose={() => setShowSearchModal(false)}
         onNavigateTab={(tab) => navigateTab(tab as NavTab)}
       />
+
+      {/* First-time user tour */}
+      <FirstTimeTour onNavigate={(tab) => navigateTab(tab as NavTab)} />
     </div>
     </ScheduleProvider>
   );
