@@ -1,5 +1,5 @@
-// [claude-code 2026-03-10] Source status hook — polls /api/riskflow/sources once on mount
-import { useEffect, useState } from 'react';
+// [claude-code 2026-03-11] Source status hook — polls /api/riskflow/sources every 30s
+import { useEffect, useState, useRef, useCallback } from 'react';
 
 export interface SourceStatus {
   notion: boolean;
@@ -8,22 +8,26 @@ export interface SourceStatus {
 }
 
 const DEFAULT_STATUS: SourceStatus = { notion: false, twitterCli: false, xApi: false };
+const POLL_INTERVAL_MS = 30_000;
 
 export function useSourceStatus(): SourceStatus {
   const [status, setStatus] = useState<SourceStatus>(DEFAULT_STATUS);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
+  const poll = useCallback(() => {
     fetch('/api/riskflow/sources')
       .then((r) => r.json())
-      .then((data: SourceStatus) => {
-        if (!cancelled) setStatus(data);
-      })
+      .then((data: SourceStatus) => setStatus(data))
       .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
   }, []);
+
+  useEffect(() => {
+    poll();
+    timerRef.current = setInterval(poll, POLL_INTERVAL_MS);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [poll]);
 
   return status;
 }

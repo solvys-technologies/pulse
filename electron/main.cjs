@@ -1,9 +1,51 @@
 // [claude-code 2026-02-26] Ensure OAuth popups work for embedded webviews.
+// [claude-code 2026-03-11] Auto-start backend on app init.
 
 const { app, BrowserWindow, ipcMain, shell } = require("electron");
 const path = require("path");
+const { spawn } = require("child_process");
+const fs = require("fs");
 
 let mainWindow = null;
+let backendProcess = null;
+
+function startBackend() {
+  const backendDir = path.join(__dirname, "..", "backend-hono");
+  const distEntry = path.join(backendDir, "dist", "index.js");
+
+  if (!fs.existsSync(distEntry)) {
+    console.warn("[Electron] Backend dist not found at", distEntry, "— skipping auto-start");
+    return;
+  }
+
+  console.log("[Electron] Starting backend server...");
+  backendProcess = spawn("node", [distEntry], {
+    cwd: backendDir,
+    env: { ...process.env, NODE_ENV: "production" },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+
+  backendProcess.stdout.on("data", (data) => {
+    console.log("[Backend]", data.toString().trim());
+  });
+
+  backendProcess.stderr.on("data", (data) => {
+    console.error("[Backend]", data.toString().trim());
+  });
+
+  backendProcess.on("exit", (code) => {
+    console.log("[Electron] Backend exited with code", code);
+    backendProcess = null;
+  });
+}
+
+function stopBackend() {
+  if (backendProcess) {
+    console.log("[Electron] Stopping backend...");
+    backendProcess.kill("SIGTERM");
+    backendProcess = null;
+  }
+}
 
 const shouldAllowInAppPopup = (urlString) => {
   try {
@@ -51,6 +93,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  startBackend();
   createWindow();
 
   // Handle window.open from embedded <webview> tags.
@@ -93,7 +136,12 @@ app.whenReady().then(() => {
 });
 
 app.on("window-all-closed", () => {
+  stopBackend();
   if (process.platform !== "darwin") app.quit();
+});
+
+app.on("before-quit", () => {
+  stopBackend();
 });
 
 ipcMain.handle("toggle-mini-widget", () => {

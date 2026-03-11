@@ -233,7 +233,7 @@ export function PulseChatInput({
         />
 
         {/* Bottom bar */}
-        <div className="flex items-center justify-between border-t border-white/5" style={{ padding: '8px 10px 10px' }}>
+        <div className="flex items-center justify-between" style={{ padding: '8px 10px 10px' }}>
           {/* Left: Attach + Skills + Think Harder */}
           <div className="flex items-center gap-1">
             <button

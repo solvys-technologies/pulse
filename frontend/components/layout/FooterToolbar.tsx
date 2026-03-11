@@ -283,7 +283,7 @@ export function FooterToolbar({
             title={`Notion: ${sourceStatus.notion ? 'connected' : 'disconnected'}`}
           >
             <span className={`w-1.5 h-1.5 rounded-full ${sourceStatus.notion ? 'bg-emerald-400' : 'bg-zinc-700'}`} />
-            <span className={sourceStatus.notion ? 'text-emerald-400/60' : 'text-zinc-700'}>NTN</span>
+            <span className={sourceStatus.notion ? 'text-emerald-400/60' : 'text-zinc-700'}>Notion</span>
           </span>
           <span
             className="flex items-center gap-1 text-[10px]"

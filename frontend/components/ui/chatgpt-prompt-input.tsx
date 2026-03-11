@@ -284,15 +284,13 @@ export function PromptBox({
         )}
 
         {/* Skills popup */}
-        {showSkills && (
-          <PulseSkillsPopup
-            open={showSkills}
-            onClose={onToggleSkills}
-            activeSkill={activeSkill}
-            onSelectSkill={onSelectSkill}
-            disabledSkills={disabledSkills}
-          />
-        )}
+        <PulseSkillsPopup
+          open={showSkills}
+          onClose={onToggleSkills}
+          activeSkill={activeSkill}
+          onSelectSkill={onSelectSkill}
+          disabledSkills={disabledSkills}
+        />
 
         {/* Slash-command picker */}
         {slashQuery !== null && (
@@ -420,7 +418,7 @@ export function PromptBox({
           />
 
           {/* Bottom bar */}
-          <div className="flex items-center justify-between border-t border-white/5" style={{ padding: compact ? '6px 8px 8px' : '8px 10px 10px' }}>
+          <div className="flex items-center justify-between" style={{ padding: compact ? '6px 8px 8px' : '8px 10px 10px' }}>
             {/* Left toolbar */}
             <div className="flex items-center gap-1">
               {/* Attach */}

@@ -7,14 +7,14 @@ import {
   type CreateJournalEntryInput,
 } from '../../services/journal-service.js';
 
-function getUserId(c: Context): string | null {
+function getUserId(c: Context): string {
   const userId = c.get('userId') as string | undefined;
-  return userId ?? null;
+  return userId ?? 'local-user';
 }
 
 export async function handleListEntries(c: Context) {
   const userId = getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  // userId always has a fallback, no auth check needed
 
   const type = c.req.query('type') as 'human' | 'agent' | undefined;
   const limit = c.req.query('limit');
@@ -40,7 +40,7 @@ export async function handleListEntries(c: Context) {
 
 export async function handleSaveEntry(c: Context) {
   const userId = getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  // userId always has a fallback, no auth check needed
 
   const body = await c.req.json<CreateJournalEntryInput>().catch(() => null);
   if (!body || !body.type || !body.date) {
@@ -63,7 +63,7 @@ export async function handleSaveEntry(c: Context) {
 
 export async function handleGetSummary(c: Context) {
   const userId = getUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  // userId always has a fallback, no auth check needed
 
   const daysRaw = c.req.query('days');
   const days = daysRaw ? parseInt(daysRaw, 10) : undefined;

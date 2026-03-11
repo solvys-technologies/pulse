@@ -130,7 +130,7 @@ export function NewsSection() {
         <div className="flex items-center gap-3 text-[10px] uppercase tracking-[0.12em]">
           <span className="flex items-center gap-1.5">
             <span className={`w-1.5 h-1.5 rounded-full ${notionPollStatus?.running ? 'bg-emerald-400' : 'bg-zinc-600'}`} />
-            <span className={notionPollStatus?.running ? 'text-emerald-400/90' : 'text-zinc-500'}>NTN</span>
+            <span className={notionPollStatus?.running ? 'text-emerald-400/90' : 'text-zinc-500'}>Notion</span>
           </span>
           <span className="flex items-center gap-1.5">
             <span className={`w-1.5 h-1.5 rounded-full ${sourceStatus.twitterCli ? 'bg-emerald-400' : 'bg-zinc-600'}`} />

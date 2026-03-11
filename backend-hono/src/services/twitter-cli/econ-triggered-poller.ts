@@ -6,6 +6,7 @@ import { searchTweets, fetchUserTimeline, isTwitterCliInstalled } from './twitte
 import { filterByTier } from './fj-emoji-filter.js';
 import { fetchEconCalendar, updateEventActual, writeEconPrint } from '../econ-calendar-service.js';
 import { notionCreatePage } from '../notion-service.js';
+import { injectEconPrintToFeed } from '../riskflow/econ-bridge.js';
 import type { EconEvent } from '../econ-calendar-service.js';
 import type { FeedItem, NewsSource } from '../../types/riskflow.js';
 
@@ -201,14 +202,28 @@ async function processActualsFromTweets(
 
     // 2. Write to the Econ Prints DB
     const today = new Date().toISOString().slice(0, 10);
+    const printDate = event.date ?? today;
+    const printForecast = extracted.forecast ?? (event.forecast ? parseFloat(event.forecast) : undefined);
+    const printPrevious = extracted.previous ?? (event.previous ? parseFloat(event.previous) : undefined);
     writeEconPrint({
       eventName: event.name,
-      date: event.date ?? today,
+      date: printDate,
       actual: extracted.actual,
-      forecast: extracted.forecast ?? (event.forecast ? parseFloat(event.forecast) : undefined),
-      previous: extracted.previous ?? (event.previous ? parseFloat(event.previous) : undefined),
+      forecast: printForecast,
+      previous: printPrevious,
     }).catch((err) =>
       console.warn(`[EconTwitterPoller] Failed to write econ print for ${event.name}:`, err)
+    );
+
+    // 3. Inject into RiskFlow feed for IV scoring engine
+    injectEconPrintToFeed({
+      eventName: event.name,
+      actual: extracted.actual,
+      forecast: printForecast,
+      previous: printPrevious,
+      date: printDate,
+    }).catch((err) =>
+      console.warn(`[EconTwitterPoller] Failed to inject to RiskFlow for ${event.name}:`, err)
     );
   }
 }

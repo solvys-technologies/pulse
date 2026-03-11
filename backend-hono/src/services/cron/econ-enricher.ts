@@ -2,6 +2,7 @@
 
 import { fetchEconCalendar, writeEconPrint, updateEventActual } from '../econ-calendar-service.js';
 import { createFmpService } from '../fmp-service.js';
+import { injectEconPrintToFeed } from '../riskflow/econ-bridge.js';
 
 const ENRICHER_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const INTRADAY_CHECK_MS = 5 * 60 * 1000; // 5 min during market hours
@@ -56,6 +57,14 @@ export async function runEconEnrichment(): Promise<{ processed: number; written:
         written++;
         // Also update the Economic Events row with the actual
         await updateEventActual(event.id, String(fmpMatch.actual));
+        // Inject into RiskFlow feed for IV scoring engine
+        await injectEconPrintToFeed({
+          eventName: event.name,
+          actual: fmpMatch.actual,
+          forecast: fmpMatch.forecast ?? undefined,
+          previous: fmpMatch.previous ?? undefined,
+          date: today,
+        }).catch((err) => console.error('[EconEnricher] Bridge inject error:', err));
         console.log(`[EconEnricher] Wrote print: ${event.name} = ${fmpMatch.actual}`);
       }
     }

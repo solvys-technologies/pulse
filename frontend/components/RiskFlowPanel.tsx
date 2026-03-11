@@ -422,7 +422,7 @@ export default function RiskFlowPanel({
               </span>
             )}
             <div className="flex items-center gap-2 ml-1">
-              <StatusDot active={sourceStatus.notion} label="NTN" />
+              <StatusDot active={sourceStatus.notion} label="Notion" />
               <StatusDot active={sourceStatus.twitterCli} label="X" />
             </div>
           </div>

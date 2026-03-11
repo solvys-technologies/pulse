@@ -38,8 +38,7 @@ import { EconCalendarProvider } from '../../contexts/EconCalendarContext';
 import { EconCalendar } from '../econ/EconCalendar';
 import { NarrativeProvider } from '../../contexts/NarrativeContext';
 import { NarrativeFlow } from '../narrative/NarrativeFlow';
-import { ERScoringProvider } from '../../contexts/EarningsHistoryContext';
-import { EarningsHistoryPanel } from '../earnings/EarningsHistoryPanel';
+import { TradingJournal } from '../journal/TradingJournal';
 import { SessionCountdownWidget } from '../mission-control/SessionCountdownWidget';
 import { RegimeMini } from '../mission-control/RegimeMini';
 import { SessionCalendarMini } from '../mission-control/SessionCalendarMini';
@@ -480,15 +479,15 @@ export function MainLayout() {
               </div>
             )}
             {!combinedPanelCollapsed && (
-              <div className="flex-1 min-h-0 overflow-y-auto flex flex-col">
-                {/* Mission Control: flex-1 for 50/50 split with The Tape */}
-                <section className="flex-1 min-h-0 border-b border-[var(--pulse-accent)]/20">
+              <div className="flex-1 min-h-0 flex flex-col">
+                {/* Mission Control: 50% height, no overflow into tape */}
+                <section className={`${combinedTapeCollapsed ? 'flex-1' : 'h-1/2'} min-h-0 overflow-y-auto border-b border-[var(--pulse-accent)]/20`}>
                   <div className="p-3 h-full">
                     {missionControlContent(() => setCombinedPanelCollapsed(true))}
                   </div>
                 </section>
-                {/* The Tape: collapsible; when expanded takes space below (scroll to view) */}
-                <section className="flex-shrink-0 flex flex-col border-t border-[var(--pulse-accent)]/20">
+                {/* The Tape: 50% when expanded, collapsed header when hidden */}
+                <section className={`${combinedTapeCollapsed ? 'flex-shrink-0' : 'h-1/2'} min-h-0 flex flex-col border-t border-[var(--pulse-accent)]/20`}>
                   <button
                     type="button"
                     onClick={() => setCombinedTapeCollapsed(!combinedTapeCollapsed)}
@@ -505,7 +504,7 @@ export function MainLayout() {
                     </span>
                   </button>
                   {!combinedTapeCollapsed && (
-                    <div className="min-h-[200px] p-3">
+                    <div className="flex-1 min-h-0 overflow-y-auto p-3">
                       <MinimalFeedSection collapsed={false} position="right" />
                     </div>
                   )}
@@ -688,9 +687,7 @@ export function MainLayout() {
               )}
               {activeTab === 'earnings' && (
                 <div key="earnings" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
-                  <ERScoringProvider>
-                    <EarningsHistoryPanel />
-                  </ERScoringProvider>
+                  <TradingJournal />
                 </div>
               )}
               {activeTab === 'settings' && (

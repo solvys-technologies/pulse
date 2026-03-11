@@ -89,8 +89,7 @@ export function registerRoutes(app: Hono): void {
   app.use('/api/settings/*', authMiddleware);
   app.use('/api/21st', authMiddleware);
   app.use('/api/21st/*', authMiddleware);
-  app.use('/api/journal', authMiddleware);
-  app.use('/api/journal/*', authMiddleware);
+  // Journal — public (local Electron app, no user auth needed)
 
   // Phase 1: Account routes
   app.route('/api/account', createAccountRoutes());

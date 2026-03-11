@@ -70,15 +70,13 @@ export function ChatInputArea({
             <SkillBadge skillId={activeSkill} onDismiss={() => onSelectSkill(null)} />
           </div>
         )}
-        {showSkills && (
-          <PulseSkillsPopup
-            open={showSkills}
-            onClose={() => onToggleSkills()}
-            activeSkill={activeSkill}
-            onSelectSkill={onSelectSkill}
-            disabledSkills={disabledSkills}
-          />
-        )}
+        <PulseSkillsPopup
+          open={showSkills}
+          onClose={() => onToggleSkills()}
+          activeSkill={activeSkill}
+          onSelectSkill={onSelectSkill}
+          disabledSkills={disabledSkills}
+        />
         {/* Slash-command picker */}
         {slashQuery !== null && (
           <PulseSlashPicker
