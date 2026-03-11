@@ -2,6 +2,7 @@ import type { Context } from 'hono';
 import * as conversationStore from '../../services/ai/conversation-store.js';
 import { handleOpenClawChat } from '../../services/openclaw-handler.js';
 import { synthesizeVoice, transcribeVoice } from '../../services/voice-service.js';
+import { analyzeSentiment } from '../../services/voice-sentiment.js';
 
 function getUserId(c: Context): string | null {
   const userId = c.get('userId') as string | undefined;
@@ -150,6 +151,61 @@ export async function handleSpeak(c: Context) {
   } catch (error) {
     console.error('[Voice] Speak failed:', error);
     const message = error instanceof Error ? error.message : 'Voice response failed';
+    return c.json({ error: message }, 500);
+  }
+}
+
+// [claude-code 2026-03-11] Track 7B: Claude Haiku sentiment analysis for VAD-triggered speech
+export async function handleAnalyzeSentiment(c: Context) {
+  const userId = getUserId(c);
+  if (!userId) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  const body = await c.req
+    .json<{
+      transcript?: string;
+      audioBase64?: string;
+      mimeType?: string;
+      context?: string;
+    }>()
+    .catch(() => null);
+
+  if (!body) {
+    return c.json({ error: 'Invalid request body' }, 400);
+  }
+
+  try {
+    // If audio provided, transcribe first via Whisper
+    let transcript = body.transcript?.trim() ?? '';
+    if (!transcript && body.audioBase64) {
+      const transcription = await transcribeVoice({
+        audioBase64: body.audioBase64,
+        mimeType: body.mimeType,
+      });
+      transcript = transcription.text;
+    }
+
+    if (!transcript) {
+      return c.json({
+        sentiment: 0,
+        confidence: 0,
+        keywords: [],
+        tiltIndicators: [],
+        summary: 'No speech detected',
+        provider: 'fallback',
+      });
+    }
+
+    const result = await analyzeSentiment({
+      transcript,
+      context: body.context,
+    });
+
+    return c.json(result);
+  } catch (error) {
+    console.error('[Voice] Sentiment analysis failed:', error);
+    const message = error instanceof Error ? error.message : 'Sentiment analysis failed';
     return c.json({ error: message }, 500);
   }
 }

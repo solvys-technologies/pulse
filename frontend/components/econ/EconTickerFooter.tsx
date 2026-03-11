@@ -1,4 +1,5 @@
 // [claude-code 2026-03-05] Scrolling AI analysis ticker at bottom of Econ Calendar.
+// [claude-code 2026-03-11] Track 6: Beat/miss inline text in ticker insights.
 import { useMemo } from 'react';
 import { useEconCalendar } from '../../contexts/EconCalendarContext';
 import type { EconEventItem } from '../../lib/services';
@@ -12,21 +13,24 @@ function generateInsight(event: EconEventItem): string | null {
 
   const deviation = forecast !== 0 ? ((actual - forecast) / Math.abs(forecast)) * 100 : 0;
   const absDeviation = Math.abs(deviation);
-  const direction = actual > forecast ? 'above' : actual < forecast ? 'below' : 'inline with';
+  const isBeat = actual >= forecast;
+  const beatMissLabel = isBeat ? 'BEAT' : 'MISS';
+  const beatMissIcon = isBeat ? '\u2713' : '\u2717';
 
   if (absDeviation < 1) {
-    return `${event.name}: In line with expectations (${event.actual} vs ${event.forecast} fcst)`;
+    return `${event.name}: In line (${event.actual} vs ${event.forecast} fcst) ${beatMissIcon} ${beatMissLabel}`;
   }
 
   const magnitude = absDeviation > 10 ? 'significantly' : absDeviation > 5 ? 'notably' : 'slightly';
+  const direction = actual > forecast ? 'above' : 'below';
 
-  return `${event.name}: ${event.actual} came in ${magnitude} ${direction} ${event.forecast} forecast (${deviation > 0 ? '+' : ''}${deviation.toFixed(1)}% deviation)`;
+  return `${event.name}: ${event.actual} ${magnitude} ${direction} ${event.forecast} fcst (${deviation > 0 ? '+' : ''}${deviation.toFixed(1)}%) ${beatMissIcon} ${beatMissLabel}`;
 }
 
 function generateUpcomingAlert(event: EconEventItem): string {
   const impLabel = event.importance === 3 ? 'HIGH IMPACT' : event.importance === 2 ? 'MED IMPACT' : 'LOW';
   const time = event.time ? ` at ${event.time}` : '';
-  return `Upcoming: ${event.name}${time} [${impLabel}] — Fcst: ${event.forecast ?? 'N/A'}, Prev: ${event.previous ?? 'N/A'}`;
+  return `Upcoming: ${event.name}${time} [${impLabel}] -- Fcst: ${event.forecast ?? 'N/A'}, Prev: ${event.previous ?? 'N/A'}`;
 }
 
 export function EconTickerFooter() {
@@ -35,7 +39,7 @@ export function EconTickerFooter() {
   const tickerItems = useMemo(() => {
     const items: string[] = [];
 
-    // First: events with actuals (most recent first) — AI analysis
+    // First: events with actuals (most recent first) — AI analysis with beat/miss
     const withActuals = events.filter((e) => e.actual).slice(0, 5);
     for (const event of withActuals) {
       const insight = generateInsight(event);
@@ -50,7 +54,7 @@ export function EconTickerFooter() {
       items.push(generateUpcomingAlert(event));
     }
 
-    return items.length > 0 ? items : ['Economic calendar loading — awaiting data from Notion...'];
+    return items.length > 0 ? items : ['Economic calendar loading -- awaiting data from Notion...'];
   }, [events]);
 
   const tickerText = tickerItems.join('  \u2022  ');

@@ -1,6 +1,9 @@
-// [claude-code 2026-03-10] Market-data route handlers — FMP + Unusual Whales
+// [claude-code 2026-03-11] Market-data route handlers — FMP + Unusual Whales + blended IV score
 import type { Context } from 'hono';
 import { getMarketContext, fmpMarket, unusualWhales } from '../../services/market-data/index.js';
+import { calculateBlendedIVScore, classifyEventType } from '../../services/market-data/iv-scorer.js';
+import { estimatePoints } from '../../services/market-data/point-estimator.js';
+import type { StackedEvent } from '../../services/iv-scoring-v2.js';
 
 export async function handleQuote(c: Context) {
   const symbol = c.req.param('symbol');
@@ -79,5 +82,58 @@ export async function handleContext(c: Context) {
   } catch (err: any) {
     console.error('[market-data] context error:', err.message);
     return c.json({ error: err.message ?? 'Failed to fetch market context' }, 500);
+  }
+}
+
+/** GET /api/market-data/iv-score — blended 60/40 VIX+headline IV score */
+export async function handleIVScore(c: Context) {
+  try {
+    const instrument = c.req.query('instrument') || '/ES';
+    const priceParam = c.req.query('price');
+    const currentPrice = priceParam ? parseFloat(priceParam) : undefined;
+
+    // Pull recent headline events from DB (last 2 hours, macroLevel >= 2)
+    let events: StackedEvent[] = [];
+    try {
+      const { sql, isDatabaseAvailable } = await import('../../config/database.js');
+      if (isDatabaseAvailable() && sql) {
+        const recentItems = await sql`
+          SELECT headline, source, macro_level, iv_score, published_at, is_breaking
+          FROM news_feed_items
+          WHERE published_at >= NOW() - INTERVAL '2 hours'
+            AND macro_level >= 2
+          ORDER BY published_at DESC
+          LIMIT 20
+        `;
+        events = recentItems.map((item: any) => {
+          const parsed = { raw: item.headline, eventType: null, isBreaking: item.is_breaking };
+          return {
+            eventType: classifyEventType(parsed as any),
+            baseScore: item.iv_score || 3,
+            timestamp: new Date(item.published_at),
+          };
+        });
+      }
+    } catch {
+      // DB unavailable — proceed with VIX-only score
+    }
+
+    const result = await calculateBlendedIVScore(events, instrument, currentPrice);
+    const pointEst = estimatePoints(result.score, result.vix.level, instrument, currentPrice);
+
+    return c.json({
+      ...result,
+      points: {
+        scaledPoints: pointEst.scaledPoints,
+        scaledTicks: pointEst.scaledTicks,
+        scaledDollarRisk: pointEst.scaledDollarRisk,
+        urgency: pointEst.urgency,
+        implied: pointEst.implied,
+      },
+      instrument,
+    });
+  } catch (err) {
+    console.error('[market-data] iv-score error:', err);
+    return c.json({ error: err instanceof Error ? err.message : 'Failed to calculate IV score' }, 500);
   }
 }

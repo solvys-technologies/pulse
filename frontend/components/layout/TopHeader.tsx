@@ -1,8 +1,7 @@
 // [claude-code 2026-02-26] Add heading toolbar dock zone + optional docked widgets slot.
 // [claude-code 2026-03-03] Toolbar items reorderable via getToolbarOrder/setToolbarOrder.
-// [claude-code 2026-03-03] Phase 4C: IV score now derived from real VIX via quickIVScore.
+// [claude-code 2026-03-11] T2: IV score wired to backend /api/market-data/iv-score — replaces local quickIVScore
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { quickIVScore } from '../../lib/iv-scoring';
 import { useAuth } from '../../contexts/AuthContext';
 import { UpgradeModal } from '../UpgradeModal';
 import { IVScoreCard } from '../IVScoreCard';
@@ -11,6 +10,7 @@ import { isElectron } from '../../lib/platform';
 import { getToolbarOrder, setToolbarOrder, type ToolbarItemId } from '../../lib/layoutOrderStorage';
 import { HeaderVoiceControl } from '../voice/HeaderVoiceControl';
 import { GripVertical, Layers, ChevronDown, ChevronLeft, ChevronRight, Monitor, MessageCircle, Power } from 'lucide-react';
+import type { IVScoreResponse } from '../../types/market-data';
 import type { TradingPlatform } from '../TopStepXBrowser';
 
 type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'settings';
@@ -73,8 +73,8 @@ export function TopHeader({
   const backend = useBackend();
   const instanceName = import.meta.env.VITE_PULSE_INSTANCE_NAME || 'Pulse';
   const [showUpgrade, setShowUpgrade] = useState(false);
-  const [ivScore, setIvScore] = useState(3.2);
-  const [vix, setVix] = useState(20);
+  const [ivData, setIvData] = useState<IVScoreResponse | null>(null);
+  const [ivLoading, setIvLoading] = useState(true);
   const [showLayoutDropdown, setShowLayoutDropdown] = useState(false);
   const [showPlatformDropdown, setShowPlatformDropdown] = useState(false);
   const [toolbarOrder, setToolbarOrderState] = useState<ToolbarItemId[]>(() => getToolbarOrder());
@@ -154,32 +154,21 @@ export function TopHeader({
     }
   ];
 
-  // IV score derived from VIX — updates whenever VIX changes
+  // Fetch blended IV score from backend — updates every 5 minutes
   useEffect(() => {
-    if (vix > 0) {
-      setIvScore(quickIVScore(vix).legacyScore);
-    }
-  }, [vix]);
-
-  // Fetch VIX value - update every 5 minutes
-  useEffect(() => {
-    const fetchVIX = async () => {
+    const fetchIVScore = async () => {
       try {
-        const data = await backend.riskflow.fetchVIX();
-        if (data && typeof data.value === 'number') {
-          console.log(`[VIX] Successfully fetched: ${data.value}`);
-          setVix(data.value);
-        } else {
-          console.error('[VIX] Invalid response format:', data);
-        }
+        const data = await backend.marketData.getIVScore();
+        setIvData(data);
       } catch (error) {
-        console.error('[VIX] Failed to fetch VIX:', error);
-        // Keep current value on error
+        console.error('[IV] Failed to fetch IV score:', error);
+      } finally {
+        setIvLoading(false);
       }
     };
 
-    fetchVIX();
-    const interval = setInterval(fetchVIX, 300000); // Update every 5 minutes (300000ms)
+    fetchIVScore();
+    const interval = setInterval(fetchIVScore, 300000);
     return () => clearInterval(interval);
   }, [backend]);
 
@@ -250,7 +239,7 @@ export function TopHeader({
             <div className="flex items-center gap-1.5">
               <span className="text-[9px] text-gray-500">VIX</span>
               <span className="text-xs font-mono text-gray-300">
-                {vix.toFixed(2)}
+                {ivData ? ivData.vix.level.toFixed(2) : '--'}
               </span>
             </div>
           </div>
@@ -324,12 +313,16 @@ export function TopHeader({
                 </div>
               );
             }
-            if (id === 'power' && topStepXEnabled && onTopStepXDisable) {
+            if (id === 'power' && onTopStepXDisable) {
               return wrapper(
                 <button
                   onClick={onTopStepXDisable}
-                  className="px-2.5 h-8 rounded-lg text-xs font-medium bg-[var(--pulse-bg)] text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-1.5"
-                  title="Power off iframe"
+                  className={`px-2.5 h-8 rounded-lg text-xs font-medium bg-[var(--pulse-bg)] transition-colors flex items-center gap-1.5 ${
+                    topStepXEnabled
+                      ? 'text-red-400 hover:bg-red-500/10'
+                      : 'text-zinc-600 opacity-40 hover:opacity-70 hover:bg-zinc-800/50'
+                  }`}
+                  title={topStepXEnabled ? 'Power off iframe' : 'No active platform'}
                 >
                   <Power className="w-3.5 h-3.5" />
                 </button>
@@ -399,7 +392,7 @@ export function TopHeader({
               );
             }
             if (id === 'ivScore') {
-              return wrapper(<IVScoreCard score={ivScore} layoutOption={layoutOption} />);
+              return wrapper(<IVScoreCard data={ivData} loading={ivLoading} layoutOption={layoutOption} />);
             }
             return null;
           })}

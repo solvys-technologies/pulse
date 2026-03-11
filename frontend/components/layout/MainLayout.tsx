@@ -1,7 +1,8 @@
 // [claude-code 2026-02-26] Support dockable PsychAssist in Zen layout.
+// [claude-code 2026-03-11] Track 4: MC overhaul — no Panels header, collapse in MC header, 50/50 flex, gear menu
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, GripVertical, X } from 'lucide-react';
-import { quickIVScore, type IVScoreResult } from '../../lib/iv-scoring';
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, X } from 'lucide-react';
+import type { IVScoreResponse } from '../../types/market-data';
 import { TopHeader } from './TopHeader';
 import { NavSidebar } from './NavSidebar';
 import { MinimalFeedSection } from '../feed/MinimalFeedSection';
@@ -41,10 +42,14 @@ import { ERScoringProvider } from '../../contexts/EarningsHistoryContext';
 import { EarningsHistoryPanel } from '../earnings/EarningsHistoryPanel';
 import { SessionCountdownWidget } from '../mission-control/SessionCountdownWidget';
 import { RegimeMini } from '../mission-control/RegimeMini';
+import { SessionCalendarMini } from '../mission-control/SessionCalendarMini';
+import { WidgetArrangeMenu } from '../mission-control/WidgetArrangeMenu';
 import {
   DEFAULT_MISSION_WIDGET_ORDER,
   getMissionWidgetOrder,
   setMissionWidgetOrder,
+  getMissionWidgetVisibility,
+  setMissionWidgetVisibility,
   type MissionWidgetId,
 } from '../../lib/layoutOrderStorage';
 
@@ -77,9 +82,8 @@ export function MainLayout() {
   const [prevLayoutOption, setPrevLayoutOption] = useState<LayoutOption | null>(null);
   const [missionControlPosition, setMissionControlPosition] = useState<PanelPosition>('right');
   const [tapePosition, setTapePosition] = useState<PanelPosition>('right');
-  const [vix, setVix] = useState(20);
-  const [ivScoreResult, setIvScoreResult] = useState<IVScoreResult | null>(null);
-  const ivScore = ivScoreResult?.legacyScore ?? 3.2;
+  const [ivData, setIvData] = useState<IVScoreResponse | null>(null);
+  const [ivLoading, setIvLoading] = useState(true);
   const [showMissionControlNotification, setShowMissionControlNotification] = useState(false);
   const [showTapeNotification, setShowTapeNotification] = useState(false);
   const [combinedPanelErScore, setCombinedPanelErScore] = useState(0);
@@ -92,6 +96,7 @@ export function MainLayout() {
   const [missionWidgetOrder, setMissionWidgetOrderState] = useState<MissionWidgetId[]>(() =>
     normalizeOrder(getMissionWidgetOrder(), DEFAULT_MISSION_WIDGET_ORDER)
   );
+  const [missionWidgetVisibility, setMissionWidgetVisibilityState] = useState<Record<MissionWidgetId, boolean>>(getMissionWidgetVisibility);
   const [missionDeckPage, setMissionDeckPage] = useState(0);
   const missionDeckRef = useRef<HTMLDivElement>(null);
   const [psychAssistTarget, setPsychAssistTarget] = useState<PsychAssistDockTarget>(() => {
@@ -203,30 +208,23 @@ export function MainLayout() {
     setPrevLayoutOption(layoutOption);
   }, [layoutOption, prevLayoutOption]);
 
-  // Fetch VIX and IV Score for floating widget
+  // Fetch blended IV score from backend for floating widget
   useEffect(() => {
-    const fetchVIX = async () => {
+    const fetchIVScore = async () => {
       try {
-        const data = await backend.riskflow.fetchVIX();
-        if (data && typeof data.value === 'number') {
-          setVix(data.value);
-        }
+        const data = await backend.marketData.getIVScore();
+        setIvData(data);
       } catch (error) {
-        console.error('[VIX] Failed to fetch VIX:', error);
+        console.error('[IV] Failed to fetch IV score:', error);
+      } finally {
+        setIvLoading(false);
       }
     };
 
-    fetchVIX();
-    const interval = setInterval(fetchVIX, 300000);
+    fetchIVScore();
+    const interval = setInterval(fetchIVScore, 300000);
     return () => clearInterval(interval);
   }, [backend]);
-
-  // Compute IV score from VIX using the scoring engine
-  useEffect(() => {
-    if (vix > 0) {
-      setIvScoreResult(quickIVScore(vix));
-    }
-  }, [vix]);
 
   // Fetch account data for combined panel collapsed state
   useEffect(() => {
@@ -286,30 +284,17 @@ export function MainLayout() {
   const leftPanels: React.ReactNode[] = [];
   const rightPanels: React.ReactNode[] = [];
 
-  const handleMissionWidgetDragStart = useCallback((e: React.DragEvent, id: MissionWidgetId) => {
-    e.dataTransfer.setData('text/plain', id);
-    e.dataTransfer.effectAllowed = 'move';
+  const handleMissionWidgetReorder = useCallback((order: MissionWidgetId[]) => {
+    const normalized = normalizeOrder(order, DEFAULT_MISSION_WIDGET_ORDER);
+    setMissionWidgetOrderState(normalized);
+    setMissionWidgetOrder(normalized);
   }, []);
 
-  const handleMissionWidgetDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  }, []);
-
-  const handleMissionWidgetDrop = useCallback((e: React.DragEvent, targetId: MissionWidgetId) => {
-    e.preventDefault();
-    const sourceId = e.dataTransfer.getData('text/plain') as MissionWidgetId | '';
-    if (!sourceId || sourceId === targetId) return;
-    setMissionWidgetOrderState((prev) => {
-      const next = [...prev];
-      const sourceIndex = next.indexOf(sourceId);
-      const targetIndex = next.indexOf(targetId);
-      if (sourceIndex === -1 || targetIndex === -1) return prev;
-      next.splice(sourceIndex, 1);
-      next.splice(targetIndex, 0, sourceId);
-      const normalized = normalizeOrder(next, DEFAULT_MISSION_WIDGET_ORDER);
-      setMissionWidgetOrder(normalized);
-      return normalized;
+  const handleMissionWidgetToggleVisibility = useCallback((id: MissionWidgetId) => {
+    setMissionWidgetVisibilityState((prev) => {
+      const next = { ...prev, [id]: !(prev[id] !== false) };
+      setMissionWidgetVisibility(next);
+      return next;
     });
   }, []);
 
@@ -340,11 +325,24 @@ export function MainLayout() {
       label: 'Blindspots',
       node: <BlindspotsWidget />,
     },
+    calendar: {
+      id: 'calendar' as const,
+      label: 'Session Calendar',
+      node: <SessionCalendarMini />,
+    },
   }), []);
 
   const orderedMissionWidgets = useMemo(() => {
     const normalized = normalizeOrder(missionWidgetOrder, DEFAULT_MISSION_WIDGET_ORDER);
-    return normalized.map((id) => missionWidgetRegistry[id]);
+    return normalized
+      .filter((id) => missionWidgetVisibility[id] !== false)
+      .map((id) => missionWidgetRegistry[id]);
+  }, [missionWidgetOrder, missionWidgetRegistry, missionWidgetVisibility]);
+
+  // Full list (including hidden) for the arrange menu
+  const allMissionWidgets = useMemo(() => {
+    const normalized = normalizeOrder(missionWidgetOrder, DEFAULT_MISSION_WIDGET_ORDER);
+    return normalized.map((id) => ({ id, label: missionWidgetRegistry[id].label }));
   }, [missionWidgetOrder, missionWidgetRegistry]);
 
   const missionWidgetPages = useMemo(() => {
@@ -387,9 +385,31 @@ export function MainLayout() {
   }, []);
 
   // Reusable Mission Control content block: snap deck with exactly 2 widgets per page.
-  const missionControlContent = (
+  const missionControlContent = (collapseFn?: () => void) => (
     <div className="h-full flex flex-col">
-      <KanbanTitle title="Mission Control" tone="gold" />
+      <KanbanTitle
+        title="Mission Control"
+        tone="gold"
+        headerRight={
+          <div className="flex items-center gap-0.5">
+            <WidgetArrangeMenu
+              widgets={allMissionWidgets}
+              visibility={missionWidgetVisibility}
+              onReorder={handleMissionWidgetReorder}
+              onToggleVisibility={handleMissionWidgetToggleVisibility}
+            />
+            {collapseFn && (
+              <button
+                onClick={collapseFn}
+                className="p-1 hover:bg-[var(--pulse-accent)]/10 rounded transition-colors"
+                title="Collapse panel"
+              >
+                <ChevronRight className="w-3.5 h-3.5 text-[var(--pulse-accent)]/60" />
+              </button>
+            )}
+          </div>
+        }
+      />
 
       <div className="mt-2 flex-1 min-h-0 relative">
         <div
@@ -409,20 +429,7 @@ export function MainLayout() {
                   return <div key={`slot-${slotIdx}`} className="p-3" />;
                 }
                 return (
-                  <div
-                    key={widget.id}
-                    className="p-3"
-                    draggable={layoutEditMode}
-                    onDragStart={layoutEditMode ? (e) => handleMissionWidgetDragStart(e, widget.id) : undefined}
-                    onDragOver={layoutEditMode ? handleMissionWidgetDragOver : undefined}
-                    onDrop={layoutEditMode ? (e) => handleMissionWidgetDrop(e, widget.id) : undefined}
-                  >
-                    {layoutEditMode && (
-                      <div className="mb-2 flex items-center gap-1 text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        <GripVertical className="w-3 h-3 text-[var(--pulse-accent)]/70" />
-                        <span>{widget.label}</span>
-                      </div>
-                    )}
+                  <div key={widget.id} className="p-3">
                     {widget.node}
                   </div>
                 );
@@ -462,27 +469,22 @@ export function MainLayout() {
       rightPanels.push(
         <div key="combined" className={`bg-[var(--pulse-surface)] border-l border-[var(--pulse-accent)]/20 transition-all duration-200 ${combinedPanelCollapsed ? 'w-16' : 'w-[380px]'}`}>
           <div className="h-full flex flex-col">
-            <div className="h-12 flex-shrink-0 flex items-center justify-between px-3 border-b border-[var(--pulse-accent)]/20">
-              {!combinedPanelCollapsed && (
-                <h2 className="text-sm font-semibold text-[var(--pulse-accent)]">Panels</h2>
-              )}
-              <button
-                onClick={() => setCombinedPanelCollapsed(!combinedPanelCollapsed)}
-                className="p-1.5 hover:bg-[var(--pulse-accent)]/10 rounded transition-colors ml-auto"
-              >
-                {combinedPanelCollapsed ? (
+            {combinedPanelCollapsed && (
+              <div className="h-12 flex-shrink-0 flex items-center justify-center border-b border-[var(--pulse-accent)]/20">
+                <button
+                  onClick={() => setCombinedPanelCollapsed(false)}
+                  className="p-1.5 hover:bg-[var(--pulse-accent)]/10 rounded transition-colors"
+                >
                   <ChevronLeft className="w-4 h-4 text-[var(--pulse-accent)]" />
-                ) : (
-                  <ChevronRight className="w-4 h-4 text-[var(--pulse-accent)]" />
-                )}
-              </button>
-            </div>
+                </button>
+              </div>
+            )}
             {!combinedPanelCollapsed && (
               <div className="flex-1 min-h-0 overflow-y-auto flex flex-col">
-                {/* Mission Control: full-width Kanban cards */}
-                <section className="flex-shrink-0 border-b border-[var(--pulse-accent)]/20 h-[560px]">
+                {/* Mission Control: flex-1 for 50/50 split with The Tape */}
+                <section className="flex-1 min-h-0 border-b border-[var(--pulse-accent)]/20">
                   <div className="p-3 h-full">
-                    {missionControlContent}
+                    {missionControlContent(() => setCombinedPanelCollapsed(true))}
                   </div>
                 </section>
                 {/* The Tape: collapsible; when expanded takes space below (scroll to view) */}
@@ -545,7 +547,7 @@ export function MainLayout() {
           <div key="right-stack" className="w-[380px] flex-shrink-0 h-full min-w-0 flex flex-col border-l border-[var(--pulse-accent)]/15">
             <div className="flex-1 min-h-0 overflow-y-auto border-b border-[var(--pulse-accent)]/20">
               <div className="p-3 h-full">
-                {missionControlContent}
+                {missionControlContent()}
               </div>
             </div>
             <div className="h-[168px] shrink-0 border-t border-[var(--pulse-accent)]/20">
@@ -562,7 +564,7 @@ export function MainLayout() {
             <div className="h-1/2 flex flex-col border-b border-[var(--pulse-accent)]/20">
               <div className="flex-1 min-h-0 overflow-y-auto">
                 <div className="p-3 h-full">
-                  {missionControlContent}
+                  {missionControlContent()}
                 </div>
               </div>
             </div>
@@ -710,9 +712,9 @@ export function MainLayout() {
 
         {/* Floating Widget */}
         {showFloatingWidget && (
-          <FloatingWidget 
-            vix={vix} 
-            ivScore={ivScore}
+          <FloatingWidget
+            ivData={ivData}
+            ivLoading={ivLoading}
             layoutOption={layoutOption}
             onClose={() => {}}
           />

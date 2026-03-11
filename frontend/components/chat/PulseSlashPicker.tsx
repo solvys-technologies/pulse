@@ -1,4 +1,4 @@
-// [claude-code 2026-03-09] Slash-command skill picker — inline dropdown triggered by /
+// [claude-code 2026-03-11] T5: added /stop command handling
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Lock } from 'lucide-react';
 import { filterSkills, type SkillDef } from '../../lib/skills';
@@ -7,10 +7,11 @@ interface PulseSlashPickerProps {
   query: string;
   onSelect: (skillId: string) => void;
   onDismiss: () => void;
+  onStop?: () => void;
   disabledSkills?: Record<string, { reason: string }>;
 }
 
-export function PulseSlashPicker({ query, onSelect, onDismiss, disabledSkills }: PulseSlashPickerProps) {
+export function PulseSlashPicker({ query, onSelect, onDismiss, onStop, disabledSkills }: PulseSlashPickerProps) {
   const [highlightIndex, setHighlightIndex] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
   const filtered = filterSkills(query);
@@ -31,7 +32,12 @@ export function PulseSlashPicker({ query, onSelect, onDismiss, disabledSkills }:
       e.preventDefault();
       const skill = filtered[highlightIndex];
       if (skill && !disabledSkills?.[skill.id]) {
-        onSelect(skill.id);
+        if (skill.id === 'stop' && onStop) {
+          onStop();
+          onDismiss();
+        } else {
+          onSelect(skill.id);
+        }
       }
     } else if (e.key === 'Escape') {
       e.preventDefault();
@@ -81,7 +87,13 @@ export function PulseSlashPicker({ query, onSelect, onDismiss, disabledSkills }:
               key={skill.id}
               onMouseEnter={() => setHighlightIndex(idx)}
               onClick={() => {
-                if (!disabled) onSelect(skill.id);
+                if (disabled) return;
+                if (skill.id === 'stop' && onStop) {
+                  onStop();
+                  onDismiss();
+                } else {
+                  onSelect(skill.id);
+                }
               }}
               className={`w-full flex items-center gap-2.5 px-3 py-1.5 transition-colors ${
                 disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'

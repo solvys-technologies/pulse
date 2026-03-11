@@ -1,4 +1,4 @@
-// [claude-code 2026-03-10] PromptBox — unified chat input replacing PulseChatInput + ChatInputArea
+// [claude-code 2026-03-11] T5: steer strip removed, queue chips added, RiskFlow drag-drop
 // Based on 21st.dev ChatGPT prompt input, rewritten without Radix
 import {
   useState,
@@ -20,6 +20,8 @@ import {
   Plug2,
   Wrench,
   Maximize2,
+  Loader2,
+  Clock,
 } from 'lucide-react';
 import { PulseSlashPicker } from '../chat/PulseSlashPicker';
 import { PulseAttachPopup } from '../chat/PulseAttachPopup';
@@ -57,7 +59,6 @@ const ThinkHarderIcon: FC<{ active: boolean }> = ({ active }) => (
 export interface PromptBoxProps {
   onSend: (message: string, images?: string[]) => void;
   onStop?: () => void;
-  onSteer?: (message: string) => void;
   isProcessing?: boolean;
   placeholder?: string;
   thinkHarder: boolean;
@@ -76,6 +77,9 @@ export interface PromptBoxProps {
   voiceEnabled?: boolean;
   voiceState?: string;
   onToggleVoice?: () => void;
+  // Queue chips
+  queueJobs?: Array<{ jobId: string; status: string; position: number }>;
+  onCancelJob?: (jobId: string) => void;
 }
 
 /* ------------------------------------------------------------------ */
@@ -85,7 +89,6 @@ export interface PromptBoxProps {
 export function PromptBox({
   onSend,
   onStop,
-  onSteer,
   isProcessing = false,
   placeholder = 'Message your analysts...',
   thinkHarder,
@@ -102,10 +105,11 @@ export function PromptBox({
   voiceEnabled,
   voiceState,
   onToggleVoice,
+  queueJobs,
+  onCancelJob,
 }: PromptBoxProps) {
   const [text, setText] = useState('');
   const [images, setImages] = useState<string[]>([]);
-  const [steerText, setSteerText] = useState('');
   const [vanishing, setVanishing] = useState(false);
   const [showAttach, setShowAttach] = useState(false);
   const [showConnectors, setShowConnectors] = useState(false);
@@ -225,19 +229,52 @@ export function PromptBox({
     setText('');
   }, [onSelectSkill]);
 
-  const handleSteerKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && steerText.trim() && onSteer) {
-      e.preventDefault();
-      onSteer(steerText.trim());
-      setSteerText('');
-    }
-    if (e.key === 'Escape') setSteerText('');
-  };
-
   const micListening = voiceState === 'listening';
 
+  /* RiskFlow drag-drop */
+  const [dragOver, setDragOver] = useState(false);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const json = e.dataTransfer.getData('application/x-riskflow');
+    if (!json) return;
+    try {
+      const data = JSON.parse(json) as { headline?: string; summary?: string; ticker?: string; direction?: string };
+      const parts: string[] = [];
+      if (data.headline) parts.push(data.headline);
+      if (data.ticker) parts.push(`Ticker: ${data.ticker}`);
+      if (data.direction) parts.push(`Direction: ${data.direction}`);
+      if (data.summary && data.summary !== data.headline) parts.push(data.summary);
+      if (parts.length > 0) {
+        setText((prev) => (prev ? `${prev}\n\n${parts.join('\n')}` : parts.join('\n')));
+      }
+    } catch {
+      // Not valid riskflow data — ignore
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes('application/x-riskflow')) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+      setDragOver(true);
+    }
+  }, []);
+
+  const handleDragLeave = useCallback(() => {
+    setDragOver(false);
+  }, []);
+
+  const visibleQueueJobs = (queueJobs ?? []).filter((j) => j.status !== 'done').slice(0, 2);
+
   return (
-    <div className="pt-4 pb-4 px-4 bg-[linear-gradient(180deg,rgba(5,5,0,0.15),rgba(5,5,0,0.88))] backdrop-blur-xl">
+    <div
+      className="pt-4 pb-4 px-4 bg-[linear-gradient(180deg,rgba(5,5,0,0.15),rgba(5,5,0,0.88))] backdrop-blur-xl"
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+    >
       <div className="relative w-full max-w-3xl mx-auto">
         {/* Active skill badge */}
         {activeSkill && (
@@ -263,6 +300,7 @@ export function PromptBox({
             query={slashQuery}
             onSelect={handleSlashSelect}
             onDismiss={() => setSlashQuery(null)}
+            onStop={onStop}
             disabledSkills={disabledSkills}
           />
         )}
@@ -290,28 +328,6 @@ export function PromptBox({
           onClose={() => setShowConnectors(false)}
         />
 
-        {/* Steer queue strip */}
-        {isProcessing && onSteer && !compact && (
-          <div className="flex items-center gap-2 mb-2 px-3 h-9 rounded-xl border border-[var(--pulse-accent)]/20 bg-[#0d0c09]/80 backdrop-blur-sm">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--pulse-accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-50 shrink-0">
-              <line x1="6" y1="3" x2="6" y2="15" /><circle cx="18" cy="6" r="3" /><circle cx="6" cy="18" r="3" /><path d="M18 9a9 9 0 0 1-9 9" />
-            </svg>
-            <input
-              type="text"
-              value={steerText}
-              onChange={(e) => setSteerText(e.target.value)}
-              onKeyDown={handleSteerKeyDown}
-              placeholder="Steer Harper... (Enter to queue)"
-              className="flex-1 bg-transparent text-[12px] text-zinc-300 placeholder:text-zinc-600 focus:outline-none"
-            />
-            {steerText && (
-              <button onClick={() => setSteerText('')} className="text-zinc-600 hover:text-zinc-400 transition-colors">
-                <X size={12} />
-              </button>
-            )}
-          </div>
-        )}
-
         {/* Image preview strip */}
         {images.length > 0 && (
           <div className="flex gap-2 mb-2 px-2 overflow-x-auto">
@@ -326,6 +342,41 @@ export function PromptBox({
                 </button>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Queue chips (max 2) */}
+        {visibleQueueJobs.length > 0 && (
+          <div className="flex items-center gap-1.5 mb-2">
+            {visibleQueueJobs.map((job) => (
+              <span
+                key={job.jobId}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-[var(--pulse-accent)]/20 bg-[#0d0c09]/80 text-[11px] text-zinc-400"
+              >
+                {job.status === 'processing' ? (
+                  <Loader2 size={10} className="animate-spin text-[var(--pulse-accent)]" />
+                ) : (
+                  <Clock size={10} className="text-zinc-600" />
+                )}
+                <span>{job.status === 'processing' ? 'Running' : `Queue #${job.position}`}</span>
+                {onCancelJob && (
+                  <button
+                    onClick={() => onCancelJob(job.jobId)}
+                    className="ml-0.5 text-zinc-600 hover:text-red-400 transition-colors"
+                    title="Cancel"
+                  >
+                    <X size={10} />
+                  </button>
+                )}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Drag-over indicator */}
+        {dragOver && (
+          <div className="mb-2 rounded-xl border-2 border-dashed border-[var(--pulse-accent)]/40 bg-[var(--pulse-accent)]/5 px-4 py-3 text-center text-[12px] text-[var(--pulse-accent)]/70">
+            Drop RiskFlow alert here
           </div>
         )}
 

@@ -1,4 +1,4 @@
-// [claude-code 2026-03-10] Composer rewired to PromptBox — skills fetched from /api/ai/skills
+// [claude-code 2026-03-11] T5: steer strip removed, queue chips added, always full PromptBox
 import { useEffect, useState, useCallback } from 'react';
 import { useThread, useThreadRuntime } from '@assistant-ui/react';
 import { PromptBox } from '../ui/chatgpt-prompt-input';
@@ -31,7 +31,6 @@ export function PulseComposer({
 }: PulseComposerProps) {
   const runtime = useThreadRuntime();
   const isRunning = useThread((t) => t.isRunning);
-  const [queuedSteer, setQueuedSteer] = useState<string | null>(null);
   const [apiDisabledSkills, setApiDisabledSkills] = useState<Record<string, { reason: string }>>({});
   const voice = useVoiceAssistant();
 
@@ -59,13 +58,6 @@ export function PulseComposer({
 
   const mergedDisabledSkills = { ...apiDisabledSkills, ...propDisabledSkills };
 
-  // Flush queued steer after run finishes
-  useEffect(() => {
-    if (isRunning || !queuedSteer) return;
-    runtime.append({ role: 'user', content: [{ type: 'text', text: queuedSteer }] });
-    setQueuedSteer(null);
-  }, [isRunning, queuedSteer, runtime]);
-
   const handleSend = useCallback((msg: string, images?: string[]) => {
     let finalText = msg;
     if (activeSkill && SKILL_PREFIXES[activeSkill]) {
@@ -88,21 +80,10 @@ export function PulseComposer({
     runtime.cancelRun();
   }, [runtime]);
 
-  const handleSteer = useCallback((msg: string) => {
-    const text = msg.trim();
-    if (!text) return;
-    if (isRunning) {
-      setQueuedSteer(text);
-      return;
-    }
-    runtime.append({ role: 'user', content: [{ type: 'text', text }] });
-  }, [isRunning, runtime]);
-
   return (
     <PromptBox
       onSend={handleSend}
       onStop={handleStop}
-      onSteer={handleSteer}
       isProcessing={isRunning}
       thinkHarder={thinkHarder}
       setThinkHarder={setThinkHarder}

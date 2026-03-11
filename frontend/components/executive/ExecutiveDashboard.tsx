@@ -1,4 +1,4 @@
-// [claude-code 2026-03-05] Phase 2B: Expandable tape items with full RiskFlow detail + trade idea modal
+// [claude-code 2026-03-11] T8: Tale of the Tape label for Sun+Mon<7AM, show only first brief item
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useBackend } from '../../lib/backend';
 import { useRiskFlow } from '../../contexts/RiskFlowContext';
@@ -24,10 +24,13 @@ export function ExecutiveDashboard() {
   const [ntnLoaded, setNtnLoaded] = useState(false);
   const [kpisLoaded, setKpisLoaded] = useState(false);
 
-  // Brief type based on time: MDB (<11AM), ADB (11AM-5:29PM), PMDB (5:30PM+)
+  // Brief type based on time: Tale of the Tape (Sun + Mon<7AM), MDB (<11AM), ADB (11AM-5:29PM), PMDB (5:30PM+)
   const getBriefLabel = () => {
     const now = new Date();
-    const t = now.getHours() * 60 + now.getMinutes();
+    const day = now.getDay();
+    const h = now.getHours();
+    if (day === 0 || (day === 1 && h < 7)) return 'Tale of the Tape';
+    const t = h * 60 + now.getMinutes();
     if (t >= 17 * 60 + 30) return 'Post-Market Brief';
     if (t >= 11 * 60) return 'Afternoon Brief';
     return 'Morning Brief';
@@ -42,7 +45,7 @@ export function ExecutiveDashboard() {
         if (!cancelled) setBriefLabel(getBriefLabel());
         const items = await backend.notion.getMdbBrief();
         if (cancelled) return;
-        setNtnText(items.map((i) => i.detail).join('\n\n'));
+        setNtnText(items[0]?.detail ?? '');
       } catch (error) {
         console.warn('[Dashboard] Brief fetch failed:', error);
       } finally {

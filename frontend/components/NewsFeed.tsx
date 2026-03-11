@@ -4,7 +4,6 @@ import { useSettings } from "../contexts/SettingsContext";
 import type { RiskFlowItem } from "../types/api";
 import { TrendingUp, AlertTriangle, Info } from "lucide-react";
 import { Button } from "./ui/Button";
-import { IVScoreCard } from "./IVScoreCard";
 import { useRiskFlow } from "../hooks/useRiskFlow";
 
 export default function NewsFeed() {
@@ -177,7 +176,13 @@ export default function NewsFeed() {
                       <h3 className="text-sm font-medium text-white leading-tight">{item.title}</h3>
                     )}
                     <div className="flex items-center gap-2">
-                      <IVScoreCard score={item.ivScore || 0} />
+                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                        (item.ivScore || 0) >= 7 ? 'text-red-400 bg-red-500/10' :
+                        (item.ivScore || 0) >= 4 ? 'text-yellow-400 bg-yellow-500/10' :
+                        'text-emerald-400 bg-emerald-500/10'
+                      }`}>
+                        IV {(item.ivScore || 0).toFixed(1)}
+                      </span>
                       <span className={`text-[9px] px-2 py-0.5 rounded uppercase tracking-wider whitespace-nowrap ${getImpactColor(item.impact || 'low')}`}>
                         {item.impact || 'low'}
                       </span>

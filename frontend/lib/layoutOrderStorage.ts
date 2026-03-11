@@ -5,7 +5,8 @@
 
 const SIDEBAR_ORDER_KEY = 'pulse_sidebar_nav_order';
 const TOOLBAR_ORDER_KEY = 'pulse_toolbar_order';
-const MISSION_WIDGET_ORDER_KEY = 'pulse_mission_widget_order_v2'; // v2: riskflow-mini removed
+const MISSION_WIDGET_ORDER_KEY = 'pulse_mission_widget_order_v3'; // v3: calendar added
+const MISSION_WIDGET_VISIBILITY_KEY = 'pulse_mission_widget_visibility';
 const RIGHT_PANEL_ORDER_KEY = 'pulse_right_panel_order';
 
 export type NavTabId = 'executive' | 'analysis' | 'news' | 'chatroom' | 'notion' | 'econ' | 'narrative' | 'earnings';
@@ -33,7 +34,7 @@ export const DEFAULT_TOOLBAR_ORDER: ToolbarItemId[] = [
   'ivScore',
 ];
 
-export type MissionWidgetId = 'er' | 'autopilot' | 'regime' | 'account' | 'blindspots';
+export type MissionWidgetId = 'er' | 'autopilot' | 'regime' | 'account' | 'blindspots' | 'calendar';
 
 export const DEFAULT_MISSION_WIDGET_ORDER: MissionWidgetId[] = [
   'er',
@@ -41,6 +42,7 @@ export const DEFAULT_MISSION_WIDGET_ORDER: MissionWidgetId[] = [
   'regime',
   'account',
   'blindspots',
+  'calendar',
 ];
 
 export type RightPanelId = 'mission';
@@ -94,6 +96,28 @@ export function getMissionWidgetOrder(): MissionWidgetId[] {
 
 export function setMissionWidgetOrder(order: MissionWidgetId[]): void {
   saveOrder(MISSION_WIDGET_ORDER_KEY, order);
+}
+
+export function getMissionWidgetVisibility(): Record<MissionWidgetId, boolean> {
+  const defaults: Record<MissionWidgetId, boolean> = {
+    er: true, autopilot: true, regime: true, account: true, blindspots: true, calendar: true,
+  };
+  try {
+    const raw = localStorage.getItem(MISSION_WIDGET_VISIBILITY_KEY);
+    if (!raw) return defaults;
+    const parsed = JSON.parse(raw) as Record<string, boolean>;
+    return { ...defaults, ...parsed };
+  } catch {
+    return defaults;
+  }
+}
+
+export function setMissionWidgetVisibility(vis: Record<MissionWidgetId, boolean>): void {
+  try {
+    localStorage.setItem(MISSION_WIDGET_VISIBILITY_KEY, JSON.stringify(vis));
+  } catch {
+    // ignore
+  }
 }
 
 export function getRightPanelOrder(): RightPanelId[] {

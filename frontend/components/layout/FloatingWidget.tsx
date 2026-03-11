@@ -1,16 +1,18 @@
 // [claude-code 2026-02-26] Zen layout uses a separate dockable PsychAssist widget.
+// [claude-code 2026-03-11] T2: FloatingWidget now accepts IVScoreResponse from backend
 import { useState, useEffect, useRef } from 'react';
 import { IVScoreCard } from '../IVScoreCard';
 import { EmotionalResonanceMonitor } from '../mission-control/EmotionalResonanceMonitor';
 import { useBackend } from '../../lib/backend';
 import type { RiskFlowItem } from '../../types/api';
+import type { IVScoreResponse } from '../../types/market-data';
 import { X, Trash2 } from 'lucide-react';
 
 type LayoutOption = 'tickers-only' | 'combined';
 
 interface FloatingWidgetProps {
-  vix: number;
-  ivScore: number;
+  ivData: IVScoreResponse | null;
+  ivLoading?: boolean;
   layoutOption?: LayoutOption;
   onClose?: () => void;
 }
@@ -20,7 +22,7 @@ interface RiskFlowNotification extends RiskFlowItem {
   notificationId: string;
 }
 
-export function FloatingWidget({ vix, ivScore, layoutOption = 'combined', onClose }: FloatingWidgetProps) {
+export function FloatingWidget({ ivData, ivLoading, layoutOption = 'combined', onClose }: FloatingWidgetProps) {
   const backend = useBackend();
   const [erScore, setErScore] = useState<number>(0);
   const [showERCard, setShowERCard] = useState(false);
@@ -150,11 +152,11 @@ export function FloatingWidget({ vix, ivScore, layoutOption = 'combined', onClos
             <div className="flex items-center gap-1.5">
               <span className="text-[9px] text-gray-300 drop-shadow-sm">VIX</span>
               <span className="text-xs font-mono text-gray-100 drop-shadow-sm">
-                {vix.toFixed(2)}
+                {ivData ? ivData.vix.level.toFixed(2) : '--'}
               </span>
             </div>
           </div>
-          <IVScoreCard score={ivScore} variant="frosted" layoutOption={layoutOption} />
+          <IVScoreCard data={ivData} loading={ivLoading} layoutOption={layoutOption} />
           {onClose && (
             <button
               onClick={onClose}

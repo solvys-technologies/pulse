@@ -7,6 +7,7 @@ import { riskFlowPoller, type RiskFlowAlert } from '../lib/riskflow-feed';
 import baseBackend from '../lib/backend';
 import { decodeHtmlEntities } from '../lib/html-entities';
 import type { NotionPollStatus } from '../lib/services';
+import type { RiskFlowItem } from '../types/api';
 
 interface RiskFlowContextValue {
   alerts: RiskFlowAlert[];
@@ -164,12 +165,20 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
         headline: item.title,
         summary: item.summary || item.content || '',
         url: item.url,
-        publishedAt: item.publishedAt,
+        publishedAt:
+          typeof item.publishedAt === 'string'
+            ? item.publishedAt
+            : (item.publishedAt instanceof Date ? item.publishedAt : new Date(item.publishedAt)).toISOString(),
         source: mapBackendSource(item.source),
-        severity: macroLevelToSeverity(item.macroLevel),
+        severity: macroLevelToSeverity(item.macroLevel ?? 0),
         symbols: item.symbols ?? [],
-        tags: item.tags ?? [],
+        tags: (item as RiskFlowItem & { tags?: string[] }).tags ?? [],
         isBreaking: item.isBreaking ?? false,
+        pointRange: item.priceBrainScore?.impliedPoints ?? null,
+        direction: item.priceBrainScore?.sentiment ?? null,
+        cyclical: item.priceBrainScore?.classification ?? null,
+        instrument: item.priceBrainScore?.instrument ?? null,
+        authorHandle: item.authorHandle ?? null,
       }));
       setBackendAlerts(alerts);
       console.debug(`[RiskFlowContext] Backend feed poll: ${alerts.length} items`);

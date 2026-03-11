@@ -46,6 +46,16 @@ export interface RiskFlowAlert {
   symbols?: string[];
   isBreaking?: boolean;
   tradeIdea?: TradeIdeaDetail;
+  /** PriceBrain implied point range (e.g. "±12 pts") */
+  pointRange?: number | null;
+  /** PriceBrain sentiment direction */
+  direction?: 'Bullish' | 'Bearish' | 'Neutral' | null;
+  /** PriceBrain cyclical classification */
+  cyclical?: 'Cyclical' | 'Counter-cyclical' | 'Neutral' | null;
+  /** Instrument from PriceBrain (e.g. "ES", "NQ") */
+  instrument?: string | null;
+  /** X/Twitter author handle for attribution */
+  authorHandle?: string | null;
 }
 
 // ── Severity Classification ────────────────────────────────────────────────────

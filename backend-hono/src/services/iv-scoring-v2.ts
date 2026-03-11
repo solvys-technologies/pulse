@@ -758,10 +758,15 @@ export function calculateIVScoreV2(input: IVScoreInputV2, config?: Partial<IVSco
 // EVENT TYPE CLASSIFIER (from headline parsing)
 // ============================================================================
 
+// Strict word-boundary test — prevents "recipe" matching "cpi", etc.
+function wordMatch(text: string, word: string): boolean {
+  return new RegExp(`\\b${word}\\b`, 'i').test(text)
+}
+
 export function classifyEventType(parsed: ParsedHeadline): string {
   const headline = (parsed.raw ?? '').toLowerCase()
   const eventType = parsed.eventType?.toLowerCase() ?? ''
-  
+
   // Black Swan detection
   if (headline.includes('halt') && (headline.includes('datacenter') || headline.includes('trading'))) {
     return 'datacenterHalt'
@@ -772,32 +777,34 @@ export function classifyEventType(parsed: ParsedHeadline): string {
   if (headline.includes('crisis') || headline.includes('collapse') || headline.includes('emergency')) {
     return 'majorCrisis'
   }
-  
+
   // Fed/Policy
-  if (eventType === 'feddecision' || headline.includes('fomc') || headline.includes('fed ')) {
+  if (eventType === 'feddecision' || wordMatch(headline, 'fomc') || /\bfed\b/.test(headline)) {
     if (headline.includes('powell')) return 'powellSpeak'
     return 'fedDecision'
   }
-  
+
   // Geopolitical
   if (headline.includes('tariff')) return 'tariffs'
-  if (headline.includes('china') && headline.includes('trade')) return 'chinaTrade'
-  if (headline.includes('war') || headline.includes('attack') || headline.includes('missile')) return 'conflict'
+  if (headline.includes('china') && wordMatch(headline, 'trade')) return 'chinaTrade'
+  if (wordMatch(headline, 'war') || headline.includes('attack') || headline.includes('missile')) return 'conflict'
   if (eventType === 'geopolitical') return 'geopolitical'
-  
-  // Economic Data
-  if (eventType === 'cpiprint' || headline.includes('cpi')) return 'cpiPrint'
-  if (eventType === 'pceprint' || headline.includes('pce')) return 'pcePrint'
-  if (eventType === 'nfpprint' || headline.includes('nfp') || headline.includes('payrolls')) return 'nfpPrint'
-  if (headline.includes('jolts')) return 'jolts'
-  if (eventType === 'gdpprint' || headline.includes('gdp')) return 'gdpPrint'
-  if (headline.includes('ism')) return 'ismPrint'
-  
-  // Political Commentary
-  if (headline.includes('trump') || headline.includes('lutnick') || headline.includes('bessent')) {
+
+  // Economic Data — strict keyword gates (word boundaries prevent false positives)
+  if (eventType === 'cpiprint' || wordMatch(headline, 'cpi') || headline.includes('consumer price index')) return 'cpiPrint'
+  if (eventType === 'pceprint' || wordMatch(headline, 'pce') || headline.includes('personal consumption')) return 'pcePrint'
+  if (eventType === 'nfpprint' || wordMatch(headline, 'nfp') || headline.includes('payrolls') || headline.includes('non-farm')) return 'nfpPrint'
+  if (wordMatch(headline, 'jolts')) return 'jolts'
+  if (eventType === 'gdpprint' || wordMatch(headline, 'gdp') || headline.includes('gross domestic')) return 'gdpPrint'
+  if (wordMatch(headline, 'ism') || headline.includes('institute for supply management')) return 'ismPrint'
+
+  // Political Commentary — Senate/Congress/cabinet officials → commentary, NOT geopolitical
+  if (headline.includes('trump') || headline.includes('lutnick') || headline.includes('bessent')
+    || headline.includes('senate') || headline.includes('congress') || headline.includes('speaker')
+    || headline.includes('white house') || headline.includes('mnuchin')) {
     return 'politicalCommentary'
   }
-  
+
   // Earnings
   if (eventType === 'earnings' || headline.includes('earnings')) {
     // Check for Mag7
@@ -807,10 +814,10 @@ export function classifyEventType(parsed: ParsedHeadline): string {
     }
     return 'earningsMidCap'
   }
-  
+
   // Other
   if (headline.includes('merger') || headline.includes('acquisition')) return 'merger'
   if (headline.includes('retail sales')) return 'retailSales'
-  
+
   return 'other'
 }

@@ -1,4 +1,5 @@
 // [claude-code 2026-03-05] Economic Calendar — TradingView-style time-grouped layout.
+// [claude-code 2026-03-11] Track 6: Redesign — P/A/F column headers, volume bars, beat/miss indicators, more row spacing.
 import { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import { useEconCalendar } from '../../contexts/EconCalendarContext';
@@ -172,8 +173,8 @@ export function EconCalendar() {
           const isToday = date === today;
           return (
             <div key={date} className="border-b border-[var(--pulse-accent)]/10 last:border-b-0">
-              {/* Day header */}
-              <div className={`px-4 py-2 flex items-center gap-2 ${isToday ? 'bg-[var(--pulse-accent)]/5' : 'bg-[#080800]'}`}>
+              {/* Day header with P/A/F column labels */}
+              <div className={`px-4 py-2.5 flex items-center gap-2 ${isToday ? 'bg-[var(--pulse-accent)]/5' : 'bg-[#080800]'}`}>
                 <span className={`text-[11px] font-semibold tracking-wider uppercase ${isToday ? 'text-[var(--pulse-accent)]' : 'text-zinc-400'}`}>
                   {formatDateLabel(date)}
                 </span>
@@ -182,9 +183,18 @@ export function EconCalendar() {
                     TODAY
                   </span>
                 )}
-                <span className="text-[10px] text-zinc-600 ml-auto">
+                <span className="text-[10px] text-zinc-600 ml-auto mr-2">
                   {dayEvents.length} event{dayEvents.length !== 1 ? 's' : ''}
                 </span>
+                {/* P / A / F column headers */}
+                {dayEvents.length > 0 && (
+                  <div className="flex items-center gap-3 shrink-0 text-[9px] font-mono text-zinc-500 tracking-[0.12em] uppercase">
+                    <span className="w-14 text-right">Prev</span>
+                    <span className="w-14 text-right">Actual</span>
+                    <span className="w-14 text-right">Fcst</span>
+                    <span className="w-5" />
+                  </div>
+                )}
               </div>
               {/* Events */}
               {dayEvents.length > 0 ? (
@@ -194,7 +204,7 @@ export function EconCalendar() {
                   ))}
                 </div>
               ) : (
-                <div className="px-4 py-3 text-zinc-600 text-[11px] italic">
+                <div className="px-4 py-4 text-zinc-600 text-[11px] italic">
                   No events scheduled
                 </div>
               )}

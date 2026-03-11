@@ -1,4 +1,4 @@
-// [claude-code 2026-02-26] Replace boardroom chat/history with Notion iframe + countdown timer.
+// [claude-code 2026-03-11] Add popup interception via window message listener → window.open in new tab.
 
 import { useEffect, useMemo, useState } from 'react';
 import { InterventionSidebar } from './InterventionSidebar';
@@ -105,6 +105,26 @@ export function BoardroomView() {
   }, [nextMeeting, nowMs]);
 
   const isLive = meetingSchedule?.live ?? (nextMeeting.getTime() - nowMs <= 0);
+
+  // Intercept popup requests from the embedded iframe → open in new tab
+  useEffect(() => {
+    const onMessage = (e: MessageEvent) => {
+      if (typeof e.data !== 'object' || !e.data) return;
+      const { type, url } = e.data as { type?: string; url?: string };
+      if ((type === 'open-url' || type === 'popup') && typeof url === 'string') {
+        try {
+          const parsed = new URL(url);
+          if (['http:', 'https:'].includes(parsed.protocol)) {
+            window.open(url, '_blank', 'noopener,noreferrer');
+          }
+        } catch {
+          // ignore malformed URLs
+        }
+      }
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
 
   return (
     <div className="h-full w-full flex">

@@ -596,6 +596,15 @@ export class ERService {
   }
 }
 
+export interface VoiceSentimentResponse {
+  sentiment: number;
+  confidence: number;
+  keywords: string[];
+  tiltIndicators: string[];
+  summary: string;
+  provider: 'claude-haiku' | 'fallback';
+}
+
 export class VoiceService {
   constructor(private client: ApiClient) {}
 
@@ -617,6 +626,15 @@ export class VoiceService {
     agent?: string;
   }): Promise<VoiceSpeakResponse> {
     return this.client.post('/api/voice/speak', data);
+  }
+
+  async analyzeSentiment(data: {
+    transcript?: string;
+    audioBase64?: string;
+    mimeType?: string;
+    context?: string;
+  }): Promise<VoiceSentimentResponse> {
+    return this.client.post('/api/voice/analyze-sentiment', data);
   }
 }
 
@@ -932,6 +950,7 @@ import type {
   OptionsWall,
   OptionsFlow,
   MarketContext,
+  IVScoreResponse,
 } from '../types/market-data';
 
 export class MarketDataService {
@@ -960,6 +979,14 @@ export class MarketDataService {
 
   async getContext(symbol: string): Promise<MarketContext> {
     return this.client.get<MarketContext>(`/api/market-data/context/${encodeURIComponent(symbol)}`);
+  }
+
+  async getIVScore(instrument?: string, price?: number): Promise<IVScoreResponse> {
+    const params = new URLSearchParams();
+    if (instrument) params.append('instrument', instrument);
+    if (price) params.append('price', price.toString());
+    const suffix = params.toString() ? `?${params.toString()}` : '';
+    return this.client.get<IVScoreResponse>(`/api/market-data/iv-score${suffix}`);
   }
 }
 
@@ -1040,6 +1067,81 @@ export class BoardroomService {
   }
 }
 
+// Journal Service (Track 7A)
+export interface JournalEntryItem {
+  id: number;
+  userId: string;
+  type: 'human' | 'agent';
+  date: string;
+  erTrend?: number[];
+  infractions?: string[];
+  disciplineScore?: number;
+  notes?: string;
+  agentName?: string;
+  proposalCount?: number;
+  acceptedCount?: number;
+  winRate?: number;
+  avgRR?: number;
+  totalPnl?: number;
+  proposals?: Array<{
+    id: string;
+    agent: string;
+    ticker: string;
+    direction: 'long' | 'short';
+    entry?: number;
+    target?: number;
+    stopLoss?: number;
+    status: 'proposed' | 'accepted' | 'rejected' | 'expired';
+    outcome?: 'win' | 'loss' | 'breakeven' | null;
+    pnl?: number;
+    createdAt: string;
+  }>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface JournalSummaryResponse {
+  totalEntries: number;
+  avgDisciplineScore: number;
+  totalInfractions: number;
+  avgWinRate: number;
+  avgRR: number;
+  totalAgentPnl: number;
+  streakDays: number;
+}
+
+export class JournalService {
+  constructor(private client: ApiClient) {}
+
+  async listEntries(params?: { type?: 'human' | 'agent'; limit?: number; offset?: number; from?: string; to?: string }): Promise<{ entries: JournalEntryItem[]; total: number }> {
+    try {
+      const query = new URLSearchParams();
+      if (params?.type) query.append('type', params.type);
+      if (params?.limit) query.append('limit', params.limit.toString());
+      if (params?.offset) query.append('offset', params.offset.toString());
+      if (params?.from) query.append('from', params.from);
+      if (params?.to) query.append('to', params.to);
+      const suffix = query.toString() ? `?${query.toString()}` : '';
+      return await this.client.get<{ entries: JournalEntryItem[]; total: number }>(`/api/journal/entries${suffix}`);
+    } catch {
+      return { entries: [], total: 0 };
+    }
+  }
+
+  async saveEntry(data: Partial<JournalEntryItem> & { type: 'human' | 'agent'; date: string }): Promise<{ entryId: number }> {
+    return this.client.post('/api/journal/entries', data);
+  }
+
+  async getSummary(days?: number): Promise<JournalSummaryResponse> {
+    try {
+      const suffix = days ? `?days=${days}` : '';
+      return await this.client.get<JournalSummaryResponse>(`/api/journal/summary${suffix}`);
+    } catch {
+      return { totalEntries: 0, avgDisciplineScore: 0, totalInfractions: 0, avgWinRate: 0, avgRR: 0, totalAgentPnl: 0, streakDays: 0 };
+    }
+  }
+}
+
 // Main Backend Client Interface
 export interface BackendClient {
   account: AccountService;
@@ -1062,6 +1164,7 @@ export interface BackendClient {
   erScoring: ERScoringService;
   marketData: MarketDataService;
   mcp: McpService;
+  journal: JournalService;
 }
 
 // Create backend client from API client
@@ -1087,5 +1190,6 @@ export function createBackendClient(client: ApiClient): BackendClient {
     erScoring: new ERScoringService(client),
     marketData: new MarketDataService(client),
     mcp: new McpService(client),
+    journal: new JournalService(client),
   };
 }

@@ -67,3 +67,38 @@ export interface MarketContext {
   quote?: StockQuote;
   fetchedAt: string;
 }
+
+// Blended IV Score response from GET /api/market-data/iv-score
+export interface IVScoreResponse {
+  score: number;
+  vixComponent: number;
+  headlineComponent: number;
+  weights: { vix: number; headlines: number };
+  vix: {
+    level: number;
+    percentChange: number;
+    isSpike: boolean;
+    spikeDirection: 'up' | 'down' | 'none';
+    staleMinutes: number;
+  };
+  eventCount: number;
+  rationale: string[];
+  timestamp: string;
+  points: {
+    scaledPoints: number;
+    scaledTicks: number;
+    scaledDollarRisk: number;
+    urgency: 'low' | 'moderate' | 'elevated' | 'high' | 'extreme';
+    implied: {
+      impliedPct: number;
+      basePoints: number;
+      adjustedPoints: number;
+      adjustedTicks: number;
+      tickValue: number;
+      dollarRisk: number;
+      instrument: string;
+      beta: number;
+    };
+  };
+  instrument: string;
+}

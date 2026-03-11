@@ -1,4 +1,5 @@
-import { Settings, Bell, CreditCard, Cpu, Code, Volume2, Terminal, Wifi, Palette, Users, AlertTriangle, ArrowLeft, Globe } from 'lucide-react';
+// [claude-code 2026-03-11] T5: added mic device selector to notifications tab
+import { Settings, Bell, CreditCard, Cpu, Code, Volume2, Terminal, Wifi, Palette, Users, AlertTriangle, ArrowLeft, Globe, Mic } from 'lucide-react';
 import { useSettings, type APIKeys } from '../contexts/SettingsContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useGateway } from '../contexts/GatewayContext';
@@ -7,6 +8,7 @@ import { Button } from './ui/Button';
 import { useState, useEffect } from 'react';
 import { useBackend } from '../lib/backend';
 import { HEALING_BOWL_SOUNDS, healingBowlPlayer } from '../utils/healingBowlSounds';
+import { useVoiceMemory } from '../hooks/useVoiceMemory';
 
 import { ClawnalystDesk } from './settings/ClawnalystDesk';
 import { ThemeSettings } from './settings/ThemeSettings';
@@ -38,6 +40,7 @@ export function SettingsPage() {
     setIframeUrls,
   } = useSettings();
   const backend = useBackend();
+  const voiceMemory = useVoiceMemory();
   const [contractsPerTrade, setContractsPerTrade] = useState<number>(1);
 
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
@@ -314,6 +317,33 @@ export function SettingsPage() {
                       </div>
                     ))}
                   </div>
+                </section>
+
+                <section className="pt-6 border-t border-zinc-800">
+                  <h3 className="text-sm font-semibold text-[var(--pulse-accent)] mb-3 flex items-center gap-2">
+                    <Mic className="w-4 h-4" />
+                    Microphone Device
+                  </h3>
+                  <p className="text-xs text-gray-500 mb-4">
+                    Select which microphone to use for voice commands. Changes apply on next voice session.
+                  </p>
+                  <select
+                    value={voiceMemory.micDeviceId ?? ''}
+                    onChange={(e) => voiceMemory.setMicDeviceId(e.target.value || null)}
+                    className="w-full bg-[var(--pulse-surface)] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[var(--pulse-accent)]/40 cursor-pointer"
+                  >
+                    <option value="">System Default</option>
+                    {voiceMemory.devices.map((device) => (
+                      <option key={device.deviceId} value={device.deviceId}>
+                        {device.label || `Microphone (${device.deviceId.slice(0, 8)}...)`}
+                      </option>
+                    ))}
+                  </select>
+                  {voiceMemory.devices.length === 0 && (
+                    <p className="text-[11px] text-zinc-600 mt-2">
+                      No microphones detected. Grant microphone permission to see devices.
+                    </p>
+                  )}
                 </section>
               </div>
             )}

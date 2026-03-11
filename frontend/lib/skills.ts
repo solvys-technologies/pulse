@@ -1,5 +1,5 @@
-// [claude-code 2026-03-09] Shared skills config — used by PulseSkillsPopup, PulseSlashPicker, and permission system
-import { Globe, ShieldCheck, FileBarChart, GitBranch, Brain, Wrench, Activity, type LucideIcon } from 'lucide-react';
+// [claude-code 2026-03-11] T5: added /stop command to skills list
+import { Globe, ShieldCheck, FileBarChart, GitBranch, Brain, Wrench, Activity, StopCircle, type LucideIcon } from 'lucide-react';
 
 export interface SkillDef {
   id: string;
@@ -18,6 +18,7 @@ export const SKILLS: readonly SkillDef[] = [
   { id: 'psych_assist', label: 'PsychAssist', icon: Brain, color: '#E879F9', description: 'Psych analysis, performance review, trading activity', keywords: ['psych', 'mental', 'tilt', 'emotion', 'performance'] },
   { id: 'maintenance', label: 'Maintenance', icon: Wrench, color: '#9CA3AF', description: 'Self-update app and changelog', keywords: ['maintenance', 'update', 'changelog', 'fix'] },
   { id: 'quick_pulse', label: 'QuickPulse', icon: Activity, color: 'var(--pulse-accent)', description: 'Chart screenshot analysis: bias, entries, stop, target', keywords: ['quick', 'pulse', 'chart', 'screenshot', 'snap'] },
+  { id: 'stop', label: 'Stop', icon: StopCircle, color: '#EF4444', description: 'Cancel the current run immediately', keywords: ['stop', 'cancel', 'abort', 'halt'] },
 ] as const;
 
 export type SkillId = (typeof SKILLS)[number]['id'];

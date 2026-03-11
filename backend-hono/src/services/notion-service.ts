@@ -150,7 +150,7 @@ export async function notionUpdatePage(
 //   MDB  (Morning Daily Brief)    — 12:00 AM to 10:59 AM
 //   ADB  (Afternoon Daily Brief)  — 11:00 AM to 5:29 PM
 //   PMDB (Post-Market Daily Brief) — 5:30 PM to 11:59 PM
-export type BriefType = 'MDB' | 'ADB' | 'PMDB';
+export type BriefType = 'MDB' | 'ADB' | 'PMDB' | 'TOTT';
 
 export function getCurrentBriefType(): BriefType {
   const now = new Date();
@@ -180,7 +180,7 @@ export async function writeMDBReportToNotion(
   const key = getNotionKey();
   if (!key) return null;
 
-  const categoryMap: Record<BriefType, string> = { MDB: 'MDB', ADB: 'ADB', PMDB: 'PMDB' };
+  const categoryMap: Record<BriefType, string> = { MDB: 'MDB', ADB: 'ADB', PMDB: 'PMDB', TOTT: 'TOTT' };
   const category = categoryMap[briefType];
 
   // Archive all existing pages for this brief type
@@ -226,14 +226,19 @@ export async function writeMDBReportToNotion(
   return page;
 }
 
-export async function fetchMDBBrief(): Promise<MDBBriefItem[]> {
+/**
+ * Fetch the single most relevant brief for the current time slot.
+ * Returns exactly one MDBBriefItem (or empty array if nothing found).
+ * Supports TOTT (Tip of the Tape) type for ad-hoc intraday briefs.
+ */
+export async function fetchMDBBrief(overrideType?: BriefType): Promise<MDBBriefItem[]> {
   const key = getNotionKey();
   if (!key) {
     console.error('[Notion] NOTION_API_KEY missing — brief unavailable');
     return _briefCache?.items ?? [];
   }
 
-  const currentType = getCurrentBriefType();
+  const currentType = overrideType ?? getCurrentBriefType();
 
   // Return cache if fresh and same brief type
   if (_briefCache && _briefCache.briefType === currentType && Date.now() - _briefCache.fetchedAt < BRIEF_CACHE_TTL_MS) {
@@ -246,6 +251,7 @@ export async function fetchMDBBrief(): Promise<MDBBriefItem[]> {
       MDB: ['MDB', 'MORNING', 'EOD BRIEF'],
       ADB: ['ADB', 'AFTERNOON'],
       PMDB: ['PMDB', 'POST-MARKET', 'POST MARKET', 'EOD'],
+      TOTT: ['TOTT', 'TIP OF THE TAPE'],
     };
 
     // Query Harper Messages DB — source: Harper-Notion, sorted by recency
@@ -270,17 +276,14 @@ export async function fetchMDBBrief(): Promise<MDBBriefItem[]> {
       return keywords.some((kw) => message.includes(kw) || category.includes(kw));
     });
 
-    // Use matching pages, or fall back to most recent briefs
-    const briefPages = matchingPages.length > 0 ? matchingPages.slice(0, 3) : pages.slice(0, 3);
-
-    const items = briefPages.map((page: any) => {
-      const message = getPropText(page, 'Message');
-      const category = getPropText(page, 'Category');
-      return {
-        title: `${currentType} — ${category || 'Brief'}`,
-        detail: message,
-      };
-    });
+    // Single item: best match or most recent fallback
+    const bestPage = matchingPages.length > 0 ? matchingPages[0] : pages[0];
+    const message = getPropText(bestPage, 'Message');
+    const category = getPropText(bestPage, 'Category');
+    const items: MDBBriefItem[] = [{
+      title: `${currentType} — ${category || 'Brief'}`,
+      detail: message,
+    }];
 
     _briefCache = { items, briefType: currentType, fetchedAt: Date.now() };
     return items;

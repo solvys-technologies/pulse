@@ -1,29 +1,19 @@
-// [claude-code 2026-03-03] Phase 3: Notion API routes — MDB brief + schedule
-// [claude-code 2026-03-03] Extended: trade-ideas, performance, poll-status endpoints.
-// [claude-code 2026-03-05] Added econ-calendar sub-routes.
-// [claude-code 2026-03-06] Renamed NTN → MDB throughout.
-// [claude-code 2026-03-10] POST /mdb-report/generate — AI-generated brief stored in Notion.
+// [claude-code 2026-03-11] Phase 3: Notion API routes — single-item brief, TOTT type, RiskFlow prints merged into schedule
 import { Hono } from 'hono';
 import { generateText } from 'ai';
-import { fetchMDBBrief, fetchSchedule, writeMDBReportToNotion } from '../../services/notion-service.js';
+import { fetchMDBBrief, fetchSchedule, writeMDBReportToNotion, getCurrentBriefType } from '../../services/notion-service.js';
+import type { BriefType } from '../../services/notion-service.js';
 import { getTradeIdeas, getPerformance, getPollStatus } from './handlers.js';
 import { getFeed } from '../../services/riskflow/feed-service.js';
 import { fetchEconCalendar } from '../../services/econ-calendar-service.js';
+import { fetchEconomicFeed } from '../../services/riskflow/economic-feed.js';
 import { selectModel } from '../../services/ai/model-selector.js';
 
-type BriefType = 'MDB' | 'ADB' | 'PMDB';
-
-function getCurrentBriefType(): BriefType {
-  const hour = new Date().getHours();
-  if (hour < 11) return 'MDB';
-  if (hour < 17 || (hour === 17 && new Date().getMinutes() < 30)) return 'ADB';
-  return 'PMDB';
-}
-
-const BRIEF_LABELS: Record<BriefType, string> = {
+const BRIEF_LABELS: Record<string, string> = {
   MDB: 'Morning Daily Brief (MDB)',
   ADB: 'Afternoon Daily Brief (ADB)',
   PMDB: 'Post-Market Daily Brief (PMDB)',
+  TOTT: 'Tip of the Tape (TOTT)',
 };
 import { createEconCalendarRoutes } from './econ-calendar.js';
 
@@ -33,11 +23,14 @@ export function createNotionRoutes(): Hono {
   // Econ calendar routes (GET /econ-calendar, /econ-prints, POST /econ-print, PATCH /econ-event/:id/actual)
   app.route('/', createEconCalendarRoutes());
 
-  // GET /api/notion/mdb-brief (legacy alias: /ntn-brief)
+  // GET /api/notion/mdb-brief?type=MDB|ADB|PMDB|TOTT (legacy alias: /ntn-brief)
   app.get('/mdb-brief', async (c) => {
     try {
-      const items = await fetchMDBBrief();
-      return c.json({ items });
+      const typeParam = c.req.query('type')?.toUpperCase() as import('../../services/notion-service.js').BriefType | undefined;
+      const validTypes = ['MDB', 'ADB', 'PMDB', 'TOTT'];
+      const briefType = typeParam && validTypes.includes(typeParam) ? typeParam : undefined;
+      const items = await fetchMDBBrief(briefType);
+      return c.json({ items, briefType: briefType ?? getCurrentBriefType() });
     } catch (err) {
       console.error('[Notion] /mdb-brief error:', err);
       return c.json({ items: [] }, 500);
@@ -52,10 +45,42 @@ export function createNotionRoutes(): Hono {
     }
   });
 
-  // GET /api/notion/schedule
+  // GET /api/notion/schedule — economic calendar + recent RiskFlow prints merged
   app.get('/schedule', async (c) => {
     try {
-      const items = await fetchSchedule();
+      const [notionItems, econPrints] = await Promise.allSettled([
+        fetchSchedule(),
+        fetchEconomicFeed(),
+      ]);
+
+      const items = notionItems.status === 'fulfilled' ? notionItems.value : [];
+
+      // Merge RiskFlow economic prints as schedule items (actual data from FMP)
+      if (econPrints.status === 'fulfilled' && econPrints.value.length > 0) {
+        const existingTitles = new Set(items.map(i => i.title.toLowerCase()));
+        for (const print of econPrints.value) {
+          // Skip duplicates already in Notion schedule
+          const printName = print.headline.split('|')[0].trim().toLowerCase();
+          if (existingTitles.has(printName)) continue;
+
+          // Parse "Name | Actual: X | Forecast: Y | Prev: Z" headline
+          const parts = print.headline.split('|').map(s => s.trim());
+          const title = parts[0] || 'Economic Print';
+          const actual = parts.find(p => p.startsWith('Actual:'))?.replace('Actual:', '').trim();
+          const forecast = parts.find(p => p.startsWith('Forecast:'))?.replace('Forecast:', '').trim();
+          const previous = parts.find(p => p.startsWith('Prev:'))?.replace('Prev:', '').trim();
+
+          items.push({
+            title,
+            detail: `RiskFlow print — IV ${print.ivScore ?? '?'}/10`,
+            forecast,
+            actual,
+            previous,
+            date: print.publishedAt ? new Date(print.publishedAt).toISOString().slice(0, 10) : undefined,
+          });
+        }
+      }
+
       return c.json({ items });
     } catch (err) {
       console.error('[Notion] /schedule error:', err);
