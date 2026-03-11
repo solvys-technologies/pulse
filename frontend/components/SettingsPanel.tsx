@@ -163,7 +163,7 @@ export function SettingsPage() {
 
   const tabs = [
     { id: 'general' as const, label: 'Profile', icon: Settings, description: 'Trading symbol, billing, and account preferences' },
-    { id: 'gateway' as const, label: 'Gateway', icon: Wifi, description: 'OpenClaw gateway connection and health status' },
+    { id: 'gateway' as const, label: 'Gateway', icon: Wifi, description: 'OpenRouter AI gateway connection and health status' },
     { id: 'appearance' as const, label: 'Appearance', icon: Palette, description: 'Theme and visual customization options' },
     { id: 'desk' as const, label: 'Clawnalyst Desk', icon: Users, description: 'Configure analyst personas and agent settings' },
     { id: 'trading' as const, label: 'Trading', icon: Cpu, description: 'Risk management, autopilot, and strategy toggles' },
@@ -973,21 +973,12 @@ export function SettingsPage() {
 
 function GatewayTab() {
   const { status, lastHealthCheck, reconnect, gatewayUrl } = useGateway();
-  const { gatewayPort, setGatewayPort } = useSettings();
-  const [portInput, setPortInput] = useState(String(gatewayPort));
   const statusColor = status === 'connected' ? '#34D399' : status === 'connecting' ? 'var(--pulse-accent)' : '#EF4444';
   const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
 
-  const handlePortSave = () => {
-    const num = parseInt(portInput, 10);
-    if (num > 0 && num <= 65535) {
-      setGatewayPort(num);
-    }
-  };
-
   return (
     <section>
-      <h3 className="text-sm font-semibold text-[var(--pulse-accent)] mb-4">OpenClaw Gateway</h3>
+      <h3 className="text-sm font-semibold text-[var(--pulse-accent)] mb-4">OpenRouter Gateway</h3>
       <div className="space-y-4">
         <div className="bg-[var(--pulse-bg)] border border-[var(--pulse-accent)]/20 rounded-lg p-4">
           <div className="flex items-center justify-between mb-3">
@@ -1003,30 +994,8 @@ function GatewayTab() {
             </button>
           </div>
 
-          {/* Editable port field */}
-          <div className="flex items-center gap-2 mb-3">
-            <label className="text-xs text-gray-500 shrink-0">Port:</label>
-            <input
-              type="number"
-              value={portInput}
-              onChange={(e) => setPortInput(e.target.value)}
-              onBlur={handlePortSave}
-              onKeyDown={(e) => e.key === 'Enter' && handlePortSave()}
-              className="w-24 px-2 py-1 text-xs bg-transparent border border-[var(--pulse-accent)]/20 rounded text-gray-300 focus:outline-none focus:border-[var(--pulse-accent)]/60"
-              min={1}
-              max={65535}
-            />
-            {parseInt(portInput, 10) !== gatewayPort && (
-              <button
-                onClick={handlePortSave}
-                className="text-[10px] text-[var(--pulse-accent)] border border-[var(--pulse-accent)]/30 rounded px-2 py-0.5 hover:bg-[var(--pulse-accent)]/10 transition-colors"
-              >
-                Save
-              </button>
-            )}
-          </div>
-
           <div className="text-xs text-gray-500 space-y-1">
+            <p>Provider: <span className="text-gray-400">OpenRouter (Claude Opus 4.6)</span></p>
             <p>URL: <span className="text-gray-400">{gatewayUrl}</span></p>
             {lastHealthCheck && (
               <p>Last health check: <span className="text-gray-400">{new Date(lastHealthCheck).toLocaleTimeString()}</span></p>
@@ -1034,7 +1003,7 @@ function GatewayTab() {
           </div>
         </div>
         <p className="text-xs text-gray-500">
-          The gateway connects Pulse to your OpenClaw agent sessions. Change the port to match where OpenClaw is running. Health checks run every 30 seconds.
+          Pulse connects to Claude Opus 4.6 via OpenRouter. Set your OPENROUTER_API_KEY in the backend .env file. Fallback models: Sonnet 4.6, then Haiku 4.5.
         </p>
       </div>
     </section>

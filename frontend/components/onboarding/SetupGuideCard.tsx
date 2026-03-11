@@ -70,7 +70,7 @@ export function SetupGuideCard({ onDismiss }: { onDismiss?: () => void }) {
 
   const services: ServiceCheck[] = [
     { id: 'backend', label: 'Backend API', description: 'Hono server on port 8080', icon: Server, status: backendStatus },
-    { id: 'gateway', label: 'OpenClaw Gateway', description: 'AI agent router', icon: Globe, status: gwStatus },
+    { id: 'gateway', label: 'OpenRouter AI', description: 'Claude Opus 4.6 via OpenRouter', icon: Globe, status: gwStatus },
     { id: 'notion', label: 'Notion Integration', description: 'Trade ideas & briefs', icon: FileText, status: notionStatus },
     { id: 'market', label: 'Market Data (VIX)', description: 'FMP API for IV scoring', icon: TrendingUp, status: marketDataStatus },
   ];

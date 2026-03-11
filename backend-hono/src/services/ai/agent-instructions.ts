@@ -1,5 +1,5 @@
 // [claude-code 2026-03-10] Dynamic agent system prompt builder with skill injection and caching
-import type { OpenClawAgentRole } from '../openclaw-service.js'
+import type { OpenClawAgentRole } from '../openrouter-service.js'
 
 /**
  * Base agent prompts — extracted from openclaw-handler.ts AGENT_PROMPTS

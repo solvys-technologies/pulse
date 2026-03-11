@@ -6,7 +6,7 @@
  */
 
 import type { Context } from 'hono'
-import { handleOpenClawChat } from '../../../services/openclaw-handler.js'
+import { handleOpenClawChat } from '../../../services/openrouter-handler.js'
 import { takeScreenshot, isPlaywrightReady } from '../../../services/screenshot-service.js'
 import type { QuickPulseRequest, QuickPulseResult } from '../../../types/quick-pulse.js'
 

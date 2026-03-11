@@ -1,160 +1,245 @@
+// [claude-code 2026-03-11] OpenRouter Service — replaces OpenClaw for Windows cross-platform
 /**
  * OpenRouter Service
- * Provides OpenRouter-specific client configuration and utilities
- * for the multi-provider AI gateway architecture.
+ * Agentic backend layer for Priced In Capital (P.I.C.)
+ * Routes all AI through OpenRouter (cloud-hosted, OpenAI-compatible)
+ * Default model: Claude Opus 4.6
+ *
+ * Architecture: OPENROUTER → PULSE UI → H.E's (Human Executives)
  */
 
 import { createOpenAI } from '@ai-sdk/openai'
-import type { AiModelConfig } from '../config/ai-config.js'
-import type { OpenRouterMetadata, AiRequestCost } from '../types/ai-types.js'
-
-// Environment access helper
-const getEnv = (key: string): string | undefined => {
-  const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process
-    ?.env
-  return env?.[key]
-}
+import type { AiProviderType, AiRequestCost } from '../types/ai-types.js'
 
 // OpenRouter API configuration
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1'
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY
 
-export interface OpenRouterClientConfig {
-  apiKey: string
-  appUrl?: string
-  appName?: string
-  modelId: string
+// P.I.C. Agent Hierarchy
+export type PICAgentRole =
+  | 'harper-cao'          // Chief Agentic Officer - Executive level
+  | 'pma-1'               // S&P 500 & Crypto Predictions
+  | 'pma-2'               // Econ/Politics Predictions
+  | 'futures-desk'        // Economic Analyst/Trader
+  | 'fundamentals-desk'   // Tech Mega-Cap Analyst
+
+// Backward compat alias (imported by other files as OpenClawAgentRole)
+export type OpenClawAgentRole = PICAgentRole
+
+export type PICAgentStatus = 'operational' | 'monitoring' | 'awaiting-approval' | 'hedging' | 'standby' | 'offline'
+
+export interface PICAgent {
+  id: string
+  role: PICAgentRole
+  displayName: string
+  status: PICAgentStatus
+  lastCheckin: Date
+  scope: string
+  reportsTo: PICAgentRole | 'human-executives'
 }
 
-export interface OpenRouterHeaders {
-  Authorization: string
-  'HTTP-Referer': string
-  'X-Title': string
-  'Content-Type': string
+export interface PICTradeProposal {
+  id: string
+  sourceAgent: PICAgentRole
+  symbol: string
+  direction: 'long' | 'short'
+  instrument: 'futures' | 'prediction-market'
+  platform: 'topstep' | 'kalshi'
+  entry: number
+  stop: number
+  target: number
+  rationale: string
+  conviction: 'high' | 'medium' | 'low'
+  riskReward: number
+  strategy: string
+  timestamp: Date
+  status: 'pending' | 'approved' | 'rejected' | 'executed' | 'expired'
+  approvedBy?: string
+  approvedAt?: Date
 }
 
-/**
- * Build headers required by OpenRouter API
- * - HTTP-Referer: Your app URL for attribution
- * - X-Title: Your app name for OpenRouter dashboard
- */
-export const buildOpenRouterHeaders = (config?: {
-  appUrl?: string
-  appName?: string
-}): Partial<OpenRouterHeaders> => {
-  const appUrl = config?.appUrl ?? getEnv('OPENROUTER_APP_URL') ?? 'https://pulse-solvys.vercel.app'
-  const appName = config?.appName ?? getEnv('OPENROUTER_APP_NAME') ?? 'Pulse-AI-Gateway'
+export type OpenClawTradeProposal = PICTradeProposal
 
-  return {
-    'HTTP-Referer': appUrl,
-    'X-Title': appName
+export interface PICAlert {
+  id: string
+  type: 'session-open' | 'off-schedule-event' | 'hot-print' | 'black-swan' | 'risk-warning'
+  sourceAgent: PICAgentRole
+  priority: 'critical' | 'high' | 'medium' | 'low'
+  title: string
+  detail: string
+  symbols?: string[]
+  timestamp: Date
+  acknowledged: boolean
+}
+
+export type OpenClawAlert = PICAlert
+
+export interface PICDailyReport {
+  id: string
+  date: string
+  pnl: number
+  trades: PICTradeProposal[]
+  bias: 'bullish' | 'bearish' | 'neutral' | 'selective'
+  mdbReport: string
+  timestamp: Date
+}
+
+export type OpenClawDailyReport = PICDailyReport
+
+// Agent definitions following P.I.C. hierarchy
+const PIC_AGENTS: Record<PICAgentRole, Omit<PICAgent, 'id' | 'lastCheckin' | 'status'>> = {
+  'harper-cao': {
+    role: 'harper-cao',
+    displayName: 'Harper / CAO',
+    scope: 'Macro oversight, approvals, trade consolidation',
+    reportsTo: 'human-executives'
+  },
+  'pma-1': {
+    role: 'pma-1',
+    displayName: 'PMA-1 (S&P/Crypto)',
+    scope: 'S&P 500 & Crypto prediction markets',
+    reportsTo: 'harper-cao'
+  },
+  'pma-2': {
+    role: 'pma-2',
+    displayName: 'PMA-2 (Econ/Politics)',
+    scope: 'Economic & Political prediction markets',
+    reportsTo: 'harper-cao'
+  },
+  'futures-desk': {
+    role: 'futures-desk',
+    displayName: 'Futures Desk',
+    scope: '/NQ, /MNQ, /ES trading via TopStepX',
+    reportsTo: 'harper-cao'
+  },
+  'fundamentals-desk': {
+    role: 'fundamentals-desk',
+    displayName: 'Fundamentals Desk',
+    scope: 'Top 10 S&P/NDX tech watchlist',
+    reportsTo: 'harper-cao'
   }
 }
 
+// All agents use Claude Opus 4.6 via OpenRouter
+export const OPENROUTER_MODEL_MAP: Record<string, string> = {
+  primary: 'anthropic/claude-opus-4-6',
+  fallback: 'anthropic/claude-sonnet-4-6',
+  'last-resort': 'anthropic/claude-haiku-4-5-20251001',
+  'harper-cao': 'anthropic/claude-opus-4-6',
+  'cao-approval': 'anthropic/claude-opus-4-6',
+  'cao-consolidation': 'anthropic/claude-opus-4-6',
+  'pma-1': 'anthropic/claude-opus-4-6',
+  'pma-2': 'anthropic/claude-opus-4-6',
+  'prediction-market': 'anthropic/claude-opus-4-6',
+  'futures-desk': 'anthropic/claude-opus-4-6',
+  'fa-rippers': 'anthropic/claude-opus-4-6',
+  'economic-analysis': 'anthropic/claude-opus-4-6',
+  'fundamentals-desk': 'anthropic/claude-opus-4-6',
+  'earnings-analysis': 'anthropic/claude-opus-4-6',
+  'tech-mega-cap': 'anthropic/claude-opus-4-6',
+}
+
 /**
- * Create an OpenRouter client using the AI SDK's OpenAI-compatible provider
- * OpenRouter implements the OpenAI API spec, so we use createOpenAI with custom baseURL
+ * Check if OpenRouter is available
  */
-export const createOpenRouterClient = (modelConfig: AiModelConfig) => {
-  const apiKey = getEnv(modelConfig.apiKeyEnv)
-  if (!apiKey) {
-    const error = new Error(
-      `Missing API key for OpenRouter (env: ${modelConfig.apiKeyEnv})`
-    ) as Error & { status?: number; statusCode?: number }
-    error.status = 500
-    error.statusCode = 500
-    throw error
+export const isOpenRouterAvailable = (): boolean => {
+  return Boolean(OPENROUTER_API_KEY && OPENROUTER_API_KEY.length > 0)
+}
+
+// Backward compat
+export const isOpenClawAvailable = isOpenRouterAvailable
+
+/**
+ * Create an OpenRouter client using OpenAI-compatible interface
+ * Default model: Claude Opus 4.6
+ */
+export const createOpenRouterClient = (modelId?: string) => {
+  if (!OPENROUTER_API_KEY) {
+    throw new Error('Missing OPENROUTER_API_KEY environment variable')
   }
 
-  const headers = buildOpenRouterHeaders()
-
-  // Create OpenAI-compatible client pointing to OpenRouter
-  const openrouter = createOpenAI({
-    apiKey,
+  const client = createOpenAI({
+    apiKey: OPENROUTER_API_KEY,
     baseURL: OPENROUTER_BASE_URL,
-    headers: headers as Record<string, string>
+    headers: {
+      'HTTP-Referer': process.env.OPENROUTER_APP_URL ?? 'https://pulse-solvys.vercel.app',
+      'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Pulse-PIC-Gateway',
+    },
   })
 
-  return openrouter(modelConfig.id)
+  return client(modelId ?? 'anthropic/claude-opus-4-6')
 }
 
+// Backward compat
+export const createOpenClawClient = createOpenRouterClient
+
 /**
- * Parse OpenRouter-specific response headers for cost and rate limit info
- * OpenRouter returns metadata in X-OpenRouter-* headers
+ * Get agent definition by role
  */
-export const parseOpenRouterResponseHeaders = (
-  headers: Headers | Record<string, string>
-): Partial<OpenRouterMetadata> => {
-  const getHeader = (name: string): string | null => {
-    if (headers instanceof Headers) {
-      return headers.get(name)
-    }
-    return headers[name] ?? headers[name.toLowerCase()] ?? null
-  }
-
-  const metadata: Partial<OpenRouterMetadata> = {}
-
-  // Parse cost from response (if available)
-  const costHeader = getHeader('x-openrouter-cost')
-  if (costHeader) {
-    const cost = parseFloat(costHeader)
-    if (!isNaN(cost)) {
-      metadata.cost = cost
-    }
-  }
-
-  // Parse rate limit info
-  const rateLimitRemaining = getHeader('x-ratelimit-remaining')
-  const rateLimitReset = getHeader('x-ratelimit-reset')
-
-  if (rateLimitRemaining || rateLimitReset) {
-    metadata.rateLimit = {}
-    if (rateLimitRemaining) {
-      const remaining = parseInt(rateLimitRemaining, 10)
-      if (!isNaN(remaining)) {
-        metadata.rateLimit.remaining = remaining
-      }
-    }
-    if (rateLimitReset) {
-      const reset = parseInt(rateLimitReset, 10)
-      if (!isNaN(reset)) {
-        metadata.rateLimit.reset = reset
-      }
-    }
-  }
-
-  // Parse model info
-  const modelHeader = getHeader('x-openrouter-model')
-  if (modelHeader) {
-    metadata.model = modelHeader
-  }
-
-  return metadata
+export const getAgentDefinition = (role: PICAgentRole): Omit<PICAgent, 'id' | 'lastCheckin' | 'status'> => {
+  return PIC_AGENTS[role]
 }
 
 /**
- * Calculate cost from token usage and model config
- * Falls back to header-based cost if available
+ * Get all agent definitions
+ */
+export const getAllAgentDefinitions = (): typeof PIC_AGENTS => {
+  return PIC_AGENTS
+}
+
+/**
+ * Get the recommended model for a task (always Claude Opus 4.6)
+ */
+export const getModelForTask = (task: string): string => {
+  const normalizedTask = task.toLowerCase().replace(/[^a-z0-9-]/g, '-')
+  return OPENROUTER_MODEL_MAP[normalizedTask] ?? 'anthropic/claude-opus-4-6'
+}
+
+/**
+ * Map agent role to AI task type for model selection
+ */
+export const agentRoleToTaskType = (role: PICAgentRole): string => {
+  switch (role) {
+    case 'harper-cao':
+      return 'reasoning'
+    case 'pma-1':
+    case 'pma-2':
+      return 'prediction-market'
+    case 'futures-desk':
+      return 'technical'
+    case 'fundamentals-desk':
+      return 'research'
+    default:
+      return 'general'
+  }
+}
+
+/**
+ * Calculate cost from token usage for OpenRouter requests
  */
 export const calculateOpenRouterCost = (
-  modelConfig: AiModelConfig,
   usage: { inputTokens?: number; outputTokens?: number },
-  headerCost?: number
+  model: string
 ): AiRequestCost => {
   const inputTokens = usage.inputTokens ?? 0
   const outputTokens = usage.outputTokens ?? 0
   const totalTokens = inputTokens + outputTokens
 
-  // Calculate from config pricing
-  const inputCostUsd = (inputTokens / 1000) * modelConfig.costPer1kInputUsd
-  const outputCostUsd = (outputTokens / 1000) * modelConfig.costPer1kOutputUsd
-  const calculatedTotalCost = inputCostUsd + outputCostUsd
+  const pricing: Record<string, { input: number; output: number }> = {
+    'anthropic/claude-opus-4-6': { input: 0.015, output: 0.075 },
+    'anthropic/claude-sonnet-4-6': { input: 0.003, output: 0.015 },
+    'anthropic/claude-haiku-4-5-20251001': { input: 0.0008, output: 0.004 },
+  }
 
-  // Use header cost if available (more accurate), otherwise use calculated
-  const totalCostUsd = headerCost ?? calculatedTotalCost
+  const modelPricing = pricing[model] ?? { input: 0.015, output: 0.075 }
+
+  const inputCostUsd = (inputTokens / 1000) * modelPricing.input
+  const outputCostUsd = (outputTokens / 1000) * modelPricing.output
+  const totalCostUsd = inputCostUsd + outputCostUsd
 
   return {
-    provider: 'openrouter',
-    model: modelConfig.id,
+    provider: 'openrouter' as AiProviderType,
+    model,
     inputTokens,
     outputTokens,
     totalTokens,
@@ -166,123 +251,67 @@ export const calculateOpenRouterCost = (
 }
 
 /**
- * Check if an error is an OpenRouter rate limit error
+ * Check if an error is a rate limit error
  */
-export const isOpenRouterRateLimitError = (error: unknown): boolean => {
+export const isRateLimitError = (error: unknown): boolean => {
   if (!error || typeof error !== 'object') return false
-
   const status =
     (error as { status?: number }).status ?? (error as { statusCode?: number }).statusCode
   if (status === 429) return true
-
   const message = 'message' in error ? String((error as { message?: string }).message) : ''
   return (
     message.toLowerCase().includes('rate limit') ||
-    message.toLowerCase().includes('too many requests') ||
-    message.toLowerCase().includes('quota exceeded')
+    message.toLowerCase().includes('too many requests')
   )
 }
 
+export const isOpenClawRateLimitError = isRateLimitError
+
 /**
- * Check if an error is retryable (network issues, temporary failures)
+ * Check if an error is retryable
  */
-export const isOpenRouterRetryableError = (error: unknown): boolean => {
+export const isRetryableError = (error: unknown): boolean => {
   if (!error || typeof error !== 'object') return false
-
-  // Rate limits are retryable with backoff
-  if (isOpenRouterRateLimitError(error)) return true
-
+  if (isRateLimitError(error)) return true
   const status =
     (error as { status?: number }).status ?? (error as { statusCode?: number }).statusCode ?? null
-
-  // Server errors and timeouts are retryable
-  if (status && [408, 425, 500, 502, 503, 504].includes(status)) {
-    return true
-  }
-
-  // Network-level errors
-  const code = 'code' in error ? String((error as { code?: string }).code) : ''
-  if (code && ['etimedout', 'econnreset', 'fetch_failed', 'enotfound'].includes(code.toLowerCase())) {
-    return true
-  }
-
+  if (status && [408, 500, 502, 503, 504].includes(status)) return true
   const message = 'message' in error ? String((error as { message?: string }).message).toLowerCase() : ''
-  return (
-    message.includes('timeout') ||
-    message.includes('network') ||
-    message.includes('fetch') ||
-    message.includes('connection') ||
-    message.includes('econnrefused')
-  )
+  return message.includes('timeout') || message.includes('network') || message.includes('connection')
 }
 
-/**
- * Calculate exponential backoff delay for retries
- */
-export const calculateBackoffDelay = (
-  attemptNumber: number,
-  options?: {
-    baseDelayMs?: number
-    maxDelayMs?: number
-    jitterFactor?: number
-  }
-): number => {
-  const baseDelayMs = options?.baseDelayMs ?? 1000
-  const maxDelayMs = options?.maxDelayMs ?? 30000
-  const jitterFactor = options?.jitterFactor ?? 0.2
-
-  // Exponential backoff: base * 2^attempt
-  const exponentialDelay = baseDelayMs * Math.pow(2, attemptNumber)
-
-  // Cap at max delay
-  const cappedDelay = Math.min(exponentialDelay, maxDelayMs)
-
-  // Add jitter to prevent thundering herd
-  const jitter = cappedDelay * jitterFactor * (Math.random() - 0.5) * 2
-
-  return Math.round(cappedDelay + jitter)
-}
+export const isOpenClawRetryableError = isRetryableError
 
 /**
- * Extract error details for logging
+ * P.I.C. Trading Rules validation
  */
-export const extractOpenRouterErrorDetails = (
-  error: unknown
-): {
-  status: number | null
-  code: string | null
-  message: string
-  isRateLimit: boolean
-  isRetryable: boolean
+export const validateTradeProposal = (proposal: Partial<PICTradeProposal>): {
+  valid: boolean
+  violations: string[]
 } => {
-  const status =
-    (error as { status?: number })?.status ??
-    (error as { statusCode?: number })?.statusCode ??
-    null
-
-  const code = (error as { code?: string })?.code ?? null
-
-  const message = error instanceof Error ? error.message : String(error)
-
-  return {
-    status,
-    code,
-    message,
-    isRateLimit: isOpenRouterRateLimitError(error),
-    isRetryable: isOpenRouterRetryableError(error)
+  const violations: string[] = []
+  if (!proposal.conviction || proposal.conviction === 'low') {
+    violations.push('Rule 3: No "shot in the dark" trades - conviction must be medium or high')
   }
+  if (proposal.riskReward && proposal.riskReward < 2) {
+    violations.push('Rule 8: Risk/reward must be at least 2:1 for good trade entries')
+  }
+  if (!proposal.stop) {
+    violations.push('Rule 12: Stop loss must be defined - no painful endings')
+  }
+  return { valid: violations.length === 0, violations }
 }
 
 /**
- * OpenRouter model IDs used by Pulse
- * These provide alternative routes to the same models used via Vercel Gateway
- * Full list at: https://openrouter.ai/models
+ * OpenRouter model IDs used by P.I.C.
  */
 export const OPENROUTER_MODELS = {
-  // Anthropic - Claude Sonnet 4.5 equivalent
-  CLAUDE_SONNET: 'anthropic/claude-sonnet-4',
-  // Meta - Llama 3.3 70B (same as Groq via Vercel)
-  LLAMA_3_3_70B: 'meta-llama/llama-3.3-70b-instruct'
+  PRIMARY: 'anthropic/claude-opus-4-6',
+  FALLBACK: 'anthropic/claude-sonnet-4-6',
+  LAST_RESORT: 'anthropic/claude-haiku-4-5-20251001',
 } as const
+
+// Backward compat export name
+export const OPENCLAW_MODELS = OPENROUTER_MODELS
 
 export type OpenRouterModelId = (typeof OPENROUTER_MODELS)[keyof typeof OPENROUTER_MODELS]

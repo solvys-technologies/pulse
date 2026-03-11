@@ -1,8 +1,6 @@
-// [claude-code 2026-03-10] Gateway toast: show once per session only (sessionStorage guard)
-// [claude-code 2026-03-11] Gateway port now configurable via Settings → persisted in localStorage
+// [claude-code 2026-03-11] Gateway context repurposed for OpenRouter health check (Windows cross-platform)
 import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { useToast } from './ToastContext';
-import { useSettings } from './SettingsContext';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -21,23 +19,22 @@ const GatewayContext = createContext<GatewayContextValue>({
   status: 'disconnected',
   lastHealthCheck: null,
   reconnect: () => {},
-  gatewayUrl: 'http://localhost:7787',
+  gatewayUrl: 'https://openrouter.ai/api/v1',
 });
 
 /* ------------------------------------------------------------------ */
 /*  Constants                                                          */
 /* ------------------------------------------------------------------ */
 
-const DEFAULT_GATEWAY_PORT = 7787;
-const HEALTH_INTERVAL_MS = 30_000; // 30 seconds
-const MAX_BACKOFF_MS = 60_000;
+const HEALTH_INTERVAL_MS = 60_000; // 60 seconds (OpenRouter is cloud-hosted, less frequent checks)
+const MAX_BACKOFF_MS = 120_000;
+const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1';
 
 /* ------------------------------------------------------------------ */
 /*  Provider                                                           */
 /* ------------------------------------------------------------------ */
 
 export function GatewayProvider({ children }: { children: ReactNode }) {
-  const { gatewayPort } = useSettings();
   const [status, setStatus] = useState<GatewayStatus>('connecting');
   const [lastHealthCheck, setLastHealthCheck] = useState<string | null>(null);
   const backoffRef = useRef(2000);
@@ -45,29 +42,29 @@ export function GatewayProvider({ children }: { children: ReactNode }) {
   const { addToast, dismissToast } = useToast();
   const connectingToastRef = useRef<string | null>(null);
 
-  const gatewayUrl = import.meta.env.VITE_GATEWAY_URL || `http://localhost:${gatewayPort || DEFAULT_GATEWAY_PORT}`;
+  // For Windows version, gateway is always OpenRouter (no local gateway)
+  const gatewayUrl = OPENROUTER_API_URL;
 
   const checkHealth = useCallback(async () => {
     try {
-      const res = await fetch(`${gatewayUrl}/health`, { signal: AbortSignal.timeout(5000) });
+      // Check if backend API is reachable (which validates OpenRouter connectivity)
+      const res = await fetch('http://localhost:8080/health', { signal: AbortSignal.timeout(5000) });
       const contentType = res.headers.get('content-type') || '';
       const looksLikeJson = contentType.includes('application/json');
       if (res.ok && looksLikeJson) {
         const wasDisconnected = status === 'disconnected' || status === 'error' || status === 'connecting';
         setStatus('connected');
         setLastHealthCheck(new Date().toISOString());
-        backoffRef.current = 2000; // reset backoff
+        backoffRef.current = 2000;
 
         if (wasDisconnected) {
-          // Dismiss any lingering connecting toast
           if (connectingToastRef.current) {
             dismissToast(connectingToastRef.current);
             connectingToastRef.current = null;
           }
-          // [claude-code 2026-03-10] Gateway toast: show once per session only
           if (!sessionStorage.getItem('gateway_connected_shown')) {
             sessionStorage.setItem('gateway_connected_shown', '1');
-            addToast('Gateway connected', 'success');
+            addToast('Backend connected', 'success');
           }
         }
       } else {
@@ -77,26 +74,23 @@ export function GatewayProvider({ children }: { children: ReactNode }) {
       const wasConnected = status === 'connected';
       setStatus('disconnected');
 
-      // Only toast when we were previously connected (avoid noise on first load / no gateway)
       if (wasConnected) {
-        addToast('Gateway disconnected — retrying...', 'error');
+        addToast('Backend disconnected — retrying...', 'error');
       }
 
-      // Exponential backoff retry
       backoffRef.current = Math.min(backoffRef.current * 2, MAX_BACKOFF_MS);
       retryTimerRef.current = setTimeout(checkHealth, backoffRef.current);
     }
-  }, [status, addToast, dismissToast, gatewayUrl]);
+  }, [status, addToast, dismissToast]);
 
   const reconnect = useCallback(() => {
     if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
     setStatus('connecting');
-    connectingToastRef.current = addToast('Reconnecting to gateway...', 'updating');
+    connectingToastRef.current = addToast('Reconnecting to backend...', 'updating');
     backoffRef.current = 2000;
     checkHealth();
   }, [checkHealth, addToast]);
 
-  // Initial connection + periodic health checks (re-trigger when port changes)
   useEffect(() => {
     setStatus('connecting');
     backoffRef.current = 2000;
@@ -107,7 +101,7 @@ export function GatewayProvider({ children }: { children: ReactNode }) {
       if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gatewayUrl]);
+  }, []);
 
   return (
     <GatewayContext.Provider value={{ status, lastHealthCheck, reconnect, gatewayUrl }}>

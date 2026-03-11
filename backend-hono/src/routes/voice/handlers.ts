@@ -1,6 +1,6 @@
 import type { Context } from 'hono';
 import * as conversationStore from '../../services/ai/conversation-store.js';
-import { handleOpenClawChat } from '../../services/openclaw-handler.js';
+import { handleOpenClawChat } from '../../services/openrouter-handler.js';
 import { synthesizeVoice, transcribeVoice } from '../../services/voice-service.js';
 import { analyzeSentiment } from '../../services/voice-sentiment.js';
 

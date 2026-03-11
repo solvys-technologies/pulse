@@ -1,14 +1,14 @@
-// [claude-code 2026-03-10] Claude SDK bridge path + 21st API fallback for thinkHarder
+// [claude-code 2026-03-11] Removed LOCAL_OPENCLAW path, all chat routes through OpenRouter (Claude Opus 4.6)
 /**
  * AI Chat Handler
- * Handle chat messages and AI responses - OpenClaw Local Processing
- * Routes through P.I.C. agent network for local single-user mode
+ * Handle chat messages and AI responses via OpenRouter
+ * Routes through P.I.C. agent network for agent detection/routing
  *
  * Inference priority chain:
- *   1. OpenClaw/Groq (fast, free) — default for all chat
+ *   1. OpenRouter (Claude Opus 4.6) — default for all chat
  *   2. Claude SDK Bridge (Opus, free via Max) — for thinkHarder or explicit claude-local model
  *   3. 21st API (deep thinking fallback) — when Claude SDK unavailable + thinkHarder
- *   4. OpenRouter (paid) — last resort
+ *   4. GitHub Models (GPT-4o) — explicit selection only
  */
 
 import type { Context } from 'hono'
@@ -17,8 +17,8 @@ import { selectModel, createModelClient, logModelSelection, markProviderUnhealth
 import * as conversationStore from '../../../services/ai/conversation-store.js'
 import { defaultAiConfig } from '../../../config/ai-config.js'
 import type { ChatRequest } from '../../../types/ai-chat.js'
-import type { OpenClawAgentRole } from '../../../services/openclaw-service.js'
-import { handleOpenClawChat, detectAgent, type ContentPart } from '../../../services/openclaw-handler.js'
+import type { OpenClawAgentRole } from '../../../services/openrouter-service.js'
+import { detectAgent, extractSymbols, type ContentPart } from '../../../services/openrouter-handler.js'
 import { exaSearch, formatExaContext, isExaAvailable } from '../../../services/exa-service.js'
 import { extractSkillFromMessage, isSkillEnabled, getSkillDisabledReason } from '../../../config/feature-flags.js'
 import { createRequestCognition } from '../../../services/cognition-emitter.js'
@@ -26,6 +26,7 @@ import { enqueue, completeJob } from '../../../services/chat-queue.js'
 import { isBridgeAvailable, bridgeChat, type BridgeStreamEvent } from '../../../services/claude-sdk/bridge.js'
 import { deepThink, is21stAvailable } from '../../../services/twenty-first/deep-think.js'
 import { resolveModelKey } from '../../../config/ai-config.js'
+import { getAgentSystemPrompt, extractSkillTag } from '../../../services/ai/agent-instructions.js'
 
 // File attachment content part types
 type FileContentPart =
@@ -33,87 +34,47 @@ type FileContentPart =
   | { type: 'image_url'; image_url: { url: string } }
   | { type: 'file'; file: { name: string; mimeType: string; data: string } }
 
-// Timeout for streaming responses (60 seconds)
 const STREAM_TIMEOUT_MS = 60_000
-const LOCAL_STREAM_CHUNK_SIZE = 72
-const LOCAL_STREAM_CHUNK_DELAY_MS = Number(process.env.OPENCLAW_STREAM_CHUNK_DELAY_MS ?? '18')
-const LOCAL_REASONING_CHUNK_SIZE = 52
-const LOCAL_REASONING_CHUNK_DELAY_MS = Number(process.env.OPENCLAW_REASONING_CHUNK_DELAY_MS ?? '14')
-
-// Check if we should use local OpenClaw processing
-const USE_LOCAL_OPENCLAW = process.env.USE_LOCAL_OPENCLAW !== 'false'
 
 function toAgentLabel(agent: OpenClawAgentRole): string {
   switch (agent) {
-    case 'harper-cao':
-      return 'Harper / CAO'
-    case 'pma-1':
-      return 'PMA-1'
-    case 'pma-2':
-      return 'PMA-2'
-    case 'futures-desk':
-      return 'Futures Desk'
-    case 'fundamentals-desk':
-      return 'Fundamentals Desk'
-    default:
-      return 'PIC Analyst'
+    case 'harper-cao': return 'Harper / CAO'
+    case 'pma-1': return 'PMA-1'
+    case 'pma-2': return 'PMA-2'
+    case 'futures-desk': return 'Futures Desk'
+    case 'fundamentals-desk': return 'Fundamentals Desk'
+    default: return 'PIC Analyst'
   }
-}
-
-function buildLocalReasoningTrace(options: {
-  agent: OpenClawAgentRole
-  intent?: string
-  userMessage: string
-  symbols?: string[]
-}): string {
-  const { agent, intent, userMessage, symbols } = options
-  const compactInput = userMessage.replace(/\s+/g, ' ').trim()
-  const promptPreview = compactInput.length > 96 ? `${compactInput.slice(0, 96)}...` : compactInput
-  const symbolText = symbols && symbols.length > 0 ? symbols.join(', ') : 'none detected'
-  const intentText = intent || 'general'
-
-  return [
-    `Routing request to ${toAgentLabel(agent)} (${intentText}).`,
-    `Context scan: symbols = ${symbolText}.`,
-    `Applying P.I.C. risk and execution framework before final answer.`,
-    `User prompt focus: "${promptPreview}".`,
-  ].join('\n')
 }
 
 /**
  * POST /api/ai/chat
- * OpenClaw Local Processing - Routes through P.I.C. agent network
+ * OpenRouter Processing - Routes through Claude Opus 4.6
  */
 export async function handleChat(c: Context) {
   const startTime = Date.now()
   const requestId = `chat-${Date.now()}-${Math.random().toString(36).substring(7)}`
   const userId = c.get('userId') as string | undefined
 
-  // Pass user's GitHub OAuth token for GitHub Models (GPT-4o)
   const githubToken = c.req.header('X-GitHub-Token')
   setRuntimeGitHubToken(githubToken || undefined)
 
-  // Create scoped cognition emitter — frontend subscribes via /api/ai/cognition/stream?requestId=
   const cognition = createRequestCognition(requestId, startTime)
 
-  console.log(`[OpenClaw][${requestId}] Request started (local mode: ${USE_LOCAL_OPENCLAW}, github: ${Boolean(githubToken)})`)
-
-  // Expose requestId so frontend can open cognition SSE stream
+  console.log(`[Chat][${requestId}] Request started (github: ${Boolean(githubToken)})`)
   c.header('X-Request-Id', requestId)
 
   if (!userId) {
-    console.warn(`[OpenClaw][${requestId}] Unauthorized - no userId`)
+    console.warn(`[Chat][${requestId}] Unauthorized - no userId`)
     return c.json({ error: 'Unauthorized' }, 401)
   }
 
   try {
     const body = await c.req.json<ChatRequest & { messages?: { role: string; content: string }[] }>().catch((err) => {
-      console.error(`[OpenClaw][${requestId}] Failed to parse request body:`, err)
+      console.error(`[Chat][${requestId}] Failed to parse request body:`, err)
       return null
     })
 
-    // Support both 'message' (string) and 'messages' (array from Vercel AI SDK)
-    // Content can be string or multimodal array [{type:'text',text:''},{type:'image_url',image_url:{url:''}}]
     let message = body?.message?.trim() ?? ''
     let multimodalContent: ContentPart[] | undefined
     if (!message && body?.messages?.length) {
@@ -122,7 +83,6 @@ export async function handleChat(c: Context) {
       if (typeof rawContent === 'string') {
         message = rawContent.trim()
       } else if (Array.isArray(rawContent)) {
-        // Multimodal content array — supports text, images, and file attachments
         const textParts: string[] = []
         const fileParts: string[] = []
         const imageParts: ContentPart[] = []
@@ -135,7 +95,6 @@ export async function handleChat(c: Context) {
           } else if (part.type === 'file' && part.file) {
             const { name, mimeType, data } = part.file
             if (mimeType.startsWith('image/')) {
-              // Images → base64 vision input
               imageParts.push({ type: 'image_url', image_url: { url: `data:${mimeType};base64,${data}` } })
             } else if (
               mimeType.startsWith('text/') ||
@@ -144,11 +103,9 @@ export async function handleChat(c: Context) {
               mimeType === 'application/typescript' ||
               mimeType === 'application/xml'
             ) {
-              // Text/code → inline context
               const decoded = Buffer.from(data, 'base64').toString('utf-8')
               fileParts.push(`--- File: ${name} ---\n${decoded}\n--- End: ${name} ---`)
             } else if (mimeType === 'application/pdf') {
-              // PDFs → extract text (base64 decode, best-effort UTF-8)
               const decoded = Buffer.from(data, 'base64').toString('utf-8')
               const cleaned = decoded.replace(/[^\x20-\x7E\n\r\t]/g, ' ').replace(/\s{3,}/g, '\n')
               fileParts.push(`--- PDF: ${name} ---\n${cleaned.slice(0, 50_000)}\n--- End: ${name} ---`)
@@ -170,15 +127,14 @@ export async function handleChat(c: Context) {
     }
 
     if (!message) {
-      console.warn(`[OpenClaw][${requestId}] Empty message`)
+      console.warn(`[Chat][${requestId}] Empty message`)
       return c.json({ error: 'Message is required' }, 400)
     }
 
-    // Enforce skill permissions
     const detectedSkill = extractSkillFromMessage(message)
     if (detectedSkill && !isSkillEnabled(detectedSkill)) {
       const reason = getSkillDisabledReason(detectedSkill) || 'This skill is currently disabled.'
-      console.warn(`[OpenClaw][${requestId}] Blocked disabled skill: ${detectedSkill}`)
+      console.warn(`[Chat][${requestId}] Blocked disabled skill: ${detectedSkill}`)
       cognition.step('skill-check', `Skill blocked: ${detectedSkill}`, reason)
       cognition.done()
       return c.json({ error: 'Skill unavailable', reason }, 403)
@@ -187,198 +143,60 @@ export async function handleChat(c: Context) {
       cognition.step('skill-check', `Skill active: ${detectedSkill}`)
     }
 
-    console.log(`[OpenClaw][${requestId}] Message: "${message.substring(0, 50)}..." (${message.length} chars)`)
+    console.log(`[Chat][${requestId}] Message: "${message.substring(0, 50)}..." (${message.length} chars)`)
 
     const { conversationId, model, taskType, agentOverride, thinkHarder } = body ?? {} as any
 
-    // Get or create conversation
     let conversation = conversationId
       ? await conversationStore.getConversation(conversationId, userId)
       : null
 
     if (conversationId && !conversation) {
-      console.log(`[OpenClaw][${requestId}] Conversation ${conversationId} not found, creating new`)
+      console.log(`[Chat][${requestId}] Conversation ${conversationId} not found, creating new`)
       conversation = null
     }
 
     if (!conversation) {
       const title = conversationStore.generateTitle(message)
       conversation = await conversationStore.createConversation(userId, { title, model })
-      console.log(`[OpenClaw][${requestId}] Created conversation: ${conversation.id}`)
+      console.log(`[Chat][${requestId}] Created conversation: ${conversation.id}`)
     } else {
-      console.log(`[OpenClaw][${requestId}] Using existing conversation: ${conversation.id}`)
+      console.log(`[Chat][${requestId}] Using existing conversation: ${conversation.id}`)
     }
 
-    // Store user message
     await conversationStore.addMessage(conversation.id, {
       conversationId: conversation.id,
       role: 'user',
       content: message,
     })
-    console.log(`[OpenClaw][${requestId}] User message saved`)
 
-    // Get conversation history
     const history = await conversationStore.getRecentContext(conversation.id)
-    console.log(`[OpenClaw][${requestId}] History: ${history.length} messages`)
     cognition.step('context-build', `Context assembled`, `${history.length} messages in history`)
 
-    // Detect which P.I.C. agent should handle this
     const agentInfo = detectAgent(message)
-    console.log(`[OpenClaw][${requestId}] Routed to agent: ${agentInfo.agent} (intent: ${agentInfo.intent}, confidence: ${agentInfo.confidence})`)
+    console.log(`[Chat][${requestId}] Routed to agent: ${agentInfo.agent} (intent: ${agentInfo.intent})`)
     cognition.step(
       'agent-route',
       `Routed → ${toAgentLabel(agentInfo.agent)}`,
       `intent: ${agentInfo.intent}, confidence: ${Math.round(agentInfo.confidence * 100)}%`
     )
 
-    // LOCAL OPENCLAW is always the primary path.
-    // GitHub Models (GPT-4o) is available as a fallback when the Clawdbot gateway is down.
-    // Only use GitHub Models if explicitly requested via model param.
     const useGitHubModel = Boolean(githubToken) && model === 'github-deepseek'
 
-    // PRIMARY PATH: Local OpenClaw processing via P.I.C. agent network
-    if (USE_LOCAL_OPENCLAW && !useGitHubModel) {
-      console.log(`[OpenClaw][${requestId}] Using LOCAL processing via P.I.C. agents`)
-
-      // Deep research via Exa when thinkHarder is enabled
-      let researchContext = ''
-      let researchSourceCount = 0
-      if (thinkHarder && isExaAvailable()) {
-        console.log(`[OpenClaw][${requestId}] ThinkHarder enabled — running Exa research`)
-        cognition.step('tool-dispatch', 'Exa deep research', 'ThinkHarder enabled — searching live sources')
-        const results = await exaSearch(message, { numResults: 5 })
-        researchSourceCount = results.length
-        researchContext = formatExaContext(results)
-        if (researchContext) {
-          console.log(`[OpenClaw][${requestId}] Exa returned ${results.length} sources`)
-          cognition.step('tool-dispatch', `Exa: ${results.length} sources found`, results.map(r => (r as any).url ?? '').filter(Boolean).slice(0, 2).join(', '))
-        }
-      }
-
-      // Augment message with research context if available
-      const augmentedMessage = researchContext
-        ? `${researchContext}\n\n${message}`
-        : message
-
-      // Generate response locally through OpenClaw
-      cognition.step('gateway-call', 'Calling OpenClaw gateway', `model: clawdbot:main, agent: ${agentInfo.agent}`)
-      const openclawResponse = await handleOpenClawChat({
-        message: augmentedMessage,
-        multimodalContent,
-        conversationId: conversation.id,
-        history: history.map(h => ({ role: h.role as 'user' | 'assistant', content: h.content })),
-        agentOverride: agentOverride as OpenClawAgentRole | undefined,
-        thinkHarder,
-      })
-
-      console.log(`[OpenClaw][${requestId}] Local response generated by ${openclawResponse.agent}`)
-      cognition.step('response-ready', 'Response assembled', `${openclawResponse.content.length} chars, streaming now`)
-
-      // Store assistant message
-      await conversationStore.addMessage(conversation.id, {
-        conversationId: conversation.id,
-        role: 'assistant',
-        content: openclawResponse.content,
-        model: `openclaw-${openclawResponse.agent}`,
-      })
-
-      const duration = Date.now() - startTime
-      console.log(`[OpenClaw][${requestId}] Response complete (${duration}ms, ${openclawResponse.content.length} chars)`)
-
-      // Set conversation ID header
-      c.header('X-Conversation-Id', conversation.id)
-      c.header('X-OpenClaw-Agent', openclawResponse.agent)
-      if (researchSourceCount > 0) {
-        c.header('X-Research-Sources', String(researchSourceCount))
-      }
-
-      // Stream using AI SDK UI message event stream (SSE with JSON payloads).
-      // This matches `DefaultChatTransport` on the frontend, which expects SSE JSON events.
-      const uiMessageId = `assistant-${Date.now()}`
-      const uiReasoningId = `reasoning-${Date.now()}`
-      const content = openclawResponse.content
-      const reasoningTrace = buildLocalReasoningTrace({
-        agent: openclawResponse.agent,
-        intent: openclawResponse.metadata?.intent,
-        userMessage: message,
-        symbols: openclawResponse.metadata?.symbols,
-      })
-
-      let cancelled = false
-      const stream = new ReadableStream({
-        start(controller) {
-          ;(async () => {
-            controller.enqueue({ type: 'reasoning-start', id: uiReasoningId })
-            for (let i = 0; i < reasoningTrace.length; i += LOCAL_REASONING_CHUNK_SIZE) {
-              if (cancelled) return
-              controller.enqueue({
-                type: 'reasoning-delta',
-                id: uiReasoningId,
-                delta: reasoningTrace.slice(i, i + LOCAL_REASONING_CHUNK_SIZE),
-              })
-              await new Promise((resolve) => setTimeout(resolve, LOCAL_REASONING_CHUNK_DELAY_MS))
-            }
-            controller.enqueue({ type: 'reasoning-end', id: uiReasoningId })
-
-            controller.enqueue({ type: 'text-start', id: uiMessageId })
-            for (let i = 0; i < content.length; i += LOCAL_STREAM_CHUNK_SIZE) {
-              if (cancelled) return
-              controller.enqueue({
-                type: 'text-delta',
-                id: uiMessageId,
-                delta: content.slice(i, i + LOCAL_STREAM_CHUNK_SIZE),
-              })
-              // Keep deltas incremental so UI renders as a stream.
-              await new Promise((resolve) => setTimeout(resolve, LOCAL_STREAM_CHUNK_DELAY_MS))
-            }
-
-            if (!cancelled) {
-              controller.enqueue({ type: 'text-end', id: uiMessageId })
-              cognition.done()
-              controller.close()
-            }
-          })().catch((error) => {
-            console.error(`[OpenClaw][${requestId}] Local stream error:`, error)
-            cognition.step('error', 'Stream error', error instanceof Error ? error.message : String(error))
-            cognition.done()
-            if (!cancelled) controller.error(error)
-          })
-        },
-        cancel() {
-          cancelled = true
-        },
-      })
-
-      return createUIMessageStreamResponse({
-        stream,
-        headers: {
-          'X-Conversation-Id': conversation.id,
-          'X-OpenClaw-Agent': openclawResponse.agent,
-          'Access-Control-Allow-Origin': c.req.header('Origin') || '*',
-          'Access-Control-Allow-Credentials': 'true',
-          'Access-Control-Expose-Headers': 'X-Conversation-Id, X-OpenClaw-Agent',
-        }
-      })
-    }
-
-    // ── PATH 2: Claude SDK Bridge (Opus via Max subscription, $0 cost) ──────
-    // Triggered by: thinkHarder=true OR model='claude-local'/'claude-sdk'/'claude-max'
+    // ── PATH 1: Claude SDK Bridge (Opus via Max subscription, $0 cost) ──
     const useClaudeSDK = model === 'claude-local' || resolveModelKey(model) === 'claude-local'
     const shouldUseClaudeSDK = (thinkHarder || useClaudeSDK) && !useGitHubModel
 
     if (shouldUseClaudeSDK && await isBridgeAvailable()) {
-      console.log(`[ClaudeSDK][${requestId}] Routing through Claude SDK bridge (thinkHarder: ${thinkHarder}, model: ${model ?? 'auto'})`)
+      console.log(`[ClaudeSDK][${requestId}] Routing through Claude SDK bridge`)
       cognition.step('agent-route', 'Claude SDK Bridge', 'Opus via Max subscription ($0 API cost)')
 
-      // Deep research via Exa when thinkHarder is enabled
       let researchContext = ''
       if (thinkHarder && isExaAvailable()) {
         cognition.step('tool-dispatch', 'Exa deep research', 'ThinkHarder — searching live sources')
         const results = await exaSearch(message, { numResults: 5 })
         researchContext = formatExaContext(results)
-        if (researchContext) {
-          cognition.step('tool-dispatch', `Exa: ${results.length} sources found`)
-        }
+        if (researchContext) cognition.step('tool-dispatch', `Exa: ${results.length} sources found`)
       }
 
       const bridgeResult = bridgeChat({
@@ -389,7 +207,7 @@ export async function handleChat(c: Context) {
         researchContext: researchContext || undefined,
       })
 
-      cognition.step('gateway-call', 'Streaming from Claude Opus', 'Local CLI bridge, MCP tools available')
+      cognition.step('gateway-call', 'Streaming from Claude Opus', 'Local CLI bridge')
 
       let cancelled = false
       const stream = new ReadableStream({
@@ -398,18 +216,12 @@ export async function handleChat(c: Context) {
             let fullText = ''
             for await (const event of bridgeResult.stream) {
               if (cancelled) break
-              if (event.type === 'text-delta' && event.delta) {
-                fullText += event.delta
-              }
+              if (event.type === 'text-delta' && event.delta) fullText += event.delta
               if (event.type === 'error') {
-                console.error(`[ClaudeSDK][${requestId}] Stream error: ${event.delta}`)
                 cognition.step('error', 'Claude SDK error', event.delta ?? 'Unknown error')
               }
-              // Pass through all events — they match the UI message stream format
               controller.enqueue(event)
             }
-
-            // Store the full response
             if (fullText) {
               await conversationStore.addMessage(conversation!.id, {
                 conversationId: conversation!.id,
@@ -418,48 +230,38 @@ export async function handleChat(c: Context) {
                 model: 'claude-local',
               })
             }
-
-            const duration = Date.now() - startTime
-            console.log(`[ClaudeSDK][${requestId}] Complete (${duration}ms, ${fullText.length} chars)`)
-            cognition.step('response-ready', 'Response complete', `${fullText.length} chars in ${duration}ms`)
             cognition.done()
             if (!cancelled) controller.close()
           })().catch((error) => {
-            console.error(`[ClaudeSDK][${requestId}] Fatal stream error:`, error)
             cognition.step('error', 'Stream error', error instanceof Error ? error.message : String(error))
             cognition.done()
             if (!cancelled) controller.error(error)
           })
         },
-        cancel() {
-          cancelled = true
-          bridgeResult.abort()
-        },
+        cancel() { cancelled = true; bridgeResult.abort() },
       })
 
       c.header('X-Conversation-Id', conversation.id)
-      c.header('X-OpenClaw-Agent', 'claude-opus-local')
+      c.header('X-PIC-Agent', 'claude-opus-local')
 
       return createUIMessageStreamResponse({
         stream,
         headers: {
           'X-Conversation-Id': conversation.id,
-          'X-OpenClaw-Agent': 'claude-opus-local',
+          'X-PIC-Agent': 'claude-opus-local',
           'Access-Control-Allow-Origin': c.req.header('Origin') || '*',
           'Access-Control-Allow-Credentials': 'true',
-          'Access-Control-Expose-Headers': 'X-Conversation-Id, X-OpenClaw-Agent',
+          'Access-Control-Expose-Headers': 'X-Conversation-Id, X-PIC-Agent',
         },
       })
     }
 
-    // ── PATH 2B: 21st API deep thinking fallback ──────────────────────────
-    // When Claude SDK is unavailable AND thinkHarder is requested
+    // ── PATH 1B: 21st API deep thinking fallback ────────────────────────
     if (thinkHarder && !useGitHubModel && is21stAvailable()) {
-      console.log(`[21stAPI][${requestId}] Claude SDK unavailable, falling back to 21st API deep thinking`)
-      cognition.step('agent-route', '21st API Deep Thinking', 'Claude SDK unavailable, using 21st fallback')
+      console.log(`[21stAPI][${requestId}] Claude SDK unavailable, falling back to 21st API`)
+      cognition.step('agent-route', '21st API Deep Thinking', 'Claude SDK unavailable')
 
       try {
-        // Run Exa research if available
         let researchContext = ''
         if (isExaAvailable()) {
           const results = await exaSearch(message, { numResults: 3 })
@@ -471,9 +273,8 @@ export async function handleChat(c: Context) {
           userId,
         )
 
-        cognition.step('response-ready', '21st API response', `${deepResult.content.length} chars in ${deepResult.durationMs}ms`)
+        cognition.step('response-ready', '21st API response', `${deepResult.content.length} chars`)
 
-        // Store assistant message
         await conversationStore.addMessage(conversation.id, {
           conversationId: conversation.id,
           role: 'assistant',
@@ -481,7 +282,6 @@ export async function handleChat(c: Context) {
           model: '21st-deep-think',
         })
 
-        // Stream the response
         const uiMessageId = `assistant-${Date.now()}`
         const uiReasoningId = `reasoning-${Date.now()}`
         const content = deepResult.content
@@ -494,28 +294,21 @@ export async function handleChat(c: Context) {
               controller.enqueue({
                 type: 'reasoning-delta',
                 id: uiReasoningId,
-                delta: `Deep thinking via 21st API (Claude SDK unavailable).\nProcessed in ${deepResult.durationMs}ms.\n`,
+                delta: `Deep thinking via 21st API.\nProcessed in ${deepResult.durationMs}ms.\n`,
               })
               controller.enqueue({ type: 'reasoning-end', id: uiReasoningId })
-
               controller.enqueue({ type: 'text-start', id: uiMessageId })
-              for (let i = 0; i < content.length; i += LOCAL_STREAM_CHUNK_SIZE) {
+              for (let i = 0; i < content.length; i += 72) {
                 if (streamCancelled) return
-                controller.enqueue({
-                  type: 'text-delta',
-                  id: uiMessageId,
-                  delta: content.slice(i, i + LOCAL_STREAM_CHUNK_SIZE),
-                })
-                await new Promise((resolve) => setTimeout(resolve, LOCAL_STREAM_CHUNK_DELAY_MS))
+                controller.enqueue({ type: 'text-delta', id: uiMessageId, delta: content.slice(i, i + 72) })
+                await new Promise((resolve) => setTimeout(resolve, 18))
               }
-
               if (!streamCancelled) {
                 controller.enqueue({ type: 'text-end', id: uiMessageId })
                 cognition.done()
                 controller.close()
               }
             })().catch((error) => {
-              cognition.step('error', '21st stream error', error instanceof Error ? error.message : String(error))
               cognition.done()
               if (!streamCancelled) controller.error(error)
             })
@@ -524,30 +317,38 @@ export async function handleChat(c: Context) {
         })
 
         c.header('X-Conversation-Id', conversation.id)
-        c.header('X-OpenClaw-Agent', '21st-deep-think')
-
         return createUIMessageStreamResponse({
           stream,
           headers: {
             'X-Conversation-Id': conversation.id,
-            'X-OpenClaw-Agent': '21st-deep-think',
+            'X-PIC-Agent': '21st-deep-think',
             'Access-Control-Allow-Origin': c.req.header('Origin') || '*',
             'Access-Control-Allow-Credentials': 'true',
-            'Access-Control-Expose-Headers': 'X-Conversation-Id, X-OpenClaw-Agent',
+            'Access-Control-Expose-Headers': 'X-Conversation-Id, X-PIC-Agent',
           },
         })
       } catch (err) {
-        console.warn(`[21stAPI][${requestId}] Deep think failed, falling through to external API:`, err)
+        console.warn(`[21stAPI][${requestId}] Deep think failed, falling through to OpenRouter:`, err)
         cognition.step('error', '21st API failed', err instanceof Error ? err.message : String(err))
-        // Fall through to external API path
       }
     }
 
-    // ── PATH 3: External API — GitHub Models (GPT-4o) / OpenRouter (paid) ──
-    const preferredModel = useGitHubModel ? 'github-deepseek' : model
-    console.log(`[OpenClaw][${requestId}] Using external API (preferred: ${preferredModel ?? 'auto'})`)
+    // ── PATH 2: OpenRouter (Claude Opus 4.6) — PRIMARY PATH ─────────────
+    const preferredModel = useGitHubModel ? 'github-deepseek' : (model || 'openrouter-opus')
+    console.log(`[Chat][${requestId}] Using OpenRouter API (preferred: ${preferredModel})`)
 
-    // Select model based on agent task type
+    let researchContext = ''
+    if (thinkHarder && isExaAvailable()) {
+      cognition.step('tool-dispatch', 'Exa deep research', 'ThinkHarder enabled')
+      const results = await exaSearch(message, { numResults: 5 })
+      researchContext = formatExaContext(results)
+      if (researchContext) cognition.step('tool-dispatch', `Exa: ${results.length} sources found`)
+    }
+
+    const agentRole = (agentOverride as OpenClawAgentRole | undefined) ?? agentInfo.agent
+    const skillTag = extractSkillTag(message)
+    const systemPrompt = getAgentSystemPrompt(agentRole, { skillTag, thinkHarder })
+
     const selection = selectModel({
       preferredModel,
       taskType: agentInfo.intent || taskType || 'chat',
@@ -556,29 +357,19 @@ export async function handleChat(c: Context) {
     })
 
     logModelSelection(selection, { preferredModel, taskType })
-    console.log(`[OpenClaw][${requestId}] Selected model: ${selection.model} (provider: ${selection.provider})`)
-
-    const systemPrompt = defaultAiConfig.systemPrompt ?? 'You are a helpful AI trading assistant.'
+    console.log(`[Chat][${requestId}] Selected model: ${selection.model} (provider: ${selection.provider})`)
+    cognition.step('gateway-call', `Calling ${selection.model}`, `provider: ${selection.provider}`)
 
     let aiModel
     try {
       aiModel = createModelClient(selection.model as AiModelKey)
-      console.log(`[OpenClaw][${requestId}] Model client created successfully`)
     } catch (err) {
-      console.error(`[OpenClaw][${requestId}] Failed to create model client:`, err)
-
-      // When GitHub model was explicitly selected, don't silently fallback — return clean error
+      console.error(`[Chat][${requestId}] Failed to create model client:`, err)
       if (useGitHubModel) {
-        return c.json({
-          error: 'Connected but error — GPT-4o via GitHub Models is unavailable right now.',
-          requestId,
-        }, 503)
+        return c.json({ error: 'GPT-4o via GitHub Models is unavailable right now.', requestId }, 503)
       }
-
-      // Try fallback model for non-GitHub routes
       const fallback = getFallbackModel(selection.model as AiModelKey)
       if (fallback) {
-        console.log(`[OpenClaw][${requestId}] Trying fallback model: ${fallback.model}`)
         markProviderUnhealthy(selection.provider)
         aiModel = createModelClient(fallback.model as AiModelKey)
       } else {
@@ -586,20 +377,19 @@ export async function handleChat(c: Context) {
       }
     }
 
+    const augmentedMessage = researchContext ? `${researchContext}\n\n${message}` : message
+
     const messages = [
       { role: 'system' as const, content: systemPrompt },
       ...history,
-      { role: 'user' as const, content: message },
+      { role: 'user' as const, content: augmentedMessage },
     ]
 
-    console.log(`[OpenClaw][${requestId}] Calling streamText with ${messages.length} messages`)
+    console.log(`[Chat][${requestId}] Calling streamText with ${messages.length} messages`)
 
-    // Track streaming progress
     let chunksReceived = 0
-    let totalChars = 0
     let lastChunkTime = Date.now()
 
-    // Stream response using Vercel AI SDK
     const result = streamText({
       model: aiModel,
       messages,
@@ -609,22 +399,16 @@ export async function handleChat(c: Context) {
       onChunk: ({ chunk }) => {
         chunksReceived++
         const now = Date.now()
-        const timeSinceLastChunk = now - lastChunkTime
+        if (chunksReceived % 10 === 0 || now - lastChunkTime > 5000) {
+          console.log(`[Chat][${requestId}] Chunk #${chunksReceived}, gap: ${now - lastChunkTime}ms`)
+        }
         lastChunkTime = now
-
-        if (chunksReceived % 10 === 0 || timeSinceLastChunk > 5000) {
-          console.log(`[OpenClaw][${requestId}] Chunk #${chunksReceived}, gap: ${timeSinceLastChunk}ms`)
-        }
-
-        if (chunk.type === 'text-delta' && chunk.text) {
-          totalChars += chunk.text.length
-        }
       },
-      onFinish: async ({ text, finishReason, usage }) => {
+      onFinish: async ({ text }) => {
         const duration = Date.now() - startTime
-        console.log(`[OpenClaw][${requestId}] Stream finished (${duration}ms, ${text.length} chars)`)
-
-        // Store assistant message
+        console.log(`[Chat][${requestId}] Stream finished (${duration}ms, ${text.length} chars)`)
+        cognition.step('response-ready', 'Response complete', `${text.length} chars in ${duration}ms`)
+        cognition.done()
         try {
           await conversationStore.addMessage(conversation!.id, {
             conversationId: conversation!.id,
@@ -633,26 +417,27 @@ export async function handleChat(c: Context) {
             model: selection.model,
           })
         } catch (saveErr) {
-          console.error(`[OpenClaw][${requestId}] Failed to save message:`, saveErr)
+          console.error(`[Chat][${requestId}] Failed to save message:`, saveErr)
         }
       },
     })
 
     c.header('X-Conversation-Id', conversation.id)
+    c.header('X-PIC-Agent', agentInfo.agent)
 
     return result.toUIMessageStreamResponse({
       headers: {
         'X-Conversation-Id': conversation.id,
         'X-Request-Id': requestId,
+        'X-PIC-Agent': agentInfo.agent,
       },
     })
   } catch (error) {
     const duration = Date.now() - startTime
-    console.error(`[OpenClaw][${requestId}] Fatal error after ${duration}ms:`, error)
+    console.error(`[Chat][${requestId}] Fatal error after ${duration}ms:`, error)
     cognition.step('error', 'Fatal error', error instanceof Error ? error.message : String(error))
     cognition.done()
 
-    // Clean error messages — no raw fallback info
     let errorMessage = 'Connected but error — try again in a moment.'
     if (error instanceof Error) {
       if (error.name === 'AbortError' || error.message.includes('timeout')) {
@@ -662,22 +447,14 @@ export async function handleChat(c: Context) {
       } else if (error.message.includes('rate limit')) {
         errorMessage = 'Rate limit exceeded. Please wait a moment.'
       } else if (error.message.includes('GitHub Models')) {
-        errorMessage = 'Connected but error — GPT-4o is temporarily unavailable.'
+        errorMessage = 'GPT-4o is temporarily unavailable.'
       }
     }
 
-    return c.json({
-      error: errorMessage,
-      requestId,
-      duration: `${duration}ms`,
-    }, 500)
+    return c.json({ error: errorMessage, requestId, duration: `${duration}ms` }, 500)
   }
 }
 
-/**
- * POST /api/ai/chat/stream (legacy SSE endpoint)
- */
 export async function handleChatStream(c: Context) {
-  // Redirect to main handler - it's now streaming
   return handleChat(c)
 }

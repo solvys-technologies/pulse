@@ -1,4 +1,4 @@
-# Pulse — Setup & Handoff Guide
+# Pulse — Setup & Handoff Guide (Windows Cross-Platform)
 
 > **For AI agents**: Read this file when bootstrapping the repo on a new machine. Follow the steps in order. The in-app Setup Guide will verify everything is connected.
 
@@ -6,7 +6,7 @@
 
 - Node.js 20+
 - npm or bun
-- macOS (for Electron DMG builds)
+- Windows 10/11, macOS, or Linux
 
 ## Installation
 
@@ -31,39 +31,30 @@ Only 3 things need to be configured:
 
 | Variable | Where | Description |
 |----------|-------|-------------|
-| `OPENCLAW_BASE_URL` | `backend-hono/.env` | OpenClaw gateway URL (default `http://localhost:7787`) |
-| `OPENCLAW_API_KEY` | `backend-hono/.env` | Gateway auth key (generate via `openclaw keys create`) |
+| `OPENROUTER_API_KEY` | `backend-hono/.env` | OpenRouter API key (get at openrouter.ai/keys) |
 | `NOTION_API_KEY` | `backend-hono/.env` | Notion integration token for trade ideas DB |
 | `FMP_API_KEY` | `backend-hono/.env` | Financial Modeling Prep key (free at financialmodelingprep.com) |
 
-Everything else (database, Claude SDK, Groq, etc.) is pre-configured and deployed on the backend. **Do NOT ask users for PostgreSQL credentials, bearer tokens, or Claude SDK config.**
+Everything else is pre-configured. **Do NOT ask users for PostgreSQL credentials, bearer tokens, or Claude SDK config.**
 
-## OpenClaw Gateway
+## AI Provider — OpenRouter
 
-OpenClaw is the AI gateway that routes Pulse chat to the right agent.
+Pulse uses **OpenRouter** as the AI gateway. All chat routes through Claude Opus 4.6.
 
-```bash
-# Install
-curl -fsSL https://install.openclaw.ai | bash
-# OR: npm install -g @openclaw/cli
+### Model Hierarchy
+| Priority | Model | OpenRouter ID | Use Case |
+|----------|-------|---------------|----------|
+| Primary | Claude Opus 4.6 | `anthropic/claude-opus-4-6` | All agent tasks |
+| Fallback | Claude Sonnet 4.6 | `anthropic/claude-sonnet-4-6` | When Opus unavailable |
+| Last resort | Claude Haiku 4.5 | `anthropic/claude-haiku-4-5-20251001` | Rate limit fallback |
 
-# Initialize
-openclaw init
+### Setup
+1. Go to [openrouter.ai](https://openrouter.ai)
+2. Create an account and generate an API key
+3. Add credit to your account (Opus costs ~$15/M input, $75/M output tokens)
+4. Set `OPENROUTER_API_KEY` in `backend-hono/.env`
 
-# Generate API key
-openclaw keys create --name pulse-local
-
-# Start (default port 7787 — change with --port)
-openclaw start --port 7787
-```
-
-### Port Configuration
-The gateway port is configurable in the app:
-1. Go to **Settings → Gateway**
-2. Enter the port number OpenClaw is running on
-3. The status indicator will turn green when connected
-
-The port is also set in `backend-hono/.env` as `OPENCLAW_BASE_URL`.
+No local gateway or CLI tool is needed — OpenRouter is cloud-hosted.
 
 ## Running
 
@@ -74,14 +65,15 @@ cd backend-hono && npm run dev    # Starts on port 8080
 
 # Terminal 2: Frontend
 cd frontend && npm run dev        # Starts on port 5173
-
-# Terminal 3: OpenClaw
-openclaw start --port 7787
 ```
 
 ### Production (Electron)
 ```bash
+# macOS
 npm run desktop:build             # Builds DMG → desktop-dist/Pulse-1.0.0.dmg
+
+# Windows (coming soon)
+# npm run desktop:build:win       # Builds .exe installer
 ```
 
 The Electron app auto-spawns the backend as a child process.
@@ -94,7 +86,7 @@ Electron App (main.cjs)
   │     ├── VIX polling (Yahoo Finance, 60s)
   │     ├── News feed poller (RSS + X)
   │     ├── Notion poller (trade ideas, 60s)
-  │     └── OpenClaw router → Gateway (port 7787)
+  │     └── OpenRouter → Claude Opus 4.6
   └── loads: Frontend (React 19 + Vite + Tailwind 4)
         └── connects to Backend at localhost:8080
 ```
@@ -106,7 +98,7 @@ On first launch, Pulse shows a **Setup Guide** card on the Dashboard with status
 | Service | What It Checks |
 |---------|----------------|
 | Backend API | `GET /health` on port 8080 |
-| OpenClaw Gateway | `GET /health` on configured port |
+| OpenRouter AI | Backend connectivity (routes to OpenRouter) |
 | Notion Integration | Polls for trade ideas |
 | Market Data (VIX) | Checks FMP API response |
 
@@ -118,14 +110,14 @@ Green = connected, yellow = connecting, red = not configured.
 # Backend running?
 curl http://localhost:8080/health
 
-# OpenClaw running?
-curl http://localhost:7787/health
-
 # Notion working?
 # Check backend logs for: [Notion] Polling...
 
 # VIX data flowing?
 # Check IV score in toolbar (should show a number, not --)
+
+# OpenRouter working?
+# Send a message in chat — should get Claude Opus 4.6 response
 ```
 
 ## For AI Agents Onboarding Users
@@ -133,9 +125,8 @@ curl http://localhost:7787/health
 When helping a user set up Pulse:
 1. Install Node.js 20+ if not present
 2. Clone and install deps (see Installation above)
-3. **Install OpenClaw** — detect which port to use, configure in `.env`
+3. **Get OpenRouter API key** — user signs up at openrouter.ai/keys
 4. **Get Notion API key** — user creates integration at notion.so/my-integrations
 5. **Get FMP API key** — free at financialmodelingprep.com
-6. **Do NOT** ask for: PostgreSQL, bearer tokens, Claude SDK, Groq keys, database URLs
+6. **Do NOT** ask for: PostgreSQL, bearer tokens, Claude SDK, Groq keys, database URLs, OpenClaw
 7. Start the app and use the in-app Setup Guide to verify connections
-8. The Gateway port configured in Settings must match the port OpenClaw is running on

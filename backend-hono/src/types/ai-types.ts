@@ -1,11 +1,11 @@
+// [claude-code 2026-03-11] Removed 'openclaw' from AiProviderType for Windows cross-platform
 /**
  * Shared AI types for multi-provider architecture
- * Supports OpenRouter primary with Vercel Gateway fallback
- * OpenClaw integration for P.I.C. agentic backend
+ * OpenRouter primary with Vercel Gateway fallback
  */
 
-// Provider type discriminator
-export type AiProviderType = 'openrouter' | 'vercel-gateway' | 'openclaw' | 'github-models' | 'claude-local'
+// Provider type discriminator — no more OpenClaw
+export type AiProviderType = 'openrouter' | 'vercel-gateway' | 'github-models' | 'claude-local'
 
 // Circuit breaker states
 export type CircuitState = 'closed' | 'open' | 'half-open'
@@ -59,9 +59,9 @@ export interface AiCostStats {
 
 // Cross-provider fallback mapping
 export interface CrossProviderFallback {
-  from: string // model key
-  to: string // fallback model key
-  provider: AiProviderType // target provider
+  from: string
+  to: string
+  provider: AiProviderType
 }
 
 // OpenRouter-specific response metadata
@@ -73,9 +73,7 @@ export interface OpenRouterMetadata {
     completion_tokens?: number
     total_tokens?: number
   }
-  // Cost from OpenRouter headers
   cost?: number
-  // Rate limit info
   rateLimit?: {
     remaining?: number
     reset?: number
