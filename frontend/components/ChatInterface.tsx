@@ -7,6 +7,7 @@ import { useOpenClawRuntime } from './chat/useOpenClawRuntime';
 import { ChatHeader } from './chat/ChatHeader';
 import { PulseThread, AiLoader } from './chat/PulseThread';
 import { PulseComposer } from './chat/PulseComposer';
+import { SKILL_PREFIXES } from '../lib/skillPrefixes';
 import QuickPulseModal from './analysis/QuickPulseModal';
 import { addCheckpoint, deleteCheckpoint, listCheckpoints, type ChatCheckpoint } from '../lib/chatCheckpoints';
 import { useFeatureFlags } from '../hooks/useFeatureFlags';
@@ -69,6 +70,14 @@ function ChatInterfaceInner({ conversationId, clearConversationId, lastError, th
     runtime.append({ role: 'user', content: [{ type: 'text', text: msg }] });
   }, [runtime]);
 
+  // Skill-aware send — activates skill and prepends prefix before sending
+  const handleSkillSend = useCallback((skillId: string, msg: string) => {
+    setActiveSkill(skillId);
+    const prefix = SKILL_PREFIXES[skillId] || '';
+    const finalText = prefix ? `${prefix}\n\n${msg}` : msg;
+    runtime.append({ role: 'user', content: [{ type: 'text', text: finalText }] });
+  }, [runtime]);
+
   const handleNewChat = useCallback(() => {
     clearConversationId();
   }, [clearConversationId]);
@@ -102,6 +111,7 @@ function ChatInterfaceInner({ conversationId, clearConversationId, lastError, th
         <div className="flex-1 flex flex-col min-h-0">
           <PulseThread
             onSend={handleSend}
+            onSkillSend={handleSkillSend}
             isLoading={isRunning}
             agentName={activeAgent?.name}
             onCheckpoint={createCheckpointFromMessage}

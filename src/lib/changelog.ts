@@ -9,6 +9,24 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-12T03:00:00',
+    agent: 'claude-code',
+    summary: 'Comprehensive onboarding: SetupGuideCard with status indicators on Dashboard, SETUP.md handoff guide, chat suggestion chips wired to skill system (mdb_report, tott, psych_eval, blindspots), configurable OpenClaw gateway port in Settings.',
+    files: [
+      'SETUP.md',
+      'frontend/components/onboarding/SetupGuideCard.tsx',
+      'frontend/components/executive/ExecutiveDashboard.tsx',
+      'frontend/lib/skills.ts',
+      'frontend/lib/skillPrefixes.ts',
+      'frontend/components/chat/ChatGreeting.tsx',
+      'frontend/components/chat/PulseThread.tsx',
+      'frontend/components/ChatInterface.tsx',
+      'frontend/contexts/SettingsContext.tsx',
+      'frontend/contexts/GatewayContext.tsx',
+      'frontend/components/SettingsPanel.tsx',
+    ],
+  },
+  {
     date: '2026-03-12T01:00:00',
     agent: 'claude-code',
     summary: 'Replace TradingView iframe calendar (X-Frame-Options blocked) with native EconCalendar: week picker, day tabs with beat/miss summaries, time-block grouping (Pre-Market/Session/After Hours), P/A/F column headers, importance filter, refresh button, EconTickerFooter. SessionCalendarList and SessionCalendarMini also replaced with native rendering using backend econ data. RiskFlow source icons (X/Notion SVGs), Tape→RiskFlow unification, Brief refresh + mini widget, agent-controllable BlindspotsWidget.',

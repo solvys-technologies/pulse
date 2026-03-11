@@ -362,6 +362,7 @@ export const AiLoader: FC = () => (
 
 interface PulseThreadProps {
   onSend: (msg: string) => void;
+  onSkillSend?: (skillId: string, msg: string) => void;
   isLoading: boolean;
   agentName?: string;
   onCheckpoint?: (messageId: string, content: string) => void;
@@ -371,7 +372,7 @@ interface PulseThreadProps {
   compact?: boolean;
 }
 
-export function PulseThread({ onSend, isLoading, agentName, onCheckpoint, lastError, lastRequestId, compact }: PulseThreadProps) {
+export function PulseThread({ onSend, onSkillSend, isLoading, agentName, onCheckpoint, lastError, lastRequestId, compact }: PulseThreadProps) {
   const { activeAgent } = usePulseAgents();
   const viewportRef = useRef<HTMLDivElement>(null);
 
@@ -386,7 +387,7 @@ export function PulseThread({ onSend, isLoading, agentName, onCheckpoint, lastEr
           {/* Greeting screen — shown when thread is empty */}
           {!compact && (
             <ThreadPrimitive.Empty>
-              <ChatGreeting onSend={onSend} isLoading={isLoading} />
+              <ChatGreeting onSend={onSend} onSkillSend={onSkillSend} isLoading={isLoading} />
             </ThreadPrimitive.Empty>
           )}
 

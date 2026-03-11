@@ -973,8 +973,17 @@ export function SettingsPage() {
 
 function GatewayTab() {
   const { status, lastHealthCheck, reconnect, gatewayUrl } = useGateway();
+  const { gatewayPort, setGatewayPort } = useSettings();
+  const [portInput, setPortInput] = useState(String(gatewayPort));
   const statusColor = status === 'connected' ? '#34D399' : status === 'connecting' ? 'var(--pulse-accent)' : '#EF4444';
   const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
+
+  const handlePortSave = () => {
+    const num = parseInt(portInput, 10);
+    if (num > 0 && num <= 65535) {
+      setGatewayPort(num);
+    }
+  };
 
   return (
     <section>
@@ -993,6 +1002,30 @@ function GatewayTab() {
               Reconnect
             </button>
           </div>
+
+          {/* Editable port field */}
+          <div className="flex items-center gap-2 mb-3">
+            <label className="text-xs text-gray-500 shrink-0">Port:</label>
+            <input
+              type="number"
+              value={portInput}
+              onChange={(e) => setPortInput(e.target.value)}
+              onBlur={handlePortSave}
+              onKeyDown={(e) => e.key === 'Enter' && handlePortSave()}
+              className="w-24 px-2 py-1 text-xs bg-transparent border border-[var(--pulse-accent)]/20 rounded text-gray-300 focus:outline-none focus:border-[var(--pulse-accent)]/60"
+              min={1}
+              max={65535}
+            />
+            {parseInt(portInput, 10) !== gatewayPort && (
+              <button
+                onClick={handlePortSave}
+                className="text-[10px] text-[var(--pulse-accent)] border border-[var(--pulse-accent)]/30 rounded px-2 py-0.5 hover:bg-[var(--pulse-accent)]/10 transition-colors"
+              >
+                Save
+              </button>
+            )}
+          </div>
+
           <div className="text-xs text-gray-500 space-y-1">
             <p>URL: <span className="text-gray-400">{gatewayUrl}</span></p>
             {lastHealthCheck && (
@@ -1001,7 +1034,7 @@ function GatewayTab() {
           </div>
         </div>
         <p className="text-xs text-gray-500">
-          The gateway connects Pulse to your OpenClaw agent sessions. Health checks run every 30 seconds.
+          The gateway connects Pulse to your OpenClaw agent sessions. Change the port to match where OpenClaw is running. Health checks run every 30 seconds.
         </p>
       </div>
     </section>

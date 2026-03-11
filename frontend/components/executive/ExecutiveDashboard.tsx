@@ -11,6 +11,7 @@ import { SessionCalendarList } from './SessionCalendarList';
 import TradeIdeaModal from '../TradeIdeaModal';
 import { RegimeCard } from '../dashboard/RegimeCard';
 import { RegimeTrackerModal } from '../regimes/RegimeTrackerModal';
+import { SetupGuideCard, shouldShowSetupGuide } from '../onboarding/SetupGuideCard';
 import { RefreshCw } from 'lucide-react';
 
 const DASHBOARD_PAGES = ['Briefing', 'RiskFlow'];
@@ -25,6 +26,7 @@ export function ExecutiveDashboard() {
   const [ntnLoaded, setNtnLoaded] = useState(false);
   const [ntnRefreshing, setNtnRefreshing] = useState(false);
   const [kpisLoaded, setKpisLoaded] = useState(false);
+  const [showSetupGuide, setShowSetupGuide] = useState(() => shouldShowSetupGuide());
 
   // Brief type based on time: Tale of the Tape (Sun + Mon<7AM), MDB (<11AM), ADB (11AM-5:29PM), PMDB (5:30PM+)
   const getBriefLabel = () => {
@@ -162,6 +164,12 @@ export function ExecutiveDashboard() {
       >
         {/* Page 1: Briefing (default) — NTK Brief + Session Calendar + Core KPIs + Action Tape */}
         <div data-dash-page="0" className="min-h-full snap-start p-5 flex flex-col">
+          {/* Setup Guide — first-time onboarding */}
+          {showSetupGuide && (
+            <div className="shrink-0 mb-5">
+              <SetupGuideCard onDismiss={() => setShowSetupGuide(false)} />
+            </div>
+          )}
           {/* Row 1: Need-to-Know Brief (left) + Session Calendar (right) */}
           <div className="shrink-0 grid grid-cols-1 xl:grid-cols-2 gap-6 mb-5" style={{ height: '380px' }}>
             {/* Need-to-Know Brief */}

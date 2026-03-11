@@ -1,4 +1,5 @@
 // [claude-code 2026-03-06] Skill prompt prefixes for OpenClaw agent
+// [claude-code 2026-03-11] Added prefixes for suggestion chip skills: mdb_report, tott, psych_eval, blindspots
 export const SKILL_PREFIXES: Record<string, string> = {
   brief: '[SKILL:BRIEF] Search the web for the latest information about the instrument mentioned, summarize findings, and interpret what it means for the user\'s position or thesis. Check active trading regimes for timing context. Be concise and actionable.',
   validate: '[SKILL:VALIDATE] Act as Horace (risk validation). Analyze the validity of the user\'s thesis against: (1) current research narratives we\'re tracking, (2) memos we\'ve published, (3) current news via web search, (4) check active trading regimes for timing context. Assess market risk and provide a confidence-weighted verdict.',
@@ -8,4 +9,8 @@ export const SKILL_PREFIXES: Record<string, string> = {
   maintenance: '[SKILL:MAINTENANCE] Perform app maintenance. Review recent changes, update changelog, and report status. Format updates as structured status messages.',
   quick_pulse: '[SKILL:QUICKPULSE] Analyze the provided chart/screenshot. Provide: Bias (Bullish/Bearish/Neutral), Confidence %, Rationale, Entry 1, Entry 2, Stop Loss, Target. Be concise and actionable like a SnapTrader.',
   narrative: '[SKILL:NARRATIVE] Analyze the current NarrativeFlow board state. Identify active narratives, recent catalysts, and suggest new connections or flag stale theses. Provide structured output for narrative health assessment.',
+  mdb_report: '[SKILL:MDB_REPORT] Generate the Morning Daily Brief (MDB) report. Search the web for latest market news, check active regimes, review overnight price action, and produce a concise, actionable HTML report in the Solvys Gold palette. Include key levels, catalysts, and risk events for the session ahead.',
+  tott: '[SKILL:TOTT] Generate the Tale of the Tape — a comprehensive weekly summary. Review the past week\'s trading activity, P&L performance, key market events, narrative developments, and provide a forward-looking outlook for the week ahead. Be structured and analytical.',
+  psych_eval: '[SKILL:PSYCH_EVAL] Run a full psychological and performance evaluation. Analyze recent trading behavior patterns, emotional state indicators from ER history, decision quality metrics, win/loss streaks, and discipline infractions. Provide actionable coaching recommendations. Be empathetic but direct.',
+  blindspots: '[SKILL:BLINDSPOTS] Update and review the trader\'s blindspot analysis. Identify areas of risk, bias, or market exposure that may be overlooked. Check active narratives, current positions, and recent trade patterns for gaps in coverage or awareness. Provide specific, actionable findings.',
 };

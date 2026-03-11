@@ -1,5 +1,6 @@
 // [claude-code 2026-03-11] T5: added /stop command to skills list
-import { Globe, ShieldCheck, FileBarChart, GitBranch, Brain, Wrench, Activity, StopCircle, RefreshCw, type LucideIcon } from 'lucide-react';
+// [claude-code 2026-03-11] Added suggestion chip skills: mdb_report, tott, psych_eval, blindspots
+import { Globe, ShieldCheck, FileBarChart, GitBranch, Brain, Wrench, Activity, StopCircle, RefreshCw, BarChart3, CalendarCheck, Eye, type LucideIcon } from 'lucide-react';
 
 export interface SkillDef {
   id: string;
@@ -20,6 +21,10 @@ export const SKILLS: readonly SkillDef[] = [
   { id: 'quick_pulse', label: 'QuickPulse', icon: Activity, color: 'var(--pulse-accent)', description: 'Chart screenshot analysis: bias, entries, stop, target', keywords: ['quick', 'pulse', 'chart', 'screenshot', 'snap'] },
   { id: 'stop', label: 'Stop', icon: StopCircle, color: '#EF4444', description: 'Cancel the current run immediately', keywords: ['stop', 'cancel', 'abort', 'halt'] },
   { id: 'update_pulse', label: 'Update Pulse', icon: RefreshCw, color: '#38BDF8', description: 'Pull latest changes from repository and rebuild the app', keywords: ['update', 'pull', 'deploy', 'rebuild', 'upgrade'] },
+  { id: 'mdb_report', label: 'MDB Report', icon: BarChart3, color: '#60A5FA', description: 'Generate the Morning Daily Brief report', keywords: ['mdb', 'morning', 'daily', 'brief', 'report'] },
+  { id: 'tott', label: 'Tale of the Tape', icon: CalendarCheck, color: '#A78BFA', description: 'Weekly summary — Tale of the Tape analysis', keywords: ['tott', 'tale', 'tape', 'weekly', 'summary'] },
+  { id: 'psych_eval', label: 'Psych Eval', icon: Brain, color: '#E879F9', description: 'Full psychological and performance evaluation', keywords: ['psych', 'eval', 'evaluation', 'mental', 'tilt'] },
+  { id: 'blindspots', label: 'Blindspots', icon: Eye, color: '#F59E0B', description: 'Update and review trading blindspot analysis', keywords: ['blindspot', 'blind', 'spot', 'risk', 'gaps'] },
 ] as const;
 
 export type SkillId = (typeof SKILLS)[number]['id'];
