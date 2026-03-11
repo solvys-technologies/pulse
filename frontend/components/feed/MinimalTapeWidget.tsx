@@ -72,17 +72,18 @@ export function MinimalTapeWidget() {
 
   return (
     <>
-      <div className="flex flex-col gap-2 p-2 bg-[#0a0a00] border border-[#D4AF37]/20 rounded w-full">
-        <div className="text-center">
-          <span className="text-[10px] font-semibold text-[#D4AF37]">Tape</span>
+      <div className={`flex flex-col gap-2 p-2 bg-[var(--pulse-surface)] w-full ${unreadCount > 0 ? 'ring-2 ring-[var(--pulse-accent)]/60 animate-pulse rounded-full' : ''}`}>
+        <div className="text-center flex items-center justify-center gap-1">
+          <Zap className="w-3 h-3 text-[var(--pulse-accent)]" />
+          <span className="text-[10px] font-semibold text-[var(--pulse-accent)]">Risk</span>
         </div>
 
         <div className="flex flex-col items-center gap-2 pt-1">
           <div className="text-center">
             <div className="text-xs text-gray-400">{totalItems} items</div>
             {unreadCount > 0 && (
-              <div className="mt-1 backdrop-blur-sm bg-[#D4AF37]/20 border border-[#D4AF37]/40 rounded px-2 py-0.5 inline-block">
-                <span className="text-[10px] font-mono text-[#D4AF37]">{unreadCount} new</span>
+              <div className="mt-1 backdrop-blur-sm bg-[var(--pulse-accent)]/20 border border-[var(--pulse-accent)]/40 rounded px-2 py-0.5 inline-block">
+                <span className="text-[10px] font-mono text-[var(--pulse-accent)]">{unreadCount} new</span>
               </div>
             )}
           </div>
@@ -102,11 +103,11 @@ export function MinimalTapeWidget() {
           {latestProposal && (
             <button
               onClick={() => setActiveProposal(latestProposal)}
-              className="w-full mt-2 p-2 rounded-lg border border-[#D4AF37]/40 bg-[#D4AF37]/10 hover:bg-[#D4AF37]/20 transition-all animate-pulse"
+              className="w-full mt-2 p-2 rounded-lg border border-[var(--pulse-accent)]/40 bg-[var(--pulse-accent)]/10 hover:bg-[var(--pulse-accent)]/20 transition-all animate-pulse"
             >
               <div className="flex items-center justify-center gap-2">
-                <Zap className="w-3 h-3 text-[#D4AF37]" />
-                <span className="text-[10px] font-semibold text-[#D4AF37]">PROPOSAL</span>
+                <Zap className="w-3 h-3 text-[var(--pulse-accent)]" />
+                <span className="text-[10px] font-semibold text-[var(--pulse-accent)]">PROPOSAL</span>
               </div>
               <div className="flex items-center justify-center gap-1 mt-1">
                 {latestProposal.direction === 'long' ? (

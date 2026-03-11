@@ -3,12 +3,16 @@
  * Request handlers for RiskFlow endpoints
  */
 
+// [claude-code 2026-03-10] Added handleGetSources for RiskFlow connection status indicators
+// [claude-code 2026-03-10] handlePreload: lowered minMacroLevel 3→2 (Medium+ threshold)
 import type { Context } from 'hono';
 import * as feedService from '../../services/riskflow/feed-service.js';
 import * as watchlistService from '../../services/riskflow/watchlist-service.js';
 import { addClient, removeClient } from '../../services/riskflow/sse-broadcaster.js';
 import { corsConfig } from '../../config/cors.js';
 import type { FeedFilters, WatchlistUpdateRequest, NewsSource, MacroLevel } from '../../types/riskflow.js';
+import { getNotionPollerStatus } from '../../services/notion-poller.js';
+import { isTwitterCliInstalled } from '../../services/twitter-cli/index.js';
 import { fetchVIX, getVIXSpikeAdjustment, getVIXScoringMultiplier, getVIXBaseline } from '../../services/vix-service.js';
 import { 
   calculateIVScoreV2, 
@@ -156,7 +160,7 @@ export async function handleGetBreaking(c: Context) {
 
 /**
  * GET /api/riskflow/preload
- * Pre-load 15 tweets from last 48 hours, level 3+ only
+ * Pre-load 15 tweets from last 48 hours, level 2+ only
  */
 export async function handlePreload(c: Context) {
   const userId = c.get('userId') as string | undefined;
@@ -168,7 +172,7 @@ export async function handlePreload(c: Context) {
   try {
     const feed = await feedService.getFeed(userId, {
       limit: 15,
-      minMacroLevel: 3,
+      minMacroLevel: 2,
     });
     return c.json({
       ...feed,
@@ -636,4 +640,17 @@ export async function handleGetIVAggregate(c: Context) {
     console.error('[IV Aggregate] Error:', error);
     return c.json({ error: error instanceof Error ? error.message : 'Failed to calculate IV score' }, 500);
   }
+}
+
+/** GET /api/riskflow/sources — connection status for data source indicators */
+export async function handleGetSources(c: Context) {
+  const [twitterCli] = await Promise.all([
+    isTwitterCliInstalled().catch(() => false),
+  ]);
+  const notionStatus = getNotionPollerStatus();
+  return c.json({
+    notion: notionStatus.running,
+    twitterCli,
+    xApi: !!process.env.X_API_BEARER_TOKEN,
+  });
 }

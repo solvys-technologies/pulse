@@ -6,6 +6,7 @@
 import type { Context } from 'hono';
 import * as projectxService from '../../services/projectx-service.js';
 import type { SyncCredentialsRequest } from '../../types/projectx.js';
+import { getActivity, recordActivityEvents } from '../../services/projectx-activity-service.js';
 
 const isDev = process.env.NODE_ENV !== 'production';
 
@@ -143,4 +144,114 @@ export async function handleDisconnect(c: Context) {
   projectxService.clearCredentials(userId);
 
   return c.json({ success: true, message: 'Disconnected from ProjectX' });
+}
+
+/**
+ * GET /api/projectx/activity/:accountId
+ * Aggregated trading activity for ER weighting and UI displays
+ */
+export async function handleGetActivity(c: Context) {
+  const userId = c.get('userId') as string | undefined;
+  const accountIdParam = c.req.param('accountId');
+
+  if (!userId) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  const accountId = Number.parseInt(accountIdParam, 10);
+  if (!Number.isFinite(accountId)) {
+    return c.json({ error: 'Invalid account ID' }, 400);
+  }
+
+  const windowMinutesRaw = c.req.query('windowMinutes');
+  const limitRaw = c.req.query('limit');
+  const windowMinutes = windowMinutesRaw ? Number.parseInt(windowMinutesRaw, 10) : undefined;
+  const limit = limitRaw ? Number.parseInt(limitRaw, 10) : undefined;
+
+  try {
+    const activity = await getActivity(userId, accountId, {
+      windowMinutes: Number.isFinite(windowMinutes) ? windowMinutes : undefined,
+      limit: Number.isFinite(limit) ? limit : undefined,
+      overtradingThreshold: 5,
+    });
+    return c.json({
+      accountId,
+      events: activity.events,
+      summary: activity.summary,
+    });
+  } catch (error) {
+    console.error('[ProjectX] Get activity error:', error);
+    const message = error instanceof Error ? error.message : 'Failed to fetch activity';
+    return c.json({ error: message }, 500);
+  }
+}
+
+/**
+ * POST /api/projectx/activity/ingest
+ * Accepts events from external SignalR bridges.
+ */
+export async function handleIngestActivityEvents(c: Context) {
+  const userId = c.get('userId') as string | undefined;
+
+  if (!userId) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  const body = await c.req
+    .json<{
+      events?: Array<{
+        accountId: number;
+        eventType: string;
+        eventSource?: string;
+        eventTimestamp?: string;
+        isTrade?: boolean;
+        symbol?: string;
+        side?: string;
+        quantity?: number;
+        price?: number;
+        realizedPnl?: number;
+        eventWeight?: number;
+        payload?: Record<string, unknown>;
+      }>;
+    }>()
+    .catch(() => null);
+
+  if (!body?.events || !Array.isArray(body.events) || body.events.length === 0) {
+    return c.json({ error: 'events array is required' }, 400);
+  }
+
+  try {
+    const inserted = await recordActivityEvents(
+      userId,
+      body.events
+        .map((event) => ({
+          ...event,
+          accountId:
+            typeof event.accountId === 'number'
+              ? event.accountId
+              : Number.parseInt(String(event.accountId), 10),
+        }))
+        .filter((event) => Number.isFinite(event.accountId) && typeof event.eventType === 'string')
+        .map((event) => ({
+          accountId: event.accountId as number,
+          eventType: event.eventType,
+          eventSource: event.eventSource ?? 'signalr',
+          eventTimestamp: event.eventTimestamp,
+          isTrade: Boolean(event.isTrade),
+          symbol: event.symbol,
+          side: event.side,
+          quantity: event.quantity,
+          price: event.price,
+          realizedPnl: event.realizedPnl,
+          eventWeight: event.eventWeight,
+          payload: event.payload,
+        }))
+    );
+
+    return c.json({ success: true, inserted });
+  } catch (error) {
+    console.error('[ProjectX] Activity ingest error:', error);
+    const message = error instanceof Error ? error.message : 'Failed to ingest activity events';
+    return c.json({ error: message }, 500);
+  }
 }

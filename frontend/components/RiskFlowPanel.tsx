@@ -1,32 +1,91 @@
 // [claude-code 2026-02-26] Make RiskFlow subsection collapsible in Mission Control stack.
+// [claude-code 2026-03-03] Add trade idea row rendering (gold border, click-to-modal).
+// [claude-code 2026-03-10] Status dots (Notion + X CLI), dropdown filters (Priority + Source), X filter.
+// [claude-code 2026-03-10] T3: critical severity renders same as high (pulse + red text)
+// [claude-code 2026-03-11] v7.7.7 T3: Card overhaul — SVG logos, cyclical badge top-right,
+//   point range, approve/deny CTA on proposals, chat CTA on news, remove "Neutral" text.
+// [claude-code 2026-03-11] T5: drag-drop support for chat injection (application/x-riskflow)
 import React, { useState } from 'react';
 import { useRiskFlow } from '../contexts/RiskFlowContext';
-import { Zap, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
-import type { AlertSeverity, RiskFlowAlert } from '../lib/riskflow-feed';
+import { Zap, ExternalLink, ChevronDown, ChevronUp, Trash2, X, TrendingUp, TrendingDown, MessageSquare, Check, XCircle } from 'lucide-react';
+import type { RiskFlowAlert, TradeIdeaDetail } from '../lib/riskflow-feed';
+import TradeIdeaModal from './TradeIdeaModal';
+import { useSourceStatus } from '../hooks/useSourceStatus';
 
-// ── Severity config ────────────────────────────────────────────────────────────
+import { SEVERITY_CONFIG } from '../lib/severity-config';
 
-const SEVERITY_CONFIG: Record<AlertSeverity, { label: string; bg: string; text: string; border: string; glow?: string }> = {
-  high: {
-    label: 'HIGH',
-    bg: 'bg-red-500/20',
-    text: 'text-red-400',
-    border: 'border-red-500/40',
-    glow: 'shadow-[0_0_8px_rgba(239,68,68,0.4)]',
-  },
-  medium: {
-    label: 'MED',
-    bg: 'bg-[#D4AF37]/20',
-    text: 'text-[#D4AF37]',
-    border: 'border-[#D4AF37]/40',
-  },
-  low: {
-    label: 'LOW',
-    bg: 'bg-zinc-700/30',
-    text: 'text-zinc-500',
-    border: 'border-zinc-700/40',
-  },
-};
+// ── SVG Source Logos ──────────────────────────────────────────────────────────
+
+function XLogo({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-label="X">
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+    </svg>
+  );
+}
+
+function NotionLogo({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-label="Notion">
+      <path d="M4.459 4.208c.746.606 1.026.56 2.428.466l13.215-.793c.28 0 .047-.28-.046-.326L18.45 2.29c-.42-.326-.98-.7-2.055-.607L3.62 2.87c-.466.046-.56.28-.374.466zm.793 3.08v13.904c0 .747.373 1.027 1.214.98l14.523-.84c.84-.046.933-.56.933-1.167V6.354c0-.606-.233-.933-.746-.886l-15.177.887c-.56.046-.747.326-.747.933zm14.337.745c.093.42 0 .84-.42.886l-.7.14v10.264c-.607.327-1.167.514-1.634.514-.747 0-.933-.234-1.494-.934l-4.577-7.186v6.952l1.447.327s0 .84-1.167.84l-3.22.187c-.093-.187 0-.653.327-.746l.84-.233V9.854L7.46 9.76c-.093-.42.14-1.026.793-1.073l3.453-.233 4.763 7.28v-6.44l-1.214-.14c-.093-.513.28-.886.747-.933zM2.667 1.21l13.728-1.027c1.68-.14 2.1.093 2.8.606l3.874 2.707c.466.326.606.746.606 1.26v15.7c0 .933-.326 1.493-1.494 1.586l-15.457.933c-.84.047-1.26-.093-1.727-.653L1.88 19.01c-.513-.653-.746-1.166-.746-1.86V2.89c0-.84.373-1.54 1.54-1.68z" />
+    </svg>
+  );
+}
+
+function MarketWatchLogo({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-label="MarketWatch">
+      <path d="M3 17l4-8 3 5 4-10 4 8 3-4" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function SourceIcon({ source, className }: { source: string; className?: string }) {
+  const s = source.toLowerCase();
+  if (s === 'twitter-cli' || s === 'twittercli' || s.includes('twitter')) {
+    return <XLogo className={className} />;
+  }
+  if (s === 'notion-trade-idea' || s.includes('notion')) {
+    return <NotionLogo className={className} />;
+  }
+  if (s === 'marketwatch') {
+    return <MarketWatchLogo className={className} />;
+  }
+  // Default: first letter
+  return (
+    <span className={`font-bold text-[8px] uppercase leading-none ${className}`}>
+      {source.charAt(0)}
+    </span>
+  );
+}
+
+// ── Cyclical Badge ───────────────────────────────────────────────────────────
+
+function CyclicalBadge({ classification }: { classification: string }) {
+  if (classification === 'Neutral') return null;
+  const isCyclical = classification === 'Cyclical';
+  return (
+    <span
+      className={`text-[8px] font-bold tracking-[0.15em] uppercase px-1 py-px border ${
+        isCyclical
+          ? 'border-[var(--pulse-accent)]/30 text-[var(--pulse-accent)]/80 bg-[var(--pulse-accent)]/5'
+          : 'border-violet-500/30 text-violet-400/80 bg-violet-500/5'
+      }`}
+    >
+      {isCyclical ? 'CYC' : 'CTR'}
+    </span>
+  );
+}
+
+// ── Point Range Badge ────────────────────────────────────────────────────────
+
+function PointRangeBadge({ points, instrument }: { points: number; instrument?: string | null }) {
+  return (
+    <span className="text-[9px] text-zinc-500 tabular-nums" title={`Implied ${instrument ?? ''} move`}>
+      {instrument ? `${instrument} ` : ''}&#177;{Math.abs(points).toFixed(0)} pts
+    </span>
+  );
+}
 
 // ── Time formatting ────────────────────────────────────────────────────────────
 
@@ -40,150 +99,472 @@ function timeAgo(iso: string): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-// ── Alert Row ──────────────────────────────────────────────────────────────────
+// ── Trade Idea Row (proposals — with approve/deny CTA) ──────────────────────
 
-function AlertRow({ alert }: { alert: RiskFlowAlert }) {
-  const sev = SEVERITY_CONFIG[alert.severity];
-  const isHigh = alert.severity === 'high';
+function TradeIdeaRow({
+  alert,
+  onDelete,
+  onOpen,
+  onMarkSeen,
+  seen,
+}: {
+  alert: RiskFlowAlert;
+  onDelete: (id: string) => void;
+  onOpen: (idea: TradeIdeaDetail) => void;
+  onMarkSeen: (id: string) => void;
+  seen: boolean;
+}) {
+  const idea = alert.tradeIdea!;
+  const isLong = idea.direction === 'long';
+  const isShort = idea.direction === 'short';
+
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData('application/x-riskflow', JSON.stringify({
+      headline: alert.headline,
+      summary: alert.summary,
+      ticker: idea.ticker,
+      direction: idea.direction,
+    }));
+    e.dataTransfer.effectAllowed = 'copy';
+  };
 
   return (
-    <a
-      href={alert.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={`
-        group block px-3 py-2.5 border-b border-zinc-800/50
-        hover:bg-[#D4AF37]/5 transition-colors cursor-pointer
-        ${isHigh ? 'riskflow-pulse-row' : ''}
-      `}
+    <div
+      draggable
+      onDragStart={handleDragStart}
+      className={`group relative flex items-start gap-2 px-3 py-2.5 border-b border-zinc-800/50 border-l-2 border-l-[var(--pulse-accent)]/50 hover:bg-[var(--pulse-accent)]/5 transition-colors cursor-pointer ${
+        seen ? 'opacity-70' : ''
+      }`}
+      onClick={() => {
+        onMarkSeen(alert.id);
+        onOpen(idea);
+      }}
     >
-      <div className="flex items-start gap-2">
-        {/* Severity badge */}
-        <span className={`
-          inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wider
-          ${sev.bg} ${sev.text} ${sev.border} border
-          ${sev.glow || ''}
-          flex-shrink-0 mt-0.5
-        `}>
-          {sev.label}
-        </span>
+      {/* Cyclical badge — top right */}
+      {alert.cyclical && alert.cyclical !== 'Neutral' && (
+        <div className="absolute top-1.5 right-9">
+          <CyclicalBadge classification={alert.cyclical} />
+        </div>
+      )}
 
+      <div className="flex-1 min-w-0 flex items-start gap-2">
+        {/* Source logo */}
+        <span className="flex-shrink-0 mt-0.5 inline-flex items-center justify-center w-5 h-5 border border-[var(--pulse-accent)]/40 bg-[var(--pulse-accent)]/10">
+          {isLong
+            ? <TrendingUp className="w-3 h-3 text-[var(--pulse-accent)]" />
+            : isShort
+              ? <TrendingDown className="w-3 h-3 text-zinc-400" />
+              : <NotionLogo className="w-3 h-3 text-[var(--pulse-accent)]" />
+          }
+        </span>
         <div className="flex-1 min-w-0">
-          {/* Headline */}
-          <p className={`text-xs leading-snug font-medium line-clamp-3 break-words ${isHigh ? 'text-red-300' : 'text-zinc-300'} group-hover:text-white transition-colors`}>
+          <p className="text-xs leading-snug font-medium line-clamp-2 text-[var(--pulse-text)] group-hover:text-white transition-colors">
             {alert.headline}
           </p>
-
-          {/* Meta row */}
+          {alert.summary && alert.summary !== alert.headline && (
+            <p className="text-[10px] text-zinc-600 line-clamp-1 mt-0.5">{alert.summary}</p>
+          )}
           <div className="flex items-center gap-2 mt-1">
+            <NotionLogo className="w-2.5 h-2.5 text-zinc-600" />
             <span className="text-[10px] text-zinc-600">{timeAgo(alert.publishedAt)}</span>
-            <span className="text-[10px] text-zinc-700">•</span>
-            <span className="text-[10px] text-[#D4AF37]/60 uppercase tracking-wider">{alert.source}</span>
-            <ExternalLink className="w-2.5 h-2.5 text-zinc-700 opacity-0 group-hover:opacity-100 transition-opacity ml-auto flex-shrink-0" />
+            <span className="text-[10px] text-zinc-700">&middot;</span>
+            <span className="text-[10px] text-[var(--pulse-accent)]/60 uppercase tracking-wider">
+              {idea.sourceAgent ?? 'Proposal'}
+            </span>
+            {idea.riskRewardRatio && (
+              <>
+                <span className="text-[10px] text-zinc-700">&middot;</span>
+                <span className="text-[10px] text-zinc-500">R/R {idea.riskRewardRatio.toFixed(1)}:1</span>
+              </>
+            )}
+            {alert.pointRange != null && alert.pointRange !== 0 && (
+              <>
+                <span className="text-[10px] text-zinc-700">&middot;</span>
+                <PointRangeBadge points={alert.pointRange} instrument={alert.instrument} />
+              </>
+            )}
           </div>
         </div>
       </div>
-    </a>
+
+      {/* Approve / Deny CTA */}
+      <div className="flex-shrink-0 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); /* approve handler — future */ }}
+          className="p-1 rounded text-emerald-600 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+          title="Approve proposal"
+        >
+          <Check className="w-3.5 h-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onDelete(alert.id); }}
+          className="p-1 rounded text-red-600 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+          title="Deny proposal"
+        >
+          <XCircle className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Alert Row (news — with source SVGs, cyclical badge, point range, chat CTA) ─
+
+function AlertRow({
+  alert,
+  onDelete,
+  onMarkSeen,
+  onChat,
+  seen,
+}: {
+  alert: RiskFlowAlert;
+  onDelete: (id: string) => void;
+  onMarkSeen: (id: string) => void;
+  onChat?: (alert: RiskFlowAlert) => void;
+  seen: boolean;
+}) {
+  const sev = SEVERITY_CONFIG[alert.severity];
+  const isHigh = alert.severity === 'high' || alert.severity === 'critical';
+  const showDirection = alert.direction && alert.direction !== 'Neutral';
+
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData('application/x-riskflow', JSON.stringify({
+      headline: alert.headline,
+      summary: alert.summary,
+    }));
+    e.dataTransfer.effectAllowed = 'copy';
+  };
+
+  return (
+    <div
+      draggable
+      onDragStart={handleDragStart}
+      className={`group relative flex items-start gap-2 px-3 py-2.5 border-b border-zinc-800/50 hover:bg-[var(--pulse-accent)]/5 transition-colors ${isHigh ? 'riskflow-pulse-row' : ''} ${seen ? 'opacity-70' : ''}`}
+    >
+      {/* Cyclical badge — top right */}
+      {alert.cyclical && alert.cyclical !== 'Neutral' && (
+        <div className="absolute top-1.5 right-9">
+          <CyclicalBadge classification={alert.cyclical} />
+        </div>
+      )}
+
+      <a
+        href={alert.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex-1 min-w-0 flex items-start gap-2 cursor-pointer"
+        onClick={() => onMarkSeen(alert.id)}
+      >
+        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wider ${sev.bg} ${sev.text} ${sev.border} border ${sev.glow || ''} flex-shrink-0 mt-0.5`}>
+          {sev.label}
+        </span>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            {showDirection && (
+              <span className={`text-[9px] font-bold tracking-wider ${
+                alert.direction === 'Bullish' ? 'text-emerald-500' : 'text-red-400'
+              }`}>
+                {alert.direction === 'Bullish' ? '\u25B2' : '\u25BC'}
+              </span>
+            )}
+            <p className={`text-xs leading-snug font-medium line-clamp-3 break-words ${alert.severity === 'critical' ? 'text-orange-300' : isHigh ? 'text-red-300' : 'text-zinc-300'} group-hover:text-white transition-colors`}>
+              {alert.headline}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 mt-1">
+            <SourceIcon source={alert.source} className="w-2.5 h-2.5 text-zinc-600" />
+            <span className="text-[10px] text-zinc-600">{timeAgo(alert.publishedAt)}</span>
+            {alert.authorHandle && (
+              <>
+                <span className="text-[10px] text-zinc-700">&middot;</span>
+                <span className="text-[10px] text-zinc-500">@{alert.authorHandle}</span>
+              </>
+            )}
+            {alert.pointRange != null && alert.pointRange !== 0 && (
+              <>
+                <span className="text-[10px] text-zinc-700">&middot;</span>
+                <PointRangeBadge points={alert.pointRange} instrument={alert.instrument} />
+              </>
+            )}
+            <ExternalLink className="w-2.5 h-2.5 text-zinc-700 opacity-0 group-hover:opacity-100 transition-opacity ml-auto flex-shrink-0" />
+          </div>
+        </div>
+      </a>
+
+      {/* Chat + Dismiss CTAs */}
+      <div className="flex-shrink-0 flex items-center gap-0.5">
+        {onChat && (
+          <button
+            type="button"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onChat(alert); }}
+            className="p-1 rounded text-zinc-600 hover:text-[var(--pulse-accent)] hover:bg-[var(--pulse-accent)]/10 transition-colors opacity-0 group-hover:opacity-100"
+            title="Chat about this"
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(alert.id); }}
+          className="flex-shrink-0 p-1 rounded text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+          title="Remove item"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Status Dot ─────────────────────────────────────────────────────────────────
+
+function StatusDot({ active, label }: { active: boolean; label: string }) {
+  return (
+    <span
+      className="flex items-center gap-1"
+      title={`${label}: ${active ? 'connected' : 'disconnected'}`}
+    >
+      <span className={`w-1.5 h-1.5 rounded-full ${active ? 'bg-emerald-400' : 'bg-zinc-600'}`} />
+      <span className={`text-[9px] uppercase tracking-wider ${active ? 'text-emerald-400/60' : 'text-zinc-700'}`}>{label}</span>
+    </span>
+  );
+}
+
+// ── Filter Dropdown ────────────────────────────────────────────────────────────
+
+function FilterDropdown<T extends string>({
+  value,
+  options,
+  onChange,
+}: {
+  value: T;
+  options: { value: T; label: string }[];
+  onChange: (v: T) => void;
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value as T)}
+      className="px-1.5 py-0.5 bg-[var(--pulse-bg)] border border-zinc-800 rounded text-[10px] text-zinc-400 focus:outline-none focus:border-[var(--pulse-accent)]/40 cursor-pointer"
+    >
+      {options.map((opt) => (
+        <option key={opt.value} value={opt.value}>{opt.label}</option>
+      ))}
+    </select>
   );
 }
 
 // ── Panel ──────────────────────────────────────────────────────────────────────
 
-type FilterMode = 'all' | 'high' | 'medium';
+type PriorityFilter = 'all' | 'high' | 'medium';
+type SourceFilter = 'all' | 'notion' | 'twitter';
 
 export default function RiskFlowPanel({
   collapsed,
   onToggleCollapsed,
+  onChatAlert,
 }: {
   collapsed?: boolean;
   onToggleCollapsed?: () => void;
+  /** Called when user clicks "Chat" CTA on a news alert */
+  onChatAlert?: (alert: RiskFlowAlert) => void;
 }) {
-  const { alerts, highCount, mediumCount } = useRiskFlow();
-  const [filter, setFilter] = useState<FilterMode>('all');
+  const { alerts, highCount, mediumCount, clearAll, removeAlert, markSeen, markAllSeen, isSeen } = useRiskFlow();
+  const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('all');
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
+  const [showProposals, setShowProposals] = useState(false);
   const [expandedInternal, setExpandedInternal] = useState(true);
+  const [selectedIdea, setSelectedIdea] = useState<TradeIdeaDetail | null>(null);
+  const sourceStatus = useSourceStatus();
   const expanded = collapsed != null ? !collapsed : expandedInternal;
 
-  const filtered = filter === 'all' ? alerts
-    : filter === 'high' ? alerts.filter(a => a.severity === 'high')
-    : alerts.filter(a => a.severity === 'medium');
+  const ideaCount = alerts.filter((a) => a.source === 'notion-trade-idea').length;
+
+  const filtered = (() => {
+    let base = alerts;
+    if (showProposals) return base.filter((a) => a.source === 'notion-trade-idea');
+    if (priorityFilter === 'high') base = base.filter((a) => a.severity === 'high' || a.severity === 'critical');
+    else if (priorityFilter === 'medium') base = base.filter((a) => a.severity === 'medium');
+    if (sourceFilter === 'notion') base = base.filter((a) => a.source === 'notion-trade-idea' || (a.source as string).toLowerCase().includes('notion'));
+    else if (sourceFilter === 'twitter') base = base.filter((a) => (a.source as string).toLowerCase().includes('twitter') || (a.source as string) === 'TwitterCli' || (a.source as string) === 'FinancialJuice');
+    return base;
+  })();
+
+  const collapsedPreviewItems = alerts.slice(0, 2);
+
+  React.useEffect(() => {
+    if (!expanded) return;
+    markAllSeen(filtered.map((item) => item.id));
+  }, [expanded, filtered, markAllSeen]);
 
   return (
-    <div className="h-full flex flex-col bg-[#0a0a00]">
-      {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2.5 border-b border-[#D4AF37]/20">
-        <div className="flex items-center gap-2">
-          <Zap className="w-3.5 h-3.5 text-[#D4AF37]" />
-          <h3 className="text-xs font-semibold tracking-[0.15em] uppercase text-[#D4AF37]">
-            RiskFlow
-          </h3>
-          {highCount > 0 && (
-            <span className="riskflow-pulse-badge inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-500/30 text-red-400 text-[9px] font-bold">
-              {highCount}
-            </span>
-          )}
-        </div>
-        <button
-          onClick={() => {
-            if (onToggleCollapsed) onToggleCollapsed();
-            else setExpandedInternal(!expandedInternal);
-          }}
-          className="p-1 rounded hover:bg-[#D4AF37]/10 text-zinc-500 hover:text-[#D4AF37] transition-colors"
-        >
-          {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-        </button>
-      </div>
-
-      {expanded && (
-        <>
-          {/* Filter tabs */}
-          <div className="flex items-center gap-1 px-3 py-1.5 border-b border-zinc-800/50">
-            {([['all', `All (${alerts.length})`], ['high', `High (${highCount})`], ['medium', `Med (${mediumCount})`]] as const).map(([key, label]) => (
-              <button
-                key={key}
-                onClick={() => setFilter(key as FilterMode)}
-                className={`
-                  px-2 py-0.5 rounded text-[10px] font-medium transition-colors
-                  ${filter === key
-                    ? 'bg-[#D4AF37]/20 text-[#D4AF37]'
-                    : 'text-zinc-600 hover:text-zinc-400 hover:bg-zinc-800/50'
-                  }
-                `}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {/* Alert list */}
-          <div className="flex-1 overflow-y-auto">
-            {filtered.length === 0 ? (
-              <div className="flex items-center justify-center h-24 text-zinc-700 text-xs">
-                {alerts.length === 0 ? 'Polling MarketWatch…' : 'No matching alerts'}
-              </div>
-            ) : (
-              filtered.map(alert => <AlertRow key={alert.id} alert={alert} />)
-            )}
-          </div>
-        </>
+    <>
+      {selectedIdea && (
+        <TradeIdeaModal idea={selectedIdea} onClose={() => setSelectedIdea(null)} />
       )}
 
-      {/* Pulse animation styles */}
-      <style>{`
-        @keyframes riskflow-pulse {
-          0%, 100% { box-shadow: none; }
-          50% { box-shadow: inset 0 0 12px rgba(239, 68, 68, 0.08); }
-        }
-        .riskflow-pulse-row {
-          animation: riskflow-pulse 3s ease-in-out infinite;
-        }
-        @keyframes riskflow-badge-pulse {
-          0%, 100% { transform: scale(1); opacity: 1; }
-          50% { transform: scale(1.15); opacity: 0.8; }
-        }
-        .riskflow-pulse-badge {
-          animation: riskflow-badge-pulse 2s ease-in-out infinite;
-        }
-      `}</style>
-    </div>
+      <div className="h-full flex flex-col bg-[var(--pulse-surface)]">
+        {/* Header */}
+        <div className="flex items-center justify-between px-3 py-2.5 border-b border-[var(--pulse-accent)]/20">
+          <div className="flex items-center gap-2">
+            <Zap className="w-3.5 h-3.5 text-[var(--pulse-accent)]" />
+            <h3 className="text-xs font-semibold tracking-[0.15em] uppercase text-[var(--pulse-accent)]">RiskFlow</h3>
+            {highCount > 0 && (
+              <span className="riskflow-pulse-badge inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-500/30 text-red-400 text-[9px] font-bold">
+                {highCount}
+              </span>
+            )}
+            {ideaCount > 0 && (
+              <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-sm bg-[var(--pulse-accent)]/20 text-[var(--pulse-accent)] text-[9px] font-bold tracking-wider">
+                {ideaCount} proposal{ideaCount !== 1 ? 's' : ''}
+              </span>
+            )}
+            <div className="flex items-center gap-2 ml-1">
+              <StatusDot active={sourceStatus.notion} label="Notion" />
+              <StatusDot active={sourceStatus.twitterCli} label="X" />
+            </div>
+          </div>
+          <div className="flex items-center gap-1">
+            {alerts.length > 0 && (
+              <button type="button" onClick={clearAll} className="p-1 rounded hover:bg-red-500/10 text-zinc-500 hover:text-red-400 transition-colors" title="Clear all">
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
+            <button
+              onClick={() => { if (onToggleCollapsed) onToggleCollapsed(); else setExpandedInternal(!expandedInternal); }}
+              className="p-1 rounded hover:bg-[var(--pulse-accent)]/10 text-zinc-500 hover:text-[var(--pulse-accent)] transition-colors"
+            >
+              {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            </button>
+          </div>
+        </div>
+
+        <div className={`flex-1 min-h-0 flex flex-col transition-all duration-300 ease-in-out overflow-hidden ${expanded ? 'opacity-100' : 'max-h-0 opacity-0'}`}>
+            {/* Filter row */}
+            <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-zinc-800/50 flex-wrap">
+              <FilterDropdown<PriorityFilter>
+                value={showProposals ? 'all' : priorityFilter}
+                options={[
+                  { value: 'all', label: `Priority: All` },
+                  { value: 'high', label: `High (${highCount})` },
+                  { value: 'medium', label: `Med (${mediumCount})` },
+                ]}
+                onChange={(v) => { setShowProposals(false); setPriorityFilter(v); }}
+              />
+              <FilterDropdown<SourceFilter>
+                value={showProposals ? 'all' : sourceFilter}
+                options={[
+                  { value: 'all', label: 'Source: All' },
+                  { value: 'notion', label: 'Notion' },
+                  { value: 'twitter', label: 'X / FJ' },
+                ]}
+                onChange={(v) => { setShowProposals(false); setSourceFilter(v); }}
+              />
+              <button
+                onClick={() => setShowProposals((v) => !v)}
+                className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
+                  showProposals
+                    ? 'bg-[var(--pulse-accent)]/20 text-[var(--pulse-accent)]'
+                    : 'text-zinc-600 hover:text-zinc-400 hover:bg-zinc-800/50'
+                }`}
+              >
+                Proposals{ideaCount > 0 ? ` (${ideaCount})` : ''}
+              </button>
+            </div>
+
+            {/* Alert list */}
+            <div className="flex-1 min-w-0 overflow-y-auto">
+              {filtered.length === 0 ? (
+                <div className="flex items-center justify-center h-24 text-zinc-700 text-xs">
+                  {alerts.length === 0 ? 'Polling Sources...' : 'No matching alerts'}
+                </div>
+              ) : (
+                filtered.map((alert) =>
+                  alert.source === 'notion-trade-idea' && alert.tradeIdea ? (
+                    <TradeIdeaRow
+                      key={alert.id}
+                      alert={alert}
+                      onDelete={removeAlert}
+                      onOpen={setSelectedIdea}
+                      onMarkSeen={markSeen}
+                      seen={isSeen(alert.id)}
+                    />
+                  ) : (
+                    <AlertRow
+                      key={alert.id}
+                      alert={alert}
+                      onDelete={removeAlert}
+                      onMarkSeen={markSeen}
+                      onChat={onChatAlert}
+                      seen={isSeen(alert.id)}
+                    />
+                  )
+                )
+              )}
+            </div>
+        </div>
+
+        <div className={`transition-all duration-300 ease-in-out overflow-hidden ${!expanded ? 'opacity-100' : 'max-h-0 opacity-0'}`}>
+        {!expanded && (
+          <div className="px-2 pb-2">
+            {collapsedPreviewItems.length === 0 ? (
+              <div className="rounded border border-zinc-800/80 bg-[#080806] px-3 py-2 text-[11px] text-zinc-600">
+                No recent items
+              </div>
+            ) : (
+              <div className="rounded border border-[var(--pulse-accent)]/20 bg-[#080806] overflow-hidden">
+                {collapsedPreviewItems.map((item, idx) => {
+                  const sev = SEVERITY_CONFIG[item.severity];
+                  const seen = isSeen(item.id);
+                  return (
+                    <a
+                      key={item.id}
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => markSeen(item.id)}
+                      className={`block px-3 py-2 ${idx < collapsedPreviewItems.length - 1 ? 'border-b border-zinc-800/80' : ''} ${seen ? 'opacity-70' : ''}`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <SourceIcon source={item.source} className="w-2.5 h-2.5 text-zinc-500" />
+                        <span className={`text-[9px] font-semibold tracking-wider ${sev.text}`}>
+                          {sev.label}
+                        </span>
+                        <span className="text-[10px] text-zinc-500 uppercase tracking-wide">
+                          {item.source === 'notion-trade-idea' ? 'proposal' : item.source}
+                        </span>
+                        {item.cyclical && item.cyclical !== 'Neutral' && (
+                          <CyclicalBadge classification={item.cyclical} />
+                        )}
+                      </div>
+                      <p className="mt-0.5 text-[11px] text-zinc-300 line-clamp-1">
+                        {item.headline}
+                      </p>
+                    </a>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+        </div>
+
+        {/* Pulse animation styles */}
+        <style>{`
+          @keyframes riskflow-pulse {
+            0%, 100% { box-shadow: none; }
+            50% { box-shadow: inset 0 0 12px rgba(239, 68, 68, 0.08); }
+          }
+          .riskflow-pulse-row { animation: riskflow-pulse 3s ease-in-out infinite; }
+          @keyframes riskflow-badge-pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.15); opacity: 0.8; }
+          }
+          .riskflow-pulse-badge { animation: riskflow-badge-pulse 2s ease-in-out infinite; }
+        `}</style>
+      </div>
+    </>
   );
 }

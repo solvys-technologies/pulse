@@ -116,7 +116,7 @@ export interface ChatResponse {
   };
 }
 
-export interface NTNReport {
+export interface MDBReport {
   report: {
     content: string;
     reportType?: string;

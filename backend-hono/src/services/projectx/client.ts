@@ -167,6 +167,63 @@ export async function getAvailableContracts(
 }
 
 /**
+ * Search contracts by name
+ */
+export async function searchContracts(
+  userId: string,
+  credentials: ProjectXCredentials,
+  searchText: string,
+  live = false
+): Promise<ProjectXContract[]> {
+  const response = await apiRequest<ApiResponse<ProjectXContract>>(
+    '/api/Contract/search',
+    userId,
+    credentials,
+    { searchText, live }
+  );
+
+  if (!response.success) {
+    throw new Error(`Failed to search contracts: ${response.errorMessage}`);
+  }
+
+  return response.contracts || [];
+}
+
+interface PlaceOrderParams {
+  accountId: number;
+  contractId: string;
+  type: number;  // 2 = Market
+  side: number;  // 0 = Bid (buy), 1 = Ask (sell)
+  size: number;
+  stopLossBracket?: { ticks: number; type: number };
+  takeProfitBracket?: { ticks: number; type: number };
+  customTag?: string;
+}
+
+interface PlaceOrderResponse {
+  orderId: number;
+  success: boolean;
+  errorCode: number;
+  errorMessage: string | null;
+}
+
+/**
+ * Place a trading order
+ */
+export async function placeOrder(
+  userId: string,
+  credentials: ProjectXCredentials,
+  params: PlaceOrderParams
+): Promise<PlaceOrderResponse> {
+  return apiRequest<PlaceOrderResponse>(
+    '/api/Order/place',
+    userId,
+    credentials,
+    params as unknown as Record<string, unknown>
+  );
+}
+
+/**
  * Close a position
  */
 export async function closePosition(

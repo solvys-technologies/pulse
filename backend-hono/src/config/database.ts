@@ -19,6 +19,9 @@ const isNeonUrl = DATABASE_URL?.includes('.neon.tech') || DATABASE_URL?.includes
 // For Neon, use the serverless driver. For local, use pg Pool.
 let neonSql: NeonQueryFunction<false, false> | null = null;
 let pgPool: pg.Pool | null = null;
+// pgAvailable: only set to true after a successful ping — prevents treating a non-running
+// local PostgreSQL as "available" and causing 500s instead of graceful in-memory fallback.
+let pgAvailable = false;
 
 if (DATABASE_URL) {
   if (isNeonUrl) {
@@ -26,7 +29,15 @@ if (DATABASE_URL) {
     console.log('[DB] Using Neon serverless driver');
   } else {
     pgPool = new pg.Pool({ connectionString: DATABASE_URL });
-    console.log('[DB] Using pg Pool for local PostgreSQL');
+    console.log('[DB] Using pg Pool for local PostgreSQL — pinging...');
+    pgPool.query('SELECT 1')
+      .then(() => {
+        pgAvailable = true;
+        console.log('[DB] Local PostgreSQL connected');
+      })
+      .catch(() => {
+        console.warn('[DB] Local PostgreSQL not reachable — falling back to in-memory store');
+      });
   }
 }
 
@@ -61,5 +72,5 @@ export async function sql(
 }
 
 export function isDatabaseAvailable(): boolean {
-  return neonSql !== null || pgPool !== null;
+  return neonSql !== null || pgAvailable;
 }

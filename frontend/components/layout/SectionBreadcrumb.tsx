@@ -1,14 +1,17 @@
 import { ChevronLeft, ChevronRight, ChevronRight as Separator } from 'lucide-react';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'settings';
+type NavTab = string;
 
-const TAB_META: Record<NavTab, { label: string; parent?: string }> = {
+const TAB_META: Record<string, { label: string; parent?: string }> = {
   executive: { label: 'Dashboard' },
-  feed: { label: 'The Tape' },
-  analysis: { label: 'Analysis' },
+  feed: { label: 'Dashboard' }, // feed removed from sidebar; fallback for history
+  analysis: { label: 'Chat' },
   news: { label: 'RiskFlow' },
   chatroom: { label: 'Board Room' },
   notion: { label: 'Research Department' },
+  econ: { label: 'Economic Calendar' },
+  narrative: { label: 'NarrativeFlow' },
+  earnings: { label: 'Trading Journal' },
   settings: { label: 'Settings' },
 };
 
@@ -37,7 +40,7 @@ export function SectionBreadcrumb({
       <button
         onClick={onBack}
         disabled={!canGoBack}
-        className="p-1 rounded text-gray-500 hover:text-[#D4AF37] disabled:text-gray-700 disabled:cursor-default transition-colors"
+        className="p-1 rounded text-gray-500 hover:text-[var(--pulse-accent)] disabled:text-gray-700 disabled:cursor-default transition-colors"
         title="Back"
       >
         <ChevronLeft className="w-3.5 h-3.5" />
@@ -45,7 +48,7 @@ export function SectionBreadcrumb({
       <button
         onClick={onForward}
         disabled={!canGoForward}
-        className="p-1 rounded text-gray-500 hover:text-[#D4AF37] disabled:text-gray-700 disabled:cursor-default transition-colors"
+        className="p-1 rounded text-gray-500 hover:text-[var(--pulse-accent)] disabled:text-gray-700 disabled:cursor-default transition-colors"
         title="Forward"
       >
         <ChevronRight className="w-3.5 h-3.5" />

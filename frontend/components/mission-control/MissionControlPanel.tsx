@@ -4,7 +4,7 @@ import { EmotionalResonanceMonitor } from './EmotionalResonanceMonitor';
 import { BlindspotsWidget } from './BlindspotsWidget';
 import { AlgoStatusWidget } from './AlgoStatusWidget';
 import { AccountTrackerWidget } from './AccountTrackerWidget';
-
+import { RegimeMini } from './RegimeMini';
 
 import { PanelPosition } from '../layout/DraggablePanel';
 
@@ -54,7 +54,7 @@ export function MissionControlPanel({
 
   return (
     <div
-      className={`relative bg-[#050500] border-l border-[#D4AF37]/8 transition-all duration-200 ease-out ${panelWidth}`}
+      className={`relative bg-[var(--pulse-bg)] transition-all duration-200 ease-out ${panelWidth}`}
       onMouseEnter={handleCollapsedEnter}
       onMouseLeave={handleCollapsedLeave}
       style={{ minWidth: collapsed && !peekOpen ? '12px' : undefined }}
@@ -62,7 +62,7 @@ export function MissionControlPanel({
       {/* Collapsed thin hover-trigger strip */}
       {collapsed && !peekOpen && (
         <div className="absolute inset-0 flex items-center justify-center cursor-pointer">
-          <div className="w-[2px] h-12 rounded-full bg-[#D4AF37]/20" />
+          <div className="w-[2px] h-12 rounded-full bg-[var(--pulse-accent)]/20" />
         </div>
       )}
 
@@ -74,7 +74,7 @@ export function MissionControlPanel({
           onMouseEnter={() => setHeaderHovered(true)}
           onMouseLeave={() => setHeaderHovered(false)}
         >
-          <h2 className="text-sm font-semibold text-[#D4AF37]">Mission Control</h2>
+          <h2 className="text-sm font-semibold text-[var(--pulse-accent)]">Mission Control</h2>
 
           <div className="flex items-center gap-1">
             {/* TopStepX controls */}
@@ -83,7 +83,7 @@ export function MissionControlPanel({
                 {position === 'right' && (
                   <button
                     onClick={() => onPositionChange('left')}
-                    className="p-1 hover:bg-[#D4AF37]/10 rounded text-[#D4AF37]/60 hover:text-[#D4AF37]"
+                    className="p-1 hover:bg-[var(--pulse-accent)]/10 rounded text-[var(--pulse-accent)]/60 hover:text-[var(--pulse-accent)]"
                     title="Move Left"
                   >
                     <MoveLeft className="w-3.5 h-3.5" />
@@ -92,7 +92,7 @@ export function MissionControlPanel({
                 {position === 'left' && (
                   <button
                     onClick={() => onPositionChange('right')}
-                    className="p-1 hover:bg-[#D4AF37]/10 rounded text-[#D4AF37]/60 hover:text-[#D4AF37]"
+                    className="p-1 hover:bg-[var(--pulse-accent)]/10 rounded text-[var(--pulse-accent)]/60 hover:text-[var(--pulse-accent)]"
                     title="Move Right"
                   >
                     <MoveRight className="w-3.5 h-3.5" />
@@ -100,7 +100,7 @@ export function MissionControlPanel({
                 )}
                 <button
                   onClick={() => onPositionChange('floating')}
-                  className="p-1 hover:bg-[#D4AF37]/10 rounded text-[#D4AF37]/60 hover:text-[#D4AF37]"
+                  className="p-1 hover:bg-[var(--pulse-accent)]/10 rounded text-[var(--pulse-accent)]/60 hover:text-[var(--pulse-accent)]"
                   title="Float"
                 >
                   <GripVertical className="w-3.5 h-3.5" />
@@ -110,7 +110,7 @@ export function MissionControlPanel({
             {topStepXEnabled && onHide && (
               <button
                 onClick={onHide}
-                className="p-1 hover:bg-[#D4AF37]/10 rounded text-[#D4AF37]/60 hover:text-[#D4AF37]"
+                className="p-1 hover:bg-[var(--pulse-accent)]/10 rounded text-[var(--pulse-accent)]/60 hover:text-[var(--pulse-accent)]"
                 title="Hide"
               >
                 <X className="w-3.5 h-3.5" />
@@ -121,19 +121,19 @@ export function MissionControlPanel({
             {headerHovered && !collapsed && (
               <button
                 onClick={onToggleCollapse}
-                className="p-1.5 hover:bg-[#D4AF37]/10 rounded transition-colors"
+                className="p-1.5 hover:bg-[var(--pulse-accent)]/10 rounded transition-colors"
                 title="Collapse"
               >
-                <ChevronRight className="w-4 h-4 text-[#D4AF37]" />
+                <ChevronRight className="w-4 h-4 text-[var(--pulse-accent)]" />
               </button>
             )}
             {peekOpen && collapsed && (
               <button
                 onClick={handleKeepExpanded}
-                className="p-1.5 hover:bg-[#D4AF37]/10 rounded transition-colors"
+                className="p-1.5 hover:bg-[var(--pulse-accent)]/10 rounded transition-colors"
                 title="Keep expanded"
               >
-                <ChevronLeft className="w-4 h-4 text-[#D4AF37]" />
+                <ChevronLeft className="w-4 h-4 text-[var(--pulse-accent)]" />
               </button>
             )}
           </div>
@@ -143,6 +143,7 @@ export function MissionControlPanel({
         <div className="flex-1 overflow-y-auto p-2 space-y-2">
           <EmotionalResonanceMonitor onERScoreChange={setErScore} />
           <AlgoStatusWidget />
+          <RegimeMini />
           <AccountTrackerWidget />
           <BlindspotsWidget />
         </div>

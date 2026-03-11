@@ -4,6 +4,8 @@
  * Day 17 - Phase 5 Integration
  */
 
+// [claude-code 2026-03-10] Integrated twitter-cli (FJ emoji-filtered) as secondary social feed source
+// [claude-code 2026-03-10] Default minMacroLevel lowered 3→2 (Medium+ threshold per Track 1 spec)
 import type { FeedItem, FeedResponse, FeedFilters, NewsSource, UrgencyLevel, SentimentDirection, MacroLevel } from '../../types/riskflow.js';
 import { createXApiService, type ParsedTweetNews } from '../x-api-service.js';
 import { getWatchlist, matchesWatchlist } from './watchlist-service.js';
@@ -15,9 +17,11 @@ import { fetchEconomicFeed } from './economic-feed.js';
 import { fetchPolymarket } from '../polymarket-service.js';
 import type { PolymarketMarket } from '../../types/polymarket.js';
 import type { NewsSource as AnalysisNewsSource } from '../../types/news-analysis.js';
+import { isTwitterCliInstalled, pollTwitterForEconNews, getWarmCacheItems } from '../twitter-cli/index.js';
 
 const MAX_FEED_ITEMS = 50;
 const isDev = process.env.NODE_ENV !== 'production';
+const ALLOW_MOCK_FALLBACK = process.env.RISKFLOW_ALLOW_MOCK_FALLBACK === 'true';
 
 // Enable/disable AI analysis (can be toggled via env)
 const ENABLE_AI_ANALYSIS = process.env.ENABLE_AI_ANALYSIS !== 'false';
@@ -80,6 +84,7 @@ function mapToAnalysisSource(source: NewsSource): AnalysisNewsSource {
     TrendSpider: 'Custom',
     Barchart: 'Custom',
     Polymarket: 'Custom',
+    TwitterCli: 'FinancialJuice', // FJ emoji-filtered tweets treated as FJ quality
     Custom: 'Custom',
   };
   return sourceMap[source] ?? 'Custom';
@@ -110,7 +115,8 @@ async function enrichWithAnalysis(item: FeedItem): Promise<FeedItem> {
       urgency: getHigherUrgency(item.urgency, analyzed.parsed.urgency),
       sentiment: ivResult.sentiment as SentimentDirection,
       ivScore: ivResult.score,
-      macroLevel: ivResult.macroLevel as MacroLevel,
+      // Preserve item's original macroLevel if it was explicitly set higher (e.g. from FJ keyword classifier)
+      macroLevel: Math.max(ivResult.macroLevel, item.macroLevel ?? 1) as MacroLevel,
       analyzedAt: new Date().toISOString(),
     };
 
@@ -215,21 +221,24 @@ function applyFilters(items: FeedItem[], filters: FeedFilters): FeedItem[] {
 async function fetchFreshFeed(): Promise<FeedItem[]> {
   try {
     const xApiService = createXApiService();
-    const [tweets, econItems, polyResp] = await Promise.all([
-      xApiService.fetchLatestTweets(),
+    const [tweets, econItems, polyResp, twitterCliItems] = await Promise.all([
+      xApiService.fetchLatestTweets().catch(() => []),
       fetchEconomicFeed(),
       fetchPolymarket().catch(() => ({ markets: [], fetchedAt: new Date().toISOString() })),
+      isTwitterCliInstalled().then(ok => ok ? pollTwitterForEconNews() : []).catch(() => []),
     ]);
 
     const tweetItems = tweets.map(tweetToFeedItem);
     const polyItems = polyResp.markets.map(polymarketToFeedItem);
+    // Include warm-cached Critical/High posts seeded at startup
+    const warmItems = getWarmCacheItems();
 
     // Merge and dedupe by id
-    const merged = [...econItems, ...polyItems, ...tweetItems].filter(
+    const merged = [...econItems, ...polyItems, ...tweetItems, ...twitterCliItems, ...warmItems].filter(
       (item, idx, arr) => idx === arr.findIndex(i => i.id === item.id)
     );
 
-    console.log(`[RiskFlow] fetchFreshFeed: Merged ${merged.length} items (${tweetItems.length} tweets, ${econItems.length} economic, ${polyItems.length} polymarket)`);
+    console.log(`[RiskFlow] fetchFreshFeed: Merged ${merged.length} items (${tweetItems.length} xapi, ${econItems.length} econ, ${polyItems.length} poly, ${twitterCliItems.length} twcli)`);
     return merged;
   } catch (error) {
     console.error('[RiskFlow] X API fetch error:', error);
@@ -318,8 +327,8 @@ async function getCachedFeed(): Promise<FeedItem[]> {
     return feedCache.items;
   }
 
-  // In dev mode without X API token, use mock data
-  if (isDev && !process.env.X_API_BEARER_TOKEN) {
+  // Optional mock fallback (disabled by default)
+  if (ALLOW_MOCK_FALLBACK && isDev && !process.env.X_API_BEARER_TOKEN) {
     const mockItems = generateMockFeed();
     const enrichedItems = await enrichFeedWithAnalysis(mockItems);
     feedCache = { items: enrichedItems, fetchedAt: Date.now() };
@@ -353,24 +362,24 @@ async function getCachedFeed(): Promise<FeedItem[]> {
       return dbItems;
     }
 
-    // If fetch failed and database is empty, return empty (or use mock in dev)
+    // If fetch failed and database is empty, return empty unless explicit mock fallback is enabled
     if (rawItems.length === 0 && dbItems.length === 0) {
       console.warn(`[RiskFlow] No items from X API and database is empty`);
       console.warn(`[RiskFlow] X_API_BEARER_TOKEN present: ${!!process.env.X_API_BEARER_TOKEN}`);
       console.warn(`[RiskFlow] Environment: ${process.env.NODE_ENV}`);
-      
-      // In production, if we have no data at all, generate mock data as fallback
-      // This ensures users always see something while we debug the real issue
-      console.warn(`[RiskFlow] Generating fallback mock data to prevent empty feed`);
-      const mockItems = generateMockFeed();
-      const enrichedItems = await enrichFeedWithAnalysis(mockItems);
-      
-      // Store mock items in database so they persist
-      await newsCache.storeFeedItems(enrichedItems);
-      console.log(`[RiskFlow] Stored ${enrichedItems.length} fallback mock items in database`);
-      
-      feedCache = { items: enrichedItems, fetchedAt: Date.now() };
-      return enrichedItems;
+
+      if (ALLOW_MOCK_FALLBACK) {
+        console.warn(`[RiskFlow] RISKFLOW_ALLOW_MOCK_FALLBACK=true — generating fallback mock data`);
+        const mockItems = generateMockFeed();
+        const enrichedItems = await enrichFeedWithAnalysis(mockItems);
+        await newsCache.storeFeedItems(enrichedItems);
+        console.log(`[RiskFlow] Stored ${enrichedItems.length} fallback mock items in database`);
+        feedCache = { items: enrichedItems, fetchedAt: Date.now() };
+        return enrichedItems;
+      }
+
+      feedCache = { items: [], fetchedAt: Date.now() };
+      return [];
     }
 
     // Check which items are already in cache
@@ -436,19 +445,19 @@ export async function getFeed(userId: string, filters?: FeedFilters): Promise<Fe
       console.warn(`[RiskFlow] Sample item:`, JSON.stringify(allItems[0], null, 2));
     }
 
-  // Default to macroLevel 3+ (high importance only)
+  // Default to macroLevel 2+ (medium importance and above)
   const effectiveFilters: FeedFilters = {
-    minMacroLevel: 3 as MacroLevel,
+    minMacroLevel: 2 as MacroLevel,
     ...filters,
   };
 
   // Apply filters (including macroLevel)
   items = applyFilters(items, effectiveFilters);
   console.log(`[RiskFlow] After filters (minMacroLevel: ${effectiveFilters.minMacroLevel}): ${items.length} items`);
-  
-  // If no items with minMacroLevel 3+, fall back to all items (for initial load)
+
+  // If no items with minMacroLevel 2+, fall back to all items (for initial load)
   // This ensures users see something even if database only has low-level items
-  if (items.length === 0 && effectiveFilters.minMacroLevel === 3 && !filters?.minMacroLevel) {
+  if (items.length === 0 && effectiveFilters.minMacroLevel === 2 && !filters?.minMacroLevel) {
     console.log(`[RiskFlow] No level 3+ items found, falling back to all items (level 1+)`);
     const fallbackItems = allItems.filter(item => matchesWatchlist(watchlist, item));
     const fallbackFilters = { ...effectiveFilters, minMacroLevel: 1 as MacroLevel };

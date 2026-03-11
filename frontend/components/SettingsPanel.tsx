@@ -1,4 +1,5 @@
-import { Settings, Bell, CreditCard, Cpu, Code, Volume2, Terminal, Wifi, Palette, Users, AlertTriangle, ArrowLeft } from 'lucide-react';
+// [claude-code 2026-03-11] T5: added mic device selector to notifications tab
+import { Settings, Bell, CreditCard, Cpu, Code, Volume2, Terminal, Wifi, Palette, Users, AlertTriangle, ArrowLeft, Globe, Mic } from 'lucide-react';
 import { useSettings, type APIKeys } from '../contexts/SettingsContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useGateway } from '../contexts/GatewayContext';
@@ -7,10 +8,12 @@ import { Button } from './ui/Button';
 import { useState, useEffect } from 'react';
 import { useBackend } from '../lib/backend';
 import { HEALING_BOWL_SOUNDS, healingBowlPlayer } from '../utils/healingBowlSounds';
+import { useVoiceMemory } from '../hooks/useVoiceMemory';
 
 import { ClawnalystDesk } from './settings/ClawnalystDesk';
+import { ThemeSettings } from './settings/ThemeSettings';
 
-type SettingsTab = 'general' | 'gateway' | 'appearance' | 'desk' | 'notifications' | 'trading' | 'api' | 'developer' | 'danger';
+type SettingsTab = 'general' | 'gateway' | 'appearance' | 'desk' | 'notifications' | 'trading' | 'api' | 'iframes' | 'developer' | 'danger';
 
 export function SettingsPage() {
   const { tier, setTier, isAuthenticated } = useAuth();
@@ -31,8 +34,13 @@ export function SettingsPage() {
     setDeveloperSettings,
     autoPilotSettings,
     setAutoPilotSettings,
+    primaryBroker,
+    setPrimaryBroker,
+    iframeUrls,
+    setIframeUrls,
   } = useSettings();
   const backend = useBackend();
+  const voiceMemory = useVoiceMemory();
   const [contractsPerTrade, setContractsPerTrade] = useState<number>(1);
 
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
@@ -96,22 +104,23 @@ export function SettingsPage() {
     setIsSaving(true);
     setSaveMessage(null);
     try {
-      // Save risk settings, selected symbol, and contracts per trade
-      await backend.account.updateSettings({
-        dailyTarget: riskSettings.dailyProfitTarget,
-        dailyLossLimit: riskSettings.dailyLossLimit,
-        topstepxUsername: apiKeys.topstepxUsername,
-        topstepxApiKey: apiKeys.topstepxApiKey,
-        selectedSymbol: selectedSymbol.symbol, // Save selected symbol to database for algorithm
-        contractsPerTrade: contractsPerTrade, // Save contracts per trade for algorithm
-      });
-
-      // Save ProjectX credentials if provided
-      if (apiKeys.topstepxUsername || apiKeys.topstepxApiKey) {
-        await backend.account.updateProjectXCredentials({
-          username: apiKeys.topstepxUsername || undefined,
-          apiKey: apiKeys.topstepxApiKey || undefined,
+      // Sync to backend only when authenticated
+      if (isAuthenticated) {
+        await backend.account.updateSettings({
+          dailyTarget: riskSettings.dailyProfitTarget,
+          dailyLossLimit: riskSettings.dailyLossLimit,
+          topstepxUsername: apiKeys.topstepxUsername,
+          topstepxApiKey: apiKeys.topstepxApiKey,
+          selectedSymbol: selectedSymbol.symbol,
+          contractsPerTrade: contractsPerTrade,
         });
+
+        if (apiKeys.topstepxUsername || apiKeys.topstepxApiKey) {
+          await backend.account.updateProjectXCredentials({
+            username: apiKeys.topstepxUsername || undefined,
+            apiKey: apiKeys.topstepxApiKey || undefined,
+          });
+        }
       }
 
       setSaveMessage('Settings saved successfully!');
@@ -160,6 +169,7 @@ export function SettingsPage() {
     { id: 'trading' as const, label: 'Trading', icon: Cpu, description: 'Risk management, autopilot, and strategy toggles' },
     { id: 'notifications' as const, label: 'Notifications', icon: Bell, description: 'Alerts, sounds, and notification preferences' },
     { id: 'api' as const, label: 'API Keys', icon: Code, description: 'TopstepX credentials and external service keys' },
+    { id: 'iframes' as const, label: 'iFrames', icon: Globe, description: 'Notion embed URLs for Boardroom, Research, and more' },
     { id: 'developer' as const, label: 'Developer', icon: Terminal, description: 'Mock data, test tools, and tier management' },
     { id: 'danger' as const, label: 'Danger Zone', icon: AlertTriangle, description: 'Reset analysts, clear data, and export config' },
   ];
@@ -189,7 +199,7 @@ export function SettingsPage() {
                       className={`group text-left p-4 rounded-lg border transition-all hover:scale-[1.01] ${
                         isDanger
                           ? 'border-red-500/15 hover:border-red-500/30 hover:bg-red-500/5'
-                          : 'border-[#D4AF37]/10 hover:border-[#D4AF37]/30 hover:bg-[#D4AF37]/5'
+                          : 'pulse-accent-border pulse-accent-border-hover'
                       }`}
                       style={{ backgroundColor: 'rgba(10,10,0,0.4)' }}
                     >
@@ -197,7 +207,7 @@ export function SettingsPage() {
                         <div className={`mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
                           isDanger
                             ? 'bg-red-500/10 text-red-400 group-hover:bg-red-500/20'
-                            : 'bg-[#D4AF37]/10 text-[#D4AF37] group-hover:bg-[#D4AF37]/20'
+                            : 'pulse-settings-icon'
                         } transition-colors`}>
                           <Icon className="w-4 h-4" />
                         </div>
@@ -223,13 +233,13 @@ export function SettingsPage() {
           <div className="shrink-0 flex items-center gap-3 px-8 pt-5 pb-3">
             <button
               onClick={handleBackToLanding}
-              className="flex items-center justify-center w-7 h-7 rounded-md text-gray-400 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-colors"
+              className="flex items-center justify-center w-7 h-7 rounded-md text-gray-400 hover:text-[var(--pulse-accent)] hover:bg-[var(--pulse-accent)]/10 transition-colors"
               title="Back to Settings"
             >
               <ArrowLeft className="w-4 h-4" />
             </button>
             <div className="flex items-center gap-2">
-              {(() => { const Icon = tabs.find(t => t.id === activeTab)?.icon ?? Settings; return <Icon className="w-4 h-4 text-[#D4AF37]/60" />; })()}
+              {(() => { const Icon = tabs.find(t => t.id === activeTab)?.icon ?? Settings; return <Icon className="w-4 h-4 text-[var(--pulse-accent)]/60" />; })()}
               <h2 className="text-[14px] font-semibold text-white tracking-tight">
                 {tabs.find(t => t.id === activeTab)?.label}
               </h2>
@@ -240,7 +250,7 @@ export function SettingsPage() {
             {activeTab === 'notifications' && (
               <div key="notifications" className={tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}>
                 <section>
-                  <h3 className="text-sm font-semibold text-[#D4AF37] mb-3">Alert Configuration</h3>
+                  <h3 className="text-sm font-semibold text-[var(--pulse-accent)] mb-3">Alert Configuration</h3>
                   <div className="space-y-3">
                     <Toggle
                       label="Price Alerts"
@@ -266,7 +276,7 @@ export function SettingsPage() {
                 </section>
 
                 <section className="pt-6 border-t border-zinc-800">
-                  <h3 className="text-sm font-semibold text-[#D4AF37] mb-3">Healing Bowl Sound</h3>
+                  <h3 className="text-sm font-semibold text-[var(--pulse-accent)] mb-3">Healing Bowl Sound</h3>
                   <p className="text-xs text-gray-500 mb-4">
                     Select a sound to play when emotional tilt is detected. Calm sounds are relaxing, shock sounds are alerting.
                   </p>
@@ -275,8 +285,8 @@ export function SettingsPage() {
                       <div
                         key={sound.id}
                         className={`flex items-center justify-between p-3 rounded-lg border transition-all cursor-pointer ${alertConfig.healingBowlSound === sound.id
-                          ? 'bg-[#D4AF37]/20 border-[#D4AF37]/40'
-                          : 'bg-[#0a0a00] border-zinc-800 hover:border-zinc-700'
+                          ? 'bg-[var(--pulse-accent)]/20 border-[var(--pulse-accent)]/40'
+                          : 'bg-[var(--pulse-surface)] border-zinc-800 hover:border-zinc-700'
                           }`}
                         onClick={() => setAlertConfig({ ...alertConfig, healingBowlSound: sound.id })}
                       >
@@ -299,14 +309,41 @@ export function SettingsPage() {
                             e.stopPropagation();
                             healingBowlPlayer.preview(sound.id);
                           }}
-                          className="ml-3 p-2 rounded-lg bg-[#D4AF37]/10 border border-[#D4AF37]/30 hover:bg-[#D4AF37]/20 transition-colors"
+                          className="ml-3 p-2 rounded-lg bg-[var(--pulse-accent)]/10 border border-[var(--pulse-accent)]/30 hover:bg-[var(--pulse-accent)]/20 transition-colors"
                           title="Preview sound"
                         >
-                          <Volume2 className="w-4 h-4 text-[#D4AF37]" />
+                          <Volume2 className="w-4 h-4 text-[var(--pulse-accent)]" />
                         </button>
                       </div>
                     ))}
                   </div>
+                </section>
+
+                <section className="pt-6 border-t border-zinc-800">
+                  <h3 className="text-sm font-semibold text-[var(--pulse-accent)] mb-3 flex items-center gap-2">
+                    <Mic className="w-4 h-4" />
+                    Microphone Device
+                  </h3>
+                  <p className="text-xs text-gray-500 mb-4">
+                    Select which microphone to use for voice commands. Changes apply on next voice session.
+                  </p>
+                  <select
+                    value={voiceMemory.micDeviceId ?? ''}
+                    onChange={(e) => voiceMemory.setMicDeviceId(e.target.value || null)}
+                    className="w-full bg-[var(--pulse-surface)] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[var(--pulse-accent)]/40 cursor-pointer"
+                  >
+                    <option value="">System Default</option>
+                    {voiceMemory.devices.map((device) => (
+                      <option key={device.deviceId} value={device.deviceId}>
+                        {device.label || `Microphone (${device.deviceId.slice(0, 8)}...)`}
+                      </option>
+                    ))}
+                  </select>
+                  {voiceMemory.devices.length === 0 && (
+                    <p className="text-[11px] text-zinc-600 mt-2">
+                      No microphones detected. Grant microphone permission to see devices.
+                    </p>
+                  )}
                 </section>
               </div>
             )}
@@ -314,7 +351,7 @@ export function SettingsPage() {
             {activeTab === 'trading' && (
               <div key="trading" className={tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}>
                 <section>
-                  <h3 className="text-sm font-semibold text-[#D4AF37] mb-4">Risk Management</h3>
+                  <h3 className="text-sm font-semibold text-[var(--pulse-accent)] mb-4">Risk Management</h3>
                   <div className="space-y-6">
                     <div>
                       <h4 className="text-sm font-medium text-gray-300 mb-3">Daily Profit Target</h4>
@@ -324,7 +361,7 @@ export function SettingsPage() {
                           type="number"
                           value={riskSettings.dailyProfitTarget}
                           onChange={(e) => setRiskSettings({ ...riskSettings, dailyProfitTarget: parseFloat(e.target.value) || 0 })}
-                          className="flex-1 bg-[#0a0a00] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#D4AF37]/30"
+                          className="flex-1 bg-[var(--pulse-surface)] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--pulse-accent)]/30"
                         />
                       </div>
                       <p className="text-xs text-gray-500 mt-2">
@@ -340,7 +377,7 @@ export function SettingsPage() {
                           type="number"
                           value={riskSettings.dailyLossLimit}
                           onChange={(e) => setRiskSettings({ ...riskSettings, dailyLossLimit: parseFloat(e.target.value) || 0 })}
-                          className="flex-1 bg-[#0a0a00] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#D4AF37]/30"
+                          className="flex-1 bg-[var(--pulse-surface)] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--pulse-accent)]/30"
                         />
                       </div>
                       <p className="text-xs text-gray-500 mt-2">
@@ -357,7 +394,7 @@ export function SettingsPage() {
                           max="10"
                           value={contractsPerTrade}
                           onChange={(e) => setContractsPerTrade(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
-                          className="flex-1 bg-[#0a0a00] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#D4AF37]/30"
+                          className="flex-1 bg-[var(--pulse-surface)] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--pulse-accent)]/30"
                         />
                       </div>
                       <p className="text-xs text-gray-500 mt-2">
@@ -373,7 +410,7 @@ export function SettingsPage() {
                           <select
                             value={riskSettings.maxTrades || 5}
                             onChange={(e) => setRiskSettings({ ...riskSettings, maxTrades: parseInt(e.target.value) })}
-                            className="w-full bg-[#0a0a00] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#D4AF37]/30"
+                            className="w-full bg-[var(--pulse-surface)] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--pulse-accent)]/30"
                           >
                             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30].map(num => (
                               <option key={num} value={num}>{num}</option>
@@ -385,7 +422,7 @@ export function SettingsPage() {
                           <select
                             value={riskSettings.overTradingDuration || 15}
                             onChange={(e) => setRiskSettings({ ...riskSettings, overTradingDuration: parseInt(e.target.value) })}
-                            className="w-full bg-[#0a0a00] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#D4AF37]/30"
+                            className="w-full bg-[var(--pulse-surface)] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--pulse-accent)]/30"
                           >
                             {[5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60].map(min => (
                               <option key={min} value={min}>{min} min</option>
@@ -401,12 +438,50 @@ export function SettingsPage() {
                 </section>
 
                 <section className="pt-6 border-t border-zinc-800">
-                  <h2 className="text-lg font-semibold text-[#D4AF37] mb-4">Autopilot</h2>
+                  <h2 className="text-lg font-semibold text-[var(--pulse-accent)] mb-4">Autopilot</h2>
 
                   <div className="space-y-6">
+                    {/* Primary broker (execution) */}
+                    <div>
+                      <h4 className="text-sm font-semibold text-[var(--pulse-accent)] mb-3">Primary broker</h4>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setPrimaryBroker('rithmic')}
+                          className={`px-3 py-2 rounded-lg border text-sm transition-all ${
+                            primaryBroker === 'rithmic'
+                              ? 'bg-[var(--pulse-accent)]/20 border-[var(--pulse-accent)]/40 text-[var(--pulse-accent)]'
+                              : 'bg-[var(--pulse-bg)] border-zinc-800 hover:border-zinc-700 text-gray-400'
+                          }`}
+                        >
+                          Rithmic (primary)
+                        </button>
+                        <button
+                          onClick={() => setPrimaryBroker('projectx')}
+                          className={`px-3 py-2 rounded-lg border text-sm transition-all ${
+                            primaryBroker === 'projectx'
+                              ? 'bg-[var(--pulse-accent)]/20 border-[var(--pulse-accent)]/40 text-[var(--pulse-accent)]'
+                              : 'bg-[var(--pulse-bg)] border-zinc-800 hover:border-zinc-700 text-gray-400'
+                          }`}
+                        >
+                          ProjectX
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        Autopilot execution uses the selected broker. Rithmic is the primary; ProjectX remains available.
+                      </p>
+                    </div>
+
+                    {/* Rithmic connection placeholder */}
+                    <div>
+                      <h4 className="text-sm font-semibold text-[var(--pulse-accent)] mb-3">Rithmic</h4>
+                      <div className="bg-[var(--pulse-surface)] border border-zinc-800 rounded-lg p-4 text-sm text-gray-400">
+                        Rithmic connection – coming soon. Configure credentials when the integration is available.
+                      </div>
+                    </div>
+
                     {/* AutoPilot Mode Selector */}
                     <div>
-                      <h4 className="text-sm font-semibold text-[#D4AF37] mb-3">Autopilot Mode</h4>
+                      <h4 className="text-sm font-semibold text-[var(--pulse-accent)] mb-3">Autopilot Mode</h4>
                       <div className="grid grid-cols-3 gap-2">
                         {[
                           { value: 'off', label: 'Off', desc: 'Manual trading only' },
@@ -422,11 +497,11 @@ export function SettingsPage() {
                             })}
                             className={`p-3 rounded-lg border text-left transition-all ${
                               autoPilotSettings.mode === mode.value
-                                ? 'bg-[#D4AF37]/20 border-[#D4AF37]/40'
-                                : 'bg-[#050500] border-zinc-800 hover:border-zinc-700'
+                                ? 'bg-[var(--pulse-accent)]/20 border-[var(--pulse-accent)]/40'
+                                : 'bg-[var(--pulse-bg)] border-zinc-800 hover:border-zinc-700'
                             }`}
                           >
-                            <div className={`text-sm font-medium ${autoPilotSettings.mode === mode.value ? 'text-[#D4AF37]' : 'text-white'}`}>
+                            <div className={`text-sm font-medium ${autoPilotSettings.mode === mode.value ? 'text-[var(--pulse-accent)]' : 'text-white'}`}>
                               {mode.label}
                             </div>
                             <div className="text-[10px] text-gray-500">{mode.desc}</div>
@@ -441,7 +516,7 @@ export function SettingsPage() {
                     </div>
 
                     <div>
-                      <h4 className="text-sm font-semibold text-[#D4AF37] mb-3">Price Action Strategies</h4>
+                      <h4 className="text-sm font-semibold text-[var(--pulse-accent)] mb-3">Price Action Strategies</h4>
                       <div className="space-y-3">
                         <Toggle
                           label="Morning Flush"
@@ -467,7 +542,7 @@ export function SettingsPage() {
                     </div>
 
                     <div>
-                      <h4 className="text-sm font-semibold text-[#D4AF37] mb-3">Volatility Strategies</h4>
+                      <h4 className="text-sm font-semibold text-[var(--pulse-accent)] mb-3">Volatility Strategies</h4>
                       <div className="space-y-3">
                         <Toggle
                           label="22 VIX Fix"
@@ -478,7 +553,7 @@ export function SettingsPage() {
                     </div>
 
                     <div>
-                      <h4 className="text-sm font-semibold text-[#D4AF37] mb-3">Risk Event-Based Strategies</h4>
+                      <h4 className="text-sm font-semibold text-[var(--pulse-accent)] mb-3">Risk Event-Based Strategies</h4>
                       <div className="space-y-3">
                         <Toggle
                           label="Charged Up Rippers"
@@ -489,7 +564,7 @@ export function SettingsPage() {
                     </div>
 
                     <div>
-                      <h4 className="text-sm font-semibold text-[#D4AF37] mb-3">Mean Reversion</h4>
+                      <h4 className="text-sm font-semibold text-[var(--pulse-accent)] mb-3">Mean Reversion</h4>
                       <div className="space-y-3">
                         <Toggle
                           label="Mean Reversion Model"
@@ -509,7 +584,7 @@ export function SettingsPage() {
             {activeTab === 'general' && (
               <div key="general" className={tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}>
                 <section>
-                  <h3 className="text-sm font-semibold text-[#D4AF37] mb-3">Trading Symbol</h3>
+                  <h3 className="text-sm font-semibold text-[var(--pulse-accent)] mb-3">Trading Symbol</h3>
                   <div className="relative">
                     {(() => {
                       const symbolKey = selectedSymbol.symbol.replace('/', '');
@@ -518,7 +593,7 @@ export function SettingsPage() {
                         <>
                           <button
                             onClick={() => setShowSymbolDropdown(!showSymbolDropdown)}
-                            className="w-full bg-[#0a0a00] border border-zinc-800 rounded-lg px-4 py-3 text-left hover:border-[#D4AF37]/30 focus:outline-none focus:border-[#D4AF37]/30 transition-colors"
+                            className="w-full bg-[var(--pulse-surface)] border border-zinc-800 rounded-lg px-4 py-3 text-left hover:border-[var(--pulse-accent)]/30 focus:outline-none focus:border-[var(--pulse-accent)]/30 transition-colors"
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex-1">
@@ -537,7 +612,7 @@ export function SettingsPage() {
                                 className="fixed inset-0 z-10"
                                 onClick={() => setShowSymbolDropdown(false)}
                               />
-                              <div className="absolute left-0 right-0 top-full mt-1 bg-[#0a0a00] border border-[#D4AF37]/30 rounded-lg shadow-xl z-20 max-h-64 overflow-y-auto">
+                              <div className="absolute left-0 right-0 top-full mt-1 bg-[var(--pulse-surface)] border border-[var(--pulse-accent)]/30 rounded-lg shadow-xl z-20 max-h-64 overflow-y-auto">
                                 {availableSymbols.map(sym => {
                                   const isSelected = sym.symbol === symbolKey;
                                   return (
@@ -550,7 +625,7 @@ export function SettingsPage() {
                                         });
                                         setShowSymbolDropdown(false);
                                       }}
-                                      className={`w-full text-left px-4 py-3 hover:bg-[#D4AF37]/10 transition-colors border-b border-zinc-800 last:border-b-0 ${isSelected ? 'bg-[#D4AF37]/20' : ''
+                                      className={`w-full text-left px-4 py-3 hover:bg-[var(--pulse-accent)]/10 transition-colors border-b border-zinc-800 last:border-b-0 ${isSelected ? 'bg-[var(--pulse-accent)]/20' : ''
                                         }`}
                                     >
                                       <div className="text-sm font-bold text-white">{sym.symbol}</div>
@@ -569,14 +644,14 @@ export function SettingsPage() {
                 </section>
 
                 <section className="pt-6 border-t border-zinc-800">
-                  <h3 className="text-sm font-semibold text-[#D4AF37] mb-3">Billing</h3>
+                  <h3 className="text-sm font-semibold text-[var(--pulse-accent)] mb-3">Billing</h3>
                   <div className="space-y-6">
                     <div>
                       <h4 className="text-sm font-medium text-gray-300 mb-3">Current Plan</h4>
-                      <div className="bg-[#050500] border border-[#D4AF37]/30 rounded-lg p-4">
+                      <div className="bg-[var(--pulse-bg)] border border-[var(--pulse-accent)]/30 rounded-lg p-4">
                         <div className="flex items-center justify-between mb-3">
                           <div>
-                            <p className="text-lg font-bold text-[#D4AF37]">{tier.replace('_', ' ').toUpperCase()}</p>
+                            <p className="text-lg font-bold text-[var(--pulse-accent)]">{tier.replace('_', ' ').toUpperCase()}</p>
                             <p className="text-xs text-gray-500">Active subscription</p>
                           </div>
                           <Button variant="secondary" className="text-xs">
@@ -592,7 +667,7 @@ export function SettingsPage() {
 
                     <div>
                       <h4 className="text-sm font-medium text-gray-300 mb-3">Payment Method</h4>
-                      <div className="bg-[#050500] border border-zinc-800 rounded-lg p-4">
+                      <div className="bg-[var(--pulse-bg)] border border-zinc-800 rounded-lg p-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <div className="w-12 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded flex items-center justify-center">
@@ -612,7 +687,7 @@ export function SettingsPage() {
 
                     <div>
                       <h4 className="text-sm font-medium text-gray-300 mb-3">Billing History</h4>
-                      <div className="bg-[#050500] border border-zinc-800 rounded-lg overflow-hidden">
+                      <div className="bg-[var(--pulse-bg)] border border-zinc-800 rounded-lg overflow-hidden">
                         {[
                           { date: 'Dec 4, 2025', amount: '$149.00', status: 'Paid' },
                           { date: 'Nov 4, 2025', amount: '$149.00', status: 'Paid' },
@@ -620,7 +695,7 @@ export function SettingsPage() {
                         ].map((invoice, idx) => (
                           <div
                             key={idx}
-                            className="flex items-center justify-between px-4 py-3 border-b border-zinc-800 last:border-b-0 hover:bg-[#D4AF37]/5 transition-colors"
+                            className="flex items-center justify-between px-4 py-3 border-b border-zinc-800 last:border-b-0 hover:bg-[var(--pulse-accent)]/5 transition-colors"
                           >
                             <div>
                               <p className="text-sm text-white">{invoice.date}</p>
@@ -628,7 +703,7 @@ export function SettingsPage() {
                             </div>
                             <div className="flex items-center gap-3">
                               <p className="text-sm font-semibold text-white">{invoice.amount}</p>
-                              <button className="text-xs text-[#D4AF37] hover:underline">
+                              <button className="text-xs text-[var(--pulse-accent)] hover:underline">
                                 Download
                               </button>
                             </div>
@@ -639,7 +714,7 @@ export function SettingsPage() {
 
                     <div>
                       <h4 className="text-sm font-medium text-red-500 mb-3">Danger Zone</h4>
-                      <div className="bg-[#050500] border border-red-500/30 rounded-lg p-4">
+                      <div className="bg-[var(--pulse-bg)] border border-red-500/30 rounded-lg p-4">
                         <p className="text-sm text-gray-400 mb-3">
                           Cancel your subscription. You will retain access until the end of your billing period.
                         </p>
@@ -656,7 +731,7 @@ export function SettingsPage() {
             {activeTab === 'api' && (
               <div key="api" className={tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}>
                 <section>
-                  <h3 className="text-sm font-semibold text-[#D4AF37] mb-4">TopstepX Credentials</h3>
+                  <h3 className="text-sm font-semibold text-[var(--pulse-accent)] mb-4">TopstepX Credentials</h3>
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm text-gray-300 mb-2">Username</label>
@@ -665,7 +740,7 @@ export function SettingsPage() {
                         value={apiKeys.topstepxUsername || ''}
                         onChange={(e) => setAPIKeys({ ...apiKeys, topstepxUsername: e.target.value })}
                         placeholder="Enter your TopstepX username"
-                        className="w-full bg-[#0a0a00] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#D4AF37]/30"
+                        className="w-full bg-[var(--pulse-surface)] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--pulse-accent)]/30"
                       />
                     </div>
                     <div>
@@ -675,12 +750,45 @@ export function SettingsPage() {
                         value={apiKeys.topstepxApiKey || ''}
                         onChange={(e) => setAPIKeys({ ...apiKeys, topstepxApiKey: e.target.value })}
                         placeholder="Enter your TopstepX API key"
-                        className="w-full bg-[#0a0a00] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#D4AF37]/30"
+                        className="w-full bg-[var(--pulse-surface)] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--pulse-accent)]/30"
                       />
                     </div>
                     <p className="text-xs text-gray-500">
-                      Sign up at <a href="https://topstepx.com" target="_blank" rel="noopener noreferrer" className="text-[#D4AF37] hover:underline">topstepx.com</a> and contact support for API access
+                      Sign up at <a href="https://topstepx.com" target="_blank" rel="noopener noreferrer" className="text-[var(--pulse-accent)] hover:underline">topstepx.com</a> and contact support for API access
                     </p>
+                  </div>
+                </section>
+              </div>
+            )}
+
+            {activeTab === 'iframes' && (
+              <div key="iframes" className={tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}>
+                <section>
+                  <h3 className="text-sm font-semibold text-[var(--pulse-accent)] mb-4">iFrames</h3>
+                  <p className="text-xs text-gray-500 mb-4">Set Notion page URLs for embedded views. Leave blank to use defaults from environment variables.</p>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm text-gray-300 mb-2">Boardroom URL</label>
+                      <input
+                        type="url"
+                        value={iframeUrls.boardroom}
+                        onChange={(e) => setIframeUrls({ ...iframeUrls, boardroom: e.target.value })}
+                        placeholder={import.meta.env.VITE_NOTION_BOARDROOM_URL || 'https://www.notion.so/your-boardroom-page'}
+                        className="w-full bg-[var(--pulse-surface)] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--pulse-accent)]/30 placeholder:text-zinc-600"
+                      />
+                      <p className="text-[10px] text-gray-600 mt-1">Embedded in the Board Room tab</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-300 mb-2">Research URL</label>
+                      <input
+                        type="url"
+                        value={iframeUrls.research}
+                        onChange={(e) => setIframeUrls({ ...iframeUrls, research: e.target.value })}
+                        placeholder={import.meta.env.VITE_NOTION_RESEARCH_URL || 'https://www.notion.so/your-research-page'}
+                        className="w-full bg-[var(--pulse-surface)] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--pulse-accent)]/30 placeholder:text-zinc-600"
+                      />
+                      <p className="text-[10px] text-gray-600 mt-1">Embedded in the Research tab and preloaded browser</p>
+                    </div>
                   </div>
                 </section>
               </div>
@@ -694,10 +802,7 @@ export function SettingsPage() {
 
             {activeTab === 'appearance' && (
               <div key="appearance" className={tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}>
-                <section>
-                  <h3 className="text-sm font-semibold text-[#D4AF37] mb-3">Theme</h3>
-                  <p className="text-sm text-gray-500">Dark mode is the default and only theme. Additional themes coming soon.</p>
-                </section>
+                <ThemeSettings />
               </div>
             )}
 
@@ -712,20 +817,20 @@ export function SettingsPage() {
                 <section>
                   <h3 className="text-sm font-semibold text-red-500 mb-3">Danger Zone</h3>
                   <div className="space-y-4">
-                    <div className="bg-[#050500] border border-red-500/20 rounded-lg p-4">
+                    <div className="bg-[var(--pulse-bg)] border border-red-500/20 rounded-lg p-4">
                       <h4 className="text-sm font-medium text-white mb-1">Reset Analysts</h4>
                       <p className="text-xs text-gray-500 mb-3">Restore all analysts to their default configuration.</p>
                       <Button variant="secondary" className="text-xs text-red-500 border-red-500/30 hover:bg-red-500/10">Reset to Defaults</Button>
                     </div>
-                    <div className="bg-[#050500] border border-red-500/20 rounded-lg p-4">
+                    <div className="bg-[var(--pulse-bg)] border border-red-500/20 rounded-lg p-4">
                       <h4 className="text-sm font-medium text-white mb-1">Clear All Data</h4>
                       <p className="text-xs text-gray-500 mb-3">Remove all conversations, drafts, and local settings. This cannot be undone.</p>
                       <Button variant="secondary" className="text-xs text-red-500 border-red-500/30 hover:bg-red-500/10">Clear Data</Button>
                     </div>
-                    <div className="bg-[#050500] border border-red-500/20 rounded-lg p-4">
+                    <div className="bg-[var(--pulse-bg)] border border-red-500/20 rounded-lg p-4">
                       <h4 className="text-sm font-medium text-white mb-1">Export Configuration</h4>
                       <p className="text-xs text-gray-500 mb-3">Download your agent and settings configuration as JSON.</p>
-                      <Button variant="secondary" className="text-xs text-[#D4AF37] border-[#D4AF37]/30 hover:bg-[#D4AF37]/10">Export</Button>
+                      <Button variant="secondary" className="text-xs text-[var(--pulse-accent)] border-[var(--pulse-accent)]/30 hover:bg-[var(--pulse-accent)]/10">Export</Button>
                     </div>
                   </div>
                 </section>
@@ -735,7 +840,7 @@ export function SettingsPage() {
             {activeTab === 'developer' && (
               <div key="developer" className={tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}>
                 <section>
-                  <h3 className="text-sm font-semibold text-[#D4AF37] mb-3">Account Tier</h3>
+                  <h3 className="text-sm font-semibold text-[var(--pulse-accent)] mb-3">Account Tier</h3>
                   <div className="flex gap-2">
                     {(['free', 'pulse', 'pulse_plus', 'pulse_pro'] as const).map(t => (
                       <Button
@@ -751,7 +856,7 @@ export function SettingsPage() {
                 </section>
 
                 <section className="pt-6 border-t border-zinc-800">
-                  <h3 className="text-sm font-semibold text-[#D4AF37] mb-3">Developer Settings</h3>
+                  <h3 className="text-sm font-semibold text-[var(--pulse-accent)] mb-3">Developer Settings</h3>
                   <div className="space-y-3">
                     <Toggle
                       label="Enable Mock Data Feed"
@@ -784,7 +889,7 @@ export function SettingsPage() {
           </div>
 
           {/* Sticky save bar */}
-          <div className="sticky bottom-0 bg-[#050500] backdrop-blur-sm border-t border-[#D4AF37]/10 px-8 py-3">
+          <div className="sticky bottom-0 bg-[var(--pulse-bg)] backdrop-blur-sm border-t border-[var(--pulse-accent)]/10 px-8 py-3">
             {saveMessage && (
               <div className={`mb-3 px-4 py-2 rounded text-sm ${saveMessage.includes('success')
                 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
@@ -818,7 +923,7 @@ export function SettingsPage() {
                 <div
                   key={i}
                   className={`w-1 rounded-full transition-all ${
-                    tabs[i].id === activeTab ? 'h-4 bg-[#D4AF37]' : 'h-1.5 bg-[#D4AF37]/25'
+                    tabs[i].id === activeTab ? 'h-4 bg-[var(--pulse-accent)]' : 'h-1.5 bg-[var(--pulse-accent)]/25'
                   }`}
                 />
               ))}
@@ -828,7 +933,7 @@ export function SettingsPage() {
 
         {/* Expanded sidebar */}
         <div
-          className={`h-full bg-[#050500] border-l border-[#D4AF37]/15 flex flex-col py-5 transition-all duration-200 ease-out overflow-hidden ${
+          className={`h-full bg-[var(--pulse-bg)] border-l border-[var(--pulse-accent)]/15 flex flex-col py-5 transition-all duration-200 ease-out overflow-hidden ${
             sidebarHovered ? 'w-52 opacity-100' : 'w-0 opacity-0'
           }`}
         >
@@ -845,12 +950,12 @@ export function SettingsPage() {
                   onClick={() => handleTabChange(tab.id)}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors ${
                     isActive
-                      ? 'bg-[#D4AF37]/15 text-[#D4AF37]'
-                      : 'text-gray-400 hover:bg-[#D4AF37]/8 hover:text-gray-200'
+                      ? 'bg-[var(--pulse-accent)]/15 text-[var(--pulse-accent)]'
+                      : 'text-gray-400 hover:bg-[var(--pulse-accent)]/8 hover:text-gray-200'
                   }`}
                 >
                   <Icon className="w-4 h-4 shrink-0" />
-                  <span className={`text-[12px] font-medium truncate ${isActive ? 'text-[#D4AF37]' : ''}`}>{tab.label}</span>
+                  <span className={`text-[12px] font-medium truncate ${isActive ? 'text-[var(--pulse-accent)]' : ''}`}>{tab.label}</span>
                 </button>
               );
             })}
@@ -868,14 +973,14 @@ export function SettingsPage() {
 
 function GatewayTab() {
   const { status, lastHealthCheck, reconnect, gatewayUrl } = useGateway();
-  const statusColor = status === 'connected' ? '#34D399' : status === 'connecting' ? '#D4AF37' : '#EF4444';
+  const statusColor = status === 'connected' ? '#34D399' : status === 'connecting' ? 'var(--pulse-accent)' : '#EF4444';
   const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
 
   return (
     <section>
-      <h3 className="text-sm font-semibold text-[#D4AF37] mb-4">OpenClaw Gateway</h3>
+      <h3 className="text-sm font-semibold text-[var(--pulse-accent)] mb-4">OpenClaw Gateway</h3>
       <div className="space-y-4">
-        <div className="bg-[#050500] border border-[#D4AF37]/20 rounded-lg p-4">
+        <div className="bg-[var(--pulse-bg)] border border-[var(--pulse-accent)]/20 rounded-lg p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: statusColor }} />
@@ -883,7 +988,7 @@ function GatewayTab() {
             </div>
             <button
               onClick={reconnect}
-              className="text-xs text-[#D4AF37] border border-[#D4AF37]/30 rounded px-3 py-1 hover:bg-[#D4AF37]/10 transition-colors"
+              className="text-xs text-[var(--pulse-accent)] border border-[var(--pulse-accent)]/30 rounded px-3 py-1 hover:bg-[var(--pulse-accent)]/10 transition-colors"
             >
               Reconnect
             </button>

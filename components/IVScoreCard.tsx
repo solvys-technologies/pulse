@@ -1,6 +1,8 @@
+// [claude-code 2026-03-09] Added VIX degraded-state indicator (stale/degraded dot)
 import { Info, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
 import { useSettings } from '../contexts/SettingsContext';
+import { useVIX } from '../contexts/VIXContext';
 
 interface IVScoreCardProps {
   score: number;
@@ -91,6 +93,7 @@ interface IVScoreCardProps {
 export function IVScoreCard({ score, variant = 'default', layoutOption }: IVScoreCardProps) {
   const [showTooltip, setShowTooltip] = useState(false);
   const { selectedSymbol } = useSettings();
+  const { status: vixStatus } = useVIX();
 
   // Calculate expected move for user's selected instrument
   const expectedMove = calculateExpectedMove(score, selectedSymbol.symbol);
@@ -129,6 +132,15 @@ export function IVScoreCard({ score, variant = 'default', layoutOption }: IVScor
     <div className={`${containerClasses} relative overflow-hidden`} style={frostedStyle}>
       <div className="flex items-center gap-2 whitespace-nowrap overflow-hidden">
         <span className="text-[10px] text-gray-400 flex-shrink-0">IV Score</span>
+        {vixStatus === 'stale' && (
+          <span className="w-1.5 h-1.5 rounded-full bg-[#c79f4a] flex-shrink-0 animate-pulse" title="VIX data stale (>2min)" />
+        )}
+        {vixStatus === 'degraded' && (
+          <span className="w-1.5 h-1.5 rounded-full bg-[#ef4444] flex-shrink-0 animate-pulse" title="VIX feed unavailable" />
+        )}
+        {vixStatus === 'loading' && (
+          <span className="w-1.5 h-1.5 rounded-full bg-zinc-500 flex-shrink-0 animate-pulse" title="Loading VIX data..." />
+        )}
         <span className={`text-sm font-bold flex-shrink-0 ${getScoreColor()}`}>
           {score.toFixed(1)}
         </span>

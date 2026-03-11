@@ -1,12 +1,13 @@
 // [claude-code 2026-02-26] Support dockable PsychAssist in Zen layout.
-import React, { useState, useEffect, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
-import { quickIVScore, type IVScoreResult } from '../../lib/iv-scoring';
+// [claude-code 2026-03-11] Track 4: MC overhaul — no Panels header, collapse in MC header, 50/50 flex, gear menu
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, X } from 'lucide-react';
+import type { IVScoreResponse } from '../../types/market-data';
 import { TopHeader } from './TopHeader';
 import { NavSidebar } from './NavSidebar';
-import { MissionControlPanel } from '../mission-control/MissionControlPanel';
-import { FeedSection } from '../feed/FeedSection';
 import { MinimalFeedSection } from '../feed/MinimalFeedSection';
+import { CompactRiskFlowCard } from '../feed/CompactRiskFlowCard';
+import { KanbanTitle } from '../ui/KanbanTitle';
 import { MinimalTapeWidget } from '../feed/MinimalTapeWidget';
 import { NewsSection } from '../feed/NewsSection';
 import { AnalysisSection } from '../analysis/AnalysisSection';
@@ -23,21 +24,52 @@ import { MinimalERMeter } from '../MinimalERMeter';
 import { ExecutiveDashboard } from '../executive/ExecutiveDashboard';
 import { BoardroomView } from '../BoardroomView';
 import { ResearchDepartment } from '../executive/ResearchDepartment';
-import { InterventionSidebar } from '../InterventionSidebar';
 import { SectionBreadcrumb } from './SectionBreadcrumb';
 import RiskFlowPanel from '../RiskFlowPanel';
-import { useBoardroom } from '../../hooks/useBoardroom';
+import { useRiskFlow } from '../../contexts/RiskFlowContext';
 import { SearchModal } from '../search/SearchModal';
-import { PulseFloatingChat } from '../chat/PulseFloatingChat';
+import { AskHarpChatPanel } from '../chat/AskHarpChatPanel';
 import { SettingsPage } from '../SettingsPanel';
+import { useSettings } from '../../contexts/SettingsContext';
 import { PsychAssistDockable, type PsychAssistDockTarget } from './PsychAssistDockable';
+import { FooterToolbar } from './FooterToolbar';
+import { EmbeddedBrowserFrame } from './EmbeddedBrowserFrame';
+import { ScheduleProvider } from '../../contexts/ScheduleContext';
+import { EconCalendarProvider } from '../../contexts/EconCalendarContext';
+import { EconCalendar } from '../econ/EconCalendar';
+import { NarrativeProvider } from '../../contexts/NarrativeContext';
+import { NarrativeFlow } from '../narrative/NarrativeFlow';
+import { TradingJournal } from '../journal/TradingJournal';
+import { FirstTimeTour } from '../onboarding/FirstTimeTour';
+import { SessionCountdownWidget } from '../mission-control/SessionCountdownWidget';
+import { RegimeMini } from '../mission-control/RegimeMini';
+import { SessionCalendarMini } from '../mission-control/SessionCalendarMini';
+import { WidgetArrangeMenu } from '../mission-control/WidgetArrangeMenu';
+import {
+  DEFAULT_MISSION_WIDGET_ORDER,
+  getMissionWidgetOrder,
+  setMissionWidgetOrder,
+  getMissionWidgetVisibility,
+  setMissionWidgetVisibility,
+  type MissionWidgetId,
+} from '../../lib/layoutOrderStorage';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'settings';
-type LayoutOption = 'movable' | 'tickers-only' | 'combined';
+type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'settings';
+type LayoutOption = 'tickers-only' | 'combined';
+
+const MISSION_WIDGETS_PER_PAGE = 2;
+
+function normalizeOrder<T extends string>(order: T[], defaults: readonly T[]): T[] {
+  const deduped = order.filter((id, idx) => defaults.includes(id) && order.indexOf(id) === idx);
+  const missing = defaults.filter((id) => !deduped.includes(id));
+  return [...deduped, ...missing];
+}
 
 // Main layout component - no authentication needed
 export function MainLayout() {
-  const [activeTab, setActiveTab] = useState<NavTab>('feed');
+  const { iframeUrls } = useSettings();
+  const [activeTab, setActiveTab] = useState<NavTab>('executive');
+  const [layoutEditMode, setLayoutEditMode] = useState(false);
   const [missionControlCollapsed, setMissionControlCollapsed] = useState(false);
   const [tapeCollapsed, setTapeCollapsed] = useState(false);
   const [combinedPanelCollapsed, setCombinedPanelCollapsed] = useState(false);
@@ -47,22 +79,27 @@ export function MainLayout() {
   const [selectedPlatform, setSelectedPlatform] = useState<TradingPlatform>('topstepx');
   const [secondaryPlatform, setSecondaryPlatform] = useState<TradingPlatform>('research');
   const [splitBrowserView, setSplitBrowserView] = useState(false);
-  const [layoutOption, setLayoutOption] = useState<LayoutOption>('movable');
+  const [layoutOption, setLayoutOption] = useState<LayoutOption>('combined');
   const [prevLayoutOption, setPrevLayoutOption] = useState<LayoutOption | null>(null);
-  const [lastMovableLayout, setLastMovableLayout] = useState<LayoutOption | null>(null);
-  const [missionControlPosition, setMissionControlPosition] = useState<PanelPosition>('left');
+  const [missionControlPosition, setMissionControlPosition] = useState<PanelPosition>('right');
   const [tapePosition, setTapePosition] = useState<PanelPosition>('right');
-  const [vix, setVix] = useState(20);
-  const [ivScoreResult, setIvScoreResult] = useState<IVScoreResult | null>(null);
-  const ivScore = ivScoreResult?.legacyScore ?? 3.2;
+  const [ivData, setIvData] = useState<IVScoreResponse | null>(null);
+  const [ivLoading, setIvLoading] = useState(true);
   const [showMissionControlNotification, setShowMissionControlNotification] = useState(false);
   const [showTapeNotification, setShowTapeNotification] = useState(false);
-  const [riskFlowCollapsed, setRiskFlowCollapsed] = useState(false);
   const [combinedPanelErScore, setCombinedPanelErScore] = useState(0);
   const [combinedPanelPnl, setCombinedPanelPnl] = useState(0);
   const [combinedPanelAlgoEnabled, setCombinedPanelAlgoEnabled] = useState(false);
+  const [riskFlowCollapsed, setRiskFlowCollapsed] = useState(false);
   const [showAskHarp, setShowAskHarp] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
+  const [sidebarOverlayVisible, setSidebarOverlayVisible] = useState(false);
+  const [missionWidgetOrder, setMissionWidgetOrderState] = useState<MissionWidgetId[]>(() =>
+    normalizeOrder(getMissionWidgetOrder(), DEFAULT_MISSION_WIDGET_ORDER)
+  );
+  const [missionWidgetVisibility, setMissionWidgetVisibilityState] = useState<Record<MissionWidgetId, boolean>>(getMissionWidgetVisibility);
+  const [missionDeckPage, setMissionDeckPage] = useState(0);
+  const missionDeckRef = useRef<HTMLDivElement>(null);
   const [psychAssistTarget, setPsychAssistTarget] = useState<PsychAssistDockTarget>(() => {
     try {
       return (localStorage.getItem('pulse_psychassist_target:v1') as PsychAssistDockTarget) || 'floating';
@@ -79,8 +116,12 @@ export function MainLayout() {
     }
   }, [psychAssistTarget]);
 
+  useEffect(() => {
+    setMissionWidgetOrderState((prev) => normalizeOrder(prev, DEFAULT_MISSION_WIDGET_ORDER));
+  }, []);
+
   // Tab history for breadcrumb back/forward navigation
-  const [tabHistory, setTabHistory] = useState<NavTab[]>(['feed']);
+  const [tabHistory, setTabHistory] = useState<NavTab[]>(['executive']);
   const [historyIndex, setHistoryIndex] = useState(0);
 
   const navigateTab = (tab: NavTab) => {
@@ -109,17 +150,19 @@ export function MainLayout() {
   };
 
   const backend = useBackend();
-  const boardroom = useBoardroom();
+  const { alerts: riskFlowAlerts } = useRiskFlow();
+  const [combinedTapeCollapsed, setCombinedTapeCollapsed] = useState(false);
 
   /* ---- Keyboard shortcuts ---- */
   useEffect(() => {
     const TAB_MAP: Record<string, NavTab> = {
       '1': 'executive',
-      '2': 'feed',
-      '3': 'analysis',
-      '4': 'news',
-      '5': 'chatroom',
+      '2': 'analysis',
+      '3': 'news',
+      '4': 'chatroom',
+      '5': 'econ',
       '6': 'notion',
+      '7': 'narrative',
     };
 
     const handler = (e: KeyboardEvent) => {
@@ -129,7 +172,7 @@ export function MainLayout() {
         setShowSearchModal((v) => !v);
         return;
       }
-      // Cmd+Shift+1-6 -> Tab navigation
+      // Cmd+Shift+1-5 -> Tab navigation
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && TAB_MAP[e.key]) {
         e.preventDefault();
         navigateTab(TAB_MAP[e.key]);
@@ -148,12 +191,10 @@ export function MainLayout() {
   // Reset layout when TopStepX is toggled
   useEffect(() => {
     if (topStepXEnabled) {
-      // When TopStepX is enabled, set default positions
-      setMissionControlPosition('left');
+      setMissionControlPosition('right');
       setTapePosition('right');
-      setLayoutOption('movable');
+      setLayoutOption('combined');
     } else {
-      // When TopStepX is disabled, reset to static layout
       setMissionControlPosition('right');
       setTapePosition('right');
       setMissionControlCollapsed(false);
@@ -161,59 +202,30 @@ export function MainLayout() {
     }
   }, [topStepXEnabled]);
 
-  // Restore panels to default when switching back to a movable panels layout
   useEffect(() => {
-    const isMovableLayout = layoutOption === 'movable' || layoutOption === 'combined';
-    
-    // Track the last movable layout we were on
-    if (isMovableLayout) {
-      // If we're switching back to the same movable layout we were on before
-      if (lastMovableLayout === layoutOption && prevLayoutOption !== layoutOption) {
-        // Restore default settings for the layout
-        if (layoutOption === 'movable') {
-          setMissionControlPosition('left');
-          setTapePosition('right');
-          setMissionControlCollapsed(false);
-          setTapeCollapsed(false);
-        } else if (layoutOption === 'combined') {
-          setCombinedPanelCollapsed(false);
-        }
-      }
-      // Update the last movable layout we were on
-      setLastMovableLayout(layoutOption);
-    } else {
-      // When switching away from a movable layout, remember which one we were on
-      // (lastMovableLayout stays the same)
+    if (layoutOption === 'combined' && prevLayoutOption !== layoutOption) {
+      setCombinedPanelCollapsed(false);
     }
-    
-    // Update previous layout option
     setPrevLayoutOption(layoutOption);
-  }, [layoutOption, prevLayoutOption, lastMovableLayout]);
+  }, [layoutOption, prevLayoutOption]);
 
-  // Fetch VIX and IV Score for floating widget
+  // Fetch blended IV score from backend for floating widget
   useEffect(() => {
-    const fetchVIX = async () => {
+    const fetchIVScore = async () => {
       try {
-        const data = await backend.riskflow.fetchVIX();
-        if (data && typeof data.value === 'number') {
-          setVix(data.value);
-        }
+        const data = await backend.marketData.getIVScore();
+        setIvData(data);
       } catch (error) {
-        console.error('[VIX] Failed to fetch VIX:', error);
+        console.error('[IV] Failed to fetch IV score:', error);
+      } finally {
+        setIvLoading(false);
       }
     };
 
-    fetchVIX();
-    const interval = setInterval(fetchVIX, 300000);
+    fetchIVScore();
+    const interval = setInterval(fetchIVScore, 300000);
     return () => clearInterval(interval);
   }, [backend]);
-
-  // Compute IV score from VIX using the scoring engine
-  useEffect(() => {
-    if (vix > 0) {
-      setIvScoreResult(quickIVScore(vix));
-    }
-  }, [vix]);
 
   // Fetch account data for combined panel collapsed state
   useEffect(() => {
@@ -266,79 +278,263 @@ export function MainLayout() {
   // Determine layout based on TopStepX state and layout option
   const showMissionControl = topStepXEnabled && missionControlPosition !== 'floating';
   const showTape = topStepXEnabled && tapePosition !== 'floating';
-  const showFloatingWidget = topStepXEnabled && (
-    layoutOption === 'tickers-only' || 
-    (layoutOption === 'movable' && missionControlPosition === 'floating' && tapePosition === 'floating')
-  );
+  const showFloatingWidget = topStepXEnabled && layoutOption === 'tickers-only';
   const showCombinedPanel = topStepXEnabled && layoutOption === 'combined';
 
   // Determine panel order based on position and layout option
   const leftPanels: React.ReactNode[] = [];
   const rightPanels: React.ReactNode[] = [];
 
+  const handleMissionWidgetReorder = useCallback((order: MissionWidgetId[]) => {
+    const normalized = normalizeOrder(order, DEFAULT_MISSION_WIDGET_ORDER);
+    setMissionWidgetOrderState(normalized);
+    setMissionWidgetOrder(normalized);
+  }, []);
+
+  const handleMissionWidgetToggleVisibility = useCallback((id: MissionWidgetId) => {
+    setMissionWidgetVisibilityState((prev) => {
+      const next = { ...prev, [id]: !(prev[id] !== false) };
+      setMissionWidgetVisibility(next);
+      return next;
+    });
+  }, []);
+
+
+  const missionWidgetRegistry = useMemo(() => ({
+    er: {
+      id: 'er' as const,
+      label: 'Emotional Resonance',
+      node: <EmotionalResonanceMonitor onERScoreChange={setCombinedPanelErScore} />,
+    },
+    autopilot: {
+      id: 'autopilot' as const,
+      label: 'Autopilot',
+      node: <AlgoStatusWidget />,
+    },
+    regime: {
+      id: 'regime' as const,
+      label: 'Regime Tracker',
+      node: <RegimeMini />,
+    },
+    account: {
+      id: 'account' as const,
+      label: 'Account Tracker',
+      node: <AccountTrackerWidget />,
+    },
+    blindspots: {
+      id: 'blindspots' as const,
+      label: 'Blindspots',
+      node: <BlindspotsWidget />,
+    },
+    calendar: {
+      id: 'calendar' as const,
+      label: 'Session Calendar',
+      node: <SessionCalendarMini />,
+    },
+  }), []);
+
+  const orderedMissionWidgets = useMemo(() => {
+    const normalized = normalizeOrder(missionWidgetOrder, DEFAULT_MISSION_WIDGET_ORDER);
+    return normalized
+      .filter((id) => missionWidgetVisibility[id] !== false)
+      .map((id) => missionWidgetRegistry[id]);
+  }, [missionWidgetOrder, missionWidgetRegistry, missionWidgetVisibility]);
+
+  // Full list (including hidden) for the arrange menu
+  const allMissionWidgets = useMemo(() => {
+    const normalized = normalizeOrder(missionWidgetOrder, DEFAULT_MISSION_WIDGET_ORDER);
+    return normalized.map((id) => ({ id, label: missionWidgetRegistry[id].label }));
+  }, [missionWidgetOrder, missionWidgetRegistry]);
+
+  const missionWidgetPages = useMemo(() => {
+    const pages: Array<typeof orderedMissionWidgets> = [];
+    for (let i = 0; i < orderedMissionWidgets.length; i += MISSION_WIDGETS_PER_PAGE) {
+      pages.push(orderedMissionWidgets.slice(i, i + MISSION_WIDGETS_PER_PAGE));
+    }
+    return pages.length > 0 ? pages : [[]];
+  }, [orderedMissionWidgets]);
+
+  useEffect(() => {
+    setMissionDeckPage((prev) => Math.min(prev, Math.max(0, missionWidgetPages.length - 1)));
+  }, [missionWidgetPages.length]);
+
+  const scrollMissionDeckToPage = useCallback((idx: number) => {
+    setMissionDeckPage(idx);
+    const el = missionDeckRef.current;
+    if (!el) return;
+    const pages = el.querySelectorAll('[data-mission-page]');
+    if (pages[idx]) {
+      pages[idx].scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, []);
+
+  const handleMissionDeckScroll = useCallback(() => {
+    const el = missionDeckRef.current;
+    if (!el) return;
+    const pages = el.querySelectorAll('[data-mission-page]');
+    let closest = 0;
+    let minDist = Infinity;
+    pages.forEach((page, idx) => {
+      const rect = page.getBoundingClientRect();
+      const offset = Math.abs(rect.top - el.getBoundingClientRect().top);
+      if (offset < minDist) {
+        minDist = offset;
+        closest = idx;
+      }
+    });
+    setMissionDeckPage(closest);
+  }, []);
+
+  // Reusable Mission Control content block: snap deck with exactly 2 widgets per page.
+  const missionControlContent = (collapseFn?: () => void) => (
+    <div className="h-full flex flex-col">
+      <KanbanTitle
+        title="Mission Control"
+        tone="gold"
+        headerRight={
+          <div className="flex items-center gap-0.5">
+            <WidgetArrangeMenu
+              widgets={allMissionWidgets}
+              visibility={missionWidgetVisibility}
+              onReorder={handleMissionWidgetReorder}
+              onToggleVisibility={handleMissionWidgetToggleVisibility}
+            />
+            {collapseFn && (
+              <button
+                onClick={collapseFn}
+                className="p-1 hover:bg-[var(--pulse-accent)]/10 rounded transition-colors"
+                title="Collapse panel"
+              >
+                <ChevronRight className="w-3.5 h-3.5 text-[var(--pulse-accent)]/60" />
+              </button>
+            )}
+          </div>
+        }
+      />
+
+      <div className="mt-2 flex-1 min-h-0 relative">
+        <div
+          ref={missionDeckRef}
+          onScroll={handleMissionDeckScroll}
+          className="h-full overflow-y-auto snap-y snap-mandatory border-y border-[var(--pulse-accent)]/15"
+        >
+          {missionWidgetPages.map((page, pageIdx) => (
+            <section
+              key={`mission-page-${pageIdx}`}
+              data-mission-page={pageIdx}
+              className="min-h-full snap-start grid grid-rows-2 divide-y divide-[var(--pulse-accent)]/15"
+            >
+              {[0, 1].map((slotIdx) => {
+                const widget = page[slotIdx];
+                if (!widget) {
+                  return <div key={`slot-${slotIdx}`} className="p-3" />;
+                }
+                return (
+                  <div key={widget.id} className="p-3">
+                    {widget.node}
+                  </div>
+                );
+              })}
+            </section>
+          ))}
+        </div>
+
+        {missionWidgetPages.length > 1 && (
+          <div className="absolute right-1 top-1/2 -translate-y-1/2 flex flex-col items-center justify-center gap-2">
+            {missionWidgetPages.map((_, idx) => (
+              <button
+                key={`mission-dot-${idx}`}
+                onClick={() => scrollMissionDeckToPage(idx)}
+                title={`Mission page ${idx + 1}`}
+                className="group relative flex items-center justify-center"
+              >
+                <div
+                  className={`transition-all duration-300 rounded-full ${
+                    missionDeckPage === idx
+                      ? 'w-[3px] h-8 bg-[var(--pulse-accent)]'
+                      : 'w-[2px] h-5 bg-gray-700 hover:bg-gray-500'
+                  }`}
+                />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   // When TopStepX is enabled, render panels based on layout option
   if (topStepXEnabled) {
     if (layoutOption === 'combined') {
-      // Combined panel: both Mission Control and Tape stacked on the right
+      // Combined panel: Mission Control + The Tape in one scroll (split, no overlap)
       rightPanels.push(
-        <div key="combined" className={`bg-[#0a0a00] border-l border-[#D4AF37]/20 transition-lush ${combinedPanelCollapsed ? 'w-16' : 'w-80'}`}>
+        <div key="combined" className={`bg-[var(--pulse-surface)] border-l border-[var(--pulse-accent)]/20 transition-all duration-200 ${combinedPanelCollapsed ? 'w-16' : 'w-[380px]'}`}>
           <div className="h-full flex flex-col">
-            <div className="h-12 flex items-center justify-between px-3 border-b border-[#D4AF37]/20">
-              {!combinedPanelCollapsed && (
-                <h2 className="text-sm font-semibold text-[#D4AF37]">Panels</h2>
-              )}
-              <button
-                onClick={() => setCombinedPanelCollapsed(!combinedPanelCollapsed)}
-                className="p-1.5 hover:bg-[#D4AF37]/10 rounded transition-colors ml-auto"
-              >
-                {combinedPanelCollapsed ? (
-                  <ChevronLeft className="w-4 h-4 text-[#D4AF37]" />
-                ) : (
-                  <ChevronRight className="w-4 h-4 text-[#D4AF37]" />
-                )}
-              </button>
-            </div>
+            {combinedPanelCollapsed && (
+              <div className="h-12 flex-shrink-0 flex items-center justify-center border-b border-[var(--pulse-accent)]/20">
+                <button
+                  onClick={() => setCombinedPanelCollapsed(false)}
+                  className="p-1.5 hover:bg-[var(--pulse-accent)]/10 rounded transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4 text-[var(--pulse-accent)]" />
+                </button>
+              </div>
+            )}
             {!combinedPanelCollapsed && (
-              <div className="flex-1 overflow-hidden flex flex-col">
-                <div className="h-1/2 overflow-hidden border-b border-[#D4AF37]/20 flex flex-col">
-                  <div className="h-12 flex items-center justify-between px-3 border-b border-[#D4AF37]/20">
-                    <h3 className="text-xs font-semibold text-[#D4AF37]">Mission Control</h3>
+              <div className="flex-1 min-h-0 flex flex-col">
+                {/* Mission Control: 50% height, no overflow into tape */}
+                <section className={`${combinedTapeCollapsed ? 'flex-1' : 'h-1/2'} min-h-0 overflow-y-auto border-b border-[var(--pulse-accent)]/20`}>
+                  <div className="p-3 h-full">
+                    {missionControlContent(() => setCombinedPanelCollapsed(true))}
                   </div>
-                  <div className="flex-1 overflow-y-auto">
-                    <div className="p-2 space-y-2">
-                      <EmotionalResonanceMonitor onERScoreChange={setCombinedPanelErScore} />
-                      <BlindspotsWidget />
-                      <AccountTrackerWidget />
-                      <AlgoStatusWidget />
+                </section>
+                {/* The Tape: 50% when expanded, collapsed header when hidden */}
+                <section className={`${combinedTapeCollapsed ? 'flex-shrink-0' : 'h-1/2'} min-h-0 flex flex-col border-t border-[var(--pulse-accent)]/20`}>
+                  <button
+                    type="button"
+                    onClick={() => setCombinedTapeCollapsed(!combinedTapeCollapsed)}
+                    className="h-10 flex-shrink-0 flex items-center justify-between px-3 border-b border-[var(--pulse-accent)]/20 hover:bg-[var(--pulse-accent)]/5 transition-colors w-full text-left"
+                  >
+                    <span className="text-[11px] font-semibold text-[var(--pulse-accent)] tracking-[0.2em] uppercase">The Tape</span>
+                    {combinedTapeCollapsed && riskFlowAlerts.length > 0 && (
+                      <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500/30 text-red-400 text-[10px] font-bold">
+                        {riskFlowAlerts.length}
+                      </span>
+                    )}
+                    <span className="text-[var(--pulse-accent)]/60">
+                      {combinedTapeCollapsed ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
+                    </span>
+                  </button>
+                  {!combinedTapeCollapsed && (
+                    <div className="flex-1 min-h-0 overflow-y-auto px-1 py-1.5 space-y-0.5">
+                      {riskFlowAlerts.length === 0 ? (
+                        <div className="text-center text-zinc-600 py-6 text-[10px]">No items</div>
+                      ) : (
+                        riskFlowAlerts.slice(0, 30).map((alert) => (
+                          <CompactRiskFlowCard key={alert.id} alert={alert} />
+                        ))
+                      )}
                     </div>
-                  </div>
-                </div>
-                <div className="h-1/2 overflow-hidden flex flex-col">
-                  <div className="h-12 flex items-center justify-between px-3 border-b border-[#D4AF37]/20">
-                    <h3 className="text-xs font-semibold text-[#D4AF37]">The Tape</h3>
-                  </div>
-                  <div className="flex-1 overflow-y-auto">
-                    <div className="p-2">
-                      <MinimalFeedSection 
-                        collapsed={false}
-                        position="right"
-                      />
+                  )}
+                  {combinedTapeCollapsed && (
+                    <div className="p-3 flex justify-center">
+                      <div className="w-full max-w-[120px]">
+                        <MinimalTapeWidget />
+                      </div>
                     </div>
-                  </div>
-                </div>
+                  )}
+                </section>
               </div>
             )}
             {combinedPanelCollapsed && (
-              <div className="flex-1 flex flex-col items-center justify-center gap-3 p-2 bg-[#0a0a00]">
-                {/* Minimalist ER Meter */}
+              <div className="flex-1 flex flex-col items-center justify-center gap-3 p-2 bg-[var(--pulse-surface)]">
                 <div className="w-full max-w-[120px]">
-                  <MinimalERMeter 
-                    resonance={normalizedCombinedPanelResonance} 
-                    pnl={combinedPanelPnl} 
-                    algoEnabled={combinedPanelAlgoEnabled} 
+                  <MinimalERMeter
+                    resonance={normalizedCombinedPanelResonance}
+                    pnl={combinedPanelPnl}
+                    algoEnabled={combinedPanelAlgoEnabled}
                   />
                 </div>
-                {/* Minimalist Tape Widget */}
                 <div className="w-full max-w-[120px]">
                   <MinimalTapeWidget />
                 </div>
@@ -347,104 +543,55 @@ export function MainLayout() {
           </div>
         </div>
       );
-    } else if (layoutOption === 'movable') {
-      // Movable panels: Mission Control and Tape can be positioned independently
-      if (missionControlPosition === 'left' && showMissionControl) {
-        leftPanels.push(
-          <MissionControlPanel
-            key="mission-control"
-            collapsed={missionControlCollapsed}
-            onToggleCollapse={() => setMissionControlCollapsed(!missionControlCollapsed)}
-            topStepXEnabled={topStepXEnabled}
-            position={missionControlPosition}
-            onPositionChange={setMissionControlPosition}
-            onHide={() => {
-              setMissionControlPosition('floating');
-              setShowMissionControlNotification(true);
-            }}
-          />
-        );
-      } else if (missionControlPosition === 'right' && showMissionControl) {
-        rightPanels.push(
-          <MissionControlPanel
-            key="mission-control"
-            collapsed={missionControlCollapsed}
-            onToggleCollapse={() => setMissionControlCollapsed(!missionControlCollapsed)}
-            topStepXEnabled={topStepXEnabled}
-            position={missionControlPosition}
-            onPositionChange={setMissionControlPosition}
-            onHide={() => {
-              setMissionControlPosition('floating');
-              setShowMissionControlNotification(true);
-            }}
-          />
-        );
-      }
-
-      if (tapePosition === 'left' && showTape) {
-        leftPanels.push(
-          <div key="tape" className={`bg-[#0a0a00] border-r border-[#D4AF37]/20 transition-lush ${tapeCollapsed ? 'w-16' : 'w-80'}`}>
-            <MinimalFeedSection 
-              collapsed={tapeCollapsed}
-              onToggleCollapse={() => setTapeCollapsed(!tapeCollapsed)}
-              position={tapePosition}
-              onPositionChange={setTapePosition}
-              onHide={() => {
-                setTapePosition('floating');
-                setShowTapeNotification(true);
-              }}
-            />
-          </div>
-        );
-      } else if (tapePosition === 'right' && showTape) {
-        rightPanels.push(
-          <div key="tape" className={`bg-[#0a0a00] border-l border-[#D4AF37]/20 transition-lush ${tapeCollapsed ? 'w-16' : 'w-80'}`}>
-            <MinimalFeedSection 
-              collapsed={tapeCollapsed}
-              onToggleCollapse={() => setTapeCollapsed(!tapeCollapsed)}
-              position={tapePosition}
-              onPositionChange={setTapePosition}
-              onHide={() => {
-                setTapePosition('floating');
-                setShowTapeNotification(true);
-              }}
-            />
-          </div>
-        );
-      }
     }
     // For 'tickers-only', no panels are shown (only floating widget)
   } else {
-    // When TopStepX is disabled, show static layout with Mission Control on right
-    // Hide Mission Control when Research Department, Boardroom, or Dashboard is active
-    const hideRightPanel = activeTab === 'notion' || activeTab === 'chatroom' || activeTab === 'settings';
+    // When TopStepX is disabled: right stack = Mission Control + collapsible RiskFlow
+    const hideRightPanel = activeTab === 'notion' || activeTab === 'chatroom' || activeTab === 'econ' || activeTab === 'narrative' || activeTab === 'earnings' || activeTab === 'settings';
     if (!hideRightPanel) {
-      rightPanels.push(
-        <div key="right-stack" className="flex flex-col h-full">
-          <div className="flex-1 min-h-0 overflow-hidden pb-2">
-            <MissionControlPanel
-              collapsed={missionControlCollapsed}
-              onToggleCollapse={() => setMissionControlCollapsed(!missionControlCollapsed)}
-              topStepXEnabled={false}
-            />
+      if (riskFlowCollapsed) {
+        rightPanels.push(
+          <div key="right-stack" className="w-[380px] flex-shrink-0 h-full min-w-0 flex flex-col border-l border-[var(--pulse-accent)]/15">
+            <div className="flex-1 min-h-0 overflow-y-auto border-b border-[var(--pulse-accent)]/20">
+              <div className="p-3 h-full">
+                {missionControlContent()}
+              </div>
+            </div>
+            <div className="h-[168px] shrink-0 border-t border-[var(--pulse-accent)]/20">
+              <RiskFlowPanel
+                collapsed={riskFlowCollapsed}
+                onToggleCollapsed={() => setRiskFlowCollapsed((v) => !v)}
+              />
+            </div>
           </div>
-          <div
-            className={`border-t border-[#D4AF37]/20 overflow-hidden mt-2 transition-[height] duration-200 ${
-              riskFlowCollapsed ? 'h-12' : 'h-[320px]'
-            }`}
-          >
-            <RiskFlowPanel
-              collapsed={riskFlowCollapsed}
-              onToggleCollapsed={() => setRiskFlowCollapsed((v) => !v)}
-            />
+        );
+      } else {
+        rightPanels.push(
+          <div key="right-stack" className="w-[380px] flex-shrink-0 h-full min-w-0 flex flex-col border-l border-[var(--pulse-accent)]/15">
+            <div className="h-1/2 flex flex-col border-b border-[var(--pulse-accent)]/20">
+              <div className="flex-1 min-h-0 overflow-y-auto">
+                <div className="p-3 h-full">
+                  {missionControlContent()}
+                </div>
+              </div>
+            </div>
+            <div className="h-1/2 flex flex-col">
+              <div className="flex-1 min-h-0 overflow-y-auto">
+                <RiskFlowPanel
+                  collapsed={riskFlowCollapsed}
+                  onToggleCollapsed={() => setRiskFlowCollapsed((v) => !v)}
+                />
+              </div>
+            </div>
           </div>
-        </div>
-      );
+        );
+      }
     }
   }
 
   return (
-    <div className="h-screen flex flex-col bg-[#050500] text-white">
+    <ScheduleProvider>
+    <div className="h-screen flex flex-col bg-[var(--pulse-bg)] text-white">
       <TopHeader
         topStepXEnabled={topStepXEnabled}
         onTopStepXToggle={() => setTopStepXEnabled(true)}
@@ -460,6 +607,8 @@ export function MainLayout() {
         historyIndex={historyIndex}
         onBack={goBack}
         onForward={goForward}
+        hideBranding={topStepXEnabled && sidebarOverlayVisible}
+        toolbarEditMode={layoutEditMode}
         psychAssistHeadingWidget={
           topStepXEnabled && layoutOption === 'tickers-only' && psychAssistTarget === 'header' ? (
             <PsychAssistDockable
@@ -477,6 +626,8 @@ export function MainLayout() {
           onTabChange={handleTabChange}
           onLogout={handleLogout}
           topStepXEnabled={topStepXEnabled}
+          onOverlayVisibilityChange={setSidebarOverlayVisible}
+          onEditModeChange={setLayoutEditMode}
         />
 
         {/* Left Panels */}
@@ -491,7 +642,6 @@ export function MainLayout() {
           {topStepXEnabled ? (
             <div className="h-full w-full flex-1 p-0 min-h-0">
               <TopStepXBrowser
-                onClose={() => setTopStepXEnabled(false)}
                 primaryPlatform={selectedPlatform}
                 onPrimaryPlatformChange={setSelectedPlatform}
                 secondaryPlatform={secondaryPlatform}
@@ -504,11 +654,6 @@ export function MainLayout() {
           ) : (
             <div className="h-full relative flex-1 flex flex-col">
               <div className="flex-1 min-h-0 overflow-hidden">
-              {activeTab === 'feed' && (
-                <div key="feed" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
-                  <FeedSection />
-                </div>
-              )}
               {activeTab === 'executive' && (
                 <div key="executive" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <ExecutiveDashboard />
@@ -529,9 +674,28 @@ export function MainLayout() {
                   <BoardroomView />
                 </div>
               )}
+              {activeTab === 'econ' && (
+                <div key="econ" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                  <EconCalendarProvider>
+                    <EconCalendar />
+                  </EconCalendarProvider>
+                </div>
+              )}
+              {activeTab === 'narrative' && (
+                <div key="narrative" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                  <NarrativeProvider>
+                    <NarrativeFlow />
+                  </NarrativeProvider>
+                </div>
+              )}
               {activeTab === 'notion' && (
                 <div key="notion" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <ResearchDepartment />
+                </div>
+              )}
+              {activeTab === 'earnings' && (
+                <div key="earnings" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                  <TradingJournal />
                 </div>
               )}
               {activeTab === 'settings' && (
@@ -553,16 +717,11 @@ export function MainLayout() {
 
         {/* Floating Widget */}
         {showFloatingWidget && (
-          <FloatingWidget 
-            vix={vix} 
-            ivScore={ivScore}
+          <FloatingWidget
+            ivData={ivData}
+            ivLoading={ivLoading}
             layoutOption={layoutOption}
-            onClose={() => {
-              if (layoutOption === 'movable') {
-                setMissionControlPosition('right');
-                setTapePosition('right');
-              }
-            }}
+            onClose={() => {}}
           />
         )}
 
@@ -597,30 +756,44 @@ export function MainLayout() {
           />
         )}
 
-        {/* Global Ask Harp slide-in overlay (hidden on boardroom tab where it's already embedded) */}
+        {/* Global chat panel (hidden on boardroom tab where it's already embedded) */}
         {showAskHarp && activeTab !== 'chatroom' && (
-          <div className="absolute right-0 top-0 bottom-0 w-[360px] z-40 flex flex-col bg-[#0a0a00] border-l border-[#D4AF37]/20 shadow-2xl animate-fade-in-tab">
-            <div className="flex items-center justify-between px-4 py-2 border-b border-[#D4AF37]/20">
-              <span className="text-xs tracking-[0.22em] uppercase text-[#D4AF37] font-semibold">Ask Harp</span>
+          <div className="absolute right-0 top-0 bottom-0 w-[360px] z-40 flex flex-col bg-[var(--pulse-surface)] border-l border-[var(--pulse-accent)]/20 shadow-2xl animate-fade-in-tab">
+            <div className="flex items-center justify-end px-4 py-2 flex-shrink-0">
               <button
                 onClick={() => setShowAskHarp(false)}
-                className="p-1 rounded hover:bg-[#D4AF37]/10 text-gray-400 hover:text-[#D4AF37] transition-colors"
+                className="p-1 rounded hover:bg-[var(--pulse-accent)]/10 text-gray-400 hover:text-[var(--pulse-accent)] transition-colors"
+                title="Close"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="flex-1 min-h-0">
-              <InterventionSidebar
-                messages={boardroom.interventionMessages}
-                sending={boardroom.sending}
-                onSend={boardroom.sendIntervention}
-                onMention={boardroom.sendMention}
-                active={boardroom.status.interventionActive}
-              />
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <AskHarpChatPanel />
             </div>
           </div>
         )}
       </div>
+
+      <SessionCountdownWidget />
+
+      <FooterToolbar
+        topStepXEnabled={topStepXEnabled}
+        primaryPlatform={selectedPlatform}
+        onPrimaryPlatformChange={setSelectedPlatform}
+        splitViewEnabled={splitBrowserView}
+        onSplitViewToggle={() => setSplitBrowserView((v) => !v)}
+        allowSplitView={layoutOption === 'tickers-only'}
+        onPowerOff={() => setTopStepXEnabled(false)}
+      />
+
+      {/* Preload iframes — hidden, loads TopStepX + Research in background for instant tab switch */}
+      {!topStepXEnabled && (
+        <div style={{ position: 'fixed', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden' }}>
+          <EmbeddedBrowserFrame title="TopStepX (preload)" src="https://www.topstepx.com" />
+          <EmbeddedBrowserFrame title="Research (preload)" src={iframeUrls.research || import.meta.env.VITE_NOTION_RESEARCH_URL || 'https://www.notion.so'} />
+        </div>
+      )}
 
       {/* Global overlays */}
       <SearchModal
@@ -628,14 +801,10 @@ export function MainLayout() {
         onClose={() => setShowSearchModal(false)}
         onNavigateTab={(tab) => navigateTab(tab as NavTab)}
       />
-      <PulseFloatingChat
-        visible={activeTab !== 'analysis' && activeTab !== 'chatroom' && activeTab !== 'notion' && activeTab !== 'settings'}
-        onExpandToAnalysis={() => {
-          if (topStepXEnabled) setTopStepXEnabled(false);
-          navigateTab('analysis');
-        }}
-      />
+
+      {/* First-time user tour */}
+      <FirstTimeTour onNavigate={(tab) => navigateTab(tab as NavTab)} />
     </div>
+    </ScheduleProvider>
   );
 }
-

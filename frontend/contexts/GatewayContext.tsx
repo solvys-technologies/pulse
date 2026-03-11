@@ -1,3 +1,4 @@
+// [claude-code 2026-03-10] Gateway toast: show once per session only (sessionStorage guard)
 import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { useToast } from './ToastContext';
 
@@ -18,14 +19,14 @@ const GatewayContext = createContext<GatewayContextValue>({
   status: 'disconnected',
   lastHealthCheck: null,
   reconnect: () => {},
-  gatewayUrl: 'http://localhost:8878',
+  gatewayUrl: 'http://localhost:7787',
 });
 
 /* ------------------------------------------------------------------ */
 /*  Constants                                                          */
 /* ------------------------------------------------------------------ */
 
-const GATEWAY_URL = 'http://localhost:8878';
+const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL || 'http://localhost:7787';
 const HEALTH_INTERVAL_MS = 30_000; // 30 seconds
 const MAX_BACKOFF_MS = 60_000;
 
@@ -44,7 +45,9 @@ export function GatewayProvider({ children }: { children: ReactNode }) {
   const checkHealth = useCallback(async () => {
     try {
       const res = await fetch(`${GATEWAY_URL}/health`, { signal: AbortSignal.timeout(5000) });
-      if (res.ok) {
+      const contentType = res.headers.get('content-type') || '';
+      const looksLikeJson = contentType.includes('application/json');
+      if (res.ok && looksLikeJson) {
         const wasDisconnected = status === 'disconnected' || status === 'error' || status === 'connecting';
         setStatus('connected');
         setLastHealthCheck(new Date().toISOString());
@@ -56,15 +59,20 @@ export function GatewayProvider({ children }: { children: ReactNode }) {
             dismissToast(connectingToastRef.current);
             connectingToastRef.current = null;
           }
-          addToast('Gateway connected', 'success');
+          // [claude-code 2026-03-10] Gateway toast: show once per session only
+          if (!sessionStorage.getItem('gateway_connected_shown')) {
+            sessionStorage.setItem('gateway_connected_shown', '1');
+            addToast('Gateway connected', 'success');
+          }
         }
       } else {
         throw new Error(`HTTP ${res.status}`);
       }
-    } catch {
+    } catch (_err) {
       const wasConnected = status === 'connected';
       setStatus('disconnected');
 
+      // Only toast when we were previously connected (avoid noise on first load / no gateway)
       if (wasConnected) {
         addToast('Gateway disconnected — retrying...', 'error');
       }

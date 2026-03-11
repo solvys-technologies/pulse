@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useBackend } from '../lib/backend';
 import { useAuth } from '../contexts/AuthContext';
+import { IS_INTERNAL_BUILD } from '../lib/internal-build';
 
 export interface FeatureAccessResult {
   hasAccess: boolean;
@@ -15,11 +16,18 @@ export interface FeatureAccessResult {
 export function useFeatureAccess(featureName: string): FeatureAccessResult {
   const backend = useBackend();
   const { tier } = useAuth();
-  const [hasAccess, setHasAccess] = useState(false);
+  const [hasAccess, setHasAccess] = useState(IS_INTERNAL_BUILD);
   const [requiredTier, setRequiredTier] = useState<string>('pulse_pro');
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!IS_INTERNAL_BUILD);
 
   useEffect(() => {
+    if (IS_INTERNAL_BUILD) {
+      setHasAccess(true);
+      setRequiredTier('free');
+      setIsLoading(false);
+      return;
+    }
+
     const checkAccess = async () => {
       if (!tier) {
         setHasAccess(false);
@@ -53,7 +61,7 @@ export function useFeatureAccess(featureName: string): FeatureAccessResult {
   }, [featureName, tier, backend]);
 
   return {
-    hasAccess,
+    hasAccess: IS_INTERNAL_BUILD ? true : hasAccess,
     requiredTier,
     currentTier: tier || null,
     isLoading,

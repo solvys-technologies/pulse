@@ -1,0 +1,98 @@
+// [claude-code 2026-03-06] Extracted AnalysisGreeting from ChatInterface — greeting + suggestion chips
+import { BarChart3, CalendarCheck, Brain, Eye } from 'lucide-react';
+import { usePulseAgents } from '../../contexts/PulseAgentContext';
+
+const SUGGESTION_CHIPS: { label: string; prompt: string; icon: typeof BarChart3 }[] = [
+  { label: "Run the MDB Report", prompt: "Run the MDB report", icon: BarChart3 },
+  { label: "Tale of the Tape", prompt: "Give me the Tale of the Tape (Weekly Summary)", icon: CalendarCheck },
+  { label: "Psych Eval", prompt: "Let's do a psych eval", icon: Brain },
+  { label: "Update my Blindspots", prompt: "Update my Blindspots", icon: Eye },
+];
+
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 6) return "Late session. What needs attention?";
+  if (hour < 12) return "Good morning. What can I help with?";
+  if (hour < 17) return "Good afternoon. What can I help with?";
+  return "Good evening. What can I help with?";
+}
+
+interface ChatGreetingProps {
+  onSend: (msg: string) => void;
+  isLoading: boolean;
+}
+
+export function ChatGreeting({ onSend, isLoading }: ChatGreetingProps) {
+  let activeAgent: { name: string; icon: string; sector: string; description: string } | null = null;
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const ctx = usePulseAgents();
+    activeAgent = ctx.activeAgent;
+  } catch {
+    // Provider not mounted yet — fallback
+  }
+
+  const agent = activeAgent || { name: 'Harper', icon: 'H', sector: 'Chief Analyst', description: 'Executive strategy and oversight' };
+  const greeting = getGreeting();
+
+  // Role subtitle based on agent
+  const getSubtitle = () => {
+    switch (agent.name) {
+      case 'Harper': return "I'm Harper, your Chief Agentic Officer. What needs orchestrating today?";
+      case 'Oracle': return "I'm Oracle, your Market Intelligence Analyst. What data shall we review?";
+      case 'Feucht': return "I'm Feucht, your Risk Management Specialist. What exposure needs attention?";
+      case 'Sentinel': return "I'm Sentinel, your Compliance Monitor. What needs verification?";
+      case 'Charles': return "I'm Charles, your Quantitative Strategist. What patterns should we analyze?";
+      case 'Horace': return "I'm Horace, your Portfolio Architect. What allocations need review?";
+      default: return `I'm ${agent.name}. What needs orchestrating today?`;
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[400px] gap-5 max-w-[580px] mx-auto w-full">
+      {/* Agent name — large, centered, no icon */}
+      <div className="flex flex-col items-center gap-2.5">
+        <h2 className="text-[22px] font-semibold text-white tracking-tight">{agent.name}</h2>
+
+        {/* Anthropic model badge */}
+        <div className="flex items-center gap-1.5">
+          <div
+            className="w-[14px] h-[14px] rounded-full flex items-center justify-center"
+            style={{ backgroundColor: '#D97757' }}
+          >
+            <span style={{ fontSize: '7px', color: 'white', fontWeight: 800, lineHeight: 1 }}>A</span>
+          </div>
+          <span className="text-[12px] font-medium" style={{ color: '#D97757' }}>
+            Claude Opus 4.6
+          </span>
+        </div>
+
+        {/* Subtitle */}
+        <p className="text-[13px] text-gray-500 mt-0.5">{getSubtitle()}</p>
+      </div>
+
+      {/* Large greeting */}
+      <h1 className="text-[26px] font-bold text-white tracking-tight text-center leading-snug mt-1">
+        {greeting}
+      </h1>
+
+      {/* Suggestion chips — 2x2 grid, card style with icons */}
+      <div className="grid grid-cols-2 gap-3 w-full mt-3">
+        {SUGGESTION_CHIPS.map((chip, index) => {
+          const Icon = chip.icon;
+          return (
+            <button
+              key={index}
+              onClick={() => onSend(chip.prompt)}
+              disabled={isLoading}
+              className="flex items-center gap-3 px-4 py-3.5 bg-transparent border border-white/10 pulse-accent-border-hover disabled:opacity-50 rounded-xl text-left transition-all group"
+            >
+              <Icon className="w-[18px] h-[18px] text-gray-500 transition-colors shrink-0 pulse-group-accent" />
+              <span className="text-[13px] text-zinc-300 group-hover:text-white transition-colors">{chip.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

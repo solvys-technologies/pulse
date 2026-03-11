@@ -1,3 +1,4 @@
+// [claude-code 2026-03-09] Cleaned up unused vix state — VIXTicker handles VIX display via VIXContext
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/Button';
@@ -43,7 +44,6 @@ export function TopHeader({
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [ivScore, setIvScore] = useState(3.2);
   const [ivData, setIvData] = useState<IVAggregateResponse | null>(null);
-  const [vix, setVix] = useState(20);
   const [showLayoutDropdown, setShowLayoutDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -93,11 +93,6 @@ export function TopHeader({
         if (data && typeof data.score === 'number') {
           setIvScore(data.score);
           setIvData(data);
-          
-          // Also update VIX from the response
-          if (data.vix?.level) {
-            setVix(data.vix.level);
-          }
           
           console.log(`[IV] Score: ${data.score}, VIX: ${data.vix?.level}, Alert: ${data.alert || 'none'}`);
         }

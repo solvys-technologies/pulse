@@ -1,5 +1,14 @@
 # Agent 1 Tasks: Cursor (Backend Infrastructure & Trading Logic)
 
+
+## Non-Negotiable Scope & UI Directives (Chief Override)
+
+- **Pulse-only scope**: All implementation in this plan targets **Pulse** exclusively. **Do not implement anything in ClawSpace** (deprecated).
+- **UI source standard**: Any new or updated chat UI elements/components must be sourced from **21st.dev** patterns/components first, then adapted to Pulse.
+- **No blank assistant bubble while thinking**: When the agent is working/thinking and not yet streaming tokens, do **not** render an empty assistant message bubble. Only render assistant bubble once stream/output begins.
+- **Sticky bottom chat behavior**: Chat view must stay pinned to the bottom during active conversation/streaming (with robust auto-scroll + bottom-lock behavior) unless the user intentionally scrolls up.
+
+
 > **Agent**: Cursor
 > **Focus**: Backend infrastructure, trading strategies, ProjectX integration
 > **Timeline**: 8 weeks (parallel with Agent 2)

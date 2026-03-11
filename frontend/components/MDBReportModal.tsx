@@ -20,11 +20,11 @@ const BULLISH_THINKING_TERMS = [
   "weighing risk...",
 ];
 
-interface NTNReportModalProps {
+interface MDBReportModalProps {
   onClose: () => void;
 }
 
-export function NTNReportModal({ onClose }: NTNReportModalProps) {
+export function MDBReportModal({ onClose }: MDBReportModalProps) {
   const backend = useBackend();
   const [isLoading, setIsLoading] = useState(true);
   const [thinkingText, setThinkingText] = useState(BULLISH_THINKING_TERMS[0]);
@@ -50,16 +50,16 @@ export function NTNReportModal({ onClose }: NTNReportModalProps) {
     return () => clearInterval(interval);
   }, [isLoading]);
 
-  // Fetch NTN report on mount
+  // Fetch MDB report on mount
   useEffect(() => {
     const fetchReport = async () => {
       try {
-        // Use the dedicated NTN report endpoint (with persistence)
-        const response = await backend.ai.generateNTNReport();
+        // Use the dedicated MDB report endpoint (with persistence)
+        const response = await backend.ai.generateMDBReport();
         setReport(response.report.content);
         // Note: Report is now persisted to database automatically
       } catch (err) {
-        console.error("Failed to fetch NTN report:", err);
+        console.error("Failed to fetch MDB report:", err);
         setError("Failed to generate report. Please try again.");
       } finally {
         setIsLoading(false);
@@ -71,12 +71,12 @@ export function NTNReportModal({ onClose }: NTNReportModalProps) {
 
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm ${isClosing ? 'animate-fade-out-backdrop' : 'animate-fade-in-backdrop'}`}>
-      <div className={`bg-[#0a0a00] border border-[#D4AF37]/30 rounded-lg shadow-[0_0_24px_rgba(255,192,56,0.2)] w-full max-w-3xl max-h-[80vh] flex flex-col ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`}>
+      <div className={`bg-[var(--pulse-surface)] border border-[var(--pulse-accent)]/30 rounded-lg shadow-[0_0_24px_rgba(255,192,56,0.2)] w-full max-w-3xl max-h-[80vh] flex flex-col ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`}>
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-zinc-900">
           <div className="flex items-center gap-3">
-            <h2 className="text-lg font-bold text-[#D4AF37]">NTN Report</h2>
-            <span className="text-xs text-zinc-500">Need-to-Know Market Risk</span>
+            <h2 className="text-lg font-bold text-[var(--pulse-accent)]">MDB Report</h2>
+            <span className="text-xs text-zinc-500">Morning Daily Brief</span>
           </div>
           <button
             onClick={handleClose}
@@ -91,10 +91,10 @@ export function NTNReportModal({ onClose }: NTNReportModalProps) {
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-12">
               {/* Claude logo SVG */}
-              <svg className="w-12 h-12 text-[#D4AF37] mb-4" viewBox="0 0 24 24" fill="currentColor">
+              <svg className="w-12 h-12 text-[var(--pulse-accent)] mb-4" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M17.7 9.7c-.4-.4-1-.4-1.4 0l-4.3 4.3-4.3-4.3c-.4-.4-1-.4-1.4 0-.4.4-.4 1 0 1.4l5 5c.2.2.4.3.7.3.3 0 .5-.1.7-.3l5-5c.4-.4.4-1 0-1.4z"/>
               </svg>
-              <p className="text-sm text-[#D4AF37] font-medium mb-2">Claude is thinking</p>
+              <p className="text-sm text-[var(--pulse-accent)] font-medium mb-2">Claude is thinking</p>
               <p className="text-sm text-zinc-500 italic animate-pulse">{thinkingText}</p>
             </div>
           ) : error ? (
@@ -111,7 +111,7 @@ export function NTNReportModal({ onClose }: NTNReportModalProps) {
             </div>
           ) : (
             <div className="prose prose-invert prose-sm max-w-none">
-              <div className="bg-[#050500] border border-zinc-900 rounded-lg p-4">
+              <div className="bg-[var(--pulse-bg)] border border-zinc-900 rounded-lg p-4">
                 <p className="text-sm text-zinc-300 whitespace-pre-wrap leading-relaxed">{report}</p>
               </div>
             </div>
@@ -125,7 +125,7 @@ export function NTNReportModal({ onClose }: NTNReportModalProps) {
           </span>
           <button
             onClick={handleClose}
-            className="px-4 py-2 bg-[#D4AF37] hover:bg-[#FFD060] text-black rounded-lg text-sm font-medium transition-lush"
+            className="px-4 py-2 bg-[var(--pulse-accent)] hover:bg-[#FFD060] text-black rounded-lg text-sm font-medium transition-lush"
           >
             Close
           </button>

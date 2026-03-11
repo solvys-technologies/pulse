@@ -50,12 +50,12 @@ export function BoardroomThreadReplay({ thread, onBack }: BoardroomThreadReplayP
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-3 px-5 py-3 border-b border-[#D4AF37]/15">
+      <div className="flex items-center gap-3 px-5 py-3 border-b border-[var(--pulse-accent)]/15">
         <button
           onClick={onBack}
-          className="p-1.5 rounded hover:bg-[#D4AF37]/10 transition-colors"
+          className="p-1.5 rounded hover:bg-[var(--pulse-accent)]/10 transition-colors"
         >
-          <ArrowLeft className="w-4 h-4 text-[#D4AF37]" />
+          <ArrowLeft className="w-4 h-4 text-[var(--pulse-accent)]" />
         </button>
         <div className="flex-1 min-w-0">
           <h2 className="text-sm font-semibold text-white truncate">{thread.title}</h2>
@@ -70,7 +70,7 @@ export function BoardroomThreadReplay({ thread, onBack }: BoardroomThreadReplayP
         <button
           onClick={() => setShowNotes(!showNotes)}
           className={`p-1.5 rounded transition-colors ${
-            showNotes ? 'bg-[#D4AF37]/20 text-[#D4AF37]' : 'hover:bg-[#D4AF37]/10 text-gray-400'
+            showNotes ? 'bg-[var(--pulse-accent)]/20 text-[var(--pulse-accent)]' : 'hover:bg-[var(--pulse-accent)]/10 text-gray-400'
           }`}
           title="Meeting Notes"
         >
@@ -155,15 +155,15 @@ export function BoardroomThreadReplay({ thread, onBack }: BoardroomThreadReplayP
                 <div
                   className={`h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 border ${
                     isUser
-                      ? 'border-[#D4AF37]/40 bg-[#D4AF37]/10'
-                      : 'border-[#D4AF37]/20 bg-[#0a0a00]'
+                      ? 'border-[var(--pulse-accent)]/40 bg-[var(--pulse-accent)]/10'
+                      : 'border-[var(--pulse-accent)]/20 bg-[var(--pulse-surface)]'
                   }`}
                 >
-                  <span className="text-[#D4AF37]">{initial}</span>
+                  <span className="text-[var(--pulse-accent)]">{initial}</span>
                 </div>
-                <div className={`flex-1 px-1 py-1 min-w-0 border-l-2 ${isUser ? 'border-[#D4AF37]/40' : 'border-[#D4AF37]/20'}`}>
+                <div className={`flex-1 px-1 py-1 min-w-0 border-l-2 ${isUser ? 'border-[var(--pulse-accent)]/40' : 'border-[var(--pulse-accent)]/20'}`}>
                   <div className="flex items-baseline gap-3">
-                    <span className={`text-sm font-semibold ${isUser ? 'text-[#D4AF37]' : 'text-white'}`}>
+                    <span className={`text-sm font-semibold ${isUser ? 'text-[var(--pulse-accent)]' : 'text-white'}`}>
                       {displayName}
                     </span>
                     {agentData && !isUser && (
@@ -183,11 +183,11 @@ export function BoardroomThreadReplay({ thread, onBack }: BoardroomThreadReplayP
           {thread.interventionMessages.length > 0 && (
             <>
               <div className="flex items-center gap-3 py-2">
-                <div className="flex-1 h-px bg-[#D4AF37]/15" />
-                <span className="text-[10px] tracking-[0.22em] uppercase text-[#D4AF37]/50">
+                <div className="flex-1 h-px bg-[var(--pulse-accent)]/15" />
+                <span className="text-[10px] tracking-[0.22em] uppercase text-[var(--pulse-accent)]/50">
                   Interventions
                 </span>
-                <div className="flex-1 h-px bg-[#D4AF37]/15" />
+                <div className="flex-1 h-px bg-[var(--pulse-accent)]/15" />
               </div>
               {thread.interventionMessages.map((m) => (
                 <div key={m.id} className="flex gap-3 pl-4">
@@ -210,15 +210,15 @@ export function BoardroomThreadReplay({ thread, onBack }: BoardroomThreadReplayP
 
         {/* Meeting Notes panel */}
         {showNotes && (
-          <div className="w-[280px] border-l border-[#D4AF37]/15 flex flex-col bg-[#050500]">
-            <div className="flex items-center justify-between px-3 py-2 border-b border-[#D4AF37]/15">
-              <span className="text-[10px] tracking-[0.22em] uppercase text-[#D4AF37]">
+          <div className="w-[280px] border-l border-[var(--pulse-accent)]/15 flex flex-col bg-[var(--pulse-bg)]">
+            <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--pulse-accent)]/15">
+              <span className="text-[10px] tracking-[0.22em] uppercase text-[var(--pulse-accent)]">
                 Meeting Notes
               </span>
               <button
                 onClick={handleSaveNotes}
                 disabled={saving}
-                className="flex items-center gap-1 px-2 py-1 rounded text-[10px] text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-colors disabled:opacity-50"
+                className="flex items-center gap-1 px-2 py-1 rounded text-[10px] text-[var(--pulse-accent)] hover:bg-[var(--pulse-accent)]/10 transition-colors disabled:opacity-50"
               >
                 <Save className="w-3 h-3" />
                 {saving ? 'Saving…' : 'Save'}
@@ -235,7 +235,7 @@ export function BoardroomThreadReplay({ thread, onBack }: BoardroomThreadReplayP
       </div>
 
       {/* Read-only banner */}
-      <div className="px-6 py-2 border-t border-[#D4AF37]/10">
+      <div className="px-6 py-2 border-t border-[var(--pulse-accent)]/10">
         <p className="text-[10px] tracking-[0.18em] uppercase text-gray-600 text-center">
           Read-only replay · {formattedDate}
         </p>

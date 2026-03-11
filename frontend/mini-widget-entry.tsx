@@ -1,9 +1,11 @@
+// [claude-code 2026-03-11] T2: Mini widget now fetches IV score from backend
 import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AuthProvider } from './contexts/AuthContext';
 import { SettingsProvider } from './contexts/SettingsContext';
 import { FloatingWidget } from './components/layout/FloatingWidget';
 import { useBackend } from './lib/backend';
+import type { IVScoreResponse } from './types/market-data';
 import './index.css';
 
 /**
@@ -13,39 +15,26 @@ import './index.css';
  */
 function MiniWidgetApp() {
   const backend = useBackend();
-  const [vix, setVix] = useState(20);
-  const [ivScore, setIvScore] = useState(3.2);
+  const [ivData, setIvData] = useState<IVScoreResponse | null>(null);
+  const [ivLoading, setIvLoading] = useState(true);
 
-  // Fetch VIX value
+  // Fetch blended IV score from backend
   useEffect(() => {
-    const fetchVIX = async () => {
+    const fetchIVScore = async () => {
       try {
-        const newsClient = (backend as any).news;
-        const baseClient = (newsClient as any).baseClient;
-        const response = await baseClient.callTypedAPI('/news/fetch-vix', { method: 'GET', body: undefined });
-        if (response.ok) {
-          const data = await response.json();
-          if (data && typeof data.value === 'number') {
-            setVix(data.value);
-          }
-        }
+        const data = await backend.marketData.getIVScore();
+        setIvData(data);
       } catch (error) {
-        console.error('[MiniWidget] Failed to fetch VIX:', error);
+        console.error('[MiniWidget] Failed to fetch IV score:', error);
+      } finally {
+        setIvLoading(false);
       }
     };
 
-    fetchVIX();
-    const interval = setInterval(fetchVIX, 300000);
+    fetchIVScore();
+    const interval = setInterval(fetchIVScore, 300000);
     return () => clearInterval(interval);
   }, [backend]);
-
-  // Simulate IV score updates
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setIvScore(prev => Math.max(0, Math.min(10, prev + (Math.random() - 0.5) * 0.5)));
-    }, 10000);
-    return () => clearInterval(interval);
-  }, []);
 
   const handleClose = () => {
     // Hide the widget window via Electron
@@ -63,8 +52,8 @@ function MiniWidgetApp() {
       {/* Widget content - positioned to account for drag area */}
       <div className="pt-2">
         <FloatingWidget
-          vix={vix}
-          ivScore={ivScore}
+          ivData={ivData}
+          ivLoading={ivLoading}
           layoutOption="tickers-only"
           onClose={handleClose}
         />

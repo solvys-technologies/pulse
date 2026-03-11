@@ -95,7 +95,7 @@ export function PsychAssistDockable({
   const body = useMemo(() => {
     return (
       <div className="flex items-center gap-2">
-        <span className="text-[10px] text-[#D4AF37] font-semibold tracking-[0.14em] uppercase">PsychAssist</span>
+        <span className="text-[10px] text-[var(--pulse-accent)] font-semibold tracking-[0.14em] uppercase">PsychAssist</span>
         <div className="flex-1 min-w-0">
           <CompactERMonitor />
         </div>
@@ -105,10 +105,10 @@ export function PsychAssistDockable({
 
   if (!floating) {
     return (
-      <div className="flex items-center gap-2 bg-[#050500] rounded-lg px-3.5 h-8 min-w-[360px]">
+      <div className="flex items-center gap-2 bg-[var(--pulse-bg)] rounded-lg px-3.5 h-8 min-w-[360px]">
         <button
           onClick={onUndockToFloating}
-          className="p-1 rounded hover:bg-[#D4AF37]/10 text-zinc-500 hover:text-[#D4AF37] transition-colors"
+          className="p-1 rounded hover:bg-[var(--pulse-accent)]/10 text-zinc-500 hover:text-[var(--pulse-accent)] transition-colors"
           title="Picture-in-picture (float)"
         >
           <PictureInPicture2 className="w-3.5 h-3.5" />
@@ -117,7 +117,7 @@ export function PsychAssistDockable({
         {onClose && (
           <button
             onClick={onClose}
-            className="p-1 rounded hover:bg-[#D4AF37]/10 text-zinc-500 hover:text-[#D4AF37] transition-colors"
+            className="p-1 rounded hover:bg-[var(--pulse-accent)]/10 text-zinc-500 hover:text-[var(--pulse-accent)] transition-colors"
             title="Hide"
           >
             <X className="w-3.5 h-3.5" />
@@ -129,7 +129,7 @@ export function PsychAssistDockable({
 
   return (
     <div
-      className="fixed z-50 bg-[#0a0a00] border border-[#D4AF37]/30 rounded-2xl px-3 py-2 shadow-2xl"
+      className="fixed z-50 bg-[var(--pulse-surface)] border border-[var(--pulse-accent)]/30 rounded-2xl px-3 py-2 shadow-2xl"
       style={{ left: `${pos.x}px`, top: `${pos.y}px`, width: '340px' }}
     >
       <div className="flex items-center justify-between mb-2">
@@ -141,26 +141,26 @@ export function PsychAssistDockable({
               e.preventDefault();
               e.stopPropagation();
             }}
-            className="p-1 rounded hover:bg-[#D4AF37]/10 text-zinc-500 hover:text-[#D4AF37] transition-colors cursor-grab active:cursor-grabbing"
+            className="p-1 rounded hover:bg-[var(--pulse-accent)]/10 text-zinc-500 hover:text-[var(--pulse-accent)] transition-colors cursor-grab active:cursor-grabbing"
             title="Drag"
           >
             <GripVertical className="w-4 h-4" />
           </button>
           <button
             onClick={onDockToHeader}
-            className="p-1 rounded hover:bg-[#D4AF37]/10 text-zinc-500 hover:text-[#D4AF37] transition-colors"
+            className="p-1 rounded hover:bg-[var(--pulse-accent)]/10 text-zinc-500 hover:text-[var(--pulse-accent)] transition-colors"
             title="Dock to header"
           >
             <PictureInPicture2 className="w-4 h-4" />
           </button>
-          <span className="text-[10px] text-[#D4AF37]/70 tracking-[0.18em] uppercase">
+          <span className="text-[10px] text-[var(--pulse-accent)]/70 tracking-[0.18em] uppercase">
             PsychAssist
           </span>
         </div>
         {onClose && (
           <button
             onClick={onClose}
-            className="p-1 rounded hover:bg-[#D4AF37]/10 text-zinc-500 hover:text-[#D4AF37] transition-colors"
+            className="p-1 rounded hover:bg-[var(--pulse-accent)]/10 text-zinc-500 hover:text-[var(--pulse-accent)] transition-colors"
             title="Hide"
           >
             <X className="w-4 h-4" />

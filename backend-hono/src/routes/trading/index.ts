@@ -8,6 +8,7 @@ import {
   handleGetPositions,
   handleToggleAlgo,
   handleGetAlgoStatus,
+  handleTestTrade,
 } from './handlers.js';
 
 export function createTradingRoutes(): Hono {
@@ -21,6 +22,9 @@ export function createTradingRoutes(): Hono {
 
   // POST /api/trading/toggle-algo - Toggle algo trading
   router.post('/toggle-algo', handleToggleAlgo);
+
+  // POST /api/trading/test-trade - Fire 1-contract market order via ProjectX
+  router.post('/test-trade', handleTestTrade);
 
   return router;
 }

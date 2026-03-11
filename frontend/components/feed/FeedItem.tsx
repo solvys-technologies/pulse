@@ -1,5 +1,6 @@
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { FeedItem as FeedItemType } from '../../types/feed';
+import { decodeHtmlEntities } from '../../lib/html-entities';
 
 interface FeedItemProps {
   item: FeedItemType;
@@ -27,22 +28,24 @@ export function FeedItem({ item }: FeedItemProps) {
 
   const Icon = IVIcon[ivType];
 
+  const displayText = decodeHtmlEntities(item.text);
+
   return (
-    <div className="bg-[#0a0a00] border-l-2 border-l-[#D4AF37]/30 p-3 rounded hover:bg-[#0a0a00]/80 transition-colors">
+    <div className="bg-[var(--pulse-surface)] border-l-2 border-l-[var(--pulse-accent)]/30 p-3 rounded hover:bg-[var(--pulse-surface)]/80 transition-colors">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs text-gray-500">
               {item.time.toLocaleTimeString()}
             </span>
-            <span className="text-xs text-[#D4AF37]">{item.source}</span>
+            <span className="text-xs text-[var(--pulse-accent)]">{item.source}</span>
             {item.type === 'alert' && (
               <span className="text-xs text-red-400">
                 ALERT
               </span>
             )}
           </div>
-          <p className="text-sm text-gray-200">{item.text}</p>
+          <p className="text-sm text-gray-200">{displayText}</p>
         </div>
 
         <div className="flex flex-col items-end gap-1 min-w-[80px]">

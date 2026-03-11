@@ -7,17 +7,27 @@
  */
 
 import type { OpenClawAgentRole } from './openclaw-service.js'
+import { buildACPProvenanceHeaders, type PulseACPChannel } from './openclaw-service.js'
+import { getAgentSystemPrompt, extractSkillTag } from './ai/agent-instructions.js'
+
+export type ContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'image_url'; image_url: { url: string } }
 
 export interface OpenClawMessage {
   role: 'user' | 'assistant' | 'system'
-  content: string
+  content: string | ContentPart[]
 }
 
 export interface OpenClawChatRequest {
   message: string
+  multimodalContent?: ContentPart[]
   conversationId?: string
   history?: OpenClawMessage[]
   agentOverride?: OpenClawAgentRole
+  thinkHarder?: boolean
+  /** ACP channel for provenance tracking (defaults to 'pulse:analysis') */
+  channel?: PulseACPChannel
 }
 
 export interface OpenClawChatResponse {
@@ -32,39 +42,14 @@ export interface OpenClawChatResponse {
   }
 }
 
-// P.I.C. Agent system prompts
-const AGENT_PROMPTS: Record<OpenClawAgentRole, string> = {
-  'harper-cao': `You are Harper, the Chief Agentic Officer (CAO) of Priced In Capital.
-You oversee all trading operations and provide executive-level guidance.
-You consolidate reports from PMA agents, Futures Desk, and Fundamentals Desk.
-Your role: Macro oversight, trade approvals, risk consolidation.
-Speak with authority and strategic vision. Reference the 13 Commandments when relevant.`,
-
-  'pma-1': `You are PMA-1, the S&P 500 & Crypto prediction market analyst.
-You specialize in Kalshi prediction markets for S&P/crypto price movements.
-Track ES futures, BTC, and related prediction contracts.
-Provide probability assessments and market-timing insights.`,
-
-  'pma-2': `You are PMA-2, the Economic & Political prediction market analyst.
-You specialize in Kalshi prediction markets for economic and political events.
-Track Fed decisions, elections, policy changes affecting markets.
-Provide probability assessments for macro events.`,
-
-  'futures-desk': `You are the Futures Desk analyst at Priced In Capital.
-You trade /NQ, /MNQ, /ES via TopStepX.
-Focus on technical analysis, FA Rippers, and intraday setups.
-Identify entry/exit levels, stops, and risk/reward ratios.`,
-
-  'fundamentals-desk': `You are the Fundamentals Desk analyst at Priced In Capital.
-You cover the Top 10 S&P/NDX mega-cap tech stocks.
-Track earnings, guidance, sector trends, and long-term catalysts.
-Provide fundamental analysis and fair value assessments.`
-}
+// [claude-code 2026-03-10] AGENT_PROMPTS moved to services/ai/agent-instructions.ts
+// Use getAgentSystemPrompt(role, context) for dynamic prompt building
 
 // Intent detection patterns
 const INTENT_PATTERNS: { pattern: RegExp; agent: OpenClawAgentRole; intent: string }[] = [
   // Harper/CAO triggers
-  { pattern: /\b(ntn|need.?to.?know|daily.?report|morning.?brief)/i, agent: 'harper-cao', intent: 'ntn-report' },
+  { pattern: /\b(earnings.?review|er.?journal|earnings.?journal|post.?earnings.?review)\b/i, agent: 'harper-cao', intent: 'earnings-psych' },
+  { pattern: /\b(mdb|morning.?daily.?brief|daily.?report|morning.?brief)/i, agent: 'harper-cao', intent: 'mdb-report' },
   { pattern: /\b(trade.?approval|approve|reject|consolidat)/i, agent: 'harper-cao', intent: 'approval' },
   { pattern: /\b(commandment|rule|13|trading.?rules)/i, agent: 'harper-cao', intent: 'rules' },
   { pattern: /\b(psych|tilt|emotion|mental|eval)/i, agent: 'harper-cao', intent: 'psych-eval' },
@@ -142,7 +127,8 @@ export function generateLocalResponse(
 ): OpenClawChatResponse {
   const { agent, intent } = agentInfo
   const symbols = extractSymbols(request.message)
-  const agentPrompt = AGENT_PROMPTS[agent]
+  const skillTag = extractSkillTag(request.message)
+  const agentPrompt = getAgentSystemPrompt(agent, { skillTag, thinkHarder: request.thinkHarder })
 
   // Build contextual response based on intent
   let content: string
@@ -150,8 +136,8 @@ export function generateLocalResponse(
   let riskLevel: 'low' | 'medium' | 'high' | undefined
 
   switch (intent) {
-    case 'ntn-report':
-      content = generateNTNReport()
+    case 'mdb-report':
+      content = generateMDBReport()
       break
 
     case 'weekly-recap':
@@ -160,6 +146,10 @@ export function generateLocalResponse(
 
     case 'psych-eval':
       content = generatePsychEval()
+      break
+
+    case 'earnings-psych':
+      content = generateFundamentalsAnalysis(symbols, request.message)
       break
 
     case 'rules':
@@ -210,9 +200,9 @@ export function generateLocalResponse(
 
 // Response generators for different intents
 
-function generateNTNReport(): string {
+function generateMDBReport(): string {
   const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-  return `## 📋 NTN Report - ${time}
+  return `## 📋 MDB Report - ${time}
 
 ### Market Status
 - **Session**: Pre-market / Regular Hours / After Hours
@@ -419,14 +409,14 @@ I'm ${agentName}, part of the OpenClaw P.I.C. agent network.
 Your message has been received. Here's what I can help with:
 
 **My Capabilities:**
-${agent === 'harper-cao' ? '- NTN Reports & Daily Briefings\n- Trade Approvals\n- Psych Evaluations\n- Trading Rules & Discipline' : ''}
+${agent === 'harper-cao' ? '- MDB Reports & Daily Briefings\n- Trade Approvals\n- Psych Evaluations\n- Trading Rules & Discipline' : ''}
 ${agent === 'pma-1' ? '- S&P 500 prediction markets\n- Crypto analysis\n- Kalshi contract evaluation' : ''}
 ${agent === 'pma-2' ? '- Fed/FOMC analysis\n- Political event impact\n- Economic data interpretation' : ''}
 ${agent === 'futures-desk' ? '- /NQ, /ES, /MNQ trading\n- FA Ripper setups\n- Technical analysis' : ''}
 ${agent === 'fundamentals-desk' ? '- Mega-cap tech analysis\n- Earnings deep-dives\n- Valuation models' : ''}
 
 **Try asking:**
-- "Run the NTN report"
+- "Run the MDB report"
 - "What's the setup on /NQ?"
 - "Check my ER status"
 
@@ -443,8 +433,9 @@ export async function handleOpenClawChat(request: OpenClawChatRequest): Promise<
     : detectAgent(request.message)
 
   // Build messages array for the gateway
-  const systemPrompt = AGENT_PROMPTS[agentInfo.agent]
-  const messages: { role: string; content: string }[] = [
+  const skillTag = extractSkillTag(request.message)
+  const systemPrompt = getAgentSystemPrompt(agentInfo.agent, { skillTag, thinkHarder: request.thinkHarder })
+  const messages: { role: string; content: string | ContentPart[] }[] = [
     { role: 'system', content: systemPrompt }
   ]
 
@@ -453,8 +444,12 @@ export async function handleOpenClawChat(request: OpenClawChatRequest): Promise<
     messages.push(...request.history.map(h => ({ role: h.role, content: h.content })))
   }
 
-  // Add current user message
-  messages.push({ role: 'user', content: request.message })
+  // Add current user message (multimodal if images present)
+  if (request.multimodalContent?.length) {
+    messages.push({ role: 'user', content: request.multimodalContent })
+  } else {
+    messages.push({ role: 'user', content: request.message })
+  }
 
   // Call Clawdbot gateway
   const normalizeGatewayBaseUrl = (value: string): string => {
@@ -464,11 +459,19 @@ export async function handleOpenClawChat(request: OpenClawChatRequest): Promise<
   }
 
   const gatewayUrl = normalizeGatewayBaseUrl(
-    process.env.OPENCLAW_BASE_URL ?? 'http://localhost:18789'
+    process.env.OPENCLAW_BASE_URL ?? 'http://localhost:7787'
   )
   const apiKey = process.env.OPENCLAW_API_KEY ?? ''
 
-  console.log(`[OpenClaw] Calling gateway at ${gatewayUrl} with ${messages.length} messages`)
+  // [claude-code 2026-03-09] ACP provenance headers (OpenClaw 3.8+)
+  const acpHeaders = buildACPProvenanceHeaders({
+    channel: request.channel ?? 'pulse:analysis',
+    sessionId: request.conversationId,
+    agentRole: agentInfo.agent,
+    traceId: `pulse-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  })
+
+  console.log(`[OpenClaw] Calling gateway at ${gatewayUrl} with ${messages.length} messages (ACP: ${acpHeaders['X-ACP-Provenance']}, channel: ${acpHeaders['X-ACP-Origin-Channel']})`)
 
   try {
     const response = await fetch(`${gatewayUrl}/v1/chat/completions`, {
@@ -476,7 +479,8 @@ export async function handleOpenClawChat(request: OpenClawChatRequest): Promise<
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'X-OpenClaw-App': process.env.OPENCLAW_APP_NAME ?? 'Pulse-PIC-Gateway',
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        ...acpHeaders,
       },
       body: JSON.stringify({
         model: 'clawdbot:main',

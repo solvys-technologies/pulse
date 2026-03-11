@@ -11,12 +11,12 @@ interface SystemEvent {
   createdAt: Date | string;
 }
 import { AlertCircle, CheckCircle, Info, XCircle, FileText, Trash2 } from "lucide-react";
-import { NTNReportModal } from "./NTNReportModal";
+import { MDBReportModal } from './MDBReportModal';
 
 export default function SystemFeed() {
   const backend = useBackend();
   const [events, setEvents] = useState<SystemEvent[]>([]);
-  const [showNTNModal, setShowNTNModal] = useState(false);
+  const [showMDBModal, setShowMDBModal] = useState(false);
 
   useEffect(() => {
     loadEvents();
@@ -58,7 +58,7 @@ export default function SystemFeed() {
       case "error":
         return <XCircle className="w-4 h-4 text-[#FF4040]" />;
       case "warning":
-        return <AlertCircle className="w-4 h-4 text-[#D4AF37]" />;
+        return <AlertCircle className="w-4 h-4 text-[var(--pulse-accent)]" />;
       default:
         return <Info className="w-4 h-4 text-zinc-500" />;
     }
@@ -69,7 +69,7 @@ export default function SystemFeed() {
       case "trade":
         return "text-[#00FF85]";
       case "alert":
-        return "text-[#D4AF37]";
+        return "text-[var(--pulse-accent)]";
       case "error":
         return "text-[#FF4040]";
       default:
@@ -89,7 +89,7 @@ export default function SystemFeed() {
 
   return (
     <>
-      {showNTNModal && <NTNReportModal onClose={() => setShowNTNModal(false)} />}
+      {showMDBModal && <MDBReportModal onClose={() => setShowMDBModal(false)} />}
 
       <div className="h-full flex flex-col">
         {/* Header with CTAs */}
@@ -97,11 +97,11 @@ export default function SystemFeed() {
           <h2 className="text-lg font-bold text-zinc-300">System Feed</h2>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setShowNTNModal(true)}
-              className="px-4 py-2 bg-[#D4AF37]/10 border border-[#D4AF37]/30 hover:bg-[#D4AF37]/20 text-[#D4AF37] rounded-full text-xs font-medium transition-colors flex items-center gap-2"
+              onClick={() => setShowMDBModal(true)}
+              className="px-4 py-2 bg-[var(--pulse-accent)]/10 border border-[var(--pulse-accent)]/30 hover:bg-[var(--pulse-accent)]/20 text-[var(--pulse-accent)] rounded-full text-xs font-medium transition-colors flex items-center gap-2"
             >
               <FileText className="w-3.5 h-3.5" />
-              Run NTN Report
+              Run MDB Report
             </button>
             <button
               onClick={handleClear}
@@ -119,7 +119,7 @@ export default function SystemFeed() {
             {events.map((event) => (
               <div
                 key={event.id}
-                className="bg-[#0a0a00] border border-zinc-900 rounded-lg p-4 hover:border-zinc-800 transition-colors"
+                className="bg-[var(--pulse-surface)] border border-zinc-900 rounded-lg p-4 hover:border-zinc-800 transition-colors"
               >
                 <div className="flex items-start gap-3">
                   {getIcon(event.severity)}

@@ -2,20 +2,60 @@
  * RiskFlow RSS Feed Poller — MarketWatch Real-Time Headlines
  * Fetches, parses, classifies, and deduplicates market news alerts.
  */
+import { decodeHtmlEntities } from './html-entities';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
-export type AlertSeverity = 'low' | 'medium' | 'high';
+export type AlertSeverity = 'low' | 'medium' | 'high' | 'critical';
+export type AlertSource =
+  | 'marketwatch'
+  | 'notion-trade-idea'
+  | 'financial-juice'
+  | 'insider-wire'
+  | 'economic-calendar'
+  | 'polymarket'
+  | 'twitter-cli'
+  | 'backend';
+
+export interface TradeIdeaDetail {
+  title: string;
+  ticker: string;
+  direction: 'long' | 'short' | 'neutral';
+  entry?: number;
+  stopLoss?: number;
+  takeProfit?: number;
+  potentialRisk?: number;
+  potentialProfit?: number;
+  riskRewardRatio?: number;
+  confidence?: string;
+  timeframe?: string;
+  sourceAgent?: string;
+  openclawDescription?: string;
+  notionUrl: string;
+}
 
 export interface RiskFlowAlert {
   id: string;
   headline: string;
   summary: string;
-  url: string;
+  url?: string;
   publishedAt: string;
-  source: 'marketwatch';
+  source: AlertSource;
   severity: AlertSeverity;
   tags: string[];
+  symbols?: string[];
+  isBreaking?: boolean;
+  tradeIdea?: TradeIdeaDetail;
+  /** PriceBrain implied point range (e.g. "±12 pts") */
+  pointRange?: number | null;
+  /** PriceBrain sentiment direction */
+  direction?: 'Bullish' | 'Bearish' | 'Neutral' | null;
+  /** PriceBrain cyclical classification */
+  cyclical?: 'Cyclical' | 'Counter-cyclical' | 'Neutral' | null;
+  /** Instrument from PriceBrain (e.g. "ES", "NQ") */
+  instrument?: string | null;
+  /** X/Twitter author handle for attribution */
+  authorHandle?: string | null;
 }
 
 // ── Severity Classification ────────────────────────────────────────────────────
@@ -87,9 +127,11 @@ function parseItems(xml: string): Array<{ title: string; description: string; li
     const itemEnd = xml.indexOf('</item>', itemStart);
     if (itemEnd === -1) break;
     const itemXml = xml.slice(itemStart, itemEnd + 7);
+    const rawTitle = getTagContent(itemXml, 'title');
+    const rawDescription = getTagContent(itemXml, 'description');
     items.push({
-      title: getTagContent(itemXml, 'title'),
-      description: getTagContent(itemXml, 'description'),
+      title: decodeHtmlEntities(rawTitle),
+      description: decodeHtmlEntities(rawDescription),
       link: getTagContent(itemXml, 'link'),
       guid: getTagContent(itemXml, 'guid') || getTagContent(itemXml, 'link'),
       pubDate: getTagContent(itemXml, 'pubDate'),

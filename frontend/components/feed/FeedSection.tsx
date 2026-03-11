@@ -4,7 +4,7 @@ import { FeedItem as FeedItemType, IVIndicator } from '../../types/feed';
 import { useBackend } from '../../lib/backend';
 import type { RiskFlowItem } from '../../types/api';
 import { FeedItem } from './FeedItem';
-import { NTNReportModal } from '../NTNReportModal';
+import { MDBReportModal } from '../MDBReportModal';
 import { useSettings } from '../../contexts/SettingsContext';
 import { generateInitialFeed, generateMockFeedItem } from '../../utils/mockDataGenerator';
 import { useRiskFlow } from '../../hooks/useRiskFlow';
@@ -88,7 +88,7 @@ export function FeedSection() {
   const backend = useBackend();
   const { mockDataEnabled } = useSettings();
   const [feedItems, setFeedItems] = useState<FeedItemType[]>([]);
-  const [showNTNModal, setShowNTNModal] = useState(false);
+  const [showMDBModal, setShowMDBModal] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -174,17 +174,17 @@ export function FeedSection() {
 
   return (
     <>
-      {showNTNModal && <NTNReportModal onClose={() => setShowNTNModal(false)} />}
+      {showMDBModal && <MDBReportModal onClose={() => setShowMDBModal(false)} />}
 
       <div className="h-full flex flex-col">
         {/* Inline CTAs */}
         <div className="flex items-center justify-end gap-2 px-5 pt-4 pb-2">
           <button
-            onClick={() => setShowNTNModal(true)}
-            className="px-3 py-1 hover:bg-[#D4AF37]/10 text-[#D4AF37] rounded text-[10px] font-medium tracking-[0.18em] uppercase transition-colors flex items-center gap-1.5"
+            onClick={() => setShowMDBModal(true)}
+            className="px-3 py-1 hover:bg-[var(--pulse-accent)]/10 text-[var(--pulse-accent)] rounded text-[10px] font-medium tracking-[0.18em] uppercase transition-colors flex items-center gap-1.5"
           >
             <FileText className="w-3 h-3" />
-            NTN Report
+            MDB Report
           </button>
           <button
             onClick={handleClear}

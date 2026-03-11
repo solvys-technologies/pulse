@@ -16,6 +16,7 @@ import {
   getCrossProviderEquivalent,
   isOpenRouterModel,
   isOpenClawModel,
+  isGitHubModelsModel,
   getOpenClawGatewayModel,
 } from '../../config/ai-config.js'
 
@@ -31,28 +32,25 @@ const HEALTH_CHECK_TTL_MS = 60_000
 
 /**
  * Task type to model routing
- * ALL models via OpenRouter + OpenClaw for P.I.C. agents:
- * - News/Sentiment: Grok 4.1 (OpenRouter)
- * - Chat/General: Grok 4.1 primary, Llama 3.3 70B fallback (per user request)
- * - Research/Reasoning: Claude Opus 4.5 (OpenRouter)
- * - P.I.C. Agents: OpenClaw with OpenRouter fallbacks
+ * All tasks through OpenClaw gateway (Groq-powered, free tier)
+ * OpenRouter kept as fallback only
  */
 const TASK_MODEL_PREFERENCES: Record<string, AiModelKey[]> = {
-  // News analysis - Grok 4.1 via OpenRouter for real-time news
-  news: ['openrouter-grok', 'openrouter-llama', 'openrouter-sonnet'],
-  sentiment: ['openrouter-grok', 'openrouter-llama', 'openrouter-sonnet'],
+  // News/sentiment — OpenClaw realtime (Groq), OpenRouter fallback
+  news: ['openclaw-realtime', 'openrouter-grok', 'openrouter-llama'],
+  sentiment: ['openclaw-realtime', 'openrouter-grok', 'openrouter-llama'],
 
-  // Chat - Grok 4.1 primary, Llama fallback (user request Jan 11)
-  chat: ['openrouter-grok', 'openrouter-llama', 'openrouter-sonnet'],
-  general: ['openrouter-grok', 'openrouter-llama', 'openrouter-sonnet'],
+  // Chat/general — OpenClaw fast (Groq Llama 3.3 70B @ ~750 tok/s)
+  chat: ['openclaw-fast', 'openrouter-llama', 'openrouter-grok'],
+  general: ['openclaw-fast', 'openrouter-llama', 'openrouter-grok'],
 
-  // Technical analysis - Grok 4.1 primary for speed
-  technical: ['openrouter-grok', 'openrouter-llama', 'openrouter-sonnet'],
-  quickpulse: ['openrouter-grok', 'openrouter-llama', 'openrouter-sonnet'],
+  // Technical analysis — OpenClaw fast
+  technical: ['openclaw-fast', 'openrouter-llama', 'openrouter-grok'],
+  quickpulse: ['openclaw-fast', 'openrouter-llama', 'openrouter-grok'],
 
-  // Deep research / reasoning - Claude Opus 4.5
-  research: ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
-  reasoning: ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
+  // Deep research / reasoning — OpenClaw CAO (Groq), OpenRouter fallback
+  research: ['openclaw-cao', 'openrouter-opus', 'openrouter-sonnet'],
+  reasoning: ['openclaw-cao', 'openrouter-opus', 'openrouter-sonnet'],
 
   // OpenClaw P.I.C. Agent-specific task routing
   // Harper/CAO - Executive reasoning (Opus via OpenClaw, fallback to OpenRouter)
@@ -75,8 +73,16 @@ const TASK_MODEL_PREFERENCES: Record<string, AiModelKey[]> = {
   'earnings-analysis': ['openclaw-cao', 'openrouter-opus', 'openrouter-sonnet'],
   'tech-mega-cap': ['openclaw-research', 'openrouter-sonnet', 'openrouter-llama'],
 
-  // Default fallback chain - Grok primary
-  default: ['openrouter-grok', 'openrouter-llama', 'openrouter-sonnet'],
+  // Default fallback chain — OpenClaw (Groq-powered) first
+  default: ['openclaw-fast', 'openrouter-llama', 'openrouter-grok'],
+}
+
+// Runtime token store for user-provided tokens (e.g. GitHub OAuth)
+let _runtimeGitHubToken: string | undefined
+
+/** Set the GitHub token for the current request context */
+export function setRuntimeGitHubToken(token: string | undefined): void {
+  _runtimeGitHubToken = token
 }
 
 /**
@@ -85,7 +91,12 @@ const TASK_MODEL_PREFERENCES: Record<string, AiModelKey[]> = {
 function hasApiKey(modelKey: AiModelKey): boolean {
   const config = defaultAiConfig.models[modelKey]
   if (!config) return false
-  
+
+  // GitHub Models uses runtime OAuth token, not env var
+  if (isGitHubModelsModel(modelKey)) {
+    return Boolean(_runtimeGitHubToken)
+  }
+
   const apiKey = process.env[config.apiKeyEnv]
   return Boolean(apiKey && apiKey.length > 0)
 }
@@ -254,6 +265,19 @@ export function createModelClient(modelKey: AiModelKey) {
         'HTTP-Referer': process.env.OPENROUTER_APP_URL ?? 'https://pulse-solvys.vercel.app',
         'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Pulse-AI-Gateway',
       },
+    })
+    return client(config.id)
+  }
+
+  // GitHub Models use OpenAI-compatible client with user's OAuth token
+  if (isGitHubModelsModel(modelKey)) {
+    const ghToken = _runtimeGitHubToken
+    if (!ghToken) {
+      throw new Error('GitHub Models requires authentication — sign in with GitHub first')
+    }
+    const client = createOpenAI({
+      apiKey: ghToken,
+      baseURL: config.baseUrl,
     })
     return client(config.id)
   }

@@ -6,9 +6,12 @@ import { ToastProvider } from './contexts/ToastContext';
 import { GatewayProvider } from './contexts/GatewayContext';
 import { PulseAgentProvider } from './contexts/PulseAgentContext';
 import { RiskFlowProvider } from './contexts/RiskFlowContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { MainLayout } from './components/layout/MainLayout';
 import { NotificationContainer } from './components/NotificationToast';
 import { ToastContainer } from './components/ui/Toast';
+import { GitHubOAuthCallback } from './components/GitHubOAuthCallback';
+import { UpdateBanner } from './components/UpdateBanner';
 
 /**
  * Pulse - Local Single-User Trading Platform
@@ -16,6 +19,7 @@ import { ToastContainer } from './components/ui/Toast';
  */
 export default function App() {
   return (
+    <ThemeProvider>
     <AuthProvider>
       <SettingsProvider>
         <ToastProvider>
@@ -29,7 +33,7 @@ export default function App() {
 
                     * {
                       scrollbar-width: thin;
-                      scrollbar-color: #D4AF37 #0a0a00;
+                      scrollbar-color: var(--pulse-accent) var(--pulse-surface);
                     }
 
                     *::-webkit-scrollbar {
@@ -38,29 +42,31 @@ export default function App() {
                     }
 
                     *::-webkit-scrollbar-track {
-                      background: #0a0a00;
+                      background: var(--pulse-surface);
                     }
 
                     *::-webkit-scrollbar-thumb {
-                      background: #D4AF37;
+                      background: var(--pulse-accent);
                       border-radius: 4px;
                     }
 
                     *::-webkit-scrollbar-thumb:hover {
-                      background: #FFD060;
+                      background: color-mix(in srgb, var(--pulse-accent) 70%, white);
                     }
 
                     .scanline-overlay {
                       background: repeating-linear-gradient(
                         0deg,
-                        rgba(255, 192, 56, 0.03) 0px,
-                        rgba(255, 192, 56, 0.03) 1px,
+                        color-mix(in srgb, var(--pulse-accent) 3%, transparent) 0px,
+                        color-mix(in srgb, var(--pulse-accent) 3%, transparent) 1px,
                         transparent 1px,
                         transparent 2px
                       );
                       pointer-events: none;
                     }
                   `}</style>
+                  <UpdateBanner />
+                  <GitHubOAuthCallback />
                   <MainLayout />
                   <NotificationContainer />
                   <ToastContainer />
@@ -72,5 +78,6 @@ export default function App() {
         </ToastProvider>
       </SettingsProvider>
     </AuthProvider>
+    </ThemeProvider>
   );
 }

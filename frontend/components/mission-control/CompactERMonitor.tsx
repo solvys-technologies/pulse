@@ -17,6 +17,7 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
   const [erScore, setErScore] = useState(0);
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
   const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
+  const [overtradingPenalty, setOvertradingPenalty] = useState<number>(0.5);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const recognitionRef = useRef<any>(null);
   
@@ -77,6 +78,16 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
             infractionCountRef.current += 1;
             setErScore(prev => {
               const newScore = Math.max(-10, prev - 1.0);
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(
+                  new CustomEvent('psychassist:infraction', {
+                    detail: {
+                      timestamp: Date.now(),
+                      score: newScore,
+                    },
+                  })
+                );
+              }
               if (onERScoreChange) {
                 onERScoreChange(newScore);
               }
@@ -126,10 +137,51 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
     }
   }, [isMonitoring, onERScoreChange]);
 
+  useEffect(() => {
+    if (!isMonitoring) return;
+
+    const checkOvertrading = async () => {
+      try {
+        const status = await backend.er.checkOvertrading({ windowMinutes: 15, threshold: 5 });
+        const penalty = typeof status.penalty === 'number' ? status.penalty : 0.5;
+        setOvertradingPenalty(penalty);
+
+        if (status.isOvertrading) {
+          setErScore((prev) => {
+            const next = Math.max(-10, prev - penalty);
+            if (onERScoreChange) {
+              onERScoreChange(next);
+            }
+            return next;
+          });
+        }
+      } catch (error) {
+        console.debug('Compact ER overtrading check failed:', error);
+      }
+    };
+
+    void checkOvertrading();
+    const interval = setInterval(checkOvertrading, 30000);
+    return () => clearInterval(interval);
+  }, [backend, isMonitoring, onERScoreChange]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(
+      new CustomEvent('psychassist:score', {
+        detail: {
+          score: erScore,
+          timestamp: Date.now(),
+          overtradingPenalty,
+        },
+      })
+    );
+  }, [erScore, overtradingPenalty]);
+
   return (
     <div className="flex items-center gap-2 w-full">
       {/* Waveform - Landscape oriented */}
-      <div className="relative h-8 flex-1 bg-black/50 rounded border border-[#D4AF37]/10 overflow-hidden min-w-[100px]">
+      <div className="relative h-8 flex-1 bg-black/50 rounded border border-[var(--pulse-accent)]/10 overflow-hidden min-w-[100px]">
         <div className="absolute inset-0 scanline-overlay opacity-50" />
         {isMonitoring && analyser ? (
           <WaveformCanvas analyser={analyser} tiltMode={resonanceState === 'Tilt'} />

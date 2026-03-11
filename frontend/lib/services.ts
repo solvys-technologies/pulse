@@ -6,6 +6,8 @@
  */
 
 import ApiClient from "./apiClient";
+import { decodeHtmlEntities } from './html-entities';
+import { McpService } from './mcp-service';
 
 // Type definitions (update these to match your Hono backend response types)
 export interface Account {
@@ -43,7 +45,7 @@ export interface ChatResponse {
   };
 }
 
-export interface NTNReport {
+export interface MDBReport {
   report: {
     content: string;
   };
@@ -77,6 +79,36 @@ export interface ProjectXAccount {
   balance?: number;
   provider?: string;
   isPaper?: boolean;
+}
+
+export interface ProjectXActivitySummary {
+  accountId: number;
+  windowMinutes: number;
+  eventCount: number;
+  tradeCount: number;
+  weightedTradeCount: number;
+  overtradingPenalty: number;
+  realizedPnl: number;
+  lastEventAt: string | null;
+}
+
+export interface ProjectXActivityResponse {
+  accountId: number;
+  events: Array<{
+    id: number;
+    eventType: string;
+    eventSource: string;
+    eventTimestamp: string;
+    isTrade: boolean;
+    symbol?: string | null;
+    side?: string | null;
+    quantity?: number | null;
+    price?: number | null;
+    realizedPnl?: number | null;
+    eventWeight?: number | null;
+    payload?: Record<string, unknown>;
+  }>;
+  summary: ProjectXActivitySummary;
 }
 
 export interface PsychScores {
@@ -118,9 +150,44 @@ export interface UplinkResponse {
   message: string;
 }
 
+export interface VoiceTranscriptionResponse {
+  text: string;
+  model?: string;
+  provider?: string;
+}
+
+export interface VoiceSpeakResponse {
+  conversationId: string;
+  agent: string;
+  responseText: string;
+  audioBase64?: string;
+  audioMimeType?: string;
+  mode?: 'chat' | 'infraction';
+}
+
 // Account Service
 export class AccountService {
   constructor(private client: ApiClient) { }
+
+  private mapAccountResponse(response: any, tier: Account['tier']): Account {
+    const dailyPnlRaw = response.dailyPnl ?? response.daily_pnl;
+    return {
+      id: response.id?.toString() || '',
+      userId: response.userId?.toString?.() || response.user_id?.toString?.() || '',
+      balance: Number(response.balance ?? 0),
+      dailyPnl: typeof dailyPnlRaw === 'number' ? dailyPnlRaw : Number(dailyPnlRaw ?? 0),
+      tier,
+      tradingEnabled: Boolean(response.tradingEnabled ?? response.trading_enabled ?? false),
+      autoTrade: Boolean(response.autoTrade ?? response.auto_trade ?? response.algoEnabled ?? response.algo_enabled ?? false),
+      riskManagement: Boolean(response.riskManagement ?? response.risk_management ?? false),
+      algoEnabled: Boolean(response.algoEnabled ?? response.algo_enabled ?? false),
+      topstepxUsername: response.topstepxUsername ?? response.topstepx_username,
+      topstepxApiKey: response.topstepxApiKey ?? response.topstepx_api_key,
+      selectedSymbol: response.selectedSymbol ?? response.selected_symbol,
+      contractsPerTrade: response.contractsPerTrade ?? response.contracts_per_trade,
+      projectxUsername: response.projectxUsername ?? response.projectx_username,
+    };
+  }
 
   async get(): Promise<Account> {
     const response = await this.client.get<any>('/api/account');
@@ -134,18 +201,7 @@ export class AccountService {
       console.warn('Failed to get tier, defaulting to free:', error);
     }
 
-    // Transform backend response to match frontend expectations
-    return {
-      id: response.id?.toString() || '',
-      userId: '', // Backend doesn't return userId
-      balance: response.balance || 0,
-      dailyPnl: 0, // Backend doesn't return this
-      tier: tier,
-      tradingEnabled: false,
-      autoTrade: false,
-      riskManagement: false,
-      algoEnabled: false, // Backend doesn't return this
-    };
+    return this.mapAccountResponse(response, tier);
   }
 
   async create(data: { initialBalance?: number }): Promise<Account> {
@@ -160,18 +216,7 @@ export class AccountService {
       console.warn('Failed to get tier, defaulting to free:', error);
     }
 
-    // Transform backend response to match frontend expectations
-    return {
-      id: response.id?.toString() || '',
-      userId: '', // Backend doesn't return userId
-      balance: response.balance || 0,
-      dailyPnl: 0, // Backend doesn't return this
-      tier: tier,
-      tradingEnabled: false,
-      autoTrade: false,
-      riskManagement: false,
-      algoEnabled: false, // Backend doesn't return this
-    };
+    return this.mapAccountResponse(response, tier);
   }
 
   async updateSettings(data: Partial<Account>): Promise<Account> {
@@ -269,9 +314,9 @@ export class RiskFlowService {
           
           return {
             id: item.id?.toString() || '',
-            title: item.headline || item.title || '', // Map headline to title
-            content: item.body || item.content || '', // Map body to content
-            summary: item.body || item.content || '', // Also set summary for compatibility
+            title: decodeHtmlEntities(item.headline || item.title || ''), // Map headline to title
+            content: decodeHtmlEntities(item.body || item.content || ''), // Map body to content
+            summary: decodeHtmlEntities(item.body || item.content || ''), // Also set summary for compatibility
             source: item.source || '',
             url: item.url,
             publishedAt: item.publishedAt || item.published_at || new Date().toISOString(),
@@ -364,12 +409,12 @@ export class AIService {
     return response;
   }
 
-  async generateNTNReport(): Promise<NTNReport> {
+  async generateMDBReport(): Promise<MDBReport> {
     // Stub - backend doesn't have this endpoint yet
-    console.warn('NTN report endpoint not available in Hono backend');
+    console.warn('MDB report endpoint not available in Hono backend');
     return {
       report: {
-        content: 'NTN report generation is not yet implemented in the Hono backend.',
+        content: 'MDB report generation is not yet implemented in the Hono backend.',
       },
     };
   }
@@ -484,6 +529,29 @@ export class ProjectXService {
   async syncProjectXAccounts(): Promise<void> {
     return this.client.post('/api/projectx/sync', {});
   }
+
+  async getActivity(accountId: string | number, params?: { windowMinutes?: number; limit?: number }): Promise<ProjectXActivityResponse> {
+    const query = new URLSearchParams();
+    if (params?.windowMinutes) query.append('windowMinutes', params.windowMinutes.toString());
+    if (params?.limit) query.append('limit', params.limit.toString());
+    const suffix = query.toString() ? `?${query.toString()}` : '';
+    return this.client.get<ProjectXActivityResponse>(`/api/projectx/activity/${accountId}${suffix}`);
+  }
+}
+
+// Rithmic Service (Autopilot primary broker scaffold)
+export interface RithmicStatusResponse {
+  connected: boolean;
+  message: string;
+}
+
+export class RithmicService {
+  constructor(private client: ApiClient) {}
+
+  async getStatus(): Promise<RithmicStatusResponse> {
+    const response = await this.client.get<RithmicStatusResponse>('/api/rithmic/status');
+    return response;
+  }
 }
 
 // Notifications Service
@@ -506,10 +574,8 @@ export class ERService {
   constructor(private client: ApiClient) { }
 
   async getSessions(): Promise<any[]> {
-    // Backend uses /er/date/:date pattern instead of /er/sessions
-    // Return empty array for now - frontend should use date-specific endpoints
-    console.warn('ER sessions endpoint not available. Use /er/date/:date instead.');
-    return [];
+    const response = await this.client.get<{ sessions: any[] }>('/api/er/sessions');
+    return response.sessions || [];
   }
 
   async getERSessions(): Promise<any[]> {
@@ -522,15 +588,53 @@ export class ERService {
   }
 
   async saveSnapshot(data: any): Promise<any> {
-    // Stub - backend doesn't have this endpoint
-    console.warn('ER snapshot save endpoint not available in Hono backend');
-    return {};
+    return this.client.post('/api/er/snapshots', data);
   }
 
   async checkOvertrading(params?: { windowMinutes?: number; threshold?: number }): Promise<any> {
-    // Stub - backend doesn't have this endpoint
-    console.warn('ER overtrading check endpoint not available in Hono backend');
-    return { isOvertrading: false, tradesInWindow: 0 };
+    return this.client.post('/api/er/check-overtrading', params ?? {});
+  }
+}
+
+export interface VoiceSentimentResponse {
+  sentiment: number;
+  confidence: number;
+  keywords: string[];
+  tiltIndicators: string[];
+  summary: string;
+  provider: 'claude-haiku' | 'fallback';
+}
+
+export class VoiceService {
+  constructor(private client: ApiClient) {}
+
+  async transcribe(data: {
+    audioBase64?: string;
+    mimeType?: string;
+    language?: string;
+    prompt?: string;
+    text?: string;
+  }): Promise<VoiceTranscriptionResponse> {
+    return this.client.post('/api/voice/transcribe', data);
+  }
+
+  async speak(data: {
+    text: string;
+    conversationId?: string;
+    mode?: 'chat' | 'infraction';
+    includeAudio?: boolean;
+    agent?: string;
+  }): Promise<VoiceSpeakResponse> {
+    return this.client.post('/api/voice/speak', data);
+  }
+
+  async analyzeSentiment(data: {
+    transcript?: string;
+    audioBase64?: string;
+    mimeType?: string;
+    context?: string;
+  }): Promise<VoiceSentimentResponse> {
+    return this.client.post('/api/voice/analyze-sentiment', data);
   }
 }
 
@@ -617,6 +721,301 @@ export interface TriggerInterventionParams {
   metadata?: Record<string, unknown>;
 }
 
+// Econ Calendar Service
+export interface EconEventItem {
+  id: string;
+  name: string;
+  date?: string;
+  time?: string;
+  country: string;
+  importance: 1 | 2 | 3;
+  forecast?: string;
+  previous?: string;
+  actual?: string;
+  category?: string;
+  definition?: string;
+  aiTicker?: string;
+  notionUrl: string;
+}
+
+export interface EconPrintItem {
+  id: string;
+  eventName: string;
+  date: string;
+  actual: number | null;
+  forecast: number | null;
+  previous: number | null;
+  surprise: number | null;
+  direction: 'beat' | 'miss' | 'inline' | null;
+  goodBeta: boolean;
+  notionUrl: string;
+}
+
+export class EconCalendarService {
+  constructor(private client: ApiClient) {}
+
+  async getEvents(params?: { from?: string; to?: string }): Promise<EconEventItem[]> {
+    try {
+      const query = new URLSearchParams();
+      if (params?.from) query.append('from', params.from);
+      if (params?.to) query.append('to', params.to);
+      const suffix = query.toString() ? `?${query.toString()}` : '';
+      const res = await this.client.get<{ events: EconEventItem[] }>(`/api/notion/econ-calendar${suffix}`);
+      return res.events ?? [];
+    } catch {
+      return [];
+    }
+  }
+
+  async getPrints(eventName?: string): Promise<EconPrintItem[]> {
+    try {
+      const suffix = eventName ? `?event=${encodeURIComponent(eventName)}` : '';
+      const res = await this.client.get<{ prints: EconPrintItem[] }>(`/api/notion/econ-prints${suffix}`);
+      return res.prints ?? [];
+    } catch {
+      return [];
+    }
+  }
+}
+
+// Notion Service
+export interface NotionTradeIdeaItem {
+  id: string;
+  title: string;
+  ticker: string;
+  direction: 'long' | 'short' | 'neutral';
+  entry?: number;
+  stopLoss?: number;
+  takeProfit?: number;
+  potentialRisk?: number;
+  potentialProfit?: number;
+  riskRewardRatio?: number;
+  confidence?: string;
+  timeframe?: string;
+  sourceAgent?: string;
+  openclawDescription?: string;
+  notionUrl: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NotionPerformanceResponse {
+  kpis: Array<{ label: string; value: string; meta: string }>;
+  count: number;
+  fetchedAt: string;
+}
+
+export interface NotionPollStatus {
+  running: boolean;
+  lastPollAt: string | null;
+  pollCount: number;
+  tradeIdeaCount: number;
+}
+
+export class NotionService {
+  constructor(private client: ApiClient) {}
+
+  async getTradeIdeas(): Promise<NotionTradeIdeaItem[]> {
+    try {
+      const res = await this.client.get<{ tradeIdeas: NotionTradeIdeaItem[] }>('/api/notion/trade-ideas');
+      return res.tradeIdeas ?? [];
+    } catch {
+      return [];
+    }
+  }
+
+  async getPerformance(): Promise<NotionPerformanceResponse> {
+    try {
+      return await this.client.get<NotionPerformanceResponse>('/api/notion/performance');
+    } catch {
+      return { kpis: [], count: 0, fetchedAt: new Date().toISOString() };
+    }
+  }
+
+  async getPollStatus(): Promise<NotionPollStatus> {
+    try {
+      return await this.client.get<NotionPollStatus>('/api/notion/poll-status');
+    } catch {
+      return {
+        running: false,
+        lastPollAt: null,
+        pollCount: 0,
+        tradeIdeaCount: 0,
+      };
+    }
+  }
+
+  async getMdbBrief(): Promise<Array<{ title: string; detail: string }>> {
+    try {
+      const res = await this.client.get<{ items: Array<{ title: string; detail: string }> }>('/api/notion/mdb-brief');
+      return res.items ?? [];
+    } catch {
+      return [];
+    }
+  }
+
+  async getSchedule(): Promise<Array<{ title: string; detail: string; forecast?: string; actual?: string; previous?: string; date?: string }>> {
+    try {
+      const res = await this.client.get<{ items: Array<{ title: string; detail: string; forecast?: string; actual?: string; previous?: string; date?: string }> }>('/api/notion/schedule');
+      return res.items ?? [];
+    } catch {
+      return [];
+    }
+  }
+
+  async generateMdbReport(): Promise<{ content: string; briefType: string; generatedAt: string; notionUrl?: string | null }> {
+    try {
+      return await this.client.post<{ content: string; briefType: string; generatedAt: string; notionUrl?: string | null }>('/api/notion/mdb-report/generate', {});
+    } catch {
+      return { content: '', briefType: 'MDB', generatedAt: new Date().toISOString() };
+    }
+  }
+}
+
+// ER Scoring Service (psych scoring around earnings events)
+import type {
+  EarningsReview,
+  EarningsHistoryFilter,
+  EarningsHistoryPage,
+  EarningsReviewCreate,
+  EarningsReviewUpdate,
+  EarningsContextRequest,
+  EarningsContextResponse,
+} from '../types/earnings-history';
+
+export class ERScoringService {
+  constructor(private client: ApiClient) {}
+
+  async list(filter?: EarningsHistoryFilter): Promise<EarningsHistoryPage> {
+    try {
+      const query = new URLSearchParams();
+      if (filter?.symbol) query.append('symbol', filter.symbol);
+      if (filter?.setupType) query.append('setupType', filter.setupType);
+      if (filter?.dateFrom) query.append('dateFrom', filter.dateFrom);
+      if (filter?.dateTo) query.append('dateTo', filter.dateTo);
+      if (filter?.grade) query.append('grade', filter.grade);
+      if (filter?.direction) query.append('direction', filter.direction);
+      if (filter?.limit) query.append('limit', filter.limit.toString());
+      if (filter?.offset) query.append('offset', filter.offset.toString());
+      const suffix = query.toString() ? `?${query.toString()}` : '';
+      return await this.client.get<EarningsHistoryPage>(`/api/er-scoring${suffix}`);
+    } catch {
+      return { items: [], total: 0, hasMore: false };
+    }
+  }
+
+  async getById(id: string): Promise<EarningsReview | null> {
+    try {
+      return await this.client.get<EarningsReview>(`/api/er-scoring/${id}`);
+    } catch {
+      return null;
+    }
+  }
+
+  async create(data: EarningsReviewCreate): Promise<EarningsReview> {
+    return this.client.post<EarningsReview>('/api/er-scoring', data);
+  }
+
+  async update(id: string, data: EarningsReviewUpdate): Promise<EarningsReview | null> {
+    try {
+      return await this.client.patch<EarningsReview>(`/api/er-scoring/${id}`, data);
+    } catch {
+      return null;
+    }
+  }
+
+  async deleteReview(id: string): Promise<boolean> {
+    try {
+      await this.client.delete(`/api/er-scoring/${id}`);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async agentRetrieve(req: EarningsContextRequest): Promise<EarningsContextResponse> {
+    return this.client.post<EarningsContextResponse>('/api/er-scoring/agent-retrieve', req);
+  }
+
+  async setup(): Promise<{ success: boolean; dbId: string }> {
+    return this.client.post('/api/er-scoring/setup', {});
+  }
+}
+
+// Market Data Service
+import type {
+  StockQuote,
+  VixData,
+  GammaExposure,
+  OptionsWall,
+  OptionsFlow,
+  MarketContext,
+  IVScoreResponse,
+} from '../types/market-data';
+
+export class MarketDataService {
+  constructor(private client: ApiClient) {}
+
+  async getQuote(symbol: string): Promise<StockQuote> {
+    return this.client.get<StockQuote>(`/api/market-data/quote/${encodeURIComponent(symbol)}`);
+  }
+
+  async getVix(): Promise<VixData> {
+    return this.client.get<VixData>('/api/market-data/vix');
+  }
+
+  async getGex(symbol: string): Promise<GammaExposure> {
+    return this.client.get<GammaExposure>(`/api/market-data/gex/${encodeURIComponent(symbol)}`);
+  }
+
+  async getWalls(symbol: string): Promise<OptionsWall> {
+    return this.client.get<OptionsWall>(`/api/market-data/walls/${encodeURIComponent(symbol)}`);
+  }
+
+  async getFlow(symbol: string, limit?: number): Promise<OptionsFlow> {
+    const suffix = limit ? `?limit=${limit}` : '';
+    return this.client.get<OptionsFlow>(`/api/market-data/flow/${encodeURIComponent(symbol)}${suffix}`);
+  }
+
+  async getContext(symbol: string): Promise<MarketContext> {
+    return this.client.get<MarketContext>(`/api/market-data/context/${encodeURIComponent(symbol)}`);
+  }
+
+  async getIVScore(instrument?: string, price?: number): Promise<IVScoreResponse> {
+    const params = new URLSearchParams();
+    if (instrument) params.append('instrument', instrument);
+    if (price) params.append('price', price.toString());
+    const suffix = params.toString() ? `?${params.toString()}` : '';
+    return this.client.get<IVScoreResponse>(`/api/market-data/iv-score${suffix}`);
+  }
+}
+
+// Narrative Scoring Service
+export interface ScoredCandidate {
+  sourceId: string;
+  sourceType: 'riskflow' | 'mdb-brief';
+  notabilityScore: number;
+  sentiment: 'bullish' | 'bearish';
+  severity: 'high' | 'medium' | 'low';
+  tickers: string[];
+  themes: string[];
+  suggestedTitle: string;
+  suggestedDescription: string;
+  originalHeadline?: string;
+}
+
+export class NarrativeService {
+  constructor(private client: ApiClient) {}
+
+  async scoreRiskflow(items: Array<{ id: string; headline: string; summary: string; source: string; severity: string; tags: string[]; publishedAt: string }>): Promise<{ scored: ScoredCandidate[]; provider: string }> {
+    return this.client.post('/api/narrative/score-riskflow', { items });
+  }
+
+  async scoreBrief(briefText: string): Promise<{ scored: ScoredCandidate[]; provider: string }> {
+    return this.client.post('/api/narrative/score-brief', { briefText });
+  }
+}
+
 // Trade Idea types
 export type TradeDirection = 'long' | 'short' | 'neutral';
 export type ConvictionLevel = 'low' | 'medium' | 'high' | 'max';
@@ -668,6 +1067,81 @@ export class BoardroomService {
   }
 }
 
+// Journal Service (Track 7A)
+export interface JournalEntryItem {
+  id: number;
+  userId: string;
+  type: 'human' | 'agent';
+  date: string;
+  erTrend?: number[];
+  infractions?: string[];
+  disciplineScore?: number;
+  notes?: string;
+  agentName?: string;
+  proposalCount?: number;
+  acceptedCount?: number;
+  winRate?: number;
+  avgRR?: number;
+  totalPnl?: number;
+  proposals?: Array<{
+    id: string;
+    agent: string;
+    ticker: string;
+    direction: 'long' | 'short';
+    entry?: number;
+    target?: number;
+    stopLoss?: number;
+    status: 'proposed' | 'accepted' | 'rejected' | 'expired';
+    outcome?: 'win' | 'loss' | 'breakeven' | null;
+    pnl?: number;
+    createdAt: string;
+  }>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface JournalSummaryResponse {
+  totalEntries: number;
+  avgDisciplineScore: number;
+  totalInfractions: number;
+  avgWinRate: number;
+  avgRR: number;
+  totalAgentPnl: number;
+  streakDays: number;
+}
+
+export class JournalService {
+  constructor(private client: ApiClient) {}
+
+  async listEntries(params?: { type?: 'human' | 'agent'; limit?: number; offset?: number; from?: string; to?: string }): Promise<{ entries: JournalEntryItem[]; total: number }> {
+    try {
+      const query = new URLSearchParams();
+      if (params?.type) query.append('type', params.type);
+      if (params?.limit) query.append('limit', params.limit.toString());
+      if (params?.offset) query.append('offset', params.offset.toString());
+      if (params?.from) query.append('from', params.from);
+      if (params?.to) query.append('to', params.to);
+      const suffix = query.toString() ? `?${query.toString()}` : '';
+      return await this.client.get<{ entries: JournalEntryItem[]; total: number }>(`/api/journal/entries${suffix}`);
+    } catch {
+      return { entries: [], total: 0 };
+    }
+  }
+
+  async saveEntry(data: Partial<JournalEntryItem> & { type: 'human' | 'agent'; date: string }): Promise<{ entryId: number }> {
+    return this.client.post('/api/journal/entries', data);
+  }
+
+  async getSummary(days?: number): Promise<JournalSummaryResponse> {
+    try {
+      const suffix = days ? `?days=${days}` : '';
+      return await this.client.get<JournalSummaryResponse>(`/api/journal/summary${suffix}`);
+    } catch {
+      return { totalEntries: 0, avgDisciplineScore: 0, totalInfractions: 0, avgWinRate: 0, avgRR: 0, totalAgentPnl: 0, streakDays: 0 };
+    }
+  }
+}
+
 // Main Backend Client Interface
 export interface BackendClient {
   account: AccountService;
@@ -677,11 +1151,20 @@ export interface BackendClient {
   analysts: AnalystService;
   trading: TradingService;
   projectx: ProjectXService;
+  rithmic: RithmicService;
   notifications: NotificationsService;
   er: ERService;
+  voice: VoiceService;
   events: EventsService;
   polymarket: PolymarketService;
   boardroom: BoardroomService;
+  narrative: NarrativeService;
+  notion: NotionService;
+  econCalendar: EconCalendarService;
+  erScoring: ERScoringService;
+  marketData: MarketDataService;
+  mcp: McpService;
+  journal: JournalService;
 }
 
 // Create backend client from API client
@@ -694,10 +1177,19 @@ export function createBackendClient(client: ApiClient): BackendClient {
     analysts: new AnalystService(client),
     trading: new TradingService(client),
     projectx: new ProjectXService(client),
+    rithmic: new RithmicService(client),
     notifications: new NotificationsService(client),
     er: new ERService(client),
+    voice: new VoiceService(client),
     events: new EventsService(client),
     polymarket: new PolymarketService(client),
     boardroom: new BoardroomService(client),
+    narrative: new NarrativeService(client),
+    notion: new NotionService(client),
+    econCalendar: new EconCalendarService(client),
+    erScoring: new ERScoringService(client),
+    marketData: new MarketDataService(client),
+    mcp: new McpService(client),
+    journal: new JournalService(client),
   };
 }

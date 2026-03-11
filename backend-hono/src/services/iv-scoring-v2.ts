@@ -1,3 +1,4 @@
+// [claude-code 2026-03-09] Added config-driven scoring: IVScoringConfig type, loadIVScoringConfig(), config param on calculateIVScoreV2
 /**
  * IV Scoring System v2
  * Complete implementation based on Grok consultation spec
@@ -5,6 +6,122 @@
  */
 
 import type { ParsedHeadline, HotPrint } from '../types/news-analysis.js'
+import { readFileSync } from 'node:fs'
+import { resolve, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+// ============================================================================
+// CONFIG TYPE + LOADER
+// ============================================================================
+
+export interface IVScoringConfig {
+  eventWeights: Record<string, number>
+  sessions: Array<{ name: string; multiplier: number; start: number; end: number }>
+  vixMultipliers: Array<{ max: number; multiplier: number; context: string }>
+  decayHalfLives: Record<string, number>
+  instantTriggers: Record<string, number>
+  scoring: {
+    synergyMultiplier: number
+    synergyWindowMinutes: number
+    maxScore: number
+    spilloverFactor: number
+    noEventBaselineDivisor: number
+    highIVBaseline: number
+    lowIVBaseline: number
+    highIVEventThreshold: number
+    alertScoreThreshold: number
+    blackSwanVixThreshold: number
+    blackSwanHoldMinutesHigh: number
+    blackSwanHoldMinutesLow: number
+    extremeVixThreshold: number
+    marketClosedDecayMultiplier: number
+  }
+}
+
+let _loadedConfig: IVScoringConfig | null = null
+
+/**
+ * Load IV scoring config from JSON file. Returns cached config on subsequent calls.
+ * Falls back to hardcoded defaults if file is missing or malformed.
+ */
+export function loadIVScoringConfig(): IVScoringConfig {
+  if (_loadedConfig) return _loadedConfig
+
+  try {
+    const __dirname = dirname(fileURLToPath(import.meta.url))
+    const configPath = resolve(__dirname, '../config/iv-scoring-config.json')
+    const raw = readFileSync(configPath, 'utf-8')
+    const parsed = JSON.parse(raw)
+
+    _loadedConfig = {
+      eventWeights: { ...EVENT_WEIGHTS, ...parsed.eventWeights },
+      sessions: parsed.sessions ?? SESSIONS.map(s => ({ name: s.name, multiplier: s.multiplier, start: s.start, end: s.end })),
+      vixMultipliers: parsed.vixMultipliers ?? VIX_MULTIPLIERS.map(v => ({ max: v.max === Infinity ? 999999 : v.max, multiplier: v.multiplier, context: v.context })),
+      decayHalfLives: { ...DECAY_HALF_LIVES, ...parsed.decayHalfLives },
+      instantTriggers: { ...INSTANT_TRIGGERS, ...parsed.instantTriggers },
+      scoring: {
+        synergyMultiplier: 1.2,
+        synergyWindowMinutes: 30,
+        maxScore: 10,
+        spilloverFactor: 0.2,
+        noEventBaselineDivisor: 3,
+        highIVBaseline: 4,
+        lowIVBaseline: 1,
+        highIVEventThreshold: 3,
+        alertScoreThreshold: 8,
+        blackSwanVixThreshold: 25,
+        blackSwanHoldMinutesHigh: 60,
+        blackSwanHoldMinutesLow: 30,
+        extremeVixThreshold: 50,
+        marketClosedDecayMultiplier: 0.5,
+        ...parsed.scoring,
+      },
+    }
+
+    console.log('[IV-Config] Loaded iv-scoring-config.json')
+  } catch (err) {
+    console.warn('[IV-Config] Failed to load config, using hardcoded defaults:', err)
+    _loadedConfig = null
+  }
+
+  return _loadedConfig ?? getDefaultConfig()
+}
+
+function getDefaultConfig(): IVScoringConfig {
+  return {
+    eventWeights: EVENT_WEIGHTS,
+    sessions: SESSIONS.map(s => ({ name: s.name, multiplier: s.multiplier, start: s.start, end: s.end })),
+    vixMultipliers: VIX_MULTIPLIERS.map(v => ({ max: v.max === Infinity ? 999999 : v.max, multiplier: v.multiplier, context: v.context })),
+    decayHalfLives: DECAY_HALF_LIVES,
+    instantTriggers: INSTANT_TRIGGERS,
+    scoring: {
+      synergyMultiplier: 1.2,
+      synergyWindowMinutes: 30,
+      maxScore: 10,
+      spilloverFactor: 0.2,
+      noEventBaselineDivisor: 3,
+      highIVBaseline: 4,
+      lowIVBaseline: 1,
+      highIVEventThreshold: 3,
+      alertScoreThreshold: 8,
+      blackSwanVixThreshold: 25,
+      blackSwanHoldMinutesHigh: 60,
+      blackSwanHoldMinutesLow: 30,
+      extremeVixThreshold: 50,
+      marketClosedDecayMultiplier: 0.5,
+    },
+  }
+}
+
+/** Reset loaded config (for testing or hot-reload) */
+export function resetIVScoringConfig(): void {
+  _loadedConfig = null
+}
+
+/** Get current active config */
+export function getIVScoringConfig(): IVScoringConfig {
+  return _loadedConfig ?? loadIVScoringConfig()
+}
 
 // ============================================================================
 // EVENT WEIGHT TABLE (from Grok spec)
@@ -494,7 +611,7 @@ export interface IVScoreResultV2 {
   alert?: string
 }
 
-export function calculateIVScoreV2(input: IVScoreInputV2): IVScoreResultV2 {
+export function calculateIVScoreV2(input: IVScoreInputV2, config?: Partial<IVScoringConfig>): IVScoreResultV2 {
   const {
     events,
     vixLevel,
@@ -507,11 +624,15 @@ export function calculateIVScoreV2(input: IVScoreInputV2): IVScoreResultV2 {
     isFOMCWeek = false,
     previousSessionScore = 0,
   } = input
-  
+
+  // Resolve config: explicit param > loaded file > hardcoded defaults
+  const resolvedConfig = { ...getIVScoringConfig(), ...config }
+  const sc = resolvedConfig.scoring ?? getIVScoringConfig().scoring
+
   const rationale: string[] = []
   const now = new Date()
-  
-  // Check edge cases first
+
+  // Check edge cases first (uses config scoring thresholds)
   for (const event of events) {
     const edgeCase = checkEdgeCases(event.eventType, vixLevel, isMarketClosed)
     if (edgeCase.triggered && edgeCase.score !== undefined) {
@@ -522,7 +643,7 @@ export function calculateIVScoreV2(input: IVScoreInputV2): IVScoreResultV2 {
         session: getCurrentSession(now),
         vixMultiplier: getVIXMultiplier(vixLevel).multiplier,
         vixContext: getVIXMultiplier(vixLevel).context,
-        activityBaseline: 10,
+        activityBaseline: sc.maxScore,
         stackedEvents: events.length,
         synergy: false,
         rationale: [edgeCase.message!],
@@ -530,77 +651,92 @@ export function calculateIVScoreV2(input: IVScoreInputV2): IVScoreResultV2 {
       }
     }
   }
-  
+
   // Get session multiplier
   const session = getCurrentSession(now)
   rationale.push(`Session: ${session.name} (×${session.multiplier})`)
-  
-  // Get VIX multiplier
-  const { multiplier: vixMult, context: vixContext } = getVIXMultiplier(vixLevel)
+
+  // Get VIX multiplier (from config if available)
+  let vixMult = 1.0
+  let vixContext = 'Unknown'
+  if (resolvedConfig.vixMultipliers) {
+    for (const tier of resolvedConfig.vixMultipliers) {
+      if (vixLevel < tier.max) {
+        vixMult = tier.multiplier
+        vixContext = tier.context
+        break
+      }
+    }
+  } else {
+    const result = getVIXMultiplier(vixLevel)
+    vixMult = result.multiplier
+    vixContext = result.context
+  }
   rationale.push(`VIX ${vixLevel.toFixed(1)}: ×${vixMult} (${vixContext})`)
-  
+
   // Get VIX spike adjustment
   const spikeAdj = calculateVIXSpikeAdjustment(vixLevel, previousVixLevel, vixUpdateMinutes)
   if (spikeAdj !== 0) {
     rationale.push(`VIX spike adjustment: ${spikeAdj > 0 ? '+' : ''}${spikeAdj}`)
   }
-  
-  // Get activity baseline
-  const activity = getActivityBaseline(events.length, isEarningsSeason, isFOMCWeek)
-  rationale.push(`Activity baseline: ${activity.baseline} (${activity.isHighIV ? 'High IV' : 'Low IV'})`)
-  
+
+  // Get activity baseline (using config thresholds)
+  const isHighIV = events.length >= sc.highIVEventThreshold || isEarningsSeason || isFOMCWeek
+  const activityBaseline = isHighIV ? sc.highIVBaseline : sc.lowIVBaseline
+  rationale.push(`Activity baseline: ${activityBaseline} (${isHighIV ? 'High IV' : 'Low IV'})`)
+
   // Calculate stacked score from events
   let score: number
   let synergy = false
-  
+
   if (events.length === 0) {
-    // No events - use VIX baseline
-    score = getNoEventBaseline(vixLevel)
+    // No events - use VIX baseline (config divisor)
+    score = Math.min(sc.maxScore, vixLevel / sc.noEventBaselineDivisor)
     rationale.push(`No events - VIX baseline: ${score.toFixed(1)}`)
   } else {
     const stacked = calculateStackedScore(events, now)
     score = stacked.score
     synergy = stacked.synergy
-    
+
     if (synergy) {
-      rationale.push('Synergy boost applied (events <30 min apart): ×1.2')
+      rationale.push(`Synergy boost applied (events <${sc.synergyWindowMinutes} min apart): ×${sc.synergyMultiplier}`)
     }
     rationale.push(`Stacked events score: ${score.toFixed(2)}`)
   }
-  
+
   // Apply session multiplier
   score *= session.multiplier
   rationale.push(`After session multiplier: ${score.toFixed(2)}`)
-  
+
   // Apply VIX multiplier
   score *= vixMult
   rationale.push(`After VIX multiplier: ${score.toFixed(2)}`)
-  
+
   // Add VIX spike adjustment
   score += spikeAdj
-  
-  // Add spillover from previous session
+
+  // Add spillover from previous session (config factor)
   if (previousSessionScore > 0) {
-    const spillover = calculateSpillover(previousSessionScore)
+    const spillover = previousSessionScore * sc.spilloverFactor
     score += spillover
     rationale.push(`Spillover from previous session: +${spillover.toFixed(2)}`)
   }
-  
-  // Ensure score is within bounds
-  score = Math.max(0, Math.min(10, score))
-  
+
+  // Ensure score is within bounds (config max)
+  score = Math.max(0, Math.min(sc.maxScore, score))
+
   // Add activity baseline floor
-  score = Math.max(score, activity.baseline)
-  
+  score = Math.max(score, activityBaseline)
+
   rationale.push(`Final score: ${score.toFixed(1)}`)
-  
+
   // Calculate implied points
   const impliedPoints = calculateImpliedPoints(vixLevel, currentPrice, instrument)
   rationale.push(`Implied move: ±${impliedPoints.adjustedPoints} points (${instrument}, β=${impliedPoints.beta})`)
-  
-  // Determine if alert needed
+
+  // Determine if alert needed (config threshold)
   let alert: string | undefined
-  if (score >= 8) {
+  if (score >= sc.alertScoreThreshold) {
     alert = "Get focused 'cause this one of them ones"
   }
   
@@ -610,7 +746,7 @@ export function calculateIVScoreV2(input: IVScoreInputV2): IVScoreResultV2 {
     session,
     vixMultiplier: vixMult,
     vixContext,
-    activityBaseline: activity.baseline,
+    activityBaseline,
     stackedEvents: events.length,
     synergy,
     rationale,
@@ -622,10 +758,15 @@ export function calculateIVScoreV2(input: IVScoreInputV2): IVScoreResultV2 {
 // EVENT TYPE CLASSIFIER (from headline parsing)
 // ============================================================================
 
+// Strict word-boundary test — prevents "recipe" matching "cpi", etc.
+function wordMatch(text: string, word: string): boolean {
+  return new RegExp(`\\b${word}\\b`, 'i').test(text)
+}
+
 export function classifyEventType(parsed: ParsedHeadline): string {
   const headline = (parsed.raw ?? '').toLowerCase()
   const eventType = parsed.eventType?.toLowerCase() ?? ''
-  
+
   // Black Swan detection
   if (headline.includes('halt') && (headline.includes('datacenter') || headline.includes('trading'))) {
     return 'datacenterHalt'
@@ -636,32 +777,34 @@ export function classifyEventType(parsed: ParsedHeadline): string {
   if (headline.includes('crisis') || headline.includes('collapse') || headline.includes('emergency')) {
     return 'majorCrisis'
   }
-  
+
   // Fed/Policy
-  if (eventType === 'feddecision' || headline.includes('fomc') || headline.includes('fed ')) {
+  if (eventType === 'feddecision' || wordMatch(headline, 'fomc') || /\bfed\b/.test(headline)) {
     if (headline.includes('powell')) return 'powellSpeak'
     return 'fedDecision'
   }
-  
+
   // Geopolitical
   if (headline.includes('tariff')) return 'tariffs'
-  if (headline.includes('china') && headline.includes('trade')) return 'chinaTrade'
-  if (headline.includes('war') || headline.includes('attack') || headline.includes('missile')) return 'conflict'
+  if (headline.includes('china') && wordMatch(headline, 'trade')) return 'chinaTrade'
+  if (wordMatch(headline, 'war') || headline.includes('attack') || headline.includes('missile')) return 'conflict'
   if (eventType === 'geopolitical') return 'geopolitical'
-  
-  // Economic Data
-  if (eventType === 'cpiprint' || headline.includes('cpi')) return 'cpiPrint'
-  if (eventType === 'pceprint' || headline.includes('pce')) return 'pcePrint'
-  if (eventType === 'nfpprint' || headline.includes('nfp') || headline.includes('payrolls')) return 'nfpPrint'
-  if (headline.includes('jolts')) return 'jolts'
-  if (eventType === 'gdpprint' || headline.includes('gdp')) return 'gdpPrint'
-  if (headline.includes('ism')) return 'ismPrint'
-  
-  // Political Commentary
-  if (headline.includes('trump') || headline.includes('lutnick') || headline.includes('bessent')) {
+
+  // Economic Data — strict keyword gates (word boundaries prevent false positives)
+  if (eventType === 'cpiprint' || wordMatch(headline, 'cpi') || headline.includes('consumer price index')) return 'cpiPrint'
+  if (eventType === 'pceprint' || wordMatch(headline, 'pce') || headline.includes('personal consumption')) return 'pcePrint'
+  if (eventType === 'nfpprint' || wordMatch(headline, 'nfp') || headline.includes('payrolls') || headline.includes('non-farm')) return 'nfpPrint'
+  if (wordMatch(headline, 'jolts')) return 'jolts'
+  if (eventType === 'gdpprint' || wordMatch(headline, 'gdp') || headline.includes('gross domestic')) return 'gdpPrint'
+  if (wordMatch(headline, 'ism') || headline.includes('institute for supply management')) return 'ismPrint'
+
+  // Political Commentary — Senate/Congress/cabinet officials → commentary, NOT geopolitical
+  if (headline.includes('trump') || headline.includes('lutnick') || headline.includes('bessent')
+    || headline.includes('senate') || headline.includes('congress') || headline.includes('speaker')
+    || headline.includes('white house') || headline.includes('mnuchin')) {
     return 'politicalCommentary'
   }
-  
+
   // Earnings
   if (eventType === 'earnings' || headline.includes('earnings')) {
     // Check for Mag7
@@ -671,10 +814,10 @@ export function classifyEventType(parsed: ParsedHeadline): string {
     }
     return 'earningsMidCap'
   }
-  
+
   // Other
   if (headline.includes('merger') || headline.includes('acquisition')) return 'merger'
   if (headline.includes('retail sales')) return 'retailSales'
-  
+
   return 'other'
 }

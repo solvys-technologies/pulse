@@ -67,7 +67,7 @@ export function BoardroomThreadList({ onSelectThread, refreshKey }: BoardroomThr
         <button
           key={thread.id}
           onClick={() => onSelectThread(thread)}
-          className="w-full text-left p-3 rounded-lg bg-black/30 border border-[#D4AF37]/15 hover:border-[#D4AF37]/40 hover:bg-[#D4AF37]/5 transition-all group"
+          className="w-full text-left p-3 rounded-lg bg-black/30 border border-[var(--pulse-accent)]/15 hover:border-[var(--pulse-accent)]/40 hover:bg-[var(--pulse-accent)]/5 transition-all group"
         >
           {/* Title */}
           <div className="flex items-start justify-between gap-2 mb-2">
@@ -85,12 +85,12 @@ export function BoardroomThreadList({ onSelectThread, refreshKey }: BoardroomThr
 
           {/* Participants */}
           <div className="flex items-center gap-1.5 mb-2">
-            <Users className="w-3 h-3 text-[#D4AF37]/60" />
+            <Users className="w-3 h-3 text-[var(--pulse-accent)]/60" />
             <div className="flex gap-1 flex-wrap">
               {thread.participants.slice(0, 5).map((p) => (
                 <span
                   key={p}
-                  className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#D4AF37]/10 text-[#D4AF37]/80 border border-[#D4AF37]/15"
+                  className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--pulse-accent)]/10 text-[var(--pulse-accent)]/80 border border-[var(--pulse-accent)]/15"
                 >
                   {p}
                 </span>
@@ -113,8 +113,8 @@ export function BoardroomThreadList({ onSelectThread, refreshKey }: BoardroomThr
             </div>
             {thread.meetingNotes && (
               <div className="flex items-center gap-1">
-                <FileText className="w-3 h-3 text-[#D4AF37]/50" />
-                <span className="text-[#D4AF37]/50">notes</span>
+                <FileText className="w-3 h-3 text-[var(--pulse-accent)]/50" />
+                <span className="text-[var(--pulse-accent)]/50">notes</span>
               </div>
             )}
           </div>

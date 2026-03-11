@@ -24,8 +24,8 @@ export default function MainContent({ activeTab, onOpenMissionControl, missionCo
 
   return (
     <div className="flex-1 flex flex-col bg-black">
-      <div className="h-14 bg-[#050500] border-b border-zinc-900 flex items-center justify-between px-6">
-        <h2 className="text-sm font-medium text-[#D4AF37] tracking-wider uppercase">
+      <div className="h-14 bg-[var(--pulse-bg)] border-b border-zinc-900 flex items-center justify-between px-6">
+        <h2 className="text-sm font-medium text-[var(--pulse-accent)] tracking-wider uppercase">
           {activeTab === "feed" && "System Feed"}
           {activeTab === "chat" && "AI Analysis"}
           {activeTab === "news" && "Market News & Events"}
@@ -45,7 +45,7 @@ export default function MainContent({ activeTab, onOpenMissionControl, missionCo
           {!missionControlOpen && (
             <button
               onClick={onOpenMissionControl}
-              className="flex items-center gap-2 px-3 py-1.5 rounded bg-[#D4AF37]/10 hover:bg-[#D4AF37]/20 text-[#D4AF37] text-xs transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 rounded bg-[var(--pulse-accent)]/10 hover:bg-[var(--pulse-accent)]/20 text-[var(--pulse-accent)] text-xs transition-colors"
             >
               <LayoutDashboard className="w-4 h-4" />
               <span>Mission Control</span>

@@ -10,8 +10,16 @@ const actionPattern =
   /(FED|ECB|BOE|BOJ|PBOC|POWELL|YELLEN|TREASURY|CONGRESS|CHINA|US|UK|EU|GERMANY|JAPAN|OPEC)\s+(raises|cuts|hikes|slashes|holds|signals|warns|confirms)\s+([\w\s%]+?)(?:\s+by\s+([\d.,]+)\s*(bps|%|points))?(?=$|\.)/i
 
 const symbolRegex = /\$[A-Z]{1,5}\b/g
-export const LEVEL4_EMOJIS = ['⚠️', '🔴']
+export const LEVEL4_EMOJIS = ['⚠️', '🔴', '🚨']
 export const MAJOR_MACRO_PRINTS = ['cpiPrint', 'ppiPrint', 'nfpPrint', 'gdpPrint', 'fedDecision']
+
+// Financial Juice emoji tiers — used by fj-emoji-filter.ts and for consistent reference
+export const FJ_EMOJI_TIERS = {
+  critical: ['🔴'],
+  high: ['⚠️', '🚨'],
+  medium: ['🟡', '🟠'],
+  low: ['🔵'],
+} as const
 
 export function hasLevel4Emoji(text: string): boolean {
   return LEVEL4_EMOJIS.some((emoji) => text.includes(emoji))
