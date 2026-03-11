@@ -330,6 +330,8 @@ export class RiskFlowService {
             category: item.source || '',
             tags: item.tags || [],
             urgency: item.urgency || 'normal',
+            priceBrainScore: item.priceBrainScore ?? undefined,
+            authorHandle: item.authorHandle ?? undefined,
           };
         }),
         total: response.total ?? items.length,
@@ -1142,6 +1144,25 @@ export class JournalService {
   }
 }
 
+// Blindspots Service
+export interface BlindspotItem {
+  id: number;
+  text: string;
+  severity: 'high' | 'medium' | 'low';
+}
+
+export class BlindspotsService {
+  constructor(private client: ApiClient) {}
+
+  async getBlindspots(): Promise<{ blindspots: BlindspotItem[]; source: string }> {
+    try {
+      return await this.client.get<{ blindspots: BlindspotItem[]; source: string }>('/api/blindspots');
+    } catch {
+      return { blindspots: [], source: 'error' };
+    }
+  }
+}
+
 // Main Backend Client Interface
 export interface BackendClient {
   account: AccountService;
@@ -1165,6 +1186,7 @@ export interface BackendClient {
   marketData: MarketDataService;
   mcp: McpService;
   journal: JournalService;
+  blindspots: BlindspotsService;
 }
 
 // Create backend client from API client
@@ -1191,5 +1213,6 @@ export function createBackendClient(client: ApiClient): BackendClient {
     marketData: new MarketDataService(client),
     mcp: new McpService(client),
     journal: new JournalService(client),
+    blindspots: new BlindspotsService(client),
   };
 }

@@ -4,6 +4,7 @@
  * Day 17 - Phase 5 Integration
  */
 
+// [claude-code 2026-03-11] Integrated point estimator for commentary point ranges + VIX feed
 // [claude-code 2026-03-10] Integrated twitter-cli (FJ emoji-filtered) as secondary social feed source
 // [claude-code 2026-03-10] Default minMacroLevel lowered 3→2 (Medium+ threshold per Track 1 spec)
 import type { FeedItem, FeedResponse, FeedFilters, NewsSource, UrgencyLevel, SentimentDirection, MacroLevel } from '../../types/riskflow.js';
@@ -18,6 +19,8 @@ import { fetchPolymarket } from '../polymarket-service.js';
 import type { PolymarketMarket } from '../../types/polymarket.js';
 import type { NewsSource as AnalysisNewsSource } from '../../types/news-analysis.js';
 import { isTwitterCliInstalled, pollTwitterForEconNews, getWarmCacheItems } from '../twitter-cli/index.js';
+import { estimatePoints } from '../market-data/point-estimator.js';
+import { fetchVIX } from '../vix-service.js';
 
 const MAX_FEED_ITEMS = 50;
 const isDev = process.env.NODE_ENV !== 'production';
@@ -97,7 +100,7 @@ async function enrichWithAnalysis(item: FeedItem): Promise<FeedItem> {
   try {
     const analysisSource = mapToAnalysisSource(item.source);
     const analyzed = await analyzeHeadline(item.headline, analysisSource);
-    
+
     // Calculate IV score using parsed data
     const ivResult = calculateIVScore({
       parsed: analyzed.parsed,
@@ -105,7 +108,27 @@ async function enrichWithAnalysis(item: FeedItem): Promise<FeedItem> {
       timestamp: new Date(item.publishedAt),
     });
 
-    const enriched = {
+    // Compute point estimation from IV score × live VIX
+    let priceBrainScore: FeedItem['priceBrainScore'] = undefined;
+    if (ivResult.score >= 2) {
+      try {
+        const vixData = await fetchVIX();
+        const pts = estimatePoints(ivResult.score, vixData.level, '/ES');
+        const sentimentMap: Record<string, 'Bullish' | 'Bearish' | 'Neutral'> = {
+          bullish: 'Bullish', bearish: 'Bearish', neutral: 'Neutral',
+        };
+        priceBrainScore = {
+          sentiment: sentimentMap[ivResult.sentiment] ?? 'Neutral',
+          classification: 'Neutral',
+          impliedPoints: pts.scaledPoints,
+          instrument: '/ES',
+        };
+      } catch {
+        // VIX unavailable — skip point estimation
+      }
+    }
+
+    const enriched: FeedItem = {
       ...item,
       symbols: analyzed.parsed.symbols.length > item.symbols.length
         ? analyzed.parsed.symbols
@@ -118,6 +141,7 @@ async function enrichWithAnalysis(item: FeedItem): Promise<FeedItem> {
       // Preserve item's original macroLevel if it was explicitly set higher (e.g. from FJ keyword classifier)
       macroLevel: Math.max(ivResult.macroLevel, item.macroLevel ?? 1) as MacroLevel,
       analyzedAt: new Date().toISOString(),
+      priceBrainScore,
     };
 
     if (enriched.macroLevel === 4) {

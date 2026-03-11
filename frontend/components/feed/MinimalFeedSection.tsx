@@ -76,7 +76,7 @@ export function MinimalFeedSection({
       <div className="h-full flex items-center justify-center p-4 relative bg-[var(--pulse-surface)]">
         <div className="text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
-            <div className="text-xs text-[var(--pulse-accent)]/60">The Tape</div>
+            <div className="text-xs text-[var(--pulse-accent)]/60">RiskFlow</div>
             {unreadCount > 0 && (
               <div className="backdrop-blur-sm bg-[var(--pulse-accent)]/20 border border-[var(--pulse-accent)]/40 rounded px-1.5 py-0.5">
                 <span className="text-[10px] font-mono text-[var(--pulse-accent)]">{unreadCount}</span>
@@ -101,7 +101,7 @@ export function MinimalFeedSection({
     <div className="h-full flex flex-col">
       <div className="h-12 flex items-center justify-between px-3 border-b border-[var(--pulse-accent)]/20">
         <div className="flex items-center gap-2">
-          <h2 className="text-sm font-semibold text-[var(--pulse-accent)]">The Tape</h2>
+          <h2 className="text-sm font-semibold text-[var(--pulse-accent)]">RiskFlow</h2>
           {unreadCount > 0 && (
             <div className="backdrop-blur-sm bg-[var(--pulse-accent)]/20 border border-[var(--pulse-accent)]/40 rounded px-1.5 py-0.5">
               <span className="text-[10px] font-mono text-[var(--pulse-accent)]">{unreadCount}</span>

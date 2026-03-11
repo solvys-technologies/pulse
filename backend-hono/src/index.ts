@@ -18,6 +18,7 @@ import { startNotionPoller } from './services/notion-poller.js';
 import { startEconEnricher } from './services/cron/econ-enricher.js';
 import { startEconTwitterPoller } from './services/twitter-cli/index.js';
 import { initClaudeSDK } from './services/claude-sdk/process-manager.js';
+import { startVIXPolling } from './services/vix-service.js';
 
 const app = new Hono();
 const healthService = createHealthService();
@@ -75,6 +76,9 @@ serve({ fetch: app.fetch, port: config.PORT });
 
 console.log(`[API] Server started on port ${config.PORT}`);
 console.log(`[API] Environment: ${config.NODE_ENV}`);
+
+// Start VIX polling (Yahoo Finance, 60s interval — feeds IV score + point estimator)
+startVIXPolling();
 
 // Start background feed poller for real-time Level 4 detection
 startFeedPoller();

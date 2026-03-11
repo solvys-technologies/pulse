@@ -1,12 +1,40 @@
 // [claude-code 2026-02-26] Zen layout uses a separate dockable PsychAssist widget.
 // [claude-code 2026-03-11] T2: FloatingWidget now accepts IVScoreResponse from backend
+// [claude-code 2026-03-11] Toast notifications with source icons + implied points
 import { useState, useEffect, useRef } from 'react';
 import { IVScoreCard } from '../IVScoreCard';
 import { EmotionalResonanceMonitor } from '../mission-control/EmotionalResonanceMonitor';
 import { useBackend } from '../../lib/backend';
 import type { RiskFlowItem } from '../../types/api';
 import type { IVScoreResponse } from '../../types/market-data';
-import { X, Trash2 } from 'lucide-react';
+import { X, Trash2, TrendingUp } from 'lucide-react';
+
+function XLogo({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-label="X">
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+    </svg>
+  );
+}
+
+function NotionLogo({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-label="Notion">
+      <path d="M4.459 4.208c.746.606 1.026.56 2.428.466l13.215-.793c.28 0 .047-.28-.046-.326L18.45 2.29c-.42-.326-.98-.7-2.055-.607L3.62 2.87c-.466.046-.56.28-.374.466zm.793 3.08v13.904c0 .747.373 1.027 1.214.98l14.523-.84c.84-.046.933-.56.933-1.167V6.354c0-.606-.233-.933-.746-.886l-15.177.887c-.56.046-.747.326-.747.933zm14.337.745c.093.42 0 .84-.42.886l-.7.14v10.264c-.607.327-1.167.514-1.634.514-.747 0-.933-.234-1.494-.934l-4.577-7.186v6.952l1.447.327s0 .84-1.167.84l-3.22.187c-.093-.187 0-.653.327-.746l.84-.233V9.854L7.46 9.76c-.093-.42.14-1.026.793-1.073l3.453-.233 4.763 7.28v-6.44l-1.214-.14c-.093-.513.28-.886.747-.933zM2.667 1.21l13.728-1.027c1.68-.14 2.1.093 2.8.606l3.874 2.707c.466.326.606.746.606 1.26v15.7c0 .933-.326 1.493-1.494 1.586l-15.457.933c-.84.047-1.26-.093-1.727-.653L1.88 19.01c-.513-.653-.746-1.166-.746-1.86V2.89c0-.84.373-1.54 1.54-1.68z" />
+    </svg>
+  );
+}
+
+function ToastSourceIcon({ source, className }: { source: string; className?: string }) {
+  const s = source.toLowerCase();
+  if (s === 'twitter-cli' || s === 'twittercli' || s.includes('twitter') || s === 'financialjuice' || s === 'financial-juice') {
+    return <XLogo className={className} />;
+  }
+  if (s === 'notion-trade-idea' || s.includes('notion')) {
+    return <NotionLogo className={className} />;
+  }
+  return <span className={`font-bold text-[7px] uppercase ${className}`}>{source.charAt(0)}</span>;
+}
 
 type LayoutOption = 'tickers-only' | 'combined';
 
@@ -236,19 +264,30 @@ export function FloatingWidget({ ivData, ivLoading, layoutOption = 'combined', o
                 boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37), inset 0 1px 1px 0 rgba(255, 255, 255, 0.1)',
               }}
             >
-              <div className="flex items-start justify-between gap-2">
+              <div className="flex items-start gap-2">
+                <ToastSourceIcon source={newsItem.source} className="w-3.5 h-3.5 text-zinc-400 flex-shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0">
-                  <div className="text-[10px] text-[var(--pulse-accent)]/70 mb-0.5 drop-shadow-sm">{newsItem.source}</div>
-                  <h4 className="text-xs font-semibold text-gray-100 mb-1 drop-shadow-sm line-clamp-2">{newsItem.title}</h4>
+                  <h4 className="text-xs font-semibold text-gray-100 drop-shadow-sm line-clamp-2">{newsItem.title}</h4>
                   {newsItem.content && (
-                    <p className="text-[10px] text-gray-300/80 line-clamp-1 drop-shadow-sm">{newsItem.content}</p>
+                    <p className="text-[10px] text-gray-300/80 line-clamp-1 drop-shadow-sm mt-0.5">{newsItem.content}</p>
                   )}
-                  {newsItem.ivScore != null && typeof newsItem.ivScore === 'number' && (
-                    <div className="mt-1 text-[10px]">
-                      <span className="text-[var(--pulse-accent)] drop-shadow-sm">IV: </span>
-                      <span className="text-gray-200 drop-shadow-sm">{newsItem.ivScore.toFixed(1)}</span>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 mt-1">
+                    {newsItem.ivScore != null && typeof newsItem.ivScore === 'number' && newsItem.ivScore > 0 && (
+                      <div className="flex items-center gap-1 text-[10px]">
+                        <TrendingUp className="w-2.5 h-2.5 text-[var(--pulse-accent)]" />
+                        <span className="text-[var(--pulse-accent)] font-medium drop-shadow-sm">
+                          ±{newsItem.ivScore.toFixed(0)} pts
+                        </span>
+                      </div>
+                    )}
+                    {newsItem.impact && (
+                      <span className={`text-[9px] uppercase tracking-wider font-semibold ${
+                        newsItem.impact === 'high' ? 'text-red-400' : newsItem.impact === 'medium' ? 'text-yellow-400' : 'text-zinc-500'
+                      }`}>
+                        {newsItem.impact}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <button
                   onClick={() => dismissNotification(newsItem.notificationId)}

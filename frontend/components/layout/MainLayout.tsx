@@ -45,6 +45,7 @@ import { SessionCountdownWidget } from '../mission-control/SessionCountdownWidge
 import { RegimeMini } from '../mission-control/RegimeMini';
 import { SessionCalendarMini } from '../mission-control/SessionCalendarMini';
 import { WidgetArrangeMenu } from '../mission-control/WidgetArrangeMenu';
+import { BriefMiniWidget } from '../mission-control/BriefMiniWidget';
 import {
   DEFAULT_MISSION_WIDGET_ORDER,
   getMissionWidgetOrder,
@@ -67,7 +68,7 @@ function normalizeOrder<T extends string>(order: T[], defaults: readonly T[]): T
 
 // Main layout component - no authentication needed
 export function MainLayout() {
-  const { iframeUrls } = useSettings();
+  const { iframeUrls, selectedSymbol } = useSettings();
   const [activeTab, setActiveTab] = useState<NavTab>('executive');
   const [layoutEditMode, setLayoutEditMode] = useState(false);
   const [missionControlCollapsed, setMissionControlCollapsed] = useState(false);
@@ -213,7 +214,7 @@ export function MainLayout() {
   useEffect(() => {
     const fetchIVScore = async () => {
       try {
-        const data = await backend.marketData.getIVScore();
+        const data = await backend.marketData.getIVScore(selectedSymbol.symbol);
         setIvData(data);
       } catch (error) {
         console.error('[IV] Failed to fetch IV score:', error);
@@ -223,9 +224,9 @@ export function MainLayout() {
     };
 
     fetchIVScore();
-    const interval = setInterval(fetchIVScore, 300000);
+    const interval = setInterval(fetchIVScore, 60_000);
     return () => clearInterval(interval);
-  }, [backend]);
+  }, [backend, selectedSymbol.symbol]);
 
   // Fetch account data for combined panel collapsed state
   useEffect(() => {
@@ -278,7 +279,7 @@ export function MainLayout() {
   // Determine layout based on TopStepX state and layout option
   const showMissionControl = topStepXEnabled && missionControlPosition !== 'floating';
   const showTape = topStepXEnabled && tapePosition !== 'floating';
-  const showFloatingWidget = topStepXEnabled && layoutOption === 'tickers-only';
+  const showFloatingWidget = topStepXEnabled && (layoutOption === 'tickers-only' || (layoutOption === 'combined' && combinedPanelCollapsed));
   const showCombinedPanel = topStepXEnabled && layoutOption === 'combined';
 
   // Determine panel order based on position and layout option
@@ -330,6 +331,11 @@ export function MainLayout() {
       id: 'calendar' as const,
       label: 'Session Calendar',
       node: <SessionCalendarMini />,
+    },
+    brief: {
+      id: 'brief' as const,
+      label: 'Daily Brief',
+      node: <BriefMiniWidget />,
     },
   }), []);
 
@@ -466,7 +472,7 @@ export function MainLayout() {
   // When TopStepX is enabled, render panels based on layout option
   if (topStepXEnabled) {
     if (layoutOption === 'combined') {
-      // Combined panel: Mission Control + The Tape in one scroll (split, no overlap)
+      // Combined panel: Mission Control + RiskFlow in one scroll (split, no overlap)
       rightPanels.push(
         <div key="combined" className={`bg-[var(--pulse-surface)] border-l border-[var(--pulse-accent)]/20 transition-all duration-200 ${combinedPanelCollapsed ? 'w-16' : 'w-[380px]'}`}>
           <div className="h-full flex flex-col">
@@ -488,14 +494,14 @@ export function MainLayout() {
                     {missionControlContent(() => setCombinedPanelCollapsed(true))}
                   </div>
                 </section>
-                {/* The Tape: 50% when expanded, collapsed header when hidden */}
+                {/* RiskFlow: 50% when expanded, collapsed header when hidden */}
                 <section className={`${combinedTapeCollapsed ? 'flex-shrink-0' : 'h-1/2'} min-h-0 flex flex-col border-t border-[var(--pulse-accent)]/20`}>
                   <button
                     type="button"
                     onClick={() => setCombinedTapeCollapsed(!combinedTapeCollapsed)}
                     className="h-10 flex-shrink-0 flex items-center justify-between px-3 border-b border-[var(--pulse-accent)]/20 hover:bg-[var(--pulse-accent)]/5 transition-colors w-full text-left"
                   >
-                    <span className="text-[11px] font-semibold text-[var(--pulse-accent)] tracking-[0.2em] uppercase">The Tape</span>
+                    <span className="text-[11px] font-semibold text-[var(--pulse-accent)] tracking-[0.2em] uppercase">RiskFlow</span>
                     {combinedTapeCollapsed && riskFlowAlerts.length > 0 && (
                       <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500/30 text-red-400 text-[10px] font-bold">
                         {riskFlowAlerts.length}
@@ -747,7 +753,7 @@ export function MainLayout() {
         )}
         {showTapeNotification && (
           <PanelNotificationWidget
-            panelName="The Tape"
+            panelName="RiskFlow"
             onRestore={() => {
               setTapePosition('right');
               setShowTapeNotification(false);

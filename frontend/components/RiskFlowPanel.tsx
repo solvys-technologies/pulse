@@ -42,7 +42,7 @@ function MarketWatchLogo({ className }: { className?: string }) {
 
 function SourceIcon({ source, className }: { source: string; className?: string }) {
   const s = source.toLowerCase();
-  if (s === 'twitter-cli' || s === 'twittercli' || s.includes('twitter')) {
+  if (s === 'twitter-cli' || s === 'twittercli' || s.includes('twitter') || s === 'financialjuice' || s === 'financial-juice') {
     return <XLogo className={className} />;
   }
   if (s === 'notion-trade-idea' || s.includes('notion')) {
@@ -227,7 +227,6 @@ function AlertRow({
 }) {
   const sev = SEVERITY_CONFIG[alert.severity];
   const isHigh = alert.severity === 'high' || alert.severity === 'critical';
-  const showDirection = alert.direction && alert.direction !== 'Neutral';
 
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData('application/x-riskflow', JSON.stringify({
@@ -261,18 +260,9 @@ function AlertRow({
           {sev.label}
         </span>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
-            {showDirection && (
-              <span className={`text-[9px] font-bold tracking-wider ${
-                alert.direction === 'Bullish' ? 'text-emerald-500' : 'text-red-400'
-              }`}>
-                {alert.direction === 'Bullish' ? '\u25B2' : '\u25BC'}
-              </span>
-            )}
             <p className={`text-xs leading-snug font-medium line-clamp-3 break-words ${alert.severity === 'critical' ? 'text-orange-300' : isHigh ? 'text-red-300' : 'text-zinc-300'} group-hover:text-white transition-colors`}>
               {alert.headline}
             </p>
-          </div>
           <div className="flex items-center gap-2 mt-1">
             <SourceIcon source={alert.source} className="w-2.5 h-2.5 text-zinc-600" />
             <span className="text-[10px] text-zinc-600">{timeAgo(alert.publishedAt)}</span>
@@ -531,9 +521,6 @@ export default function RiskFlowPanel({
                         <SourceIcon source={item.source} className="w-2.5 h-2.5 text-zinc-500" />
                         <span className={`text-[9px] font-semibold tracking-wider ${sev.text}`}>
                           {sev.label}
-                        </span>
-                        <span className="text-[10px] text-zinc-500 uppercase tracking-wide">
-                          {item.source === 'notion-trade-idea' ? 'proposal' : item.source}
                         </span>
                         {item.cyclical && item.cyclical !== 'Neutral' && (
                           <CyclicalBadge classification={item.cyclical} />

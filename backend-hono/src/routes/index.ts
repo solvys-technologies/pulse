@@ -30,6 +30,7 @@ import { createMcpRoutes } from './mcp/index.js';
 import { createSettingsRoutes } from './settings/index.js';
 import { createTwentyFirstRoutes } from './twenty-first/index.js';
 import { createJournalRoutes } from './journal/index.js';
+import { createBlindspotsRoutes } from './blindspots.js';
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -48,6 +49,8 @@ export function registerRoutes(app: Hono): void {
   app.route('/api/market-data', createMarketDataRoutes());
   // Narrative scoring — LLM-scored catalyst candidates
   app.route('/api/narrative', createNarrativeRoutes());
+  // Blindspots — public, agent-controllable via ER monitoring
+  app.route('/api/blindspots', createBlindspotsRoutes());
 
   // Protected routes (auth required) — use base path so exact path (e.g. GET /api/account) is covered
   app.use('/api/account', authMiddleware);

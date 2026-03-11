@@ -27,7 +27,7 @@ interface SearchModalProps {
 
 const SECTIONS = [
   { id: 'executive', title: 'Executive Dashboard', tab: 'executive' },
-  { id: 'tape', title: 'Tape', tab: 'tape' },
+  { id: 'tape', title: 'RiskFlow Feed', tab: 'news' },
   { id: 'analysis', title: 'Analysis', tab: 'analysis' },
   { id: 'riskflow', title: 'RiskFlow', tab: 'riskflow' },
   { id: 'boardroom', title: 'Board Room', tab: 'boardroom' },

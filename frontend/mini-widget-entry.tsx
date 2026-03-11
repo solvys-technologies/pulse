@@ -5,6 +5,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { SettingsProvider } from './contexts/SettingsContext';
 import { FloatingWidget } from './components/layout/FloatingWidget';
 import { useBackend } from './lib/backend';
+import { useSettings } from './contexts/SettingsContext';
 import type { IVScoreResponse } from './types/market-data';
 import './index.css';
 
@@ -15,14 +16,15 @@ import './index.css';
  */
 function MiniWidgetApp() {
   const backend = useBackend();
+  const { selectedSymbol } = useSettings();
   const [ivData, setIvData] = useState<IVScoreResponse | null>(null);
   const [ivLoading, setIvLoading] = useState(true);
 
-  // Fetch blended IV score from backend
+  // Fetch blended IV score from backend — uses selected instrument from settings
   useEffect(() => {
     const fetchIVScore = async () => {
       try {
-        const data = await backend.marketData.getIVScore();
+        const data = await backend.marketData.getIVScore(selectedSymbol.symbol);
         setIvData(data);
       } catch (error) {
         console.error('[MiniWidget] Failed to fetch IV score:', error);
@@ -32,9 +34,9 @@ function MiniWidgetApp() {
     };
 
     fetchIVScore();
-    const interval = setInterval(fetchIVScore, 300000);
+    const interval = setInterval(fetchIVScore, 60_000);
     return () => clearInterval(interval);
-  }, [backend]);
+  }, [backend, selectedSymbol.symbol]);
 
   const handleClose = () => {
     // Hide the widget window via Electron

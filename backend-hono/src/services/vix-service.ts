@@ -1,6 +1,8 @@
+// [claude-code 2026-03-11] Replaced FMP with Yahoo Finance for VIX — 60s polling, no API key needed
 /**
  * VIX Service
  * Real-time VIX fetching with caching, spike detection, and multiplier logic
+ * Primary source: Yahoo Finance (no API key). Fallback: FMP if available.
  */
 
 export interface VIXData {
@@ -29,65 +31,101 @@ const STALE_THRESHOLD_MS = 15 * 60_000 // 15 minutes = stale
 const vixHistory: { level: number; timestamp: Date }[] = []
 const MAX_HISTORY = 15
 
+// Background polling
+let pollInterval: ReturnType<typeof setInterval> | null = null
+
+/**
+ * Start background VIX polling (60s interval).
+ * Call once at server startup.
+ */
+export function startVIXPolling(): void {
+  if (pollInterval) return
+  // Immediate first fetch
+  fetchVIX().catch(() => {})
+  pollInterval = setInterval(() => { fetchVIX().catch(() => {}) }, 60_000)
+  console.log('[VIX] Background polling started (60s interval)')
+}
+
+/**
+ * Fetch VIX from Yahoo Finance (primary) or FMP (fallback).
+ * Extracts price from Yahoo's v8 chart API — no API key required.
+ */
+async function fetchFromYahoo(): Promise<number | null> {
+  try {
+    const url = 'https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?range=1d&interval=1m'
+    const res = await fetch(url, {
+      signal: AbortSignal.timeout(5000),
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+    })
+    if (!res.ok) throw new Error(`Yahoo HTTP ${res.status}`)
+    const json = await res.json()
+    const meta = json?.chart?.result?.[0]?.meta
+    const price = meta?.regularMarketPrice
+    if (typeof price !== 'number' || price <= 0) throw new Error('Invalid Yahoo VIX price')
+    return price
+  } catch (err) {
+    console.warn('[VIX] Yahoo fetch failed:', err instanceof Error ? err.message : err)
+    return null
+  }
+}
+
+async function fetchFromFMP(): Promise<number | null> {
+  const fmpApiKey = process.env.FMP_API_KEY
+  if (!fmpApiKey) return null
+  try {
+    const res = await fetch(
+      `https://financialmodelingprep.com/api/v3/quote/%5EVIX?apikey=${fmpApiKey}`,
+      { signal: AbortSignal.timeout(5000) }
+    )
+    if (!res.ok) throw new Error(`FMP HTTP ${res.status}`)
+    const data = await res.json()
+    if (!Array.isArray(data) || data.length === 0 || typeof data[0]?.price !== 'number') {
+      throw new Error('Invalid FMP response')
+    }
+    return data[0].price
+  } catch (err) {
+    console.warn('[VIX] FMP fetch failed:', err instanceof Error ? err.message : err)
+    return null
+  }
+}
+
 /**
  * Fetch current VIX level
- * Uses FMP API if available, falls back to cached value
+ * Tries Yahoo Finance first, falls back to FMP, then cached/default value
  */
 export async function fetchVIX(): Promise<VIXData> {
   const now = new Date()
-  
+
   // Check cache first
   if (vixCache && (now.getTime() - vixCache.fetchedAt.getTime()) < CACHE_TTL_MS) {
     return buildVIXData(vixCache, now)
   }
-  
-  // Try to fetch fresh VIX
-  try {
-    const fmpApiKey = process.env.FMP_API_KEY
-    if (!fmpApiKey) {
-      console.warn('[VIX] No FMP_API_KEY set, using fallback')
-      return getFallbackVIX(now)
-    }
-    
-    const response = await fetch(
-      `https://financialmodelingprep.com/api/v3/quote/%5EVIX?apikey=${fmpApiKey}`,
-      { signal: AbortSignal.timeout(5000) }
-    )
-    
-    if (!response.ok) {
-      throw new Error(`FMP API error: ${response.status}`)
-    }
-    
-    const data = await response.json()
-    
-    if (!Array.isArray(data) || data.length === 0 || typeof data[0]?.price !== 'number') {
-      throw new Error('Invalid VIX response format')
-    }
-    
-    const newLevel = data[0].price
+
+  // Try Yahoo first (no API key needed), then FMP
+  const newLevel = await fetchFromYahoo() ?? await fetchFromFMP()
+
+  if (newLevel !== null) {
     const previousLevel = vixCache?.level ?? newLevel
-    
-    // Update cache
+
     vixCache = {
       level: newLevel,
       previousLevel,
       timestamp: now,
       fetchedAt: now,
     }
-    
-    // Add to history for spike detection
+
     vixHistory.push({ level: newLevel, timestamp: now })
     if (vixHistory.length > MAX_HISTORY) {
       vixHistory.shift()
     }
-    
+
     console.log(`[VIX] Fetched: ${newLevel.toFixed(2)} (prev: ${previousLevel.toFixed(2)})`)
-    
     return buildVIXData(vixCache, now)
-  } catch (error) {
-    console.error('[VIX] Fetch error:', error)
-    return getFallbackVIX(now)
   }
+
+  // All sources failed
+  console.error('[VIX] All sources failed')
+  return getFallbackVIX(now)
 }
 
 /**

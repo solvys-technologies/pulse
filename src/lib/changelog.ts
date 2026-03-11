@@ -9,6 +9,25 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-12T01:00:00',
+    agent: 'claude-code',
+    summary: 'Replace TradingView iframe calendar (X-Frame-Options blocked) with native EconCalendar: week picker, day tabs with beat/miss summaries, time-block grouping (Pre-Market/Session/After Hours), P/A/F column headers, importance filter, refresh button, EconTickerFooter. SessionCalendarList and SessionCalendarMini also replaced with native rendering using backend econ data. RiskFlow source icons (X/Notion SVGs), Tape→RiskFlow unification, Brief refresh + mini widget, agent-controllable BlindspotsWidget.',
+    files: [
+      'frontend/components/econ/EconCalendar.tsx',
+      'frontend/components/executive/SessionCalendarList.tsx',
+      'frontend/components/mission-control/SessionCalendarMini.tsx',
+      'frontend/components/RiskFlowPanel.tsx',
+      'frontend/components/feed/CompactRiskFlowCard.tsx',
+      'frontend/components/executive/ExpandableTapeItem.tsx',
+      'frontend/components/executive/ExecutiveDashboard.tsx',
+      'frontend/components/mission-control/BriefMiniWidget.tsx',
+      'frontend/components/mission-control/BlindspotsWidget.tsx',
+      'frontend/lib/layoutOrderStorage.ts',
+      'frontend/lib/services.ts',
+      'backend-hono/src/routes/blindspots.ts',
+    ],
+  },
+  {
     date: '2026-03-11T23:30:00',
     agent: 'claude-code',
     summary: 'Track 6 v7.7.7: TradingView-style session calendar redesign — EconCalendar.tsx gets P/A/F column headers on day groups. EconEventRow.tsx replaces importance dots with volume bars (height=importance 1-3), adds beat/miss indicators (green Check / red X via lucide), reorders columns to P/A/F, more row spacing. SessionCalendarList.tsx gets P/A/F headers + beat/miss check/X per event row. EconTickerFooter.tsx appends BEAT/MISS inline text with checkmark/X unicode to ticker insights.',

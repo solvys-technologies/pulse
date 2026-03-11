@@ -14,7 +14,7 @@ interface NavSidebarProps {
 }
 
 const NAV_ITEMS_MAP: Record<NavTabId, { id: NavTab; icon: typeof LayoutDashboard; label: string; description: string }> = {
-  executive: { id: 'executive', icon: LayoutDashboard, label: 'Dashboard', description: 'KPIs, calendar, The Tape' },
+  executive: { id: 'executive', icon: LayoutDashboard, label: 'Dashboard', description: 'KPIs, calendar, RiskFlow' },
   analysis: { id: 'analysis', icon: Sparkles, label: 'Chat', description: 'AI-powered trade analysis' },
   news: { id: 'news', icon: Newspaper, label: 'RiskFlow', description: 'Market news & events' },
   econ: { id: 'econ', icon: CalendarDays, label: 'Calendar', description: 'Economic calendar' },
@@ -237,23 +237,9 @@ export function NavSidebar({
     </div>
   );
 
-  // When TopStepX is enabled, sidebar floats over content on hover
+  // When TopStepX/iframe is enabled, sidebar is completely hidden — no hover zones, no trigger strips
   if (topStepXEnabled) {
-    return (
-      <div
-        className="fixed left-0 top-[56px] bottom-0 z-50"
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      >
-        {/* Hover trigger strip when collapsed */}
-        {!expanded && (
-          <div className="absolute left-0 top-0 bottom-0 w-3 bg-transparent" />
-        )}
-        <div className={`h-full transition-transform duration-200 ${expanded ? 'translate-x-0' : '-translate-x-full'}`}>
-          {sidebarContent}
-        </div>
-      </div>
-    );
+    return null;
   }
 
   // Normal sidebar

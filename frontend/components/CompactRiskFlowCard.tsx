@@ -85,13 +85,6 @@ function MiniCard({ alert, onDismiss, seen }: CompactRiskFlowCardProps) {
           }
         </span>
       )}
-      {alert.direction && alert.direction !== 'Neutral' && !isProposal && (
-        <span className={`text-[8px] font-bold ${
-          alert.direction === 'Bullish' ? 'text-emerald-500' : 'text-red-400'
-        }`}>
-          {alert.direction === 'Bullish' ? '\u25B2' : '\u25BC'}
-        </span>
-      )}
       <a
         href={alert.url}
         target="_blank"
@@ -169,13 +162,6 @@ function MinimalCard({
                 ? <TrendingDown className="w-3 h-3 text-zinc-400" />
                 : null
             }
-          </span>
-        )}
-        {alert.direction && alert.direction !== 'Neutral' && !isProposal && (
-          <span className={`text-[9px] font-bold mt-px ${
-            alert.direction === 'Bullish' ? 'text-emerald-500' : 'text-red-400'
-          }`}>
-            {alert.direction === 'Bullish' ? '\u25B2' : '\u25BC'}
           </span>
         )}
         <p className={`flex-1 min-w-0 text-[11px] leading-snug font-medium line-clamp-2 ${

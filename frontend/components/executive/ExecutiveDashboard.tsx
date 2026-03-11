@@ -11,8 +11,9 @@ import { SessionCalendarList } from './SessionCalendarList';
 import TradeIdeaModal from '../TradeIdeaModal';
 import { RegimeCard } from '../dashboard/RegimeCard';
 import { RegimeTrackerModal } from '../regimes/RegimeTrackerModal';
+import { RefreshCw } from 'lucide-react';
 
-const DASHBOARD_PAGES = ['Briefing', 'The Tape'];
+const DASHBOARD_PAGES = ['Briefing', 'RiskFlow'];
 
 export function ExecutiveDashboard() {
   const backend = useBackend();
@@ -22,6 +23,7 @@ export function ExecutiveDashboard() {
   const { items: scheduleItems, loaded: scheduleLoaded } = useSchedule();
   const [kpis, setKpis] = useState<ExecutiveKpi[]>([]);
   const [ntnLoaded, setNtnLoaded] = useState(false);
+  const [ntnRefreshing, setNtnRefreshing] = useState(false);
   const [kpisLoaded, setKpisLoaded] = useState(false);
 
   // Brief type based on time: Tale of the Tape (Sun + Mon<7AM), MDB (<11AM), ADB (11AM-5:29PM), PMDB (5:30PM+)
@@ -83,7 +85,20 @@ export function ExecutiveDashboard() {
     };
   }, [backend]);
 
-  // The Tape: same feed as RiskFlow panel and MinimalFeedSection (RiskFlowContext)
+  const refreshBrief = useCallback(async () => {
+    setNtnRefreshing(true);
+    try {
+      setBriefLabel(getBriefLabel());
+      const items = await backend.notion.getMdbBrief();
+      setNtnText(items[0]?.detail ?? '');
+    } catch (error) {
+      console.warn('[Dashboard] Brief refresh failed:', error);
+    } finally {
+      setNtnRefreshing(false);
+    }
+  }, [backend]);
+
+  // RiskFlow: same feed as RiskFlow panel and MinimalFeedSection (RiskFlowContext)
   const { alerts, markAllSeen, isSeen, notionPollStatus } = useRiskFlow();
   const [selectedIdea, setSelectedIdea] = useState<TradeIdeaDetail | null>(null);
   const [showRegimeTracker, setShowRegimeTracker] = useState(false);
@@ -151,7 +166,21 @@ export function ExecutiveDashboard() {
           <div className="shrink-0 grid grid-cols-1 xl:grid-cols-2 gap-6 mb-5" style={{ height: '380px' }}>
             {/* Need-to-Know Brief */}
             <div className="flex flex-col h-full min-h-0">
-              <KanbanTitle title={briefLabel} tone="gold" />
+              <KanbanTitle
+                title={briefLabel}
+                tone="gold"
+                headerRight={
+                  <button
+                    type="button"
+                    onClick={refreshBrief}
+                    disabled={ntnRefreshing}
+                    className="p-1 rounded hover:bg-[var(--pulse-accent)]/10 text-zinc-500 hover:text-[var(--pulse-accent)] transition-colors disabled:opacity-40"
+                    title="Refresh brief"
+                  >
+                    <RefreshCw className={`w-3 h-3 ${ntnRefreshing ? 'animate-spin' : ''}`} />
+                  </button>
+                }
+              />
               <textarea
                 value={ntnText}
                 readOnly
@@ -222,9 +251,9 @@ export function ExecutiveDashboard() {
             <RegimeCard onOpenTracker={() => setShowRegimeTracker(true)} />
           </div>
 
-          {/* Row 3: The Tape — fills remaining space, expandable items, recency fade */}
+          {/* Row 3: RiskFlow — fills remaining space, expandable items, recency fade */}
           <div className="flex-1 min-h-0 flex flex-col">
-            <KanbanTitle title="The Tape" tag="Alerts + Signals" tone="emerald" />
+            <KanbanTitle title="RiskFlow" tag="Alerts + Signals" tone="emerald" />
             <div className="mt-2 flex-1 min-h-0 overflow-y-auto pr-1 space-y-1.5">
               {tapeAlerts.length === 0 ? (
                 <div className="text-xs text-gray-500 px-1 py-4">No actions in the feed right now.</div>
@@ -255,9 +284,9 @@ export function ExecutiveDashboard() {
           </div>
         </div>
 
-        {/* Page 2: Full The Tape */}
+        {/* Page 2: Full RiskFlow */}
         <div data-dash-page="1" className="min-h-full snap-start p-5 flex flex-col">
-          <KanbanTitle title="The Tape" tag="Full Feed" tone="emerald" />
+          <KanbanTitle title="RiskFlow" tag="Full Feed" tone="emerald" />
           <div className="mt-3 flex-1 min-h-0 overflow-y-auto pr-1 space-y-1.5">
             {tapeAlerts.length === 0 ? (
               <div className="text-xs text-gray-500 px-1 py-8 text-center">No actions in the feed right now.</div>
