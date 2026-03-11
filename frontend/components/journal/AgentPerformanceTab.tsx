@@ -29,11 +29,12 @@ function ProposalRow({ proposal }: { proposal: NonNullable<JournalEntryItem['pro
     expired: 'text-gray-500',
   }[proposal.status];
 
-  const outcomeColor = {
+  const outcomeColors: Record<string, string> = {
     win: 'text-emerald-400',
     loss: 'text-red-400',
     breakeven: 'text-gray-400',
-  }[proposal.outcome ?? ''] ?? 'text-[var(--pulse-muted)]';
+  };
+  const outcomeColor = (proposal.outcome && outcomeColors[proposal.outcome]) ?? 'text-[var(--pulse-muted)]';
 
   return (
     <div className="flex items-center justify-between py-1.5 border-b border-[var(--pulse-accent)]/5 last:border-0">
