@@ -6,6 +6,7 @@ import { ToastProvider } from './contexts/ToastContext';
 import { GatewayProvider } from './contexts/GatewayContext';
 import { PulseAgentProvider } from './contexts/PulseAgentContext';
 import { RiskFlowProvider } from './contexts/RiskFlowContext';
+import { ContextBankProvider } from './contexts/ContextBankContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { MainLayout } from './components/layout/MainLayout';
 import { NotificationContainer } from './components/NotificationToast';
@@ -26,6 +27,7 @@ export default function App() {
           <GatewayProvider>
             <PulseAgentProvider>
               <RiskFlowProvider>
+              <ContextBankProvider>
               <ThreadProvider>
                 <div className="dark">
                   <style>{`
@@ -72,6 +74,7 @@ export default function App() {
                   <ToastContainer />
                 </div>
               </ThreadProvider>
+              </ContextBankProvider>
               </RiskFlowProvider>
             </PulseAgentProvider>
           </GatewayProvider>

@@ -14,6 +14,7 @@ import {
   handleGetProposalHistory,
   handleExpireProposals,
 } from './handlers.js'
+import { handleSignalIngest, handleGetSignals, handleAutopilotStatus } from './signal-ingest.js'
 
 export function createAutopilotRoutes(): Hono {
   const router = new Hono()
@@ -38,6 +39,15 @@ export function createAutopilotRoutes(): Hono {
 
   // POST /api/autopilot/expire - Expire old proposals (cron endpoint)
   router.post('/expire', handleExpireProposals)
+
+  // POST /api/autopilot/signal-ingest - Receive signal from QuantConnect/TradingView/manual
+  router.post('/signal-ingest', handleSignalIngest)
+
+  // GET /api/autopilot/signals - Recent signal log
+  router.get('/signals', handleGetSignals)
+
+  // GET /api/autopilot/status - Autopilot scheduler status
+  router.get('/status', handleAutopilotStatus)
 
   return router
 }

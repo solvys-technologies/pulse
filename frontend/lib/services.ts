@@ -556,6 +556,52 @@ export class RithmicService {
   }
 }
 
+// Autopilot Service
+export interface AutopilotStatusResponse {
+  enabled: boolean;
+  isRTH: boolean;
+  activeSession: string | null;
+  signalsToday: number;
+  tradesToday: number;
+  maxTradesPerDay: number;
+  dailyPnL: number;
+  dailyDrawdownLimit: number;
+  confidenceThreshold: number;
+}
+
+export class AutopilotService {
+  constructor(private client: ApiClient) {}
+
+  async getStatus(): Promise<AutopilotStatusResponse> {
+    return this.client.get<AutopilotStatusResponse>('/api/autopilot/status');
+  }
+
+  async getSignals(limit?: number): Promise<{ signals: any[]; total: number }> {
+    const suffix = limit ? `?limit=${limit}` : '';
+    return this.client.get(`/api/autopilot/signals${suffix}`);
+  }
+
+  async getPendingProposals(): Promise<{ proposals: any[]; total: number }> {
+    return this.client.get('/api/autopilot/proposals');
+  }
+
+  async acknowledgeProposal(proposalId: string, decision: 'approved' | 'rejected'): Promise<any> {
+    return this.client.post('/api/autopilot/acknowledge', { proposalId, decision });
+  }
+
+  async executeProposal(proposalId: string): Promise<any> {
+    return this.client.post('/api/autopilot/execute', { proposalId });
+  }
+
+  async getHistory(limit?: number, status?: string): Promise<{ proposals: any[]; total: number }> {
+    const query = new URLSearchParams();
+    if (limit) query.append('limit', limit.toString());
+    if (status) query.append('status', status);
+    const suffix = query.toString() ? `?${query.toString()}` : '';
+    return this.client.get(`/api/autopilot/history${suffix}`);
+  }
+}
+
 // Notifications Service
 export class NotificationsService {
   constructor(private client: ApiClient) { }
@@ -1226,6 +1272,40 @@ export class BlindspotsService {
   }
 }
 
+// Context Bank Service
+import type {
+  ContextBankSnapshot,
+  ContextBankMeta,
+  DeskReport,
+  ConsolidatedBrief,
+} from '../types/context-bank';
+
+export class ContextBankService {
+  constructor(private client: ApiClient) {}
+
+  async getSnapshot(version?: number): Promise<ContextBankSnapshot> {
+    const suffix = version ? `?version=${version}` : '';
+    return this.client.get<ContextBankSnapshot>(`/api/context-bank${suffix}`);
+  }
+
+  async getMeta(): Promise<ContextBankMeta> {
+    return this.client.get<ContextBankMeta>('/api/context-bank/meta');
+  }
+
+  async getDeskReports(): Promise<{ reports: DeskReport[]; count: number }> {
+    return this.client.get('/api/context-bank/desk-reports');
+  }
+
+  async getDeskReportHistory(desk: string, limit?: number): Promise<{ desk: string; reports: DeskReport[]; count: number }> {
+    const suffix = limit ? `?limit=${limit}` : '';
+    return this.client.get(`/api/context-bank/desk-reports/${desk}${suffix}`);
+  }
+
+  async getBrief(): Promise<{ brief: ConsolidatedBrief | null }> {
+    return this.client.get('/api/context-bank/brief');
+  }
+}
+
 // Main Backend Client Interface
 export interface BackendClient {
   account: AccountService;
@@ -1251,6 +1331,8 @@ export interface BackendClient {
   journal: JournalService;
   blindspots: BlindspotsService;
   agentPerformance: AgentPerformanceService;
+  contextBank: ContextBankService;
+  autopilot: AutopilotService;
 }
 
 // Create backend client from API client
@@ -1279,5 +1361,7 @@ export function createBackendClient(client: ApiClient): BackendClient {
     journal: new JournalService(client),
     blindspots: new BlindspotsService(client),
     agentPerformance: new AgentPerformanceService(client),
+    contextBank: new ContextBankService(client),
+    autopilot: new AutopilotService(client),
   };
 }

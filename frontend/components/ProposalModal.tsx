@@ -42,6 +42,7 @@ const STRATEGY_LABELS: Record<string, string> = {
   CHARGED_RIPPERS: "Charged Rippers",
   MEAN_REVERSION: "Mean Reversion",
   DISCRETIONARY: "Discretionary",
+  PLAYBOOK_SWEEP_RECLAIM: "Playbook Sweep",
 };
 
 export function ProposalModal({ proposal, onClose, onApprove, onReject }: ProposalModalProps) {

@@ -1,4 +1,3 @@
-// [claude-code 2026-03-11] Added OpenClaw agent init on startup (gateway warm-up)
 /**
  * Pulse API - Main Entry Point
  * Hono backend on Fly.io
@@ -19,7 +18,7 @@ import { startNotionPoller } from './services/notion-poller.js';
 import { startEconEnricher } from './services/cron/econ-enricher.js';
 import { startEconTwitterPoller } from './services/twitter-cli/index.js';
 import { initClaudeSDK } from './services/claude-sdk/process-manager.js';
-import { initOpenClawAgent } from './services/openclaw-handler.js';
+import { startAutopilotScheduler } from './services/autopilot/autopilot-scheduler.js';
 
 const app = new Hono();
 const healthService = createHealthService();
@@ -90,10 +89,10 @@ startEconEnricher();
 // Start econ-triggered twitter-cli poller (cookie-based, FJ emoji filtered)
 startEconTwitterPoller();
 
+// Start autopilot scheduler (30s cycle — proposal expiry, session detection)
+startAutopilotScheduler();
+
 // Initialize Claude SDK bridge (health check — non-blocking)
 initClaudeSDK().catch((err) => console.warn('[API] Claude SDK init failed (non-fatal):', err));
-
-// Initialize OpenClaw agent (warm up gateway — non-blocking)
-initOpenClawAgent().catch((err) => console.warn('[API] OpenClaw init failed (non-fatal):', err));
 
 export default app;

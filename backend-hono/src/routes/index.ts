@@ -32,6 +32,8 @@ import { createTwentyFirstRoutes } from './twenty-first/index.js';
 import { createJournalRoutes } from './journal/index.js';
 import { createBlindspotsRoutes } from './blindspots.js';
 import { systemic as systemicRoutes } from './systemic/index.js';
+import { createContextBankRoutes } from './context-bank/index.js';
+import { createAutopilotRoutes } from './autopilot/index.js';
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -54,6 +56,16 @@ export function registerRoutes(app: Hono): void {
   app.route('/api/blindspots', createBlindspotsRoutes());
   // Systemic risk — public, read-only (causal chains, historical rhyming, FRED data)
   app.route('/api/systemic', systemicRoutes);
+  // Context Bank — public, agents consume directly (unified snapshot + desk reports)
+  app.route('/api/context-bank', createContextBankRoutes());
+
+  // Autopilot — signal-ingest/status/signals are public (QC/TV webhooks), proposal mgmt needs auth
+  app.use('/api/autopilot/proposals', authMiddleware);
+  app.use('/api/autopilot/proposals/*', authMiddleware);
+  app.use('/api/autopilot/acknowledge', authMiddleware);
+  app.use('/api/autopilot/execute', authMiddleware);
+  app.use('/api/autopilot/history', authMiddleware);
+  app.route('/api/autopilot', createAutopilotRoutes());
 
   // Protected routes (auth required) — use base path so exact path (e.g. GET /api/account) is covered
   app.use('/api/account', authMiddleware);

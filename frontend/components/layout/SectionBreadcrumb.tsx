@@ -12,6 +12,7 @@ const TAB_META: Record<string, { label: string; parent?: string }> = {
   econ: { label: 'Economic Calendar' },
   narrative: { label: 'NarrativeFlow' },
   earnings: { label: 'Trading Journal' },
+  team: { label: 'Team' },
   settings: { label: 'Settings' },
 };
 
