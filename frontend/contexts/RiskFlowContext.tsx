@@ -196,9 +196,17 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   }, [pollBackendFeed]);
 
   // Merge: Notion (pinned) → Backend feed → RSS
+  // [claude-code 2026-03-11] 24h stalemate rule: drop items older than 24h on init/render
+  const STALE_CUTOFF_MS = 24 * 60 * 60 * 1000;
+  const now = Date.now();
+  const isFresh = (a: RiskFlowAlert) => {
+    if (!a.publishedAt) return true;
+    return now - new Date(a.publishedAt).getTime() < STALE_CUTOFF_MS;
+  };
+
   const seenBackendIds = new Set(notionAlerts.map((a) => a.id));
   const dedupedBackend = backendAlerts.filter((a) => !seenBackendIds.has(a.id));
-  const merged = [...notionAlerts, ...dedupedBackend, ...rssAlerts];
+  const merged = [...notionAlerts, ...dedupedBackend, ...rssAlerts].filter(isFresh);
   const visibleAlerts = merged.filter((a) => !dismissedIds.has(a.id));
   const highCount = visibleAlerts.filter((a) => a.severity === 'high' || a.severity === 'critical').length;
   const mediumCount = visibleAlerts.filter((a) => a.severity === 'medium').length;

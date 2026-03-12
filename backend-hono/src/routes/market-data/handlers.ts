@@ -1,8 +1,10 @@
 // [claude-code 2026-03-11] Market-data route handlers — FMP + Unusual Whales + blended IV score
+// [claude-code 2026-03-11] IV score now served from persistent ticker cache (decay never restarts)
 import type { Context } from 'hono';
 import { getMarketContext, fmpMarket, unusualWhales } from '../../services/market-data/index.js';
 import { calculateBlendedIVScore, classifyEventType } from '../../services/market-data/iv-scorer.js';
 import { estimatePoints } from '../../services/market-data/point-estimator.js';
+import { getCachedIVScore } from '../../services/market-data/iv-score-ticker.js';
 import type { StackedEvent } from '../../services/iv-scoring-v2.js';
 
 export async function handleQuote(c: Context) {
@@ -85,14 +87,30 @@ export async function handleContext(c: Context) {
   }
 }
 
-/** GET /api/market-data/iv-score — blended 60/40 VIX+headline IV score */
+/**
+ * GET /api/market-data/iv-score — blended 60/40 VIX+headline IV score
+ *
+ * Serves the cached ticker score (computed every 60s in background).
+ * Decay is continuous from event published_at — never restarts on backend restart.
+ * Falls back to live computation if ticker hasn't produced a score yet.
+ */
 export async function handleIVScore(c: Context) {
   try {
     const instrument = c.req.query('instrument') || '/ES';
     const priceParam = c.req.query('price');
     const currentPrice = priceParam ? parseFloat(priceParam) : undefined;
 
-    // Pull recent headline events from DB (last 2 hours, macroLevel >= 2)
+    // Serve from persistent ticker cache (preferred — decay is continuous)
+    const cached = getCachedIVScore();
+    if (cached && cached.instrument === instrument) {
+      return c.json({
+        ...cached.score,
+        points: cached.points,
+        instrument: cached.instrument,
+      });
+    }
+
+    // Fallback: live computation with extended event window (7 days for V3 decay)
     let events: StackedEvent[] = [];
     try {
       const { sql, isDatabaseAvailable } = await import('../../config/database.js');
@@ -100,10 +118,10 @@ export async function handleIVScore(c: Context) {
         const recentItems = await sql`
           SELECT headline, source, macro_level, iv_score, published_at, is_breaking
           FROM news_feed_items
-          WHERE published_at >= NOW() - INTERVAL '2 hours'
+          WHERE published_at >= NOW() - INTERVAL '7 days'
             AND macro_level >= 2
           ORDER BY published_at DESC
-          LIMIT 20
+          LIMIT 200
         `;
         events = recentItems.map((item: any) => {
           const parsed = { raw: item.headline, eventType: null, isBreaking: item.is_breaking };

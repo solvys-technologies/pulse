@@ -9,6 +9,25 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-11T22:00:00',
+    agent: 'claude-code',
+    summary: 'Phase 7: Agent performance auto-recording (polymarket-tracker, outcome-tracker, /api/agents/performance endpoint). IV Score persistence — runs as background ticker (60s), events use 7-day window (never restart decay), score cached to DB across restarts. RiskFlow 24h stalemate rule — items older than 24h filtered out on init. VIX spike popup replaced with pulsating border (red >22, orange 16-22, yellow 14-16). Frontend AgentPerformanceTab wired to combined futures+prediction performance data.',
+    files: [
+      'backend-hono/src/services/agents/polymarket-tracker.ts',
+      'backend-hono/src/services/agents/outcome-tracker.ts',
+      'backend-hono/src/services/market-data/iv-score-ticker.ts',
+      'backend-hono/src/routes/agents/handlers.ts',
+      'backend-hono/src/routes/agents/index.ts',
+      'backend-hono/src/routes/market-data/handlers.ts',
+      'backend-hono/src/index.ts',
+      'backend-hono/migrations/010_polymarket_predictions.sql',
+      'frontend/components/IVScoreCard.tsx',
+      'frontend/components/journal/AgentPerformanceTab.tsx',
+      'frontend/contexts/RiskFlowContext.tsx',
+      'frontend/lib/services.ts',
+    ],
+  },
+  {
     date: '2026-03-12T09:00:00',
     agent: 'claude-code',
     summary: 'RiskFlow full-feed overhaul: replaced source text with X/Notion SVG logos, removed Neutral bias display, right-justified cyclical/counter-cyclical badges, fixed point scoring (severity × tag multiplier). VIX spike notice shows once per session via sessionStorage. Removed floating VIX ticker in combined panels layout. Fixed Brief refresh button. Reverted all calendars (Dashboard, Mission Control, full tab) to TradingView widget embeds — reliable data, TV-style layout.',

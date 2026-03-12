@@ -31,6 +31,7 @@ import { createSettingsRoutes } from './settings/index.js';
 import { createTwentyFirstRoutes } from './twenty-first/index.js';
 import { createJournalRoutes } from './journal/index.js';
 import { createBlindspotsRoutes } from './blindspots.js';
+import { systemic as systemicRoutes } from './systemic/index.js';
 
 export function registerRoutes(app: Hono): void {
   // Public routes (no auth required)
@@ -51,6 +52,8 @@ export function registerRoutes(app: Hono): void {
   app.route('/api/narrative', createNarrativeRoutes());
   // Blindspots — public, agent-controllable via ER monitoring
   app.route('/api/blindspots', createBlindspotsRoutes());
+  // Systemic risk — public, read-only (causal chains, historical rhyming, FRED data)
+  app.route('/api/systemic', systemicRoutes);
 
   // Protected routes (auth required) — use base path so exact path (e.g. GET /api/account) is covered
   app.use('/api/account', authMiddleware);

@@ -1154,6 +1154,59 @@ export class JournalService {
   }
 }
 
+// Agent Performance Service (Track 7)
+export interface AgentPerformanceStatsItem {
+  agentName: string;
+  totalProposals: number;
+  accepted: number;
+  rejected: number;
+  expired: number;
+  executed: number;
+  wins: number;
+  losses: number;
+  breakeven: number;
+  winRate: number;
+  avgRR: number;
+  totalPnl: number;
+  bestTrade: number;
+  worstTrade: number;
+}
+
+export interface AgentPerformanceResponse {
+  futures: AgentPerformanceStatsItem[];
+  predictions: {
+    total: number;
+    resolved: number;
+    wins: number;
+    losses: number;
+    winRate: number;
+  };
+  combined: {
+    totalDecisions: number;
+    totalWins: number;
+    overallWinRate: number;
+    totalPnl: number;
+  };
+  timestamp: string;
+}
+
+export class AgentPerformanceService {
+  constructor(private client: ApiClient) {}
+
+  async getPerformance(days: number = 30): Promise<AgentPerformanceResponse> {
+    try {
+      return await this.client.get<AgentPerformanceResponse>(`/api/agents/performance?days=${days}`);
+    } catch {
+      return {
+        futures: [],
+        predictions: { total: 0, resolved: 0, wins: 0, losses: 0, winRate: 0 },
+        combined: { totalDecisions: 0, totalWins: 0, overallWinRate: 0, totalPnl: 0 },
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+}
+
 // Blindspots Service
 export interface BlindspotItem {
   id: number;
@@ -1197,6 +1250,7 @@ export interface BackendClient {
   mcp: McpService;
   journal: JournalService;
   blindspots: BlindspotsService;
+  agentPerformance: AgentPerformanceService;
 }
 
 // Create backend client from API client
@@ -1224,5 +1278,6 @@ export function createBackendClient(client: ApiClient): BackendClient {
     mcp: new McpService(client),
     journal: new JournalService(client),
     blindspots: new BlindspotsService(client),
+    agentPerformance: new AgentPerformanceService(client),
   };
 }

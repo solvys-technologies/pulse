@@ -4,10 +4,13 @@
  * Phase 6 - Day 25
  */
 
+// [claude-code 2026-03-11] Added performance endpoint for agent outcome tracking
 import type { Context } from 'hono'
 import { runAgentPipeline, runAnalystsOnly } from '../../services/agents/pipeline.js'
 import { getReports } from '../../services/agents/base-agent.js'
 import { getDebates } from '../../services/agents/debate-protocol.js'
+import { getCombinedPerformance } from '../../services/agents/outcome-tracker.js'
+import { getPredictionStats, getTrackedPredictions } from '../../services/agents/polymarket-tracker.js'
 import type { AgentType, AnalyzeRequest, GetReportsRequest } from '../../types/agents.js'
 
 /**
@@ -173,5 +176,44 @@ export async function handleGetStatus(c: Context) {
   } catch (error) {
     console.error('[Agents] Get status error:', error)
     return c.json({ error: 'Failed to get status' }, 500)
+  }
+}
+
+/**
+ * GET /api/agents/performance
+ * Get combined agent performance stats (futures + predictions)
+ */
+export async function handleGetPerformance(c: Context) {
+  try {
+    const days = parseInt(c.req.query('days') ?? '30', 10)
+    const performance = await getCombinedPerformance(Math.min(365, Math.max(1, days)))
+
+    return c.json({
+      ...performance,
+      timestamp: new Date().toISOString(),
+    })
+  } catch (error) {
+    console.error('[Agents] Get performance error:', error)
+    return c.json({ error: 'Failed to get performance' }, 500)
+  }
+}
+
+/**
+ * GET /api/agents/predictions
+ * Get tracked polymarket predictions
+ */
+export async function handleGetPredictions(c: Context) {
+  try {
+    const predictions = getTrackedPredictions()
+    const stats = getPredictionStats()
+
+    return c.json({
+      predictions,
+      stats,
+      timestamp: new Date().toISOString(),
+    })
+  } catch (error) {
+    console.error('[Agents] Get predictions error:', error)
+    return c.json({ error: 'Failed to get predictions' }, 500)
   }
 }

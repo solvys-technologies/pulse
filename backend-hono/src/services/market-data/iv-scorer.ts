@@ -1,11 +1,13 @@
-// [claude-code 2026-03-11] Blended IV score service — 60% VIX + 40% headline heat
+// [claude-code 2026-03-11] Blended IV score service — 60% VIX + 40% headline heat + systemic overlay
 // Provides a single 0-10 composite score for the /api/market-data/iv-score endpoint.
+// V3: adds systemic risk overlay (causal chains, historical rhyming, credit signals)
 
 import { fetchVIX, type VIXData } from '../vix-service.js';
 import { calculateIVScoreV2, classifyEventType, type StackedEvent } from '../iv-scoring-v2.js';
+import { getCachedAssessment } from '../systemic/risk-detector.js';
 
 export interface BlendedIVScore {
-  /** Composite 0-10 score (60% VIX component + 40% headline component) */
+  /** Composite 0-10 score (60% VIX component + 40% headline component + systemic overlay) */
   score: number;
   /** VIX-only component score (0-10) */
   vixComponent: number;
@@ -26,6 +28,22 @@ export interface BlendedIVScore {
   /** Human-readable rationale lines */
   rationale: string[];
   timestamp: string;
+  /** V3: Systemic risk overlay data */
+  systemic?: {
+    score: number;
+    overlay: number;
+    activeChains: number;
+    rhymeMatches: number;
+    creditSignals: number;
+    topRhyme?: {
+      crisisName: string;
+      crisisYear: number;
+      matchScore: number;
+      peakVix: number;
+      maxDrawdown: number;
+    };
+    rationale: string[];
+  };
 }
 
 const VIX_WEIGHT = 0.6;
@@ -106,9 +124,36 @@ export async function calculateBlendedIVScore(
   const blended = vixScore * effectiveVixWeight + headlineScore * effectiveHeadlineWeight;
   // VIX floor: elevated VIX guarantees minimum score (e.g. VIX 24 → vixScore 9 → floor 7)
   const vixFloor = Math.max(0, vixScore - 2);
-  const finalScore = Math.max(blended, vixFloor);
+  let finalScore = Math.max(blended, vixFloor);
+
+  // V3: Apply systemic risk overlay (up to +2.5 pts)
+  const systemicAssessment = getCachedAssessment();
+  let systemicData: BlendedIVScore['systemic'];
+
+  if (systemicAssessment && systemicAssessment.ivScoreOverlay > 0) {
+    finalScore += systemicAssessment.ivScoreOverlay;
+    rationale.push(`Systemic overlay: +${systemicAssessment.ivScoreOverlay.toFixed(1)} (${systemicAssessment.rationale.slice(0, 2).join('; ')})`);
+
+    const topRhyme = systemicAssessment.rhymeMatches[0];
+    systemicData = {
+      score: systemicAssessment.systemicScore,
+      overlay: systemicAssessment.ivScoreOverlay,
+      activeChains: systemicAssessment.activeChains.length,
+      rhymeMatches: systemicAssessment.rhymeMatches.length,
+      creditSignals: systemicAssessment.creditSignalCount,
+      topRhyme: topRhyme ? {
+        crisisName: topRhyme.crisisName,
+        crisisYear: topRhyme.crisisYear,
+        matchScore: topRhyme.matchScore,
+        peakVix: topRhyme.peakVix,
+        maxDrawdown: topRhyme.maxDrawdown,
+      } : undefined,
+      rationale: systemicAssessment.rationale,
+    };
+  }
+
   const clamped = Math.min(10, Math.max(0, Number(finalScore.toFixed(1))));
-  rationale.push(`Blended: (${vixScore.toFixed(1)} × ${effectiveVixWeight}) + (${headlineScore.toFixed(1)} × ${effectiveHeadlineWeight}) = ${blended.toFixed(1)}, floor ${vixFloor.toFixed(1)} → ${clamped}`);
+  rationale.push(`Blended: (${vixScore.toFixed(1)} × ${effectiveVixWeight}) + (${headlineScore.toFixed(1)} × ${effectiveHeadlineWeight}) = ${blended.toFixed(1)}, floor ${vixFloor.toFixed(1)}${systemicAssessment?.ivScoreOverlay ? ` + systemic ${systemicAssessment.ivScoreOverlay.toFixed(1)}` : ''} → ${clamped}`);
 
   return {
     score: clamped,
@@ -125,6 +170,7 @@ export async function calculateBlendedIVScore(
     eventCount: recentEvents.length,
     rationale,
     timestamp: new Date().toISOString(),
+    systemic: systemicData,
   };
 }
 

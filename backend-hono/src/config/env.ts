@@ -9,6 +9,7 @@ export interface EnvConfig {
   DATABASE_URL: string | undefined;
   CLERK_SECRET_KEY: string | undefined;
   VERCEL_AI_GATEWAY_API_KEY: string | undefined;
+  FRED_API_KEY: string | undefined;
 }
 
 export function getEnvConfig(): EnvConfig {
@@ -18,6 +19,7 @@ export function getEnvConfig(): EnvConfig {
     DATABASE_URL: process.env.DATABASE_URL,
     CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY,
     VERCEL_AI_GATEWAY_API_KEY: process.env.VERCEL_AI_GATEWAY_API_KEY,
+    FRED_API_KEY: process.env.FRED_API_KEY,
   };
 }
 

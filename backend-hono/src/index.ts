@@ -19,6 +19,10 @@ import { startEconEnricher } from './services/cron/econ-enricher.js';
 import { startEconTwitterPoller } from './services/twitter-cli/index.js';
 import { initClaudeSDK } from './services/claude-sdk/process-manager.js';
 import { startVIXPolling } from './services/vix-service.js';
+import { startSystemicRiskPolling } from './services/systemic/systemic-poller.js';
+import { startPolymarketTracking } from './services/agents/polymarket-tracker.js';
+import { startOutcomeTracking } from './services/agents/outcome-tracker.js';
+import { startIVScoreTicker } from './services/market-data/iv-score-ticker.js';
 
 const app = new Hono();
 const healthService = createHealthService();
@@ -80,6 +84,9 @@ console.log(`[API] Environment: ${config.NODE_ENV}`);
 // Start VIX polling (Yahoo Finance, 60s interval — feeds IV score + point estimator)
 startVIXPolling();
 
+// Start IV score ticker (60s, persists to DB — decay never restarts)
+startIVScoreTicker();
+
 // Start background feed poller for real-time Level 4 detection
 startFeedPoller();
 
@@ -91,6 +98,13 @@ startEconEnricher();
 
 // Start econ-triggered twitter-cli poller (cookie-based, FJ emoji filtered)
 startEconTwitterPoller();
+
+// Start systemic risk monitoring (causal chains, historical rhyming, FRED, credit signals)
+startSystemicRiskPolling(config.FRED_API_KEY);
+
+// Start agent performance tracking (polymarket predictions + proposal outcomes)
+startPolymarketTracking();
+startOutcomeTracking();
 
 // Initialize Claude SDK bridge (health check — non-blocking)
 initClaudeSDK().catch((err) => console.warn('[API] Claude SDK init failed (non-fatal):', err));
