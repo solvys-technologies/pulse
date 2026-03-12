@@ -1,4 +1,5 @@
 // [claude-code 2026-03-06] Dashboard regime preview card — shows top 3 active/upcoming regimes
+// [claude-code 2026-03-12] Replaced W/L with ORB bullish/bearish on bottom right, 12H NY time
 import { useState, useEffect, useMemo } from 'react';
 import { Clock, TrendingUp, TrendingDown, RotateCcw, Activity } from 'lucide-react';
 import { useRegimes } from '../../lib/regime-store';
@@ -70,12 +71,14 @@ export function RegimeCard({ onOpenTracker }: RegimeCardProps) {
                   {r.name}
                 </span>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <div className="w-12 h-1 bg-zinc-800 overflow-hidden">
-                    <div
-                      className={`h-full ${r.confidence >= 70 ? 'bg-emerald-500' : r.confidence >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`}
-                      style={{ width: `${r.confidence}%` }}
-                    />
-                  </div>
+                  {/* ORB bullish/bearish on bottom right */}
+                  <span className="flex items-center gap-0.5 text-[8px]">
+                    <TrendingUp className="w-2 h-2 text-emerald-400" />
+                    <span className="text-emerald-400">{r.record.bullishDays}</span>
+                    <span className="text-zinc-700">/</span>
+                    <span className="text-red-400">{r.record.bearishDays}</span>
+                    <TrendingDown className="w-2 h-2 text-red-400" />
+                  </span>
                   <span className="text-[8px] text-zinc-600 w-10 text-right">
                     {active ? getTimeRemaining(r, now) : getTimeRemaining(r, now).replace('starts in ', '')}
                   </span>

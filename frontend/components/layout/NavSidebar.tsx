@@ -106,7 +106,7 @@ export function NavSidebar({
   }, []);
 
   const orderedItems = order
-    .filter((id): id is NavTabId => id in NAV_ITEMS_MAP)
+    .filter((id): id is NavTabId => id in NAV_ITEMS_MAP && id !== 'chatroom')
     .map((tabId) => ({
       tabId,
       icon: NAV_ITEMS_MAP[tabId].icon,

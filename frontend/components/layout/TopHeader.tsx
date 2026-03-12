@@ -321,12 +321,12 @@ export function TopHeader({
               return wrapper(
                 <button
                   onClick={onTopStepXDisable}
-                  className={`px-2.5 h-8 rounded-lg text-xs font-medium bg-[var(--pulse-bg)] transition-colors flex items-center gap-1.5 ${
+                  className={`px-2.5 h-8 rounded-lg text-xs font-medium bg-[var(--pulse-bg)] border transition-colors flex items-center gap-1.5 ${
                     topStepXEnabled
-                      ? 'text-red-400 hover:bg-red-500/10'
-                      : 'text-zinc-600 opacity-40 hover:opacity-70 hover:bg-zinc-800/50'
+                      ? 'text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10'
+                      : 'text-zinc-500 border-zinc-700/50 hover:text-zinc-300 hover:bg-zinc-800/50'
                   }`}
-                  title={topStepXEnabled ? 'Power off iframe' : 'No active platform'}
+                  title={topStepXEnabled ? 'Hide iFrame layouts' : 'Show iFrame layouts'}
                 >
                   <Power className="w-3.5 h-3.5" />
                 </button>

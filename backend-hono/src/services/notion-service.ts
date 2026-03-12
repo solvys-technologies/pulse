@@ -147,14 +147,22 @@ export async function notionUpdatePage(
 // ── Public API ──────────────────────────────────────────────────────────────
 
 // Brief rotation schedule:
-//   MDB  (Morning Daily Brief)    — 12:00 AM to 10:59 AM
+//   MDB  (Morning Daily Brief)    — 7:00 AM to 10:59 AM (weekday)
 //   ADB  (Afternoon Daily Brief)  — 11:00 AM to 5:29 PM
 //   PMDB (Post-Market Daily Brief) — 5:30 PM to 11:59 PM
+//   TOTT (Tale of the Tape)       — Sunday 5:00 PM through Monday 6:59 AM
 export type BriefType = 'MDB' | 'ADB' | 'PMDB' | 'TOTT';
 
 export function getCurrentBriefType(): BriefType {
   const now = new Date();
-  const timeVal = now.getHours() * 60 + now.getMinutes();
+  const day = now.getDay(); // 0 = Sunday
+  const h = now.getHours();
+  const timeVal = h * 60 + now.getMinutes();
+
+  // TOTT: Sunday >= 17:00 through Monday < 07:00
+  if (day === 0 && timeVal >= 17 * 60) return 'TOTT';
+  if (day === 1 && h < 7) return 'TOTT';
+
   if (timeVal >= 17 * 60 + 30) return 'PMDB';
   if (timeVal >= 11 * 60) return 'ADB';
   return 'MDB';
@@ -268,7 +276,7 @@ export async function fetchMDBBrief(overrideType?: BriefType): Promise<MDBBriefI
       return _briefCache?.items ?? [];
     }
 
-    // Find briefs matching current type
+    // Find briefs matching current type — NO fallback to unrelated types
     const keywords = categoryKeywords[currentType];
     const matchingPages = pages.filter((page: any) => {
       const message = getPropText(page, 'Message').toUpperCase();
@@ -276,8 +284,14 @@ export async function fetchMDBBrief(overrideType?: BriefType): Promise<MDBBriefI
       return keywords.some((kw) => message.includes(kw) || category.includes(kw));
     });
 
-    // Single item: best match or most recent fallback
-    const bestPage = matchingPages.length > 0 ? matchingPages[0] : pages[0];
+    if (matchingPages.length === 0) {
+      // No matching brief for this time slot — return empty, never show a wrong brief type
+      _briefCache = { items: [], briefType: currentType, fetchedAt: Date.now() };
+      return [];
+    }
+
+    // Single item: the most recent matching brief only
+    const bestPage = matchingPages[0];
     const message = getPropText(bestPage, 'Message');
     const category = getPropText(bestPage, 'Category');
     const items: MDBBriefItem[] = [{

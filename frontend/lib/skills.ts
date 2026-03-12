@@ -1,6 +1,7 @@
 // [claude-code 2026-03-11] T5: added /stop command to skills list
 // [claude-code 2026-03-11] Added suggestion chip skills: mdb_report, tott, psych_eval, blindspots
-import { Globe, ShieldCheck, FileBarChart, GitBranch, Brain, Wrench, Activity, StopCircle, RefreshCw, BarChart3, CalendarCheck, Eye, type LucideIcon } from 'lucide-react';
+// [claude-code 2026-03-12] Added regimes skill for AI-generated regime creation/management
+import { Globe, ShieldCheck, FileBarChart, GitBranch, Brain, Wrench, Activity, StopCircle, RefreshCw, BarChart3, CalendarCheck, Eye, Clock, type LucideIcon } from 'lucide-react';
 
 export interface SkillDef {
   id: string;
@@ -25,6 +26,7 @@ export const SKILLS: readonly SkillDef[] = [
   { id: 'tott', label: 'Tale of the Tape', icon: CalendarCheck, color: '#A78BFA', description: 'Weekly summary — Tale of the Tape analysis', keywords: ['tott', 'tale', 'tape', 'weekly', 'summary'] },
   { id: 'psych_eval', label: 'Psych Eval', icon: Brain, color: '#E879F9', description: 'Full psychological and performance evaluation', keywords: ['psych', 'eval', 'evaluation', 'mental', 'tilt'] },
   { id: 'blindspots', label: 'Blindspots', icon: Eye, color: '#F59E0B', description: 'Update and review trading blindspot analysis', keywords: ['blindspot', 'blind', 'spot', 'risk', 'gaps'] },
+  { id: 'regimes', label: 'Regimes', icon: Clock, color: '#D4AF37', description: 'Create, manage, or analyze trading regimes', keywords: ['regime', 'session', 'window', 'institutional', 'orb', 'time'] },
 ] as const;
 
 export type SkillId = (typeof SKILLS)[number]['id'];

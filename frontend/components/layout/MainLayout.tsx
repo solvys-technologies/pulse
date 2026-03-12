@@ -189,6 +189,19 @@ export function MainLayout() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Listen for open-chat-skill events (e.g. from Regime Tracker AI Generate CTA)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.skillId) {
+        setShowAskHarp(true);
+        // ChatInterface will pick up the skill via its own listener
+      }
+    };
+    window.addEventListener('pulse:open-chat-skill', handler);
+    return () => window.removeEventListener('pulse:open-chat-skill', handler);
+  }, []);
+
   // Reset layout when TopStepX is toggled
   useEffect(() => {
     if (topStepXEnabled) {
@@ -601,7 +614,7 @@ export function MainLayout() {
       <TopHeader
         topStepXEnabled={topStepXEnabled}
         onTopStepXToggle={() => setTopStepXEnabled(true)}
-        onTopStepXDisable={() => setTopStepXEnabled(false)}
+        onTopStepXDisable={() => setTopStepXEnabled(prev => !prev)}
         selectedPlatform={selectedPlatform}
         onPlatformSelect={setSelectedPlatform}
         layoutOption={layoutOption}
@@ -790,7 +803,7 @@ export function MainLayout() {
         splitViewEnabled={splitBrowserView}
         onSplitViewToggle={() => setSplitBrowserView((v) => !v)}
         allowSplitView={layoutOption === 'tickers-only'}
-        onPowerOff={() => setTopStepXEnabled(false)}
+        onPowerOff={() => setTopStepXEnabled(prev => !prev)}
       />
 
       {/* Preload iframes — hidden, loads TopStepX + Research in background for instant tab switch */}

@@ -9,6 +9,35 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-12T06:00:00',
+    agent: 'claude-code',
+    summary: 'Regime Tracker: W/L→ORB bullish/bearish days, AI Generate CTA (opens chat with regimes skill), delete any regime, 12H NY time, active regimes shown in collapsed categories. Brief widget: scrollable full reports, AI generate button, comprehensive MDB/TOTT prompts (400-600w / 600-1000w), short ADB/PMDB. Added regimes skill to registry.',
+    files: [
+      'frontend/lib/regimes.ts',
+      'frontend/lib/regime-store.ts',
+      'frontend/lib/regime-time.ts',
+      'frontend/lib/skills.ts',
+      'frontend/lib/skillPrefixes.ts',
+      'frontend/components/regimes/RegimeTrackerModal.tsx',
+      'frontend/components/mission-control/RegimeMini.tsx',
+      'frontend/components/mission-control/BriefMiniWidget.tsx',
+      'frontend/components/dashboard/RegimeCard.tsx',
+      'frontend/components/ChatInterface.tsx',
+      'frontend/components/layout/MainLayout.tsx',
+      'backend-hono/src/routes/notion/index.ts',
+    ],
+  },
+  {
+    date: '2026-03-12T04:30:00',
+    agent: 'claude-code',
+    summary: 'IV scoring overhaul: VIX 24→score 9 (blended ~7), stubborn below VIX 16 (75/25 weights), VIX floor prevents dilution, geopolitical weight boosted 8→9, scoreToPoints steeper curve, Boardroom tab hidden.',
+    files: [
+      'backend-hono/src/services/market-data/iv-scorer.ts',
+      'backend-hono/src/services/analysis/iv-scorer.ts',
+      'frontend/components/layout/NavSidebar.tsx',
+    ],
+  },
+  {
     date: '2026-03-12T03:00:00',
     agent: 'claude-code',
     summary: 'Comprehensive onboarding: SetupGuideCard with status indicators on Dashboard, SETUP.md handoff guide, chat suggestion chips wired to skill system (mdb_report, tott, psych_eval, blindspots), configurable OpenClaw gateway port in Settings.',

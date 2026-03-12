@@ -28,13 +28,14 @@ export function ExecutiveDashboard() {
   const [kpisLoaded, setKpisLoaded] = useState(false);
   const [showSetupGuide, setShowSetupGuide] = useState(() => shouldShowSetupGuide());
 
-  // Brief type based on time: Tale of the Tape (Sun + Mon<7AM), MDB (<11AM), ADB (11AM-5:29PM), PMDB (5:30PM+)
+  // Brief type: TOTT (Sun>=17:00 through Mon<7AM), MDB (<11AM), ADB (11AM-5:29PM), PMDB (5:30PM+)
   const getBriefLabel = () => {
     const now = new Date();
     const day = now.getDay();
     const h = now.getHours();
-    if (day === 0 || (day === 1 && h < 7)) return 'Tale of the Tape';
     const t = h * 60 + now.getMinutes();
+    // TOTT: Sunday >= 17:00 through Monday < 07:00
+    if ((day === 0 && t >= 17 * 60) || (day === 1 && h < 7)) return 'Tale of the Tape';
     if (t >= 17 * 60 + 30) return 'Post-Market Brief';
     if (t >= 11 * 60) return 'Afternoon Brief';
     return 'Morning Brief';

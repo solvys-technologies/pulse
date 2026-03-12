@@ -78,6 +78,18 @@ function ChatInterfaceInner({ conversationId, clearConversationId, lastError, th
     runtime.append({ role: 'user', content: [{ type: 'text', text: finalText }] });
   }, [runtime]);
 
+  // Listen for external open-chat-skill events (e.g. from Regime Tracker AI Generate)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.skillId && detail?.prompt) {
+        handleSkillSend(detail.skillId, detail.prompt);
+      }
+    };
+    window.addEventListener('pulse:open-chat-skill', handler);
+    return () => window.removeEventListener('pulse:open-chat-skill', handler);
+  }, [handleSkillSend]);
+
   const handleNewChat = useCallback(() => {
     clearConversationId();
   }, [clearConversationId]);

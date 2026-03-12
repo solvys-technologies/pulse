@@ -33,18 +33,23 @@ const HEADLINE_WEIGHT = 0.4;
 
 /**
  * Map VIX level to a 0-10 score.
- * VIX 10 → ~2, VIX 15 → ~3, VIX 20 → ~5, VIX 30 → ~7, VIX 40 → ~8.5, VIX 50+ → 10
+ * Below VIX 16: stubborn, compressed (1.5-2.5 range)
+ * VIX 18-24: steep ramp (5-9)
+ * VIX 24+: elevated floor, VIX 24 → 9 so blended score hits ~7
  */
 function vixToScore(vix: number): number {
   if (vix <= 0) return 0;
   if (vix >= 50) return 10;
-  // Piecewise linear: [10→2, 15→3, 20→5, 30→7, 40→8.5, 50→10]
+  // Piecewise linear — stubborn below 16, steep above 18, ceiling above 30
   const breakpoints = [
-    { vix: 10, score: 2 },
-    { vix: 15, score: 3 },
-    { vix: 20, score: 5 },
-    { vix: 30, score: 7 },
-    { vix: 40, score: 8.5 },
+    { vix: 10, score: 1.5 },
+    { vix: 13, score: 2 },
+    { vix: 16, score: 2.5 },
+    { vix: 18, score: 5 },
+    { vix: 20, score: 6.5 },
+    { vix: 22, score: 8 },
+    { vix: 24, score: 9 },
+    { vix: 30, score: 9.5 },
     { vix: 50, score: 10 },
   ];
   if (vix <= breakpoints[0].vix) return breakpoints[0].score * (vix / breakpoints[0].vix);
@@ -93,10 +98,17 @@ export async function calculateBlendedIVScore(
     rationale.push('No recent headline events → headline component 0');
   }
 
+  // Dynamic weights: below VIX 16, headlines have less impact (market is "stubborn")
+  const effectiveVixWeight = vixData.level < 16 ? 0.75 : VIX_WEIGHT;
+  const effectiveHeadlineWeight = vixData.level < 16 ? 0.25 : HEADLINE_WEIGHT;
+
   // Blend
-  const blended = vixScore * VIX_WEIGHT + headlineScore * HEADLINE_WEIGHT;
-  const clamped = Math.min(10, Math.max(0, Number(blended.toFixed(1))));
-  rationale.push(`Blended: (${vixScore.toFixed(1)} × ${VIX_WEIGHT}) + (${headlineScore.toFixed(1)} × ${HEADLINE_WEIGHT}) = ${clamped}`);
+  const blended = vixScore * effectiveVixWeight + headlineScore * effectiveHeadlineWeight;
+  // VIX floor: elevated VIX guarantees minimum score (e.g. VIX 24 → vixScore 9 → floor 7)
+  const vixFloor = Math.max(0, vixScore - 2);
+  const finalScore = Math.max(blended, vixFloor);
+  const clamped = Math.min(10, Math.max(0, Number(finalScore.toFixed(1))));
+  rationale.push(`Blended: (${vixScore.toFixed(1)} × ${effectiveVixWeight}) + (${headlineScore.toFixed(1)} × ${effectiveHeadlineWeight}) = ${blended.toFixed(1)}, floor ${vixFloor.toFixed(1)} → ${clamped}`);
 
   return {
     score: clamped,

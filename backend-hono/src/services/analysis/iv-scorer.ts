@@ -15,7 +15,7 @@ const EVENT_WEIGHTS: Record<string, number> = {
   nfpPrint: 7,
   gdpPrint: 6,
   earnings: 5,
-  geopolitical: 8,
+  geopolitical: 9,
   bankingCrisis: 9,
   technicalBreak: 4,
   economicData: 5,
@@ -187,17 +187,17 @@ function getEasternHour(date: Date): number {
  */
 function scoreToPoints(score: number): { es: number; nq: number } {
   if (score <= 0) return { es: 0, nq: 0 }
-  
-  // Non-linear scaling for higher scores
+
+  // Non-linear scaling — steeper for high-impact events (geopolitical, crisis)
   let esPoints: number
   if (score <= 3) {
-    esPoints = score * 5
+    esPoints = score * 8
   } else if (score <= 6) {
-    esPoints = 15 + (score - 3) * 10
+    esPoints = 24 + (score - 3) * 15
   } else if (score <= 8) {
-    esPoints = 45 + (score - 6) * 20
+    esPoints = 69 + (score - 6) * 30
   } else {
-    esPoints = 85 + (score - 8) * 40
+    esPoints = 129 + (score - 8) * 50
   }
 
   // NQ typically moves ~1.8x ES

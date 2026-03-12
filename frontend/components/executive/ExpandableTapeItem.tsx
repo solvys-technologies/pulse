@@ -42,6 +42,19 @@ function timeAgo(iso: string): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+/** Infer Bullish/Bearish from alert data or headline keywords */
+function inferDirection(alert: RiskFlowAlert): 'Bullish' | 'Bearish' {
+  if (alert.direction === 'Bullish' || alert.direction === 'Bearish') return alert.direction;
+  if (alert.tradeIdea) return alert.tradeIdea.direction === 'long' ? 'Bullish' : 'Bearish';
+  const lower = (alert.headline + ' ' + (alert.summary ?? '')).toLowerCase();
+  const bullish = ['surge', 'rally', 'rise', 'gain', 'jump', 'soar', 'bull', 'record high', 'beat', 'above', 'upgrade', 'boom', 'positive', 'strong', 'up '];
+  const bearish = ['drop', 'fall', 'crash', 'plunge', 'decline', 'sink', 'bear', 'miss', 'below', 'downgrade', 'slump', 'negative', 'fear', 'risk', 'warn', 'cut', 'sell', 'weak', 'down '];
+  let b = 0, s = 0;
+  for (const kw of bullish) if (lower.includes(kw)) b++;
+  for (const kw of bearish) if (lower.includes(kw)) s++;
+  return b >= s ? 'Bullish' : 'Bearish';
+}
+
 interface ExpandableTapeItemProps {
   alert: RiskFlowAlert;
   isVivid: boolean;
@@ -104,6 +117,13 @@ export function ExpandableTapeItem({ alert, isVivid, opacity, borderOpacity, see
           )}
         </div>
         <div className="shrink-0 flex items-center gap-1.5">
+          {(() => {
+            const dir = inferDirection(alert);
+            return <span className={`text-[9px] font-semibold ${dir === 'Bullish' ? 'text-emerald-500' : 'text-red-400'}`}>{dir === 'Bullish' ? '▲' : '▼'}</span>;
+          })()}
+          <span className="text-[9px] text-zinc-500 tabular-nums">
+            {alert.pointRange != null && alert.pointRange !== 0 ? `±${Math.abs(alert.pointRange).toFixed(0)}pt` : '0-5pt'}
+          </span>
           <span className={`text-[10px] ${isVivid ? 'text-gray-500' : 'text-gray-600'}`}>
             {timeAgo(alert.publishedAt)}
           </span>

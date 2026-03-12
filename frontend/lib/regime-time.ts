@@ -1,8 +1,22 @@
 // [claude-code 2026-03-06] Time utilities for Regime Tracker — ET timezone handling, active checks, countdowns
+// [claude-code 2026-03-12] Added formatTime12H for 12-hour NY time display
 
 import type { TradingRegime } from './regimes';
 
 const ET_TZ = 'America/New_York';
+
+/** Convert HH:MM (24H) to 12H format (e.g. "09:30" → "9:30 AM", "14:00" → "2:00 PM") */
+export function formatTime12H(hhmm: string): string {
+  const [h, m] = hhmm.split(':').map(Number);
+  const suffix = h >= 12 ? 'PM' : 'AM';
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${h12}:${String(m).padStart(2, '0')} ${suffix}`;
+}
+
+/** Format a time range in 12H (e.g. "9:30 AM - 9:45 AM NY") */
+export function formatTimeRange12H(start: string, end: string): string {
+  return `${formatTime12H(start)} - ${formatTime12H(end)} NY`;
+}
 
 export function getCurrentETTime(): Date {
   const now = new Date();
@@ -81,12 +95,12 @@ export function getTimeRemaining(regime: TradingRegime, now?: Date): string {
     const checkDay = dayOrder[(todayIdx + offset) % 5];
     if (regime.daysActive.includes(checkDay)) {
       const daysAway = offset <= 5 - todayIdx ? offset : offset;
-      if (daysAway === 1) return `tomorrow ${regime.timeRange.start} ET`;
-      return `${checkDay} ${regime.timeRange.start} ET`;
+      if (daysAway === 1) return `tomorrow ${formatTime12H(regime.timeRange.start)} NY`;
+      return `${checkDay} ${formatTime12H(regime.timeRange.start)} NY`;
     }
   }
 
-  return regime.timeRange.start + ' ET';
+  return formatTime12H(regime.timeRange.start) + ' NY';
 }
 
 function formatMinutes(mins: number): string {

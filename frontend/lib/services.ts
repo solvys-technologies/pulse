@@ -872,6 +872,16 @@ export class NotionService {
       return { content: '', briefType: 'MDB', generatedAt: new Date().toISOString() };
     }
   }
+
+  /** Update trade idea status in Notion Kanban (Approved/Denied/Executed/Closed) */
+  async updateTradeIdeaStatus(pageId: string, status: string): Promise<boolean> {
+    try {
+      await this.client.patch<{ success: boolean }>(`/api/notion/trade-ideas/${pageId}/status`, { status });
+      return true;
+    } catch {
+      return false;
+    }
+  }
 }
 
 // ER Scoring Service (psych scoring around earnings events)

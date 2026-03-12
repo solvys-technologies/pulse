@@ -41,6 +41,19 @@ function SourceIcon({ source, className }: { source: string; className?: string 
   return <span className={`font-bold text-[7px] uppercase ${className}`}>{source.charAt(0)}</span>;
 }
 
+/** Infer Bullish/Bearish from alert data or headline keywords */
+function inferDirection(alert: RiskFlowAlert): 'Bullish' | 'Bearish' {
+  if (alert.direction === 'Bullish' || alert.direction === 'Bearish') return alert.direction;
+  if (alert.tradeIdea) return alert.tradeIdea.direction === 'long' ? 'Bullish' : 'Bearish';
+  const lower = (alert.headline + ' ' + (alert.summary ?? '')).toLowerCase();
+  const bullish = ['surge', 'rally', 'rise', 'gain', 'jump', 'soar', 'bull', 'record high', 'beat', 'above', 'upgrade', 'boom', 'positive', 'strong', 'up '];
+  const bearish = ['drop', 'fall', 'crash', 'plunge', 'decline', 'sink', 'bear', 'miss', 'below', 'downgrade', 'slump', 'negative', 'fear', 'risk', 'warn', 'cut', 'sell', 'weak', 'down '];
+  let b = 0, s = 0;
+  for (const kw of bullish) if (lower.includes(kw)) b++;
+  for (const kw of bearish) if (lower.includes(kw)) s++;
+  return b >= s ? 'Bullish' : 'Bearish';
+}
+
 interface CompactRiskFlowCardProps {
   alert: RiskFlowAlert;
   seen?: boolean;
@@ -75,11 +88,18 @@ export function CompactRiskFlowCard({ alert, seen = false }: CompactRiskFlowCard
           {alert.authorHandle && (
             <span className="text-[9px] text-zinc-500 truncate max-w-[80px]">@{alert.authorHandle}</span>
           )}
-          {alert.pointRange != null && alert.pointRange !== 0 && (
-            <span className={`text-[9px] font-mono ${alert.pointRange > 0 ? 'text-emerald-500' : 'text-red-400'}`}>
-              {alert.pointRange > 0 ? '+' : ''}{alert.pointRange.toFixed(1)}pt
-            </span>
-          )}
+          {(() => {
+            const dir = inferDirection(alert);
+            const isBull = dir === 'Bullish';
+            return (
+              <span className={`text-[9px] font-semibold ${isBull ? 'text-emerald-500' : 'text-red-400'}`}>
+                {isBull ? '▲' : '▼'}
+              </span>
+            );
+          })()}
+          <span className="text-[9px] text-zinc-500 font-mono">
+            {alert.pointRange != null && alert.pointRange !== 0 ? `±${Math.abs(alert.pointRange).toFixed(0)}pt` : '0-5pt'}
+          </span>
           <ExternalLink className="w-2 h-2 text-zinc-700 opacity-0 group-hover:opacity-100 transition-opacity ml-auto flex-shrink-0" />
         </div>
       </div>

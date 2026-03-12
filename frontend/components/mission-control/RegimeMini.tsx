@@ -1,4 +1,5 @@
 // [claude-code 2026-03-06] Mission Control mini-screener for active/upcoming trading regimes
+// [claude-code 2026-03-12] Replaced W/L with ORB bullish/bearish, 12H NY time
 import { useState, useEffect } from 'react';
 import { Clock, TrendingUp, TrendingDown, RotateCcw, Activity } from 'lucide-react';
 import { useRegimes } from '../../lib/regime-store';
@@ -65,31 +66,33 @@ export function RegimeMini({ onOpenFullTracker }: RegimeMiniProps) {
       )}
 
       {/* Active regimes */}
-      {active.map((r) => {
-        const winRate = r.record.wins + r.record.losses > 0
-          ? Math.round((r.record.wins / (r.record.wins + r.record.losses)) * 100)
-          : 0;
-        return (
-          <div
-            key={r.id}
-            className="mb-1.5 px-2 py-1.5 border border-[var(--pulse-accent)]/30 bg-[var(--pulse-accent)]/5"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-semibold text-[var(--pulse-text)] truncate">{r.name}</span>
-              <BiasBadge bias={r.bias} />
-            </div>
-            <div className="flex items-center justify-between mt-1">
-              <span className="text-[9px] text-[var(--pulse-accent)]/70">{getTimeRemaining(r, now)}</span>
-              <div className="flex items-center gap-2">
-                <span className="text-[9px] text-zinc-500">{r.record.wins}W-{r.record.losses}L ({winRate}%)</span>
-                <span className={`text-[9px] font-semibold ${r.confidence >= 70 ? 'text-emerald-400' : r.confidence >= 50 ? 'text-yellow-500' : 'text-red-400'}`}>
-                  {r.confidence}%
-                </span>
-              </div>
+      {active.map((r) => (
+        <div
+          key={r.id}
+          className="mb-1.5 px-2 py-1.5 border border-[var(--pulse-accent)]/30 bg-[var(--pulse-accent)]/5"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-semibold text-[var(--pulse-text)] truncate">{r.name}</span>
+            <BiasBadge bias={r.bias} />
+          </div>
+          <div className="flex items-center justify-between mt-1">
+            <span className="text-[9px] text-[var(--pulse-accent)]/70">{getTimeRemaining(r, now)}</span>
+            <div className="flex items-center gap-2">
+              <span className="flex items-center gap-1 text-[9px]">
+                <span className="text-[7px] text-zinc-600 uppercase">ORB</span>
+                <TrendingUp className="w-2 h-2 text-emerald-400" />
+                <span className="text-emerald-400">{r.record.bullishDays}</span>
+                <span className="text-zinc-700">/</span>
+                <span className="text-red-400">{r.record.bearishDays}</span>
+                <TrendingDown className="w-2 h-2 text-red-400" />
+              </span>
+              <span className={`text-[9px] font-semibold ${r.confidence >= 70 ? 'text-emerald-400' : r.confidence >= 50 ? 'text-yellow-500' : 'text-red-400'}`}>
+                {r.confidence}%
+              </span>
             </div>
           </div>
-        );
-      })}
+        </div>
+      ))}
 
       {/* Upcoming regimes (dimmed) */}
       {upcoming.map((r) => (

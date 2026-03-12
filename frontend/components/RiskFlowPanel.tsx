@@ -5,12 +5,13 @@
 // [claude-code 2026-03-11] v7.7.7 T3: Card overhaul — SVG logos, cyclical badge top-right,
 //   point range, approve/deny CTA on proposals, chat CTA on news, remove "Neutral" text.
 // [claude-code 2026-03-11] T5: drag-drop support for chat injection (application/x-riskflow)
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useRiskFlow } from '../contexts/RiskFlowContext';
 import { Zap, ExternalLink, ChevronDown, ChevronUp, Trash2, X, TrendingUp, TrendingDown, MessageSquare, Check, XCircle } from 'lucide-react';
 import type { RiskFlowAlert, TradeIdeaDetail } from '../lib/riskflow-feed';
 import TradeIdeaModal from './TradeIdeaModal';
 import { useSourceStatus } from '../hooks/useSourceStatus';
+import { useBackend } from '../lib/backend';
 
 import { SEVERITY_CONFIG } from '../lib/severity-config';
 
@@ -77,12 +78,36 @@ function CyclicalBadge({ classification }: { classification: string }) {
   );
 }
 
-// ── Point Range Badge ────────────────────────────────────────────────────────
+// ── Direction + Point Range ───────────────────────────────────────────────────
 
-function PointRangeBadge({ points, instrument }: { points: number; instrument?: string | null }) {
+/** Infer Bullish/Bearish from alert data or headline keywords */
+function inferDirection(alert: RiskFlowAlert): 'Bullish' | 'Bearish' {
+  if (alert.direction === 'Bullish' || alert.direction === 'Bearish') return alert.direction;
+  if (alert.tradeIdea) return alert.tradeIdea.direction === 'long' ? 'Bullish' : 'Bearish';
+  const lower = (alert.headline + ' ' + (alert.summary ?? '')).toLowerCase();
+  const bullish = ['surge', 'rally', 'rise', 'gain', 'jump', 'soar', 'bull', 'record high', 'beat', 'above', 'upgrade', 'boom', 'positive', 'strong', 'up '];
+  const bearish = ['drop', 'fall', 'crash', 'plunge', 'decline', 'sink', 'bear', 'miss', 'below', 'downgrade', 'slump', 'negative', 'fear', 'risk', 'warn', 'cut', 'sell', 'weak', 'down '];
+  let b = 0, s = 0;
+  for (const kw of bullish) if (lower.includes(kw)) b++;
+  for (const kw of bearish) if (lower.includes(kw)) s++;
+  return b >= s ? 'Bullish' : 'Bearish';
+}
+
+function DirectionBadge({ alert }: { alert: RiskFlowAlert }) {
+  const dir = inferDirection(alert);
+  const isBull = dir === 'Bullish';
+  return (
+    <span className={`text-[9px] font-semibold ${isBull ? 'text-emerald-500' : 'text-red-400'}`}>
+      {isBull ? '▲' : '▼'}
+    </span>
+  );
+}
+
+function PointRangeBadge({ points, instrument }: { points?: number | null; instrument?: string | null }) {
+  const hasScore = points != null && points !== 0;
   return (
     <span className="text-[9px] text-zinc-500 tabular-nums" title={`Implied ${instrument ?? ''} move`}>
-      {instrument ? `${instrument} ` : ''}&#177;{Math.abs(points).toFixed(0)} pts
+      {instrument ? `${instrument} ` : ''}{hasScore ? `±${Math.abs(points).toFixed(0)} pts` : '0-5 pts'}
     </span>
   );
 }
@@ -106,12 +131,16 @@ function TradeIdeaRow({
   onDelete,
   onOpen,
   onMarkSeen,
+  onApprove,
+  onDeny,
   seen,
 }: {
   alert: RiskFlowAlert;
   onDelete: (id: string) => void;
   onOpen: (idea: TradeIdeaDetail) => void;
   onMarkSeen: (id: string) => void;
+  onApprove?: (alert: RiskFlowAlert) => void;
+  onDeny?: (alert: RiskFlowAlert) => void;
   seen: boolean;
 }) {
   const idea = alert.tradeIdea!;
@@ -177,12 +206,10 @@ function TradeIdeaRow({
                 <span className="text-[10px] text-zinc-500">R/R {idea.riskRewardRatio.toFixed(1)}:1</span>
               </>
             )}
-            {alert.pointRange != null && alert.pointRange !== 0 && (
-              <>
-                <span className="text-[10px] text-zinc-700">&middot;</span>
-                <PointRangeBadge points={alert.pointRange} instrument={alert.instrument} />
-              </>
-            )}
+            <span className="text-[10px] text-zinc-700">&middot;</span>
+            <DirectionBadge alert={alert} />
+            <span className="text-[10px] text-zinc-700">&middot;</span>
+            <PointRangeBadge points={alert.pointRange} instrument={alert.instrument} />
           </div>
         </div>
       </div>
@@ -191,7 +218,7 @@ function TradeIdeaRow({
       <div className="flex-shrink-0 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
           type="button"
-          onClick={(e) => { e.stopPropagation(); /* approve handler — future */ }}
+          onClick={(e) => { e.stopPropagation(); onApprove?.(alert); }}
           className="p-1 rounded text-emerald-600 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
           title="Approve proposal"
         >
@@ -199,7 +226,7 @@ function TradeIdeaRow({
         </button>
         <button
           type="button"
-          onClick={(e) => { e.stopPropagation(); onDelete(alert.id); }}
+          onClick={(e) => { e.stopPropagation(); onDeny?.(alert); }}
           className="p-1 rounded text-red-600 hover:text-red-400 hover:bg-red-500/10 transition-colors"
           title="Deny proposal"
         >
@@ -272,12 +299,10 @@ function AlertRow({
                 <span className="text-[10px] text-zinc-500">@{alert.authorHandle}</span>
               </>
             )}
-            {alert.pointRange != null && alert.pointRange !== 0 && (
-              <>
-                <span className="text-[10px] text-zinc-700">&middot;</span>
-                <PointRangeBadge points={alert.pointRange} instrument={alert.instrument} />
-              </>
-            )}
+            <span className="text-[10px] text-zinc-700">&middot;</span>
+            <DirectionBadge alert={alert} />
+            <span className="text-[10px] text-zinc-700">&middot;</span>
+            <PointRangeBadge points={alert.pointRange} instrument={alert.instrument} />
             <ExternalLink className="w-2.5 h-2.5 text-zinc-700 opacity-0 group-hover:opacity-100 transition-opacity ml-auto flex-shrink-0" />
           </div>
         </div>
@@ -362,12 +387,28 @@ export default function RiskFlowPanel({
   onChatAlert?: (alert: RiskFlowAlert) => void;
 }) {
   const { alerts, highCount, mediumCount, clearAll, removeAlert, markSeen, markAllSeen, isSeen } = useRiskFlow();
+  const backend = useBackend();
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('all');
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
   const [showProposals, setShowProposals] = useState(false);
   const [expandedInternal, setExpandedInternal] = useState(true);
   const [selectedIdea, setSelectedIdea] = useState<TradeIdeaDetail | null>(null);
   const sourceStatus = useSourceStatus();
+
+  /** Extract Notion page ID from the alert ID (format: notion-ti-{pageId}) */
+  const getNotionPageId = (alertId: string) => alertId.replace('notion-ti-', '');
+
+  const handleApprove = useCallback(async (alert: RiskFlowAlert) => {
+    const pageId = getNotionPageId(alert.id);
+    const ok = await backend.notion.updateTradeIdeaStatus(pageId, 'Approved');
+    if (ok) removeAlert(alert.id);
+  }, [backend, removeAlert]);
+
+  const handleDeny = useCallback(async (alert: RiskFlowAlert) => {
+    const pageId = getNotionPageId(alert.id);
+    const ok = await backend.notion.updateTradeIdeaStatus(pageId, 'Denied');
+    if (ok) removeAlert(alert.id);
+  }, [backend, removeAlert]);
   const expanded = collapsed != null ? !collapsed : expandedInternal;
 
   const ideaCount = alerts.filter((a) => a.source === 'notion-trade-idea').length;
@@ -479,6 +520,8 @@ export default function RiskFlowPanel({
                       onDelete={removeAlert}
                       onOpen={setSelectedIdea}
                       onMarkSeen={markSeen}
+                      onApprove={handleApprove}
+                      onDeny={handleDeny}
                       seen={isSeen(alert.id)}
                     />
                   ) : (
