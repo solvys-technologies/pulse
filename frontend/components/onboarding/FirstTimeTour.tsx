@@ -1,3 +1,4 @@
+// [claude-code 2026-03-12] Renamed "Trading Journal" → "Performance" in tour + What's New
 // [claude-code 2026-03-11] First-time user tour + "What's New" button after updates
 import { useState, useEffect, useCallback } from 'react';
 import { X, ChevronRight, ChevronLeft, Sparkles } from 'lucide-react';
@@ -35,7 +36,7 @@ const TOUR_STEPS: TourStep[] = [
     target: 'econ',
   },
   {
-    title: 'Trading Journal',
+    title: 'Performance',
     description: 'Two tabs — Human (ER trend, infractions, discipline score) and Agent (proposal tracker, win rate, R:R).',
     target: 'earnings',
   },
@@ -63,7 +64,7 @@ const TOUR_STEPS: TourStep[] = [
 
 const WHATS_NEW_ITEMS = [
   'TradingView calendar with full filters (country, earnings, importance)',
-  'Trading Journal — Human psych + Agent performance tabs',
+  'Performance — Human psych + Agent performance tabs',
   'IV Scoring — blended 60% VIX + 40% headlines',
   'Economic prints auto-flow into RiskFlow for IV scoring',
   'Skills popup with smooth transitions and keyword tags',

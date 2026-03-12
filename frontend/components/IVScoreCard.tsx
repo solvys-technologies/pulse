@@ -137,7 +137,7 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
 
       {showTooltip && (
         <div
-          className={`absolute top-full mt-2 w-80 bg-[var(--pulse-surface)] border border-[var(--pulse-accent)]/30 rounded-lg p-4 shadow-xl z-50 ${
+          className={`absolute top-full mt-2 w-80 bg-[var(--pulse-surface)] border border-[var(--pulse-accent)]/30 rounded-lg p-4 shadow-xl z-[9999] ${
             layoutOption === 'tickers-only' ? 'right-0' : 'left-0'
           }`}
           style={{

@@ -1,3 +1,4 @@
+// [claude-code 2026-03-12] Task 2B: Aligned leading indicator weights (ISM/PMI >= 7), VIX thresholds to playbook, multi-instrument support
 // [claude-code 2026-03-11] IV Scoring V3: Added volatility taxonomy, regime-aware decay, new event types
 // [claude-code 2026-03-09] Added config-driven scoring: IVScoringConfig type, loadIVScoringConfig(), config param on calculateIVScoreV2
 /**
@@ -228,9 +229,9 @@ export const EVENT_WEIGHTS: Record<string, number> = {
   jolts: 7,
   earningsHighImpact: 7, // Mag7
   
-  // Economic Health - 6 points
+  // Economic Health — leading indicators score >= 7 (forward signal per Playbook)
   gdpPrint: 6,
-  ismPrint: 6,
+  ismPrint: 7,      // Leading indicator (PMI/ISM) — forward signal, bumped from 6
   politicalCommentary: 6, // Lutnick/Bessent/Trump
   
   // Mid-tier - 5 points
@@ -308,10 +309,11 @@ export interface VIXState {
 }
 
 export const VIX_MULTIPLIERS: { max: number; multiplier: number; context: string }[] = [
-  { max: 15, multiplier: 0.8, context: 'Low fear, choppy PA around 20/100 EMA' },
-  { max: 20, multiplier: 1.0, context: 'Neutral, base hits' },
-  { max: 30, multiplier: 1.2, context: 'Elevated, trendy PA respecting 20/50 EMA' },
-  { max: Infinity, multiplier: 1.5, context: 'High fear, home run potential' },
+  // Playbook thresholds: <16 complacent, 16-22 risk-neutral, 22+ panic (22 VIX Fixer territory)
+  { max: 16, multiplier: 0.8, context: 'Complacent — choppy PA around 20/100 EMA, base hit day' },
+  { max: 22, multiplier: 1.0, context: 'Risk-neutral zone — normal setups, base hits to 40/40 club' },
+  { max: 30, multiplier: 1.3, context: '22 VIX Fixer territory — panic reversal, trendy PA respecting 20/50 EMA' },
+  { max: Infinity, multiplier: 1.5, context: 'Extreme fear — home run potential, crisis mode' },
 ]
 
 export function getVIXMultiplier(vixLevel: number): { multiplier: number; context: string } {
@@ -366,6 +368,9 @@ export const DECAY_HALF_LIVES: Record<string, number> = {
   earningsHighImpact: 60,
   earningsMidCap: 60,
   
+  // Leading indicators (forward signal) - 90 min
+  ismPrint: 90,
+
   // Other - 30 min
   default: 30,
 

@@ -7,7 +7,7 @@
 // [claude-code 2026-03-11] T5: drag-drop support for chat injection (application/x-riskflow)
 import React, { useState, useCallback } from 'react';
 import { useRiskFlow } from '../contexts/RiskFlowContext';
-import { Zap, ExternalLink, ChevronDown, ChevronUp, Trash2, X, TrendingUp, TrendingDown, MessageSquare, Check, XCircle } from 'lucide-react';
+import { Zap, ExternalLink, ChevronDown, ChevronUp, Trash2, X, TrendingUp, TrendingDown, MessageSquare, Check, XCircle, RefreshCw } from 'lucide-react';
 import type { RiskFlowAlert, TradeIdeaDetail } from '../lib/riskflow-feed';
 import TradeIdeaModal from './TradeIdeaModal';
 import { useSourceStatus } from '../hooks/useSourceStatus';
@@ -386,7 +386,7 @@ export default function RiskFlowPanel({
   /** Called when user clicks "Chat" CTA on a news alert */
   onChatAlert?: (alert: RiskFlowAlert) => void;
 }) {
-  const { alerts, highCount, mediumCount, clearAll, removeAlert, markSeen, markAllSeen, isSeen } = useRiskFlow();
+  const { alerts, highCount, mediumCount, clearAll, removeAlert, markSeen, markAllSeen, isSeen, refresh, refreshing } = useRiskFlow();
   const backend = useBackend();
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('all');
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
@@ -458,6 +458,15 @@ export default function RiskFlowPanel({
             </div>
           </div>
           <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => { void refresh(); }}
+              disabled={refreshing}
+              className="p-1 rounded hover:bg-[var(--pulse-accent)]/10 text-zinc-500 hover:text-[var(--pulse-accent)] transition-colors disabled:opacity-40"
+              title="Refresh feeds"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+            </button>
             {alerts.length > 0 && (
               <button type="button" onClick={clearAll} className="p-1 rounded hover:bg-red-500/10 text-zinc-500 hover:text-red-400 transition-colors" title="Clear all">
                 <Trash2 className="w-3.5 h-3.5" />

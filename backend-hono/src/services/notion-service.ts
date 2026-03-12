@@ -213,7 +213,10 @@ export async function writeMDBReportToNotion(
             'Notion-Version': NOTION_VERSION,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ archived: true }),
+          body: JSON.stringify({
+            archived: true,
+            properties: { Status: { status: { name: 'Archived' } } },
+          }),
         }).catch(() => null)
       )
     );
@@ -228,6 +231,7 @@ export async function writeMDBReportToNotion(
     Message: { rich_text: [{ text: { content: content.slice(0, 2000) } }] },
     Category: { select: { name: category } },
     Source: { select: { name: 'Harper-Notion' } },
+    Status: { status: { name: 'Active' } },
   });
 
   bustBriefCache();

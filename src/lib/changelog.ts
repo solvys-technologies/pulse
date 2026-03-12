@@ -9,6 +9,53 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-12T02:00:00',
+    agent: 'claude-code',
+    summary: 'Created Notion onboarding course: "How to Use Pulse to Trade Narratives & Risk Events" — 7 modules under PIC covering foundation, news reading (second-level thinking, data cycles, distribution of expectations), RiskFlow pipeline, risk events & Playbook models (40/40 Club, Flush, Ripper, 22 VIX Fixer), divergent prepositioning & safe havens, Pulse execution workflow, and risk management psychology (13 Commandments).',
+    files: [],
+  },
+  {
+    date: '2026-03-12T01:30:00',
+    agent: 'claude-code',
+    summary: 'RiskFlow scoring audit: ISM/PMI weight bumped 6→7 (leading indicator per Playbook), VIX thresholds aligned (16/22/30 complacent/neutral/VIX-Fixer/extreme), ISM decay half-life 90min, Polymarket gets keyword-based sentiment inference (was always neutral), failed enrichment fallback always picks bullish/bearish, multi-instrument scoreToPoints() via INSTRUMENT_BETAS, PRIMARY_INSTRUMENT env var, manual refresh endpoint + frontend refresh button on RiskFlowPanel and ExecutiveDashboard.',
+    files: [
+      'backend-hono/src/services/iv-scoring-v2.ts',
+      'backend-hono/src/services/analysis/iv-scorer.ts',
+      'backend-hono/src/services/riskflow/feed-service.ts',
+      'backend-hono/src/services/riskflow/feed-poller.ts',
+      'backend-hono/src/routes/riskflow/handlers.ts',
+      'backend-hono/src/routes/riskflow/index.ts',
+      'backend-hono/src/types/news-analysis.ts',
+      'frontend/contexts/RiskFlowContext.tsx',
+      'frontend/lib/riskflow-feed.ts',
+      'frontend/lib/services.ts',
+      'frontend/components/RiskFlowPanel.tsx',
+      'frontend/components/executive/ExecutiveDashboard.tsx',
+      'frontend/components/IVScoreCard.tsx',
+    ],
+  },
+  {
+    date: '2026-03-12T01:00:00',
+    agent: 'claude-code',
+    summary: 'Mini RiskFlow card: disabled full-card expand (changed <a> wrapper to <div>), removed ExternalLink icon, added onDismiss prop with X dismiss button, headline text remains a clickable link. MainLayout passes removeAlert from RiskFlowContext as onDismiss.',
+    files: [
+      'frontend/components/feed/CompactRiskFlowCard.tsx',
+      'frontend/components/layout/MainLayout.tsx',
+    ],
+  },
+  {
+    date: '2026-03-12T01:00:00',
+    agent: 'claude-code',
+    summary: 'Renamed user-facing label "Trading Journal" to "Performance" across breadcrumb, header, sidebar, journal component, and onboarding tour. No file/function/import renames — label strings only.',
+    files: [
+      'frontend/components/layout/SectionBreadcrumb.tsx',
+      'frontend/components/layout/TopHeader.tsx',
+      'frontend/components/layout/NavSidebar.tsx',
+      'frontend/components/journal/TradingJournal.tsx',
+      'frontend/components/onboarding/FirstTimeTour.tsx',
+    ],
+  },
+  {
     date: '2026-03-13T00:30:00',
     agent: 'claude-code',
     summary: 'Scoring consistency + instrument persistence + X API removal. Aligned V1 scorer EVENT_WEIGHTS with V3 matrix (credit, yield, liquidity, bank, leverage). Feed enrichment now uses V2 classifyEventType() for V3 event detection. RiskFlow feed endpoint re-computes priceBrainScore for user-selected instrument (no more hardcoded /ES). RiskFlowContext passes selectedSymbol to backend. Removed x-api-service.ts + x-api-config.ts — all tweet ingestion via twitter-cli. Feed poller cleaned of X API dependency.',

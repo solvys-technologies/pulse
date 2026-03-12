@@ -21,7 +21,7 @@ const NAV_ITEMS_MAP: Record<NavTabId, { id: NavTab; icon: typeof LayoutDashboard
   chatroom: { id: 'chatroom', icon: MessagesSquare, label: 'Board Room', description: 'Multi-agent boardroom' },
   notion: { id: 'notion', icon: NotebookText, label: 'Research', description: 'Notion research corpus' },
   narrative: { id: 'narrative', icon: GitBranch, label: 'Narratives', description: 'Market narrative flow' },
-  earnings: { id: 'earnings', icon: BookOpenCheck, label: 'Trading Journal', description: 'PsychAssist ER history & KPIs' },
+  earnings: { id: 'earnings', icon: BookOpenCheck, label: 'Performance', description: 'PsychAssist ER history & performance KPIs' },
   team: { id: 'team', icon: Users, label: 'Team', description: 'Unified Context Bank & desk reports' },
 };
 

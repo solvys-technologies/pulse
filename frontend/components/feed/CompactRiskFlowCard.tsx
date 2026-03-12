@@ -1,6 +1,7 @@
 // [claude-code 2026-03-11] Compact RiskFlow card for combined panels
 // [claude-code 2026-03-11] Replaced SourceDot with SVG icons (X/Notion), removed direction triangle
-import { ExternalLink } from 'lucide-react';
+// [claude-code 2026-03-12] Disabled card expand, added dismiss button, headline-only link
+import { X as XIcon } from 'lucide-react';
 import type { RiskFlowAlert } from '../../lib/riskflow-feed';
 import { SEVERITY_CONFIG } from '../../lib/severity-config';
 
@@ -57,17 +58,15 @@ function inferDirection(alert: RiskFlowAlert): 'Bullish' | 'Bearish' {
 interface CompactRiskFlowCardProps {
   alert: RiskFlowAlert;
   seen?: boolean;
+  onDismiss?: (id: string) => void;
 }
 
-export function CompactRiskFlowCard({ alert, seen = false }: CompactRiskFlowCardProps) {
+export function CompactRiskFlowCard({ alert, seen = false, onDismiss }: CompactRiskFlowCardProps) {
   const sev = SEVERITY_CONFIG[alert.severity];
   const isHigh = alert.severity === 'high' || alert.severity === 'critical';
 
   return (
-    <a
-      href={alert.url}
-      target="_blank"
-      rel="noopener noreferrer"
+    <div
       className={`group flex items-start gap-2 px-2.5 py-2 rounded-md hover:bg-[var(--pulse-accent)]/5 transition-colors ${isHigh ? 'bg-red-500/5' : ''} ${seen ? 'opacity-60' : ''}`}
     >
       {/* Severity dot */}
@@ -77,9 +76,20 @@ export function CompactRiskFlowCard({ alert, seen = false }: CompactRiskFlowCard
 
       <div className="flex-1 min-w-0">
         {/* Headline */}
-        <p className={`text-[11px] leading-snug font-medium line-clamp-2 ${isHigh ? 'text-red-300' : 'text-zinc-300'} group-hover:text-white transition-colors`}>
-          {alert.headline}
-        </p>
+        {alert.url ? (
+          <a
+            href={alert.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`text-[11px] leading-snug font-medium line-clamp-2 block ${isHigh ? 'text-red-300' : 'text-zinc-300'} hover:text-white transition-colors`}
+          >
+            {alert.headline}
+          </a>
+        ) : (
+          <p className={`text-[11px] leading-snug font-medium line-clamp-2 ${isHigh ? 'text-red-300' : 'text-zinc-300'}`}>
+            {alert.headline}
+          </p>
+        )}
 
         {/* Meta row */}
         <div className="flex items-center gap-1.5 mt-0.5">
@@ -100,9 +110,18 @@ export function CompactRiskFlowCard({ alert, seen = false }: CompactRiskFlowCard
           <span className="text-[9px] text-zinc-500 font-mono">
             {alert.pointRange != null && alert.pointRange !== 0 ? `±${Math.abs(alert.pointRange).toFixed(0)}pt` : '0-5pt'}
           </span>
-          <ExternalLink className="w-2 h-2 text-zinc-700 opacity-0 group-hover:opacity-100 transition-opacity ml-auto flex-shrink-0" />
+          {onDismiss && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onDismiss(alert.id); }}
+              className="text-zinc-700 hover:text-red-400 transition-colors ml-auto flex-shrink-0 opacity-0 group-hover:opacity-100"
+              title="Dismiss"
+            >
+              <XIcon className="w-2.5 h-2.5" />
+            </button>
+          )}
         </div>
       </div>
-    </a>
+    </div>
   );
 }

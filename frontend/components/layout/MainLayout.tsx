@@ -152,7 +152,7 @@ export function MainLayout() {
   };
 
   const backend = useBackend();
-  const { alerts: riskFlowAlerts } = useRiskFlow();
+  const { alerts: riskFlowAlerts, removeAlert } = useRiskFlow();
   const [combinedTapeCollapsed, setCombinedTapeCollapsed] = useState(false);
 
   /* ---- Keyboard shortcuts ---- */
@@ -513,7 +513,7 @@ export function MainLayout() {
                         <div className="text-center text-zinc-600 py-6 text-[10px]">No items</div>
                       ) : (
                         riskFlowAlerts.slice(0, 30).map((alert) => (
-                          <CompactRiskFlowCard key={alert.id} alert={alert} />
+                          <CompactRiskFlowCard key={alert.id} alert={alert} onDismiss={removeAlert} />
                         ))
                       )}
                     </div>
@@ -597,7 +597,7 @@ export function MainLayout() {
       <TopHeader
         topStepXEnabled={topStepXEnabled}
         onTopStepXToggle={() => { /* T3d: removed auto-enable — power is controlled via dedicated power button only */ }}
-        onTopStepXDisable={() => setTopStepXEnabled(false)}
+        onTopStepXDisable={() => setTopStepXEnabled(prev => !prev)}
         selectedPlatform={selectedPlatform}
         onPlatformSelect={setSelectedPlatform}
         layoutOption={layoutOption}

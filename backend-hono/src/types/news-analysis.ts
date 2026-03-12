@@ -83,8 +83,14 @@ export interface IVScoreResult {
   eventType: string
   score: number // 0-10
   rationale: string[]
+  /** @deprecated Use impliedPoints + instrument instead */
   impliedESPoints: number
+  /** @deprecated Use impliedPoints + instrument instead */
   impliedNQPoints: number
+  /** Implied point move for the selected instrument */
+  impliedPoints?: number
+  /** Which instrument the impliedPoints apply to */
+  instrument?: string
   timestamp: string
 }
 

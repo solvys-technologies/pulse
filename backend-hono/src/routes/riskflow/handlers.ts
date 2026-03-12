@@ -13,6 +13,7 @@ import { corsConfig } from '../../config/cors.js';
 import type { FeedFilters, WatchlistUpdateRequest, NewsSource, MacroLevel } from '../../types/riskflow.js';
 import { getNotionPollerStatus } from '../../services/notion-poller.js';
 import { isTwitterCliInstalled } from '../../services/twitter-cli/index.js';
+import { forcePoll } from '../../services/riskflow/feed-poller.js';
 import { fetchVIX, getVIXSpikeAdjustment, getVIXScoringMultiplier, getVIXBaseline } from '../../services/vix-service.js';
 import {
   calculateIVScoreV2,
@@ -663,6 +664,25 @@ export async function handleGetIVAggregate(c: Context) {
   } catch (error) {
     console.error('[IV Aggregate] Error:', error);
     return c.json({ error: error instanceof Error ? error.message : 'Failed to calculate IV score' }, 500);
+  }
+}
+
+/**
+ * POST /api/riskflow/refresh
+ * Manually trigger a feed poll cycle and return fresh items
+ */
+export async function handleRefresh(c: Context) {
+  const userId = c.get('userId') as string | undefined;
+  if (!userId) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  try {
+    await forcePoll();
+    return c.json({ success: true, refreshedAt: new Date().toISOString() });
+  } catch (error) {
+    console.error('[RiskFlow] Refresh error:', error);
+    return c.json({ error: 'Refresh failed' }, 500);
   }
 }
 

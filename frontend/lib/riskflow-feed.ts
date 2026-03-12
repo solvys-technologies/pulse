@@ -233,6 +233,11 @@ export class RiskFlowFeedPoller {
     return this.alerts;
   }
 
+  /** Force an immediate refresh (bypasses interval timer). */
+  forceRefresh(): void {
+    this.poll();
+  }
+
   private notify(): void {
     for (const listener of this.listeners) {
       try { listener(this.alerts); } catch { /* swallow */ }

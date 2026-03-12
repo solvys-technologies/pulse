@@ -102,7 +102,7 @@ export function ExecutiveDashboard() {
   }, [backend]);
 
   // RiskFlow: same feed as RiskFlow panel and MinimalFeedSection (RiskFlowContext)
-  const { alerts, markAllSeen, isSeen, notionPollStatus } = useRiskFlow();
+  const { alerts, markAllSeen, isSeen, notionPollStatus, refresh, refreshing } = useRiskFlow();
   const [selectedIdea, setSelectedIdea] = useState<TradeIdeaDetail | null>(null);
   const [showRegimeTracker, setShowRegimeTracker] = useState(false);
   const tapeAlerts = useMemo(() => alerts.slice(0, 50), [alerts]);
@@ -262,7 +262,17 @@ export function ExecutiveDashboard() {
 
           {/* Row 3: RiskFlow — fills remaining space, expandable items, recency fade */}
           <div className="flex-1 min-h-0 flex flex-col">
-            <KanbanTitle title="RiskFlow" tag="Alerts + Signals" tone="emerald" />
+            <KanbanTitle title="RiskFlow" tag="Alerts + Signals" tone="emerald" headerRight={
+              <button
+                type="button"
+                onClick={() => { void refresh(); }}
+                disabled={refreshing}
+                className="p-1 rounded hover:bg-emerald-500/10 text-zinc-500 hover:text-emerald-400 transition-colors disabled:opacity-40"
+                title="Refresh feeds"
+              >
+                <RefreshCw className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`} />
+              </button>
+            } />
             <div className="mt-2 flex-1 min-h-0 overflow-y-auto pr-1 space-y-1.5">
               {tapeAlerts.length === 0 ? (
                 <div className="text-xs text-gray-500 px-1 py-4">No actions in the feed right now.</div>
@@ -295,7 +305,17 @@ export function ExecutiveDashboard() {
 
         {/* Page 2: Full RiskFlow */}
         <div data-dash-page="1" className="min-h-full snap-start p-5 flex flex-col">
-          <KanbanTitle title="RiskFlow" tag="Full Feed" tone="emerald" />
+          <KanbanTitle title="RiskFlow" tag="Full Feed" tone="emerald" headerRight={
+              <button
+                type="button"
+                onClick={() => { void refresh(); }}
+                disabled={refreshing}
+                className="p-1 rounded hover:bg-emerald-500/10 text-zinc-500 hover:text-emerald-400 transition-colors disabled:opacity-40"
+                title="Refresh feeds"
+              >
+                <RefreshCw className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`} />
+              </button>
+            } />
           <div className="mt-3 flex-1 min-h-0 overflow-y-auto pr-1 space-y-1.5">
             {tapeAlerts.length === 0 ? (
               <div className="text-xs text-gray-500 px-1 py-8 text-center">No actions in the feed right now.</div>

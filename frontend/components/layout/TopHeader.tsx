@@ -26,7 +26,7 @@ const TAB_LABELS: Record<NavTab, string> = {
   notion: 'Research Department',
   econ: 'Economic Calendar',
   narrative: 'NarrativeFlow',
-  earnings: 'Trading Journal',
+  earnings: 'Performance',
   team: 'Team',
   settings: 'Settings',
 };

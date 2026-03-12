@@ -22,6 +22,8 @@ interface RiskFlowContextValue {
   markSeen: (id: string) => void;
   markAllSeen: (ids: string[]) => void;
   isSeen: (id: string) => boolean;
+  refresh: () => Promise<void>;
+  refreshing: boolean;
 }
 
 const RiskFlowContext = createContext<RiskFlowContextValue>({
@@ -35,6 +37,8 @@ const RiskFlowContext = createContext<RiskFlowContextValue>({
   markSeen: () => {},
   markAllSeen: () => {},
   isSeen: () => false,
+  refresh: async () => {},
+  refreshing: false,
 });
 
 const NOTION_POLL_MS = 60_000;
@@ -88,6 +92,7 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   const [notionPollStatus, setNotionPollStatus] = useState<NotionPollStatus | null>(null);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(() => loadStoredIds(DISMISSED_STORAGE_KEY));
   const [seenIds, setSeenIds] = useState<Set<string>>(() => loadStoredIds(SEEN_STORAGE_KEY));
+  const [refreshing, setRefreshing] = useState(false);
   const notionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const backendIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -260,6 +265,22 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
     return seenIds.has(id);
   }, [seenIds]);
 
+  const refresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      // Trigger backend to poll sources for fresh items
+      await baseBackend.riskflow.refresh().catch(() => {});
+      // Re-fetch all three sources in parallel
+      await Promise.all([
+        pollNotion(),
+        pollBackendFeed(),
+        Promise.resolve(riskFlowPoller.forceRefresh()),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [pollNotion, pollBackendFeed]);
+
   useEffect(() => {
     persistIds(DISMISSED_STORAGE_KEY, dismissedIds);
   }, [dismissedIds]);
@@ -281,6 +302,8 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
         markSeen,
         markAllSeen,
         isSeen,
+        refresh,
+        refreshing,
       }}
     >
       {children}

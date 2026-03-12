@@ -22,7 +22,7 @@ import { createNarrativeRoutes } from './narrative/index.js';
 import { createERRoutes } from './er/index.js';
 import { createVoiceRoutes } from './voice/index.js';
 import { createRegimeRoutes } from './regimes/index.js';
-import { createEarningsRoutes } from './earnings/index.js';
+
 import { createGitHubAuthRoutes } from './auth/github.js';
 import { createVersionRoutes } from './version/index.js';
 import { createMarketDataRoutes } from './market-data/index.js';
@@ -99,8 +99,6 @@ export function registerRoutes(app: Hono): void {
   app.use('/api/er/*', authMiddleware);
   app.use('/api/voice', authMiddleware);
   app.use('/api/voice/*', authMiddleware);
-  app.use('/api/er-scoring', authMiddleware);
-  app.use('/api/er-scoring/*', authMiddleware);
   app.use('/api/mcp', authMiddleware);
   app.use('/api/mcp/*', authMiddleware);
   app.use('/api/settings', authMiddleware);
@@ -145,8 +143,6 @@ export function registerRoutes(app: Hono): void {
   // Voice assistant routes
   app.route('/api/voice', createVoiceRoutes());
 
-  // ER Scoring history routes (psych journaling)
-  app.route('/api/er-scoring', createEarningsRoutes());
 
   // MCP server registry
   app.route('/api/mcp', createMcpRoutes());

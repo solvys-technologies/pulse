@@ -356,6 +356,10 @@ export class RiskFlowService {
     }
   }
 
+  async refresh(): Promise<{ success: boolean; refreshedAt: string }> {
+    return this.client.post<{ success: boolean; refreshedAt: string }>('/api/riskflow/refresh', {});
+  }
+
   async fetchVIX(): Promise<{ value: number }> {
     return this.client.get<{ value: number }>('/api/market/vix');
   }

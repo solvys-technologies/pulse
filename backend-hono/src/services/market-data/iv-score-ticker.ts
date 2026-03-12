@@ -1,3 +1,4 @@
+// [claude-code 2026-03-12] Task 2C: startIVScoreTicker reads PRIMARY_INSTRUMENT env var
 // [claude-code 2026-03-11] IV Score Ticker — persistent background scorer
 // Runs every 60s, computes blended IV score, caches to DB.
 // Decay never restarts: events use original published_at timestamps.

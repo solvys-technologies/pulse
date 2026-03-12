@@ -6,7 +6,9 @@
 
 import type { ParsedHeadline, HotPrint, IVScoreResult } from '../../types/news-analysis.js'
 import { hasLevel4Emoji, MAJOR_MACRO_PRINTS } from '../headline-parser.js'
+import { INSTRUMENT_BETAS } from '../iv-scoring-v2.js'
 
+// [claude-code 2026-03-12] Task 2C: Multi-instrument scoreToPoints, ExtendedIVScore uses impliedPoints + instrument
 // [claude-code 2026-03-12] Aligned V1 weights with V3 scoring matrix
 // Base impact weights by event type
 const EVENT_WEIGHTS: Record<string, number> = {
@@ -21,7 +23,7 @@ const EVENT_WEIGHTS: Record<string, number> = {
   technicalBreak: 4,
   economicData: 5,
   retailSales: 5,
-  ism: 5,
+  ism: 7,  // Leading indicator (PMI/ISM) — forward signal, aligned with V2
   jobless: 4,
   housing: 4,
   trade: 5,
@@ -69,6 +71,10 @@ export interface IVScoreInput {
 }
 
 export interface ExtendedIVScore extends IVScoreResult {
+  /** Generic implied points for the selected instrument */
+  impliedPoints: number
+  /** Which instrument the implied points are for */
+  instrument: string
   macroLevel: 1 | 2 | 3 | 4
   sentiment: 'bullish' | 'bearish' | 'neutral'
   tradingImplication: string
@@ -161,8 +167,13 @@ export function calculateIVScore(input: IVScoreInput): ExtendedIVScore {
   // Clamp final score
   score = Math.min(10, Math.max(0, score))
 
-  // Calculate implied points
-  const { es, nq } = scoreToPoints(score)
+  // Calculate implied points (uses PRIMARY_INSTRUMENT env var or defaults to /ES)
+  const primaryInstrument = process.env.PRIMARY_INSTRUMENT || '/ES'
+  const ptResult = scoreToPoints(score, primaryInstrument)
+
+  // Legacy ES/NQ fields for backward compat (always compute both)
+  const esResult = scoreToPoints(score, '/ES')
+  const nqResult = scoreToPoints(score, '/NQ')
 
   // Determine macro level (1-4 scale)
   const macroLevel = calculateMacroLevel(score, parsed, hotPrint)
@@ -177,8 +188,10 @@ export function calculateIVScore(input: IVScoreInput): ExtendedIVScore {
     eventType,
     score: Number(score.toFixed(2)),
     rationale,
-    impliedESPoints: es,
-    impliedNQPoints: nq,
+    impliedESPoints: esResult.points,
+    impliedNQPoints: nqResult.points,
+    impliedPoints: ptResult.points,
+    instrument: ptResult.instrument,
     timestamp: timestamp.toISOString(),
     macroLevel,
     sentiment,
@@ -196,29 +209,33 @@ function getEasternHour(date: Date): number {
 }
 
 /**
- * Convert score to implied ES/NQ point movements
+ * Convert score to implied point movements for any instrument.
+ * Uses INSTRUMENT_BETAS from iv-scoring-v2 for beta-adjusted scaling.
  */
-function scoreToPoints(score: number): { es: number; nq: number } {
-  if (score <= 0) return { es: 0, nq: 0 }
+function scoreToPoints(score: number, instrument: string = '/ES'): { points: number; instrument: string } {
+  if (score <= 0) return { points: 0, instrument }
 
   // Non-linear scaling — steeper for high-impact events (geopolitical, crisis)
-  let esPoints: number
+  // Base curve calibrated for /ES (beta 1.0)
+  let basePoints: number
   if (score <= 3) {
-    esPoints = score * 8
+    basePoints = score * 8
   } else if (score <= 6) {
-    esPoints = 24 + (score - 3) * 15
+    basePoints = 24 + (score - 3) * 15
   } else if (score <= 8) {
-    esPoints = 69 + (score - 6) * 30
+    basePoints = 69 + (score - 6) * 30
   } else {
-    esPoints = 129 + (score - 8) * 50
+    basePoints = 129 + (score - 8) * 50
   }
 
-  // NQ typically moves ~1.8x ES
-  const nqPoints = esPoints * 1.8
+  // Apply instrument beta from INSTRUMENT_BETAS (defaults to 1.0 for unknown instruments)
+  const config = INSTRUMENT_BETAS[instrument]
+  const beta = config ? Math.abs(config.beta) : 1.0
+  const adjustedPoints = basePoints * beta
 
   return {
-    es: Number(esPoints.toFixed(1)),
-    nq: Number(nqPoints.toFixed(1)),
+    points: Number(adjustedPoints.toFixed(1)),
+    instrument,
   }
 }
 

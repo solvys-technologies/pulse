@@ -1,7 +1,8 @@
 // [claude-code 2026-03-09] Added cancel on click during speaking/thinking, mic denied-state UI
+// [claude-code 2026-03-12] Switched from independent useVoiceAssistant() to shared VoiceContext
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Mic, MicOff } from 'lucide-react';
-import { useVoiceAssistant } from '../../hooks/useVoiceAssistant';
+import { useVoice } from '../../contexts/VoiceContext';
 import { resolveVoiceOrbState } from '../../types/voice';
 import { VoiceAuroraOrb } from './VoiceAuroraOrb';
 
@@ -43,7 +44,7 @@ export function HeaderVoiceControl({ compact = false }: HeaderVoiceControlProps)
     toggleEnabled,
     respondToInfraction,
     cancel,
-  } = useVoiceAssistant();
+  } = useVoice();
 
   const [currentScore, setCurrentScore] = useState(0);
   const [lastInfractionAt, setLastInfractionAt] = useState<number | null>(null);

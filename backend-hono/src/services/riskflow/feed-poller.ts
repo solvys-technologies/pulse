@@ -105,6 +105,13 @@ export function stopFeedPoller(): void {
 }
 
 /**
+ * Force an immediate poll cycle (used by manual refresh endpoint)
+ */
+export async function forcePoll(): Promise<void> {
+  await pollForNewItems();
+}
+
+/**
  * Get polling status
  */
 export function isPollingActive(): boolean {

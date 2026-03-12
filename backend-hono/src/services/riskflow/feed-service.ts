@@ -6,6 +6,7 @@
 
 // [claude-code 2026-03-11] Integrated point estimator for commentary point ranges + VIX feed
 // [claude-code 2026-03-12] Removed X API dependency — all tweet ingestion now via twitter-cli
+// [claude-code 2026-03-12] Task 2A: Polymarket sentiment inference + failed enrichment fallback
 // [claude-code 2026-03-10] Integrated twitter-cli (FJ emoji-filtered) as secondary social feed source
 // [claude-code 2026-03-10] Default minMacroLevel lowered 3→2 (Medium+ threshold per Track 1 spec)
 import type { FeedItem, FeedResponse, FeedFilters, NewsSource, UrgencyLevel, SentimentDirection, MacroLevel } from '../../types/riskflow.js';
@@ -27,6 +28,23 @@ const MAX_FEED_ITEMS = 50;
 const isDev = process.env.NODE_ENV !== 'production';
 const ALLOW_MOCK_FALLBACK = process.env.RISKFLOW_ALLOW_MOCK_FALLBACK === 'true';
 
+// Keyword lists for sentiment inference (used for Polymarket + failed enrichment fallback)
+const BULLISH_KEYWORDS = ['growth', 'rally', 'beat', 'rate cut', 'stimulus', 'surge', 'rise', 'gain', 'jump', 'soar', 'bull', 'record high', 'above', 'upgrade', 'boom', 'positive', 'strong'];
+const BEARISH_KEYWORDS = ['recession', 'crash', 'default', 'war', 'cut', 'drop', 'fall', 'plunge', 'decline', 'sink', 'bear', 'miss', 'below', 'downgrade', 'slump', 'negative', 'fear', 'risk', 'warn', 'sell', 'weak'];
+
+/**
+ * Infer bullish/bearish sentiment from headline text using keyword matching.
+ * Returns 'bullish' or 'bearish' (never neutral — always picks a side).
+ */
+function inferSentimentFromKeywords(text: string): 'bullish' | 'bearish' {
+  const lower = text.toLowerCase();
+  let bullCount = 0;
+  let bearCount = 0;
+  for (const kw of BULLISH_KEYWORDS) if (lower.includes(kw)) bullCount++;
+  for (const kw of BEARISH_KEYWORDS) if (lower.includes(kw)) bearCount++;
+  return bullCount >= bearCount ? 'bullish' : 'bearish';
+}
+
 // Enable/disable AI analysis (can be toggled via env)
 const ENABLE_AI_ANALYSIS = process.env.ENABLE_AI_ANALYSIS !== 'false';
 
@@ -43,6 +61,26 @@ function polymarketToFeedItem(market: PolymarketMarket): FeedItem {
   const macroLevel: MacroLevel =
     market.probability >= 0.6 ? 3 : 2
 
+  // Infer sentiment from market title keywords first, then fall back to YES price direction
+  const titleText = `${market.title} ${market.outcome}`;
+  const lower = titleText.toLowerCase();
+  let sentiment: SentimentDirection;
+
+  const hasBearish = BEARISH_KEYWORDS.some(kw => lower.includes(kw));
+  const hasBullish = BULLISH_KEYWORDS.some(kw => lower.includes(kw));
+
+  if (hasBearish && !hasBullish) {
+    sentiment = 'bearish';
+  } else if (hasBullish && !hasBearish) {
+    sentiment = 'bullish';
+  } else if (hasBearish && hasBullish) {
+    // Both present — use keyword scoring
+    sentiment = inferSentimentFromKeywords(titleText);
+  } else {
+    // No keywords matched — use YES price direction: >50% = bullish for the underlying question
+    sentiment = market.probability > 0.5 ? 'bullish' : 'bearish';
+  }
+
   return {
     id: `poly-${market.id}`,
     source: 'Polymarket',
@@ -52,7 +90,7 @@ function polymarketToFeedItem(market: PolymarketMarket): FeedItem {
     tags: ['POLYMARKET', 'ODDS'],
     isBreaking: false,
     urgency: 'high',
-    sentiment: 'neutral',
+    sentiment,
     ivScore: undefined,
     macroLevel,
     publishedAt: market.closeTime ?? new Date().toISOString(),
@@ -105,7 +143,8 @@ async function enrichWithAnalysis(item: FeedItem): Promise<FeedItem> {
     if (ivResult.score >= 2) {
       try {
         const vixData = await fetchVIX();
-        const pts = estimatePoints(ivResult.score, vixData.level, '/ES');
+        const feedInstrument = process.env.PRIMARY_INSTRUMENT || '/ES';
+        const pts = estimatePoints(ivResult.score, vixData.level, feedInstrument);
         const sentimentMap: Record<string, 'Bullish' | 'Bearish' | 'Neutral'> = {
           bullish: 'Bullish', bearish: 'Bearish', neutral: 'Neutral',
         };
@@ -113,7 +152,7 @@ async function enrichWithAnalysis(item: FeedItem): Promise<FeedItem> {
           sentiment: sentimentMap[ivResult.sentiment] ?? 'Neutral',
           classification: 'Neutral',
           impliedPoints: pts.scaledPoints,
-          instrument: '/ES',
+          instrument: feedInstrument,
         };
       } catch {
         // VIX unavailable — skip point estimation
@@ -143,6 +182,11 @@ async function enrichWithAnalysis(item: FeedItem): Promise<FeedItem> {
     return enriched;
   } catch (error) {
     console.error('[RiskFlow] Analysis enrichment failed for item:', item.id, error);
+    // Fallback: ensure every item gets bullish/bearish (never null/neutral from failed enrichment)
+    if (!item.sentiment || item.sentiment === 'neutral') {
+      const fallbackSentiment = inferSentimentFromKeywords(item.headline);
+      return { ...item, sentiment: fallbackSentiment as SentimentDirection };
+    }
     return item;
   }
 }
