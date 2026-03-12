@@ -1,4 +1,5 @@
 // [claude-code 2026-03-06] Regime Tracker types and seed data for institutional/session/report trading windows
+// [claude-code 2026-03-12] Replaced W/L record with ORB bullish/bearish day tracking
 
 export interface TradingRegime {
   id: string;
@@ -9,7 +10,7 @@ export interface TradingRegime {
   timezone: 'ET' | 'UTC' | 'GMT' | 'JST';
   daysActive: ('Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri')[];
   confidence: number; // 0-100
-  record: { wins: number; losses: number };
+  record: { bullishDays: number; bearishDays: number };
   daysObserved: number;
   bias: 'long' | 'short' | 'fade' | 'neutral';
   source?: string;
@@ -30,7 +31,7 @@ export const SEED_REGIMES: TradingRegime[] = [
     timezone: 'ET',
     daysActive: ALL_WEEKDAYS,
     confidence: 72,
-    record: { wins: 36, losses: 14 },
+    record: { bullishDays: 36, bearishDays: 14 },
     daysObserved: 50,
     bias: 'fade',
     source: 'Jane Street',
@@ -45,7 +46,7 @@ export const SEED_REGIMES: TradingRegime[] = [
     timezone: 'ET',
     daysActive: ALL_WEEKDAYS,
     confidence: 65,
-    record: { wins: 28, losses: 15 },
+    record: { bullishDays: 28, bearishDays: 15 },
     daysObserved: 43,
     bias: 'fade',
     source: 'Goldman Sachs',
@@ -60,7 +61,7 @@ export const SEED_REGIMES: TradingRegime[] = [
     timezone: 'ET',
     daysActive: ALL_WEEKDAYS,
     confidence: 62,
-    record: { wins: 25, losses: 15 },
+    record: { bullishDays: 25, bearishDays: 15 },
     daysObserved: 40,
     bias: 'fade',
     source: 'JPMorgan',
@@ -75,7 +76,7 @@ export const SEED_REGIMES: TradingRegime[] = [
     timezone: 'ET',
     daysActive: ALL_WEEKDAYS,
     confidence: 60,
-    record: { wins: 22, losses: 15 },
+    record: { bullishDays: 22, bearishDays: 15 },
     daysObserved: 37,
     bias: 'fade',
     source: 'Citi/BOA',
@@ -92,7 +93,7 @@ export const SEED_REGIMES: TradingRegime[] = [
     timezone: 'ET',
     daysActive: ALL_WEEKDAYS,
     confidence: 70,
-    record: { wins: 30, losses: 13 },
+    record: { bullishDays: 30, bearishDays: 13 },
     daysObserved: 43,
     bias: 'neutral',
     instruments: ['/NQ', '/ES'],
@@ -106,7 +107,7 @@ export const SEED_REGIMES: TradingRegime[] = [
     timezone: 'ET',
     daysActive: ALL_WEEKDAYS,
     confidence: 68,
-    record: { wins: 27, losses: 12 },
+    record: { bullishDays: 27, bearishDays: 12 },
     daysObserved: 39,
     bias: 'neutral',
     instruments: ['/NQ', '/ES', '/MNQ'],
@@ -120,7 +121,7 @@ export const SEED_REGIMES: TradingRegime[] = [
     timezone: 'ET',
     daysActive: ALL_WEEKDAYS,
     confidence: 75,
-    record: { wins: 38, losses: 12 },
+    record: { bullishDays: 38, bearishDays: 12 },
     daysObserved: 50,
     bias: 'neutral',
     instruments: ['/NQ', '/ES', '/MNQ'],
@@ -136,7 +137,7 @@ export const SEED_REGIMES: TradingRegime[] = [
     timezone: 'ET',
     daysActive: ['Wed'],
     confidence: 80,
-    record: { wins: 8, losses: 2 },
+    record: { bullishDays: 8, bearishDays: 2 },
     daysObserved: 10,
     bias: 'neutral',
     instruments: ['/NQ', '/ES', '/MNQ'],
@@ -151,7 +152,7 @@ export const SEED_REGIMES: TradingRegime[] = [
     timezone: 'ET',
     daysActive: ['Fri'],
     confidence: 71,
-    record: { wins: 7, losses: 3 },
+    record: { bullishDays: 7, bearishDays: 3 },
     daysObserved: 10,
     bias: 'fade',
     instruments: ['/NQ', '/ES', '/MNQ'],

@@ -23,6 +23,15 @@ export interface FeedItem {
   macroLevel?: MacroLevel;
   publishedAt: string;
   analyzedAt?: string;
+  /** Author handle for X/Twitter attribution */
+  authorHandle?: string;
+  /** Point estimation from IV score × VIX */
+  priceBrainScore?: {
+    sentiment: 'Bullish' | 'Bearish' | 'Neutral';
+    classification: 'Cyclical' | 'Counter-cyclical' | 'Neutral';
+    impliedPoints: number | null;
+    instrument: string | null;
+  };
 }
 
 export interface FeedResponse {

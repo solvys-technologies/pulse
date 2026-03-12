@@ -1,12 +1,13 @@
 // [claude-code 2026-03-06] Extracted AnalysisGreeting from ChatInterface — greeting + suggestion chips
+// [claude-code 2026-03-11] Chips now wired to skill system via onSkillSend
 import { BarChart3, CalendarCheck, Brain, Eye } from 'lucide-react';
 import { usePulseAgents } from '../../contexts/PulseAgentContext';
 
-const SUGGESTION_CHIPS: { label: string; prompt: string; icon: typeof BarChart3 }[] = [
-  { label: "Run the MDB Report", prompt: "Run the MDB report", icon: BarChart3 },
-  { label: "Tale of the Tape", prompt: "Give me the Tale of the Tape (Weekly Summary)", icon: CalendarCheck },
-  { label: "Psych Eval", prompt: "Let's do a psych eval", icon: Brain },
-  { label: "Update my Blindspots", prompt: "Update my Blindspots", icon: Eye },
+const SUGGESTION_CHIPS: { label: string; skillId: string; prompt: string; icon: typeof BarChart3 }[] = [
+  { label: "Run the MDB Report", skillId: 'mdb_report', prompt: "Run the MDB report for today's session", icon: BarChart3 },
+  { label: "Tale of the Tape", skillId: 'tott', prompt: "Give me the Tale of the Tape weekly summary", icon: CalendarCheck },
+  { label: "Psych Eval", skillId: 'psych_eval', prompt: "Run a full psych eval on my recent trading", icon: Brain },
+  { label: "Update my Blindspots", skillId: 'blindspots', prompt: "Update and review my trading blindspots", icon: Eye },
 ];
 
 function getGreeting(): string {
@@ -19,10 +20,11 @@ function getGreeting(): string {
 
 interface ChatGreetingProps {
   onSend: (msg: string) => void;
+  onSkillSend?: (skillId: string, msg: string) => void;
   isLoading: boolean;
 }
 
-export function ChatGreeting({ onSend, isLoading }: ChatGreetingProps) {
+export function ChatGreeting({ onSend, onSkillSend, isLoading }: ChatGreetingProps) {
   let activeAgent: { name: string; icon: string; sector: string; description: string } | null = null;
   try {
     // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -45,6 +47,14 @@ export function ChatGreeting({ onSend, isLoading }: ChatGreetingProps) {
       case 'Charles': return "I'm Charles, your Quantitative Strategist. What patterns should we analyze?";
       case 'Horace': return "I'm Horace, your Portfolio Architect. What allocations need review?";
       default: return `I'm ${agent.name}. What needs orchestrating today?`;
+    }
+  };
+
+  const handleChipClick = (chip: typeof SUGGESTION_CHIPS[number]) => {
+    if (onSkillSend) {
+      onSkillSend(chip.skillId, chip.prompt);
+    } else {
+      onSend(chip.prompt);
     }
   };
 
@@ -83,7 +93,7 @@ export function ChatGreeting({ onSend, isLoading }: ChatGreetingProps) {
           return (
             <button
               key={index}
-              onClick={() => onSend(chip.prompt)}
+              onClick={() => handleChipClick(chip)}
               disabled={isLoading}
               className="flex items-center gap-3 px-4 py-3.5 bg-transparent border border-white/10 pulse-accent-border-hover disabled:opacity-50 rounded-xl text-left transition-all group"
             >

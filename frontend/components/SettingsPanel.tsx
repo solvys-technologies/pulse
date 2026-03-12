@@ -1,3 +1,4 @@
+// [claude-code 2026-03-11] T2e: persistent thread toggle in Gateway tab
 // [claude-code 2026-03-11] T5: added mic device selector to notifications tab
 import { Settings, Bell, CreditCard, Cpu, Code, Volume2, Terminal, Wifi, Palette, Users, AlertTriangle, ArrowLeft, Globe, Mic } from 'lucide-react';
 import { useSettings, type APIKeys } from '../contexts/SettingsContext';
@@ -971,10 +972,28 @@ export function SettingsPage() {
 /*  Gateway settings tab                                               */
 /* ------------------------------------------------------------------ */
 
+// [claude-code 2026-03-11] T2e: persistent thread toggle + thread ID input
 function GatewayTab() {
   const { status, lastHealthCheck, reconnect, gatewayUrl } = useGateway();
   const statusColor = status === 'connected' ? '#34D399' : status === 'connecting' ? 'var(--pulse-accent)' : '#EF4444';
   const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
+
+  const [persistentEnabled, setPersistentEnabled] = useState(() =>
+    localStorage.getItem('pulse_gateway_persistent_thread_enabled') === 'true'
+  );
+  const [persistentThreadId, setPersistentThreadId] = useState(() =>
+    localStorage.getItem('pulse_gateway_persistent_thread_id') ?? ''
+  );
+
+  const handleTogglePersistent = (enabled: boolean) => {
+    setPersistentEnabled(enabled);
+    localStorage.setItem('pulse_gateway_persistent_thread_enabled', String(enabled));
+  };
+
+  const handleThreadIdChange = (id: string) => {
+    setPersistentThreadId(id);
+    localStorage.setItem('pulse_gateway_persistent_thread_id', id);
+  };
 
   return (
     <section>
@@ -1003,6 +1022,36 @@ function GatewayTab() {
         <p className="text-xs text-gray-500">
           The gateway connects Pulse to your OpenClaw agent sessions. Health checks run every 30 seconds.
         </p>
+
+        {/* Persistent Thread */}
+        <div className="bg-[var(--pulse-bg)] border border-[var(--pulse-accent)]/20 rounded-lg p-4 mt-4">
+          <h4 className="text-sm font-medium text-white mb-3">Persistent Thread</h4>
+          <div className="space-y-3">
+            <Toggle
+              label="Enable persistent thread"
+              enabled={persistentEnabled}
+              onChange={handleTogglePersistent}
+            />
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Thread / Conversation ID</label>
+              <input
+                type="text"
+                value={persistentThreadId}
+                onChange={(e) => handleThreadIdChange(e.target.value)}
+                disabled={!persistentEnabled}
+                placeholder="e.g. conv_abc123..."
+                className={`w-full bg-[var(--pulse-bg)] border rounded px-3 py-2 text-xs text-white placeholder:text-gray-600 focus:outline-none transition-colors ${
+                  persistentEnabled
+                    ? 'border-[var(--pulse-accent)]/30 focus:border-[var(--pulse-accent)]/60'
+                    : 'border-gray-700/30 opacity-50 cursor-not-allowed'
+                }`}
+              />
+            </div>
+            <p className="text-[11px] text-gray-500">
+              Keep a single conversation thread across refreshes. Prevents new-conversation flicker.
+            </p>
+          </div>
+        </div>
       </div>
     </section>
   );

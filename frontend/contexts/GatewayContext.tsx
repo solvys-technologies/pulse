@@ -1,6 +1,8 @@
 // [claude-code 2026-03-10] Gateway toast: show once per session only (sessionStorage guard)
+// [claude-code 2026-03-11] Gateway port now configurable via Settings → persisted in localStorage
 import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { useToast } from './ToastContext';
+import { useSettings } from './SettingsContext';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -26,7 +28,7 @@ const GatewayContext = createContext<GatewayContextValue>({
 /*  Constants                                                          */
 /* ------------------------------------------------------------------ */
 
-const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL || 'http://localhost:7787';
+const DEFAULT_GATEWAY_PORT = 7787;
 const HEALTH_INTERVAL_MS = 30_000; // 30 seconds
 const MAX_BACKOFF_MS = 60_000;
 
@@ -35,6 +37,7 @@ const MAX_BACKOFF_MS = 60_000;
 /* ------------------------------------------------------------------ */
 
 export function GatewayProvider({ children }: { children: ReactNode }) {
+  const { gatewayPort } = useSettings();
   const [status, setStatus] = useState<GatewayStatus>('connecting');
   const [lastHealthCheck, setLastHealthCheck] = useState<string | null>(null);
   const backoffRef = useRef(2000);
@@ -42,9 +45,11 @@ export function GatewayProvider({ children }: { children: ReactNode }) {
   const { addToast, dismissToast } = useToast();
   const connectingToastRef = useRef<string | null>(null);
 
+  const gatewayUrl = import.meta.env.VITE_GATEWAY_URL || `http://localhost:${gatewayPort || DEFAULT_GATEWAY_PORT}`;
+
   const checkHealth = useCallback(async () => {
     try {
-      const res = await fetch(`${GATEWAY_URL}/health`, { signal: AbortSignal.timeout(5000) });
+      const res = await fetch(`${gatewayUrl}/health`, { signal: AbortSignal.timeout(5000) });
       const contentType = res.headers.get('content-type') || '';
       const looksLikeJson = contentType.includes('application/json');
       if (res.ok && looksLikeJson) {
@@ -81,7 +86,7 @@ export function GatewayProvider({ children }: { children: ReactNode }) {
       backoffRef.current = Math.min(backoffRef.current * 2, MAX_BACKOFF_MS);
       retryTimerRef.current = setTimeout(checkHealth, backoffRef.current);
     }
-  }, [status, addToast, dismissToast]);
+  }, [status, addToast, dismissToast, gatewayUrl]);
 
   const reconnect = useCallback(() => {
     if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
@@ -91,8 +96,10 @@ export function GatewayProvider({ children }: { children: ReactNode }) {
     checkHealth();
   }, [checkHealth, addToast]);
 
-  // Initial connection + periodic health checks
+  // Initial connection + periodic health checks (re-trigger when port changes)
   useEffect(() => {
+    setStatus('connecting');
+    backoffRef.current = 2000;
     checkHealth();
     const interval = setInterval(checkHealth, HEALTH_INTERVAL_MS);
     return () => {
@@ -100,10 +107,10 @@ export function GatewayProvider({ children }: { children: ReactNode }) {
       if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [gatewayUrl]);
 
   return (
-    <GatewayContext.Provider value={{ status, lastHealthCheck, reconnect, gatewayUrl: GATEWAY_URL }}>
+    <GatewayContext.Provider value={{ status, lastHealthCheck, reconnect, gatewayUrl }}>
       {children}
     </GatewayContext.Provider>
   );

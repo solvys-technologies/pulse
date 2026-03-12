@@ -33,6 +33,7 @@ async function pushToNotion(items: FeedItem[]): Promise<void> {
       Message: { rich_text: [{ text: { content: item.headline.slice(0, 2000) } }] },
       Category: { select: { name: `RiskFlow-${tier}` } },
       Source: { select: { name: item.source === 'FinancialJuice' ? 'FinancialJuice' : 'TwitterCli' } },
+      Status: { status: { name: 'Active' } },
     }).catch((err) => console.warn('[EconTwitterPoller] Notion push failed:', err));
   }
 

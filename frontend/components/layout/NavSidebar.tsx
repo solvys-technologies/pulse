@@ -1,8 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Newspaper, Settings, LogOut, Sparkles, LayoutDashboard, MessagesSquare, NotebookText, CalendarDays, GitBranch, GripVertical, ChevronsRight, ChevronsLeft, BookOpenCheck } from 'lucide-react';
+import { Newspaper, Settings, LogOut, Sparkles, LayoutDashboard, MessagesSquare, NotebookText, CalendarDays, GitBranch, GripVertical, ChevronsRight, ChevronsLeft, BookOpenCheck, Users } from 'lucide-react';
 import { getSidebarOrder, setSidebarOrder, type NavTabId } from '../../lib/layoutOrderStorage';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'settings';
+type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'team' | 'settings';
 
 interface NavSidebarProps {
   activeTab: NavTab;
@@ -14,14 +14,15 @@ interface NavSidebarProps {
 }
 
 const NAV_ITEMS_MAP: Record<NavTabId, { id: NavTab; icon: typeof LayoutDashboard; label: string; description: string }> = {
-  executive: { id: 'executive', icon: LayoutDashboard, label: 'Dashboard', description: 'KPIs, calendar, The Tape' },
+  executive: { id: 'executive', icon: LayoutDashboard, label: 'Dashboard', description: 'KPIs, calendar, RiskFlow' },
   analysis: { id: 'analysis', icon: Sparkles, label: 'Chat', description: 'AI-powered trade analysis' },
   news: { id: 'news', icon: Newspaper, label: 'RiskFlow', description: 'Market news & events' },
   econ: { id: 'econ', icon: CalendarDays, label: 'Calendar', description: 'Economic calendar' },
   chatroom: { id: 'chatroom', icon: MessagesSquare, label: 'Board Room', description: 'Multi-agent boardroom' },
   notion: { id: 'notion', icon: NotebookText, label: 'Research', description: 'Notion research corpus' },
   narrative: { id: 'narrative', icon: GitBranch, label: 'Narratives', description: 'Market narrative flow' },
-  earnings: { id: 'earnings', icon: BookOpenCheck, label: 'Trading Journal', description: 'PsychAssist ER history & KPIs' },
+  earnings: { id: 'earnings', icon: BookOpenCheck, label: 'Performance', description: 'PsychAssist ER history & performance KPIs' },
+  team: { id: 'team', icon: Users, label: 'Team', description: 'Unified Context Bank & desk reports' },
 };
 
 // Icon size: original was w-6 h-6 (24px). 35% smaller = ~15.6px → w-4 h-4 (16px)
@@ -106,7 +107,7 @@ export function NavSidebar({
   }, []);
 
   const orderedItems = order
-    .filter((id): id is NavTabId => id in NAV_ITEMS_MAP)
+    .filter((id): id is NavTabId => id in NAV_ITEMS_MAP && id !== 'chatroom')
     .map((tabId) => ({
       tabId,
       icon: NAV_ITEMS_MAP[tabId].icon,
@@ -237,23 +238,9 @@ export function NavSidebar({
     </div>
   );
 
-  // When TopStepX is enabled, sidebar floats over content on hover
+  // When TopStepX/iframe is enabled, sidebar is completely hidden — no hover zones, no trigger strips
   if (topStepXEnabled) {
-    return (
-      <div
-        className="fixed left-0 top-[56px] bottom-0 z-50"
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      >
-        {/* Hover trigger strip when collapsed */}
-        {!expanded && (
-          <div className="absolute left-0 top-0 bottom-0 w-3 bg-transparent" />
-        )}
-        <div className={`h-full transition-transform duration-200 ${expanded ? 'translate-x-0' : '-translate-x-full'}`}>
-          {sidebarContent}
-        </div>
-      </div>
-    );
+    return null;
   }
 
   // Normal sidebar

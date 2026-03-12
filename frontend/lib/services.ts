@@ -253,11 +253,12 @@ export class AccountService {
 export class RiskFlowService {
   constructor(private client: ApiClient) { }
 
-  async list(params?: { limit?: number; offset?: number; symbol?: string; minMacroLevel?: number }): Promise<RiskFlowListResponse> {
+  async list(params?: { limit?: number; offset?: number; symbol?: string; minMacroLevel?: number; instrument?: string }): Promise<RiskFlowListResponse> {
     const query = new URLSearchParams();
     if (params?.limit) query.append('limit', params.limit.toString());
     if (params?.offset) query.append('offset', params.offset.toString());
     if (params?.symbol) query.append('symbols', params.symbol); // Backend expects 'symbols' not 'symbol'
+    if (params?.instrument) query.append('instrument', params.instrument);
     // Allow frontend to override minMacroLevel for debugging (default is 3)
     if (params?.minMacroLevel !== undefined) {
       query.append('minMacroLevel', params.minMacroLevel.toString());
@@ -330,6 +331,8 @@ export class RiskFlowService {
             category: item.source || '',
             tags: item.tags || [],
             urgency: item.urgency || 'normal',
+            priceBrainScore: item.priceBrainScore ?? undefined,
+            authorHandle: item.authorHandle ?? undefined,
           };
         }),
         total: response.total ?? items.length,
@@ -351,6 +354,10 @@ export class RiskFlowService {
       console.error('Failed to seed RiskFlow:', error);
       throw error;
     }
+  }
+
+  async refresh(): Promise<{ success: boolean; refreshedAt: string }> {
+    return this.client.post<{ success: boolean; refreshedAt: string }>('/api/riskflow/refresh', {});
   }
 
   async fetchVIX(): Promise<{ value: number }> {
@@ -551,6 +558,52 @@ export class RithmicService {
   async getStatus(): Promise<RithmicStatusResponse> {
     const response = await this.client.get<RithmicStatusResponse>('/api/rithmic/status');
     return response;
+  }
+}
+
+// Autopilot Service
+export interface AutopilotStatusResponse {
+  enabled: boolean;
+  isRTH: boolean;
+  activeSession: string | null;
+  signalsToday: number;
+  tradesToday: number;
+  maxTradesPerDay: number;
+  dailyPnL: number;
+  dailyDrawdownLimit: number;
+  confidenceThreshold: number;
+}
+
+export class AutopilotService {
+  constructor(private client: ApiClient) {}
+
+  async getStatus(): Promise<AutopilotStatusResponse> {
+    return this.client.get<AutopilotStatusResponse>('/api/autopilot/status');
+  }
+
+  async getSignals(limit?: number): Promise<{ signals: any[]; total: number }> {
+    const suffix = limit ? `?limit=${limit}` : '';
+    return this.client.get(`/api/autopilot/signals${suffix}`);
+  }
+
+  async getPendingProposals(): Promise<{ proposals: any[]; total: number }> {
+    return this.client.get('/api/autopilot/proposals');
+  }
+
+  async acknowledgeProposal(proposalId: string, decision: 'approved' | 'rejected'): Promise<any> {
+    return this.client.post('/api/autopilot/acknowledge', { proposalId, decision });
+  }
+
+  async executeProposal(proposalId: string): Promise<any> {
+    return this.client.post('/api/autopilot/execute', { proposalId });
+  }
+
+  async getHistory(limit?: number, status?: string): Promise<{ proposals: any[]; total: number }> {
+    const query = new URLSearchParams();
+    if (limit) query.append('limit', limit.toString());
+    if (status) query.append('status', status);
+    const suffix = query.toString() ? `?${query.toString()}` : '';
+    return this.client.get(`/api/autopilot/history${suffix}`);
   }
 }
 
@@ -870,75 +923,15 @@ export class NotionService {
       return { content: '', briefType: 'MDB', generatedAt: new Date().toISOString() };
     }
   }
-}
 
-// ER Scoring Service (psych scoring around earnings events)
-import type {
-  EarningsReview,
-  EarningsHistoryFilter,
-  EarningsHistoryPage,
-  EarningsReviewCreate,
-  EarningsReviewUpdate,
-  EarningsContextRequest,
-  EarningsContextResponse,
-} from '../types/earnings-history';
-
-export class ERScoringService {
-  constructor(private client: ApiClient) {}
-
-  async list(filter?: EarningsHistoryFilter): Promise<EarningsHistoryPage> {
+  /** Update trade idea status in Notion Kanban (Approved/Denied/Executed/Closed) */
+  async updateTradeIdeaStatus(pageId: string, status: string): Promise<boolean> {
     try {
-      const query = new URLSearchParams();
-      if (filter?.symbol) query.append('symbol', filter.symbol);
-      if (filter?.setupType) query.append('setupType', filter.setupType);
-      if (filter?.dateFrom) query.append('dateFrom', filter.dateFrom);
-      if (filter?.dateTo) query.append('dateTo', filter.dateTo);
-      if (filter?.grade) query.append('grade', filter.grade);
-      if (filter?.direction) query.append('direction', filter.direction);
-      if (filter?.limit) query.append('limit', filter.limit.toString());
-      if (filter?.offset) query.append('offset', filter.offset.toString());
-      const suffix = query.toString() ? `?${query.toString()}` : '';
-      return await this.client.get<EarningsHistoryPage>(`/api/er-scoring${suffix}`);
-    } catch {
-      return { items: [], total: 0, hasMore: false };
-    }
-  }
-
-  async getById(id: string): Promise<EarningsReview | null> {
-    try {
-      return await this.client.get<EarningsReview>(`/api/er-scoring/${id}`);
-    } catch {
-      return null;
-    }
-  }
-
-  async create(data: EarningsReviewCreate): Promise<EarningsReview> {
-    return this.client.post<EarningsReview>('/api/er-scoring', data);
-  }
-
-  async update(id: string, data: EarningsReviewUpdate): Promise<EarningsReview | null> {
-    try {
-      return await this.client.patch<EarningsReview>(`/api/er-scoring/${id}`, data);
-    } catch {
-      return null;
-    }
-  }
-
-  async deleteReview(id: string): Promise<boolean> {
-    try {
-      await this.client.delete(`/api/er-scoring/${id}`);
+      await this.client.patch<{ success: boolean }>(`/api/notion/trade-ideas/${pageId}/status`, { status });
       return true;
     } catch {
       return false;
     }
-  }
-
-  async agentRetrieve(req: EarningsContextRequest): Promise<EarningsContextResponse> {
-    return this.client.post<EarningsContextResponse>('/api/er-scoring/agent-retrieve', req);
-  }
-
-  async setup(): Promise<{ success: boolean; dbId: string }> {
-    return this.client.post('/api/er-scoring/setup', {});
   }
 }
 
@@ -1142,6 +1135,112 @@ export class JournalService {
   }
 }
 
+// Agent Performance Service (Track 7)
+export interface AgentPerformanceStatsItem {
+  agentName: string;
+  totalProposals: number;
+  accepted: number;
+  rejected: number;
+  expired: number;
+  executed: number;
+  wins: number;
+  losses: number;
+  breakeven: number;
+  winRate: number;
+  avgRR: number;
+  totalPnl: number;
+  bestTrade: number;
+  worstTrade: number;
+}
+
+export interface AgentPerformanceResponse {
+  futures: AgentPerformanceStatsItem[];
+  predictions: {
+    total: number;
+    resolved: number;
+    wins: number;
+    losses: number;
+    winRate: number;
+  };
+  combined: {
+    totalDecisions: number;
+    totalWins: number;
+    overallWinRate: number;
+    totalPnl: number;
+  };
+  timestamp: string;
+}
+
+export class AgentPerformanceService {
+  constructor(private client: ApiClient) {}
+
+  async getPerformance(days: number = 30): Promise<AgentPerformanceResponse> {
+    try {
+      return await this.client.get<AgentPerformanceResponse>(`/api/agents/performance?days=${days}`);
+    } catch {
+      return {
+        futures: [],
+        predictions: { total: 0, resolved: 0, wins: 0, losses: 0, winRate: 0 },
+        combined: { totalDecisions: 0, totalWins: 0, overallWinRate: 0, totalPnl: 0 },
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+}
+
+// Blindspots Service
+export interface BlindspotItem {
+  id: number;
+  text: string;
+  severity: 'high' | 'medium' | 'low';
+}
+
+export class BlindspotsService {
+  constructor(private client: ApiClient) {}
+
+  async getBlindspots(): Promise<{ blindspots: BlindspotItem[]; source: string }> {
+    try {
+      return await this.client.get<{ blindspots: BlindspotItem[]; source: string }>('/api/blindspots');
+    } catch {
+      return { blindspots: [], source: 'error' };
+    }
+  }
+}
+
+// Context Bank Service
+import type {
+  ContextBankSnapshot,
+  ContextBankMeta,
+  DeskReport,
+  ConsolidatedBrief,
+} from '../types/context-bank';
+
+export class ContextBankService {
+  constructor(private client: ApiClient) {}
+
+  async getSnapshot(version?: number): Promise<ContextBankSnapshot> {
+    const suffix = version ? `?version=${version}` : '';
+    return this.client.get<ContextBankSnapshot>(`/api/context-bank${suffix}`);
+  }
+
+  async getMeta(): Promise<ContextBankMeta> {
+    return this.client.get<ContextBankMeta>('/api/context-bank/meta');
+  }
+
+  async getDeskReports(): Promise<{ reports: DeskReport[]; count: number }> {
+    return this.client.get('/api/context-bank/desk-reports');
+  }
+
+  async getDeskReportHistory(desk: string, limit?: number): Promise<{ desk: string; reports: DeskReport[]; count: number }> {
+    const suffix = limit ? `?limit=${limit}` : '';
+    return this.client.get(`/api/context-bank/desk-reports/${desk}${suffix}`);
+  }
+
+  async getBrief(): Promise<{ brief: ConsolidatedBrief | null }> {
+    return this.client.get('/api/context-bank/brief');
+  }
+}
+
 // Main Backend Client Interface
 export interface BackendClient {
   account: AccountService;
@@ -1161,10 +1260,13 @@ export interface BackendClient {
   narrative: NarrativeService;
   notion: NotionService;
   econCalendar: EconCalendarService;
-  erScoring: ERScoringService;
   marketData: MarketDataService;
   mcp: McpService;
   journal: JournalService;
+  blindspots: BlindspotsService;
+  agentPerformance: AgentPerformanceService;
+  contextBank: ContextBankService;
+  autopilot: AutopilotService;
 }
 
 // Create backend client from API client
@@ -1187,9 +1289,12 @@ export function createBackendClient(client: ApiClient): BackendClient {
     narrative: new NarrativeService(client),
     notion: new NotionService(client),
     econCalendar: new EconCalendarService(client),
-    erScoring: new ERScoringService(client),
     marketData: new MarketDataService(client),
     mcp: new McpService(client),
     journal: new JournalService(client),
+    blindspots: new BlindspotsService(client),
+    agentPerformance: new AgentPerformanceService(client),
+    contextBank: new ContextBankService(client),
+    autopilot: new AutopilotService(client),
   };
 }

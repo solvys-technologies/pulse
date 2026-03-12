@@ -46,6 +46,19 @@ function timeAgo(iso: string): string {
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
+/** Infer Bullish/Bearish from alert data or headline keywords */
+function inferDirection(alert: RiskFlowAlert): 'Bullish' | 'Bearish' {
+  if (alert.direction === 'Bullish' || alert.direction === 'Bearish') return alert.direction;
+  if (alert.tradeIdea) return alert.tradeIdea.direction === 'long' ? 'Bullish' : 'Bearish';
+  const lower = (alert.headline + ' ' + (alert.summary ?? '')).toLowerCase();
+  const bullish = ['surge', 'rally', 'rise', 'gain', 'jump', 'soar', 'bull', 'record high', 'beat', 'above', 'upgrade', 'boom', 'positive', 'strong', 'up '];
+  const bearish = ['drop', 'fall', 'crash', 'plunge', 'decline', 'sink', 'bear', 'miss', 'below', 'downgrade', 'slump', 'negative', 'fear', 'risk', 'warn', 'cut', 'sell', 'weak', 'down '];
+  let b = 0, s = 0;
+  for (const kw of bullish) if (lower.includes(kw)) b++;
+  for (const kw of bearish) if (lower.includes(kw)) s++;
+  return b >= s ? 'Bullish' : 'Bearish';
+}
+
 type CompactVariant = 'minimal' | 'mini';
 
 interface CompactRiskFlowCardProps {
@@ -85,13 +98,6 @@ function MiniCard({ alert, onDismiss, seen }: CompactRiskFlowCardProps) {
           }
         </span>
       )}
-      {alert.direction && alert.direction !== 'Neutral' && !isProposal && (
-        <span className={`text-[8px] font-bold ${
-          alert.direction === 'Bullish' ? 'text-emerald-500' : 'text-red-400'
-        }`}>
-          {alert.direction === 'Bullish' ? '\u25B2' : '\u25BC'}
-        </span>
-      )}
       <a
         href={alert.url}
         target="_blank"
@@ -100,11 +106,13 @@ function MiniCard({ alert, onDismiss, seen }: CompactRiskFlowCardProps) {
       >
         {alert.headline}
       </a>
-      {alert.pointRange != null && alert.pointRange !== 0 && (
-        <span className="text-[8px] text-zinc-600 tabular-nums flex-shrink-0">
-          &#177;{Math.abs(alert.pointRange).toFixed(0)}
-        </span>
-      )}
+      {(() => {
+        const dir = inferDirection(alert);
+        return <span className={`text-[8px] font-semibold flex-shrink-0 ${dir === 'Bullish' ? 'text-emerald-500' : 'text-red-400'}`}>{dir === 'Bullish' ? '▲' : '▼'}</span>;
+      })()}
+      <span className="text-[8px] text-zinc-600 tabular-nums flex-shrink-0">
+        {alert.pointRange != null && alert.pointRange !== 0 ? `±${Math.abs(alert.pointRange).toFixed(0)}` : '0-5'}
+      </span>
       {alert.cyclical && alert.cyclical !== 'Neutral' && (
         <span className={`text-[7px] font-bold tracking-wider flex-shrink-0 ${
           alert.cyclical === 'Cyclical' ? 'text-[var(--pulse-accent)]/60' : 'text-violet-400/60'
@@ -171,13 +179,6 @@ function MinimalCard({
             }
           </span>
         )}
-        {alert.direction && alert.direction !== 'Neutral' && !isProposal && (
-          <span className={`text-[9px] font-bold mt-px ${
-            alert.direction === 'Bullish' ? 'text-emerald-500' : 'text-red-400'
-          }`}>
-            {alert.direction === 'Bullish' ? '\u25B2' : '\u25BC'}
-          </span>
-        )}
         <p className={`flex-1 min-w-0 text-[11px] leading-snug font-medium line-clamp-2 ${
           isProposal ? 'text-[var(--pulse-text)]' :
           alert.severity === 'critical' ? 'text-orange-300' :
@@ -208,11 +209,13 @@ function MinimalCard({
         {alert.authorHandle && (
           <span className="text-[9px] text-zinc-600">@{alert.authorHandle}</span>
         )}
-        {alert.pointRange != null && alert.pointRange !== 0 && (
-          <span className="text-[9px] text-zinc-500 tabular-nums">
-            {alert.instrument ? `${alert.instrument} ` : ''}&#177;{Math.abs(alert.pointRange).toFixed(0)} pts
-          </span>
-        )}
+        {(() => {
+          const dir = inferDirection(alert);
+          return <span className={`text-[9px] font-semibold ${dir === 'Bullish' ? 'text-emerald-500' : 'text-red-400'}`}>{dir === 'Bullish' ? '▲' : '▼'} {dir}</span>;
+        })()}
+        <span className="text-[9px] text-zinc-500 tabular-nums">
+          {alert.instrument ? `${alert.instrument} ` : ''}{alert.pointRange != null && alert.pointRange !== 0 ? `±${Math.abs(alert.pointRange).toFixed(0)} pts` : '0-5 pts'}
+        </span>
         {isProposal && alert.tradeIdea?.riskRewardRatio && (
           <span className="text-[9px] text-zinc-500">R/R {alert.tradeIdea.riskRewardRatio.toFixed(1)}:1</span>
         )}

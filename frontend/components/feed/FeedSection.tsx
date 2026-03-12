@@ -115,7 +115,7 @@ export function FeedSection() {
           setFeedItems(convertedItems);
         }
       } catch (err) {
-        console.error('Failed to fetch RiskFlow for The Tape:', err);
+        console.error('Failed to fetch RiskFlow for RiskFlow:', err);
         // Fallback to mock data on error if enabled
         if (mockDataEnabled) {
           setFeedItems(generateInitialFeed(20));
@@ -145,7 +145,7 @@ export function FeedSection() {
           setFeedItems(convertedItems);
         }
       } catch (err) {
-        console.error('Failed to fetch RiskFlow for The Tape:', err);
+        console.error('Failed to fetch RiskFlow for RiskFlow:', err);
       }
     };
 
@@ -200,7 +200,7 @@ export function FeedSection() {
           <div className="space-y-2">
             {loading ? (
               <div className="text-center text-gray-500 py-12">
-                <p>Loading The Tape...</p>
+                <p>Loading RiskFlow...</p>
                 <p className="text-xs mt-2">Fetching real-time market intelligence</p>
               </div>
             ) : feedItems.length === 0 ? (

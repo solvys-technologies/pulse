@@ -1,9 +1,13 @@
+// [claude-code 2026-03-11] T2a: clear active skill badge after send
+// [claude-code 2026-03-11] T3b: MCP auto-activation when skill selected
 // [claude-code 2026-03-11] T5: steer strip removed, queue chips added, always full PromptBox
+// [claude-code 2026-03-12] Switched from independent useVoiceAssistant() to shared VoiceContext
 import { useEffect, useState, useCallback } from 'react';
 import { useThread, useThreadRuntime } from '@assistant-ui/react';
 import { PromptBox } from '../ui/chatgpt-prompt-input';
 import { SKILL_PREFIXES } from '../../lib/skillPrefixes';
-import { useVoiceAssistant } from '../../hooks/useVoiceAssistant';
+import { SKILLS } from '../../lib/skills';
+import { useVoice } from '../../contexts/VoiceContext';
 import { API_BASE_URL } from './constants';
 
 interface PulseComposerProps {
@@ -32,7 +36,7 @@ export function PulseComposer({
   const runtime = useThreadRuntime();
   const isRunning = useThread((t) => t.isRunning);
   const [apiDisabledSkills, setApiDisabledSkills] = useState<Record<string, { reason: string }>>({});
-  const voice = useVoiceAssistant();
+  const voice = useVoice();
 
   // Fetch skills from backend — merge with prop-level disabled skills
   useEffect(() => {
@@ -69,12 +73,25 @@ export function PulseComposer({
     if (images?.length) {
       images.forEach((img) => content.push({ type: 'image', image: img }));
     }
+    // Auto-activate MCP servers required by the active skill
+    if (activeSkill) {
+      const skillDef = SKILLS.find(s => s.id === activeSkill);
+      if (skillDef?.mcpServers?.length) {
+        try {
+          const current: string[] = JSON.parse(localStorage.getItem('pulse_mcp_active_connectors') ?? '[]');
+          const merged = [...new Set([...current, ...skillDef.mcpServers])];
+          localStorage.setItem('pulse_mcp_active_connectors', JSON.stringify(merged));
+        } catch { /* ignore */ }
+      }
+    }
+
     try {
       runtime.append({ role: 'user', content: content as any });
+      onSelectSkill(null);
     } catch (err) {
       console.error('[PulseComposer] Failed to append message:', err);
     }
-  }, [runtime, activeSkill]);
+  }, [runtime, activeSkill, onSelectSkill]);
 
   const handleStop = useCallback(() => {
     runtime.cancelRun();

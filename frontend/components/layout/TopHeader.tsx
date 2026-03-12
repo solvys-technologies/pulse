@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { UpgradeModal } from '../UpgradeModal';
 import { IVScoreCard } from '../IVScoreCard';
 import { useBackend } from '../../lib/backend';
+import { useSettings } from '../../contexts/SettingsContext';
 import { isElectron } from '../../lib/platform';
 import { getToolbarOrder, setToolbarOrder, type ToolbarItemId } from '../../lib/layoutOrderStorage';
 import { HeaderVoiceControl } from '../voice/HeaderVoiceControl';
@@ -14,7 +15,7 @@ import { WhatsNewButton } from '../onboarding/FirstTimeTour';
 import type { IVScoreResponse } from '../../types/market-data';
 import type { TradingPlatform } from '../TopStepXBrowser';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'settings';
+type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'team' | 'settings';
 
 const TAB_LABELS: Record<NavTab, string> = {
   executive: 'Dashboard',
@@ -25,7 +26,8 @@ const TAB_LABELS: Record<NavTab, string> = {
   notion: 'Research Department',
   econ: 'Economic Calendar',
   narrative: 'NarrativeFlow',
-  earnings: 'Trading Journal',
+  earnings: 'Performance',
+  team: 'Team',
   settings: 'Settings',
 };
 
@@ -72,6 +74,7 @@ export function TopHeader({
 }: TopHeaderProps) {
   const { tier } = useAuth();
   const backend = useBackend();
+  const { selectedSymbol } = useSettings();
   const instanceName = import.meta.env.VITE_PULSE_INSTANCE_NAME || 'Pulse';
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [ivData, setIvData] = useState<IVScoreResponse | null>(null);
@@ -155,11 +158,11 @@ export function TopHeader({
     }
   ];
 
-  // Fetch blended IV score from backend — updates every 5 minutes
+  // Fetch blended IV score from backend — updates every 60 seconds
   useEffect(() => {
     const fetchIVScore = async () => {
       try {
-        const data = await backend.marketData.getIVScore();
+        const data = await backend.marketData.getIVScore(selectedSymbol.symbol);
         setIvData(data);
       } catch (error) {
         console.error('[IV] Failed to fetch IV score:', error);
@@ -169,9 +172,9 @@ export function TopHeader({
     };
 
     fetchIVScore();
-    const interval = setInterval(fetchIVScore, 300000);
+    const interval = setInterval(fetchIVScore, 60_000);
     return () => clearInterval(interval);
-  }, [backend]);
+  }, [backend, selectedSymbol.symbol]);
 
   const getTierDisplayName = () => {
     switch (tier) {
@@ -319,12 +322,12 @@ export function TopHeader({
               return wrapper(
                 <button
                   onClick={onTopStepXDisable}
-                  className={`px-2.5 h-8 rounded-lg text-xs font-medium bg-[var(--pulse-bg)] transition-colors flex items-center gap-1.5 ${
+                  className={`px-2.5 h-8 rounded-lg text-xs font-medium bg-[var(--pulse-bg)] border transition-colors flex items-center gap-1.5 ${
                     topStepXEnabled
-                      ? 'text-red-400 hover:bg-red-500/10'
-                      : 'text-zinc-600 opacity-40 hover:opacity-70 hover:bg-zinc-800/50'
+                      ? 'text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10'
+                      : 'text-zinc-500 border-zinc-700/50 hover:text-zinc-300 hover:bg-zinc-800/50'
                   }`}
-                  title={topStepXEnabled ? 'Power off iframe' : 'No active platform'}
+                  title={topStepXEnabled ? 'Hide iFrame layouts' : 'Show iFrame layouts'}
                 >
                   <Power className="w-3.5 h-3.5" />
                 </button>

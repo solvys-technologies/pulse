@@ -1,3 +1,4 @@
+// [claude-code 2026-03-11] Added initOpenClawAgent() for gateway warm-up on startup
 /**
  * OpenClaw Local Handler
  * LOCAL orchestration layer for P.I.C. (Priced In Capital)
@@ -520,6 +521,55 @@ export async function handleOpenClawChat(request: OpenClawChatRequest): Promise<
     console.error('[OpenClaw] Gateway request failed:', error)
     // Fall back to local response on network error
     return generateLocalResponse(request, agentInfo)
+  }
+}
+
+/**
+ * Initialize OpenClaw agent on startup — warm up the gateway connection.
+ * Sends a ping to Harper (CAO) to confirm availability and pre-load context.
+ * Non-fatal: swallows all errors so the server always starts.
+ */
+export async function initOpenClawAgent(): Promise<void> {
+  const normalizeGatewayBaseUrl = (value: string): string => {
+    const trimmed = value.trim().replace(/\/+$/, '')
+    return trimmed.endsWith('/v1') ? trimmed.slice(0, -3) : trimmed
+  }
+
+  const gatewayUrl = normalizeGatewayBaseUrl(
+    process.env.OPENCLAW_BASE_URL ?? 'http://localhost:7787'
+  )
+  const apiKey = process.env.OPENCLAW_API_KEY ?? ''
+
+  try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 10_000)
+
+    const response = await fetch(`${gatewayUrl}/v1/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'X-OpenClaw-App': process.env.OPENCLAW_APP_NAME ?? 'Pulse-PIC-Gateway',
+      },
+      body: JSON.stringify({
+        model: 'clawdbot:main',
+        messages: [
+          { role: 'system', content: 'You are Harper, CAO of Priced In Capital.' },
+          { role: 'user', content: '[SYSTEM] Agent initialization ping — confirm availability and warm up context.' },
+        ],
+      }),
+      signal: controller.signal,
+    })
+
+    clearTimeout(timeout)
+
+    if (response.ok) {
+      console.log('[OpenClaw] Agent initialized successfully (harper-cao warm)')
+    } else {
+      console.warn(`[OpenClaw] Agent init failed (non-fatal): HTTP ${response.status}`)
+    }
+  } catch (error) {
+    console.warn(`[OpenClaw] Agent init failed (non-fatal): ${error instanceof Error ? error.message : String(error)}`)
   }
 }
 

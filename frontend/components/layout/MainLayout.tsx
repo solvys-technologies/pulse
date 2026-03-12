@@ -1,5 +1,6 @@
 // [claude-code 2026-02-26] Support dockable PsychAssist in Zen layout.
 // [claude-code 2026-03-11] Track 4: MC overhaul — no Panels header, collapse in MC header, 50/50 flex, gear menu
+// [claude-code 2026-03-11] T3d: removed auto-enable from platform dropdown — power controlled via dedicated button only
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, X } from 'lucide-react';
 import type { IVScoreResponse } from '../../types/market-data';
@@ -39,6 +40,7 @@ import { EconCalendarProvider } from '../../contexts/EconCalendarContext';
 import { EconCalendar } from '../econ/EconCalendar';
 import { NarrativeProvider } from '../../contexts/NarrativeContext';
 import { NarrativeFlow } from '../narrative/NarrativeFlow';
+import { TeamDashboard } from '../team/TeamDashboard';
 import { TradingJournal } from '../journal/TradingJournal';
 import { FirstTimeTour } from '../onboarding/FirstTimeTour';
 import { SessionCountdownWidget } from '../mission-control/SessionCountdownWidget';
@@ -54,7 +56,7 @@ import {
   type MissionWidgetId,
 } from '../../lib/layoutOrderStorage';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'settings';
+type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'team' | 'settings';
 type LayoutOption = 'tickers-only' | 'combined';
 
 const MISSION_WIDGETS_PER_PAGE = 2;
@@ -150,7 +152,7 @@ export function MainLayout() {
   };
 
   const backend = useBackend();
-  const { alerts: riskFlowAlerts } = useRiskFlow();
+  const { alerts: riskFlowAlerts, removeAlert } = useRiskFlow();
   const [combinedTapeCollapsed, setCombinedTapeCollapsed] = useState(false);
 
   /* ---- Keyboard shortcuts ---- */
@@ -511,7 +513,7 @@ export function MainLayout() {
                         <div className="text-center text-zinc-600 py-6 text-[10px]">No items</div>
                       ) : (
                         riskFlowAlerts.slice(0, 30).map((alert) => (
-                          <CompactRiskFlowCard key={alert.id} alert={alert} />
+                          <CompactRiskFlowCard key={alert.id} alert={alert} onDismiss={removeAlert} />
                         ))
                       )}
                     </div>
@@ -547,7 +549,7 @@ export function MainLayout() {
     // For 'tickers-only', no panels are shown (only floating widget)
   } else {
     // When TopStepX is disabled: right stack = Mission Control + collapsible RiskFlow
-    const hideRightPanel = activeTab === 'notion' || activeTab === 'chatroom' || activeTab === 'econ' || activeTab === 'narrative' || activeTab === 'earnings' || activeTab === 'settings';
+    const hideRightPanel = activeTab === 'notion' || activeTab === 'chatroom' || activeTab === 'econ' || activeTab === 'narrative' || activeTab === 'earnings' || activeTab === 'team' || activeTab === 'settings';
     if (!hideRightPanel) {
       if (riskFlowCollapsed) {
         rightPanels.push(
@@ -594,8 +596,8 @@ export function MainLayout() {
     <div className="h-screen flex flex-col bg-[var(--pulse-bg)] text-white">
       <TopHeader
         topStepXEnabled={topStepXEnabled}
-        onTopStepXToggle={() => setTopStepXEnabled(true)}
-        onTopStepXDisable={() => setTopStepXEnabled(false)}
+        onTopStepXToggle={() => { /* T3d: removed auto-enable — power is controlled via dedicated power button only */ }}
+        onTopStepXDisable={() => setTopStepXEnabled(prev => !prev)}
         selectedPlatform={selectedPlatform}
         onPlatformSelect={setSelectedPlatform}
         layoutOption={layoutOption}
@@ -696,6 +698,11 @@ export function MainLayout() {
               {activeTab === 'earnings' && (
                 <div key="earnings" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <TradingJournal />
+                </div>
+              )}
+              {activeTab === 'team' && (
+                <div key="team" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
+                  <TeamDashboard />
                 </div>
               )}
               {activeTab === 'settings' && (

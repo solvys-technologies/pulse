@@ -101,4 +101,20 @@ export interface IVScoreResponse {
     };
   };
   instrument: string;
+  /** V3: Systemic risk overlay data */
+  systemic?: {
+    score: number;
+    overlay: number;
+    activeChains: number;
+    rhymeMatches: number;
+    creditSignals: number;
+    topRhyme?: {
+      crisisName: string;
+      crisisYear: number;
+      matchScore: number;
+      peakVix: number;
+      maxDrawdown: number;
+    };
+    rationale: string[];
+  };
 }

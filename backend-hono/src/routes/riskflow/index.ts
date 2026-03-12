@@ -17,6 +17,7 @@ import {
   handleDebug,
   handleGetIVAggregate,
   handleGetSources,
+  handleRefresh,
 } from './handlers.js';
 
 export function createRiskFlowRoutes(): Hono {
@@ -54,6 +55,9 @@ export function createRiskFlowRoutes(): Hono {
 
   // GET /api/riskflow/iv-aggregate - Aggregated IV score with VIX correlation
   router.get('/iv-aggregate', handleGetIVAggregate);
+
+  // POST /api/riskflow/refresh - Manual refresh trigger
+  router.post('/refresh', handleRefresh);
 
   // GET /api/riskflow/sources - Connection status for data source indicators (public)
   router.get('/sources', handleGetSources);

@@ -1,0 +1,255 @@
+{
+  "_version": "1.0.0",
+  "_note": "Historical crisis knowledge base for rhyming engine. Each crisis has preconditions (weighted), phases, and trading lessons.",
+  "crises": [
+    {
+      "id": "gfc-2008",
+      "name": "2008 Global Financial Crisis",
+      "year": 2008,
+      "summary": "Subprime mortgage crisis → bank failures → credit freeze → global recession. VIX went from 15 to 80+. Credit spreads exploded. Lehman Brothers collapsed. TARP bailout. The worst financial crisis since the Great Depression.",
+      "unfoldingDays": 540,
+      "maxDrawdown": -57,
+      "peakVix": 80,
+      "preconditions": [
+        { "indicator": "hy_oas_spread", "condition": "widening", "threshold": 500, "weight": 0.2, "description": "HY OAS spread above 500bps and widening", "source": "fred" },
+        { "indicator": "yield_curve_2s10s", "condition": "inverted", "threshold": 0, "weight": 0.15, "description": "2s10s yield curve inverted (preceded by ~18 months)", "source": "fred" },
+        { "indicator": "vix_level", "condition": "below", "threshold": 18, "weight": 0.1, "description": "VIX complacent below 18 while credit deteriorates", "source": "vix" },
+        { "indicator": "bank_stress", "condition": "above", "threshold": 2, "weight": 0.2, "description": "Multiple bank stress headlines in recent weeks", "source": "headline" },
+        { "indicator": "credit_headlines", "condition": "above", "threshold": 3, "weight": 0.15, "description": "3+ credit deterioration headlines in 48 hours", "source": "headline" },
+        { "indicator": "leverage_warnings", "condition": "above", "threshold": 1, "weight": 0.1, "description": "Record leverage/margin debt warnings", "source": "headline" },
+        { "indicator": "housing_weakness", "condition": "above", "threshold": 1, "weight": 0.1, "description": "Housing market weakness signals", "source": "headline" }
+      ],
+      "phases": [
+        { "name": "Early Warnings", "dayRange": [0, 180], "description": "Subprime defaults rise, Bear Stearns hedge funds fail, credit spreads widen slowly", "keyIndicators": ["HY spread", "bank CDS", "housing data"] },
+        { "name": "Acceleration", "dayRange": [180, 360], "description": "Bear Stearns collapses, Fannie/Freddie nationalized, Lehman fails, AIG bailout", "keyIndicators": ["VIX spike", "credit freeze", "TED spread"] },
+        { "name": "Capitulation", "dayRange": [360, 450], "description": "S&P hits 666, VIX at 80+, TARP enacted, global coordinated rate cuts", "keyIndicators": ["SPX level", "VIX peak", "policy response"] },
+        { "name": "Recovery", "dayRange": [450, 540], "description": "QE begins, markets bottom, slow recovery starts", "keyIndicators": ["Fed balance sheet", "credit thaw", "earnings recovery"] }
+      ],
+      "affectedAssets": ["equities", "credit", "rates", "real estate", "commodities"],
+      "tradingLessons": [
+        "Credit spreads are the canary — watch HY OAS above 400bps",
+        "VIX complacency during credit deterioration is the classic setup",
+        "Bank CDS moves precede equity drops by weeks",
+        "Correlation goes to 1 during panic — diversification fails",
+        "Policy response (TARP/QE) creates the bottom, not fundamentals"
+      ]
+    },
+    {
+      "id": "covid-2020",
+      "name": "2020 COVID Crash",
+      "year": 2020,
+      "summary": "External pandemic shock → fastest bear market in history (33 days). VIX 14 to 82 in 3 weeks. All correlations went to 1. Fed cut to zero and launched unlimited QE. V-shaped recovery.",
+      "unfoldingDays": 35,
+      "maxDrawdown": -34,
+      "peakVix": 82,
+      "preconditions": [
+        { "indicator": "vix_level", "condition": "below", "threshold": 15, "weight": 0.15, "description": "VIX extremely complacent below 15 before shock", "source": "vix" },
+        { "indicator": "geopolitical_headlines", "condition": "above", "threshold": 5, "weight": 0.25, "description": "Rapid escalation of pandemic/crisis headlines", "source": "headline" },
+        { "indicator": "yield_curve_2s10s", "condition": "below", "threshold": 0.3, "weight": 0.1, "description": "Yield curve flat/nearly inverted pre-crash", "source": "fred" },
+        { "indicator": "hy_oas_spread", "condition": "widening", "threshold": 400, "weight": 0.15, "description": "Credit spreads blowing out rapidly", "source": "fred" },
+        { "indicator": "liquidity_stress", "condition": "above", "threshold": 1, "weight": 0.2, "description": "Liquidity stress signals (repo, funding)", "source": "headline" },
+        { "indicator": "contagion_headlines", "condition": "above", "threshold": 2, "weight": 0.15, "description": "Multiple contagion/systemic risk headlines", "source": "headline" }
+      ],
+      "phases": [
+        { "name": "Denial", "dayRange": [0, 7], "description": "Markets initially shrug off virus news, minor dips bought", "keyIndicators": ["VIX creep", "headline frequency"] },
+        { "name": "Panic", "dayRange": [7, 25], "description": "Fastest bear market ever, circuit breakers, limit downs, credit freeze", "keyIndicators": ["VIX 80+", "SPX -30%+", "HY spread explosion"] },
+        { "name": "Policy Response", "dayRange": [25, 35], "description": "Fed zero rate + unlimited QE, CARES Act, markets bottom", "keyIndicators": ["Fed actions", "fiscal stimulus", "VIX decline"] }
+      ],
+      "affectedAssets": ["equities", "credit", "oil", "rates"],
+      "tradingLessons": [
+        "External shocks can crash markets in days, not months",
+        "All correlations go to 1 — only cash hedges work",
+        "The speed of Fed response determines the speed of recovery",
+        "VIX below 15 + emerging threat = maximum fragility",
+        "V-shaped recovery possible when balance sheets are intact pre-crisis"
+      ]
+    },
+    {
+      "id": "dotcom-2000",
+      "name": "2000 Dot-Com Bubble Burst",
+      "year": 2000,
+      "summary": "Tech bubble burst after years of speculative excess. NASDAQ dropped 78% over 30 months. Narrow leadership (tech), extreme valuations, IPO frenzy. Recession followed.",
+      "unfoldingDays": 900,
+      "maxDrawdown": -78,
+      "peakVix": 45,
+      "preconditions": [
+        { "indicator": "vix_level", "condition": "between", "threshold": [20, 30], "weight": 0.1, "description": "VIX elevated but not crisis — market ignoring risk", "source": "vix" },
+        { "indicator": "yield_curve_2s10s", "condition": "inverted", "threshold": 0, "weight": 0.15, "description": "Yield curve inverted 12-18 months before crash", "source": "fred" },
+        { "indicator": "narrow_leadership", "condition": "above", "threshold": 1, "weight": 0.2, "description": "Market breadth narrow — few stocks driving index", "source": "headline" },
+        { "indicator": "ipo_frenzy", "condition": "above", "threshold": 2, "weight": 0.15, "description": "IPO frenzy, unprofitable companies listing at huge valuations", "source": "headline" },
+        { "indicator": "leverage_warnings", "condition": "above", "threshold": 1, "weight": 0.15, "description": "Record margin debt levels", "source": "headline" },
+        { "indicator": "fed_funds_rate", "condition": "above", "threshold": 5.5, "weight": 0.1, "description": "Fed funds rate elevated, tightening cycle", "source": "fred" },
+        { "indicator": "valuation_extreme", "condition": "above", "threshold": 1, "weight": 0.15, "description": "Extreme P/E ratios, 'new paradigm' narratives", "source": "headline" }
+      ],
+      "phases": [
+        { "name": "Peak Euphoria", "dayRange": [0, 30], "description": "NASDAQ hits 5000+, daily IPOs, retail speculation peaks", "keyIndicators": ["NASDAQ level", "IPO volume", "put/call ratio"] },
+        { "name": "Initial Break", "dayRange": [30, 180], "description": "First major tech selloff, -30%, brief bounces fail", "keyIndicators": ["NASDAQ -30%", "sector rotation", "margin calls"] },
+        { "name": "Grinding Bear", "dayRange": [180, 600], "description": "Slow bleed, false rallies, earnings downgrades cascade", "keyIndicators": ["earnings misses", "guidance cuts", "layoffs"] },
+        { "name": "Capitulation", "dayRange": [600, 900], "description": "NASDAQ -78% from peak, Enron/WorldCom frauds, recession confirmed", "keyIndicators": ["NASDAQ bottom", "corporate scandals", "recession"] }
+      ],
+      "affectedAssets": ["equities (especially tech)", "venture capital", "IPO market"],
+      "tradingLessons": [
+        "Narrow leadership (few stocks driving index) is a late-cycle signal",
+        "IPO frenzy with unprofitable companies = peak euphoria",
+        "Grinding bear markets last longer than anyone expects (30 months)",
+        "False rallies in bear markets are violent but fail",
+        "The yield curve inversion 12-18 months before was the warning"
+      ]
+    },
+    {
+      "id": "black-monday-1987",
+      "name": "1987 Black Monday",
+      "year": 1987,
+      "summary": "Portfolio insurance + program trading + overvaluation → single-day 22% crash. VIX equivalent hit 150+. Market recovered within 2 years. No recession followed.",
+      "unfoldingDays": 3,
+      "maxDrawdown": -22,
+      "peakVix": 150,
+      "preconditions": [
+        { "indicator": "vix_level", "condition": "below", "threshold": 20, "weight": 0.1, "description": "VIX low despite rising rates and overvaluation", "source": "vix" },
+        { "indicator": "yield_curve_2s10s", "condition": "above", "threshold": 0.5, "weight": 0.05, "description": "Yield curve positive but rates rising fast", "source": "fred" },
+        { "indicator": "fed_funds_rate", "condition": "above", "threshold": 6, "weight": 0.15, "description": "Fed funds rate high and rising", "source": "fred" },
+        { "indicator": "leverage_warnings", "condition": "above", "threshold": 1, "weight": 0.2, "description": "Portfolio insurance / program trading concerns", "source": "headline" },
+        { "indicator": "valuation_extreme", "condition": "above", "threshold": 1, "weight": 0.2, "description": "Market overvaluation relative to fundamentals", "source": "headline" },
+        { "indicator": "geopolitical_headlines", "condition": "above", "threshold": 2, "weight": 0.15, "description": "Geopolitical tensions as catalyst", "source": "headline" },
+        { "indicator": "treasury_auction_weak", "condition": "above", "threshold": 1, "weight": 0.15, "description": "Weak treasury auctions / bond market stress", "source": "headline" }
+      ],
+      "phases": [
+        { "name": "Pre-Crash Weakness", "dayRange": [0, 1], "description": "Wednesday-Friday before: market drops 10%, options expiration pressure", "keyIndicators": ["SPX decline", "volume spike", "put buying"] },
+        { "name": "Black Monday", "dayRange": [1, 2], "description": "October 19: -22% in single day, circuit breakers didn't exist yet", "keyIndicators": ["SPX -22%", "volume record", "portfolio insurance selling"] },
+        { "name": "Aftermath", "dayRange": [2, 3], "description": "Fed injects liquidity, markets stabilize, no contagion to real economy", "keyIndicators": ["Fed response", "market stabilization"] }
+      ],
+      "affectedAssets": ["equities", "options"],
+      "tradingLessons": [
+        "Mechanical selling (portfolio insurance) can create cascading crashes",
+        "Single-day crashes without credit contagion can recover fast",
+        "Rising rates + overvaluation + leverage = fragile setup",
+        "Fed liquidity injection is the circuit breaker",
+        "Program trading / algorithmic risks amplify moves"
+      ]
+    },
+    {
+      "id": "rate-shock-2022",
+      "name": "2022 Rate Shock",
+      "year": 2022,
+      "summary": "Inflation surged post-COVID, Fed hiked aggressively (0% → 5.25%). Yield curve inverted deeply. Crypto contagion (Luna, FTX). Bond market worst year in decades. SPX -25%, NASDAQ -33%.",
+      "unfoldingDays": 365,
+      "maxDrawdown": -25,
+      "peakVix": 36,
+      "preconditions": [
+        { "indicator": "vix_level", "condition": "above", "threshold": 25, "weight": 0.1, "description": "VIX elevated above 25", "source": "vix" },
+        { "indicator": "yield_curve_2s10s", "condition": "inverted", "threshold": 0, "weight": 0.2, "description": "2s10s deeply inverted (-40bps to -100bps)", "source": "fred" },
+        { "indicator": "fed_funds_rate", "condition": "above", "threshold": 4, "weight": 0.15, "description": "Fed funds rate above 4% and rising fast", "source": "fred" },
+        { "indicator": "hy_oas_spread", "condition": "above", "threshold": 450, "weight": 0.15, "description": "HY OAS spread elevated above 450bps", "source": "fred" },
+        { "indicator": "inflation_headlines", "condition": "above", "threshold": 3, "weight": 0.15, "description": "Hot inflation print headlines, CPI surprises", "source": "headline" },
+        { "indicator": "crypto_contagion", "condition": "above", "threshold": 1, "weight": 0.1, "description": "Crypto blowups / contagion (Luna, FTX-style)", "source": "headline" },
+        { "indicator": "bond_selloff", "condition": "above", "threshold": 2, "weight": 0.15, "description": "Historic bond market selloff headlines", "source": "headline" }
+      ],
+      "phases": [
+        { "name": "Inflation Surge", "dayRange": [0, 90], "description": "CPI prints keep surprising hot, Fed pivots hawkish, markets selloff", "keyIndicators": ["CPI", "Fed rhetoric", "rate expectations"] },
+        { "name": "Aggressive Hiking", "dayRange": [90, 270], "description": "75bps hikes, yield curve inverts deeply, no pivot", "keyIndicators": ["Fed funds rate", "2s10s spread", "bond yields"] },
+        { "name": "Crypto Contagion", "dayRange": [150, 300], "description": "Luna collapse, FTX fraud, crypto credit cascade", "keyIndicators": ["BTC price", "crypto lender failures", "contagion to TradFi"] },
+        { "name": "Bear Market Bottom", "dayRange": [270, 365], "description": "SPX bottoms around 3500, inflation starts cooling, Fed signals slower hikes", "keyIndicators": ["CPI cooling", "Fed dot plot", "earnings trough"] }
+      ],
+      "affectedAssets": ["equities", "bonds", "crypto", "growth stocks"],
+      "tradingLessons": [
+        "Don't fight the Fed — hiking cycles crush multiples",
+        "Deep yield curve inversion is the single best recession predictor",
+        "Crypto contagion can bleed into traditional markets via leverage",
+        "Bond market selloffs of this magnitude are generational events",
+        "Inflation persistence is always underestimated by markets"
+      ]
+    },
+    {
+      "id": "ltcm-1998",
+      "name": "1998 LTCM/Russia Crisis",
+      "year": 1998,
+      "summary": "Russian debt default → EM contagion → LTCM collapse (25:1 leverage) → credit freeze → near-systemic failure. Fed organized bailout. VIX hit 45. Markets recovered within 6 months.",
+      "unfoldingDays": 90,
+      "maxDrawdown": -19,
+      "peakVix": 45,
+      "preconditions": [
+        { "indicator": "hy_oas_spread", "condition": "widening", "threshold": 350, "weight": 0.2, "description": "Credit spreads widening on EM concerns", "source": "fred" },
+        { "indicator": "vix_level", "condition": "above", "threshold": 25, "weight": 0.1, "description": "VIX elevated above 25", "source": "vix" },
+        { "indicator": "leverage_warnings", "condition": "above", "threshold": 1, "weight": 0.25, "description": "Highly leveraged fund exposure (25:1+ leverage)", "source": "headline" },
+        { "indicator": "geopolitical_headlines", "condition": "above", "threshold": 3, "weight": 0.2, "description": "EM/sovereign crisis headlines (Russia, Asia)", "source": "headline" },
+        { "indicator": "liquidity_stress", "condition": "above", "threshold": 1, "weight": 0.15, "description": "Credit market freezing, counterparty risk", "source": "headline" },
+        { "indicator": "contagion_headlines", "condition": "above", "threshold": 2, "weight": 0.1, "description": "Contagion from EM to developed markets", "source": "headline" }
+      ],
+      "phases": [
+        { "name": "EM Unwind", "dayRange": [0, 30], "description": "Russian default, Asian crisis aftermath, EM bonds collapse", "keyIndicators": ["EM spreads", "ruble", "Asian currencies"] },
+        { "name": "LTCM Crisis", "dayRange": [30, 60], "description": "LTCM losses mount, counterparty exposure revealed, credit freezes", "keyIndicators": ["LTCM NAV", "bank exposure", "credit spreads"] },
+        { "name": "Fed Intervention", "dayRange": [60, 90], "description": "Fed organizes LTCM bailout, cuts rates 3 times, markets stabilize", "keyIndicators": ["Fed rate cuts", "credit thaw", "VIX decline"] }
+      ],
+      "affectedAssets": ["equities", "EM bonds", "credit", "rates"],
+      "tradingLessons": [
+        "Leverage is the killer — 25:1 leaves zero margin for error",
+        "EM crises can go systemic if leveraged players are exposed",
+        "Counterparty risk is invisible until it's not",
+        "Fed intervention creates the floor — but timing is uncertain",
+        "Credit freeze is the escalation trigger, not equity drawdown"
+      ]
+    },
+    {
+      "id": "eu-debt-2011",
+      "name": "2011 European Debt Crisis",
+      "year": 2011,
+      "summary": "Greek debt crisis → sovereign downgrades → bank contagion (PIIGS) → credit spreads explode → US downgrade by S&P. VIX hit 48. SPX -19%. Resolved by ECB's 'whatever it takes.'",
+      "unfoldingDays": 180,
+      "maxDrawdown": -19,
+      "peakVix": 48,
+      "preconditions": [
+        { "indicator": "hy_oas_spread", "condition": "widening", "threshold": 400, "weight": 0.2, "description": "Credit spreads widening on sovereign concerns", "source": "fred" },
+        { "indicator": "vix_level", "condition": "above", "threshold": 20, "weight": 0.1, "description": "VIX elevated above 20", "source": "vix" },
+        { "indicator": "bank_stress", "condition": "above", "threshold": 2, "weight": 0.2, "description": "European bank stress headlines", "source": "headline" },
+        { "indicator": "credit_headlines", "condition": "above", "threshold": 3, "weight": 0.2, "description": "Sovereign downgrade / debt crisis headlines", "source": "headline" },
+        { "indicator": "contagion_headlines", "condition": "above", "threshold": 2, "weight": 0.15, "description": "Contagion from periphery to core Europe", "source": "headline" },
+        { "indicator": "yield_curve_2s10s", "condition": "above", "threshold": 1.5, "weight": 0.05, "description": "Yield curve steep (flight to safety)", "source": "fred" },
+        { "indicator": "geopolitical_headlines", "condition": "above", "threshold": 2, "weight": 0.1, "description": "Political instability in Europe", "source": "headline" }
+      ],
+      "phases": [
+        { "name": "Greek Crisis", "dayRange": [0, 60], "description": "Greek debt restructuring, bailout negotiations, austerity protests", "keyIndicators": ["Greek yields", "EU summit", "IMF"] },
+        { "name": "Contagion", "dayRange": [60, 120], "description": "Spain, Italy, Portugal yields spike, bank runs in periphery", "keyIndicators": ["Italian yields", "bank CDS", "deposit flows"] },
+        { "name": "US Downgrade", "dayRange": [120, 150], "description": "S&P downgrades US from AAA, VIX spikes to 48", "keyIndicators": ["US rating", "VIX spike", "treasury rally"] },
+        { "name": "ECB Intervention", "dayRange": [150, 180], "description": "ECB LTRO, Draghi 'whatever it takes', markets stabilize", "keyIndicators": ["ECB balance sheet", "peripheral yields decline"] }
+      ],
+      "affectedAssets": ["European equities", "European banks", "sovereign bonds", "EUR/USD"],
+      "tradingLessons": [
+        "Sovereign debt crises are slow-motion but can accelerate suddenly",
+        "Bank-sovereign doom loop: banks hold sovereign bonds, sovereigns backstop banks",
+        "Central bank intervention is the only thing that breaks contagion",
+        "US treasuries rally during non-US crises (flight to safety)",
+        "Credit downgrades of sovereigns can trigger forced selling cascades"
+      ]
+    },
+    {
+      "id": "china-deval-2015",
+      "name": "2015 China Devaluation",
+      "year": 2015,
+      "summary": "PBoC devalued yuan → capital flight fears → EM selloff → VIX spiked to 53 → flash crash Aug 24 (Dow -1000 at open). Resolved by PBoC intervention and Fed delay.",
+      "unfoldingDays": 90,
+      "maxDrawdown": -12,
+      "peakVix": 53,
+      "preconditions": [
+        { "indicator": "vix_level", "condition": "below", "threshold": 15, "weight": 0.15, "description": "VIX extremely complacent pre-shock", "source": "vix" },
+        { "indicator": "geopolitical_headlines", "condition": "above", "threshold": 3, "weight": 0.25, "description": "China/EM crisis headlines escalating", "source": "headline" },
+        { "indicator": "hy_oas_spread", "condition": "above", "threshold": 400, "weight": 0.15, "description": "HY spreads already elevated", "source": "fred" },
+        { "indicator": "contagion_headlines", "condition": "above", "threshold": 2, "weight": 0.2, "description": "EM contagion / capital flight headlines", "source": "headline" },
+        { "indicator": "fed_funds_rate", "condition": "below", "threshold": 0.5, "weight": 0.1, "description": "Fed at zero — limited easing room", "source": "fred" },
+        { "indicator": "liquidity_stress", "condition": "above", "threshold": 1, "weight": 0.15, "description": "Liquidity drying up, flash crash risk", "source": "headline" }
+      ],
+      "phases": [
+        { "name": "Devaluation", "dayRange": [0, 7], "description": "PBoC devalues yuan, initial shock, mild equity selloff", "keyIndicators": ["CNY rate", "PBOC reserves", "EM currencies"] },
+        { "name": "Contagion & Flash Crash", "dayRange": [7, 30], "description": "Capital flight fears, Aug 24 flash crash, VIX 53, circuit breakers", "keyIndicators": ["VIX 53", "Dow -1000 open", "ETF dislocations"] },
+        { "name": "Stabilization", "dayRange": [30, 90], "description": "PBoC intervenes, Fed delays hike, markets recover gradually", "keyIndicators": ["PBoC intervention", "Fed rhetoric", "VIX decline"] }
+      ],
+      "affectedAssets": ["equities", "EM currencies", "commodities", "CNY"],
+      "tradingLessons": [
+        "Currency devaluations by major economies can cascade globally",
+        "Flash crashes happen when liquidity evaporates — ETFs disconnect from NAV",
+        "VIX below 15 + emerging shock = amplified reaction",
+        "Central bank FX intervention sets the floor",
+        "Fed postponing rate hikes was the signal that crisis was being taken seriously"
+      ]
+    }
+  ]
+}

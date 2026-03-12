@@ -1,3 +1,4 @@
+// [claude-code 2026-03-12] Renamed user-facing label "Trading Journal" → "Performance"
 // [claude-code 2026-03-11] Track 7A: TradingJournal — Human/Agent toggle tabs
 import { useState, useEffect, useCallback } from 'react';
 import { BookOpen, User, Bot, RefreshCw } from 'lucide-react';
@@ -46,7 +47,7 @@ export function TradingJournal() {
       <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--pulse-accent)]/10">
         <div className="flex items-center gap-2">
           <BookOpen className="w-4 h-4 text-[var(--pulse-accent)]" />
-          <span className="text-sm font-semibold text-[var(--pulse-text)]">Trading Journal</span>
+          <span className="text-sm font-semibold text-[var(--pulse-text)]">Performance</span>
         </div>
         <button
           onClick={fetchData}

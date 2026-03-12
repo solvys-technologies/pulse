@@ -6,7 +6,9 @@ import { ToastProvider } from './contexts/ToastContext';
 import { GatewayProvider } from './contexts/GatewayContext';
 import { PulseAgentProvider } from './contexts/PulseAgentContext';
 import { RiskFlowProvider } from './contexts/RiskFlowContext';
+import { ContextBankProvider } from './contexts/ContextBankContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { VoiceProvider } from './contexts/VoiceContext';
 import { MainLayout } from './components/layout/MainLayout';
 import { NotificationContainer } from './components/NotificationToast';
 import { ToastContainer } from './components/ui/Toast';
@@ -26,7 +28,9 @@ export default function App() {
           <GatewayProvider>
             <PulseAgentProvider>
               <RiskFlowProvider>
+              <ContextBankProvider>
               <ThreadProvider>
+              <VoiceProvider>
                 <div className="dark">
                   <style>{`
                     @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&display=swap');
@@ -71,7 +75,9 @@ export default function App() {
                   <NotificationContainer />
                   <ToastContainer />
                 </div>
+              </VoiceProvider>
               </ThreadProvider>
+              </ContextBankProvider>
               </RiskFlowProvider>
             </PulseAgentProvider>
           </GatewayProvider>

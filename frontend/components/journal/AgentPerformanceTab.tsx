@@ -1,8 +1,8 @@
-// [claude-code 2026-03-11] Track 7A: Agent performance tab — proposal tracker, win rate, R:R
+// [claude-code 2026-03-11] Track 7: Agent performance tab — combined futures + prediction market tracking
 import { useState, useEffect, useMemo } from 'react';
 import { Bot, Target, TrendingUp, BarChart3, ChevronDown, ChevronUp } from 'lucide-react';
 import { useBackend } from '../../lib/backend';
-import type { JournalEntryItem, JournalSummaryResponse } from '../../lib/services';
+import type { JournalEntryItem, JournalSummaryResponse, AgentPerformanceResponse } from '../../lib/services';
 
 interface AgentPerformanceTabProps {
   entries: JournalEntryItem[];
@@ -64,18 +64,36 @@ function ProposalRow({ proposal }: { proposal: NonNullable<JournalEntryItem['pro
 
 export function AgentPerformanceTab({ entries, summary }: AgentPerformanceTabProps) {
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
+  const backend = useBackend();
+  const [performance, setPerformance] = useState<AgentPerformanceResponse | null>(null);
+
+  // Fetch combined performance from backend
+  useEffect(() => {
+    backend.agentPerformance.getPerformance(30).then(setPerformance);
+  }, [backend]);
 
   const agentEntries = useMemo(
     () => entries.filter(e => e.type === 'agent').slice(0, 14),
     [entries]
   );
 
-  // Aggregate stats from recent entries
-  const totalProposals = agentEntries.reduce((s, e) => s + (e.proposalCount ?? 0), 0);
-  const totalAccepted = agentEntries.reduce((s, e) => s + (e.acceptedCount ?? 0), 0);
-  const winRate = summary?.avgWinRate ?? 0;
-  const avgRR = summary?.avgRR ?? 0;
-  const totalPnl = summary?.totalAgentPnl ?? 0;
+  // Use combined performance data when available, fall back to journal aggregation
+  const combined = performance?.combined;
+  const predictions = performance?.predictions;
+  const futuresAgents = performance?.futures ?? [];
+
+  // Aggregate stats — prefer live performance data, fall back to journal summary
+  const totalProposals = combined
+    ? futuresAgents.reduce((s, f) => s + f.totalProposals, 0) + (predictions?.total ?? 0)
+    : agentEntries.reduce((s, e) => s + (e.proposalCount ?? 0), 0);
+  const totalAccepted = combined
+    ? futuresAgents.reduce((s, f) => s + f.accepted, 0) + (predictions?.resolved ?? 0)
+    : agentEntries.reduce((s, e) => s + (e.acceptedCount ?? 0), 0);
+  const winRate = combined?.overallWinRate ?? summary?.avgWinRate ?? 0;
+  const avgRR = futuresAgents.length > 0
+    ? futuresAgents.reduce((s, f) => s + f.avgRR, 0) / futuresAgents.length
+    : summary?.avgRR ?? 0;
+  const totalPnl = combined?.totalPnl ?? summary?.totalAgentPnl ?? 0;
 
   return (
     <div className="space-y-4">
@@ -84,7 +102,7 @@ export function AgentPerformanceTab({ entries, summary }: AgentPerformanceTabPro
         <StatCard
           label="Win Rate"
           value={`${winRate.toFixed(1)}%`}
-          sub="30-day avg"
+          sub={combined ? 'futures + predictions' : '30-day avg'}
           color={winRate >= 50 ? '#34D399' : '#EF4444'}
         />
         <StatCard
@@ -94,9 +112,9 @@ export function AgentPerformanceTab({ entries, summary }: AgentPerformanceTabPro
           color={avgRR >= 1.5 ? '#34D399' : avgRR >= 1 ? 'var(--pulse-accent)' : '#EF4444'}
         />
         <StatCard
-          label="Proposals"
+          label="Decisions"
           value={`${totalAccepted}/${totalProposals}`}
-          sub="Accepted/Total"
+          sub="Resolved/Total"
         />
         <StatCard
           label="Agent P&L"
@@ -106,7 +124,63 @@ export function AgentPerformanceTab({ entries, summary }: AgentPerformanceTabPro
         />
       </div>
 
-      {/* Proposal Tracker */}
+      {/* Per-Agent Breakdown (from performance endpoint) */}
+      {futuresAgents.length > 0 && (
+        <div className="bg-[var(--pulse-surface)] border border-[var(--pulse-accent)]/10 rounded-lg p-3">
+          <div className="flex items-center gap-2 mb-2">
+            <Target className="w-3.5 h-3.5 text-[var(--pulse-accent)]" />
+            <span className="text-xs font-semibold text-[var(--pulse-text)]">Per-Agent Stats</span>
+          </div>
+          <div className="space-y-2">
+            {futuresAgents.map(agent => (
+              <div key={agent.agentName} className="flex items-center justify-between text-[10px] py-1 border-b border-[var(--pulse-accent)]/5 last:border-0">
+                <span className="text-[var(--pulse-accent)] font-medium">{agent.agentName}</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-[var(--pulse-muted)]">{agent.wins}W/{agent.losses}L</span>
+                  <span className={`font-mono ${agent.winRate >= 50 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {agent.winRate.toFixed(0)}%
+                  </span>
+                  <span className={`font-mono ${agent.totalPnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {agent.totalPnl >= 0 ? '+' : ''}${agent.totalPnl.toFixed(0)}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Prediction Markets Stats */}
+      {predictions && predictions.total > 0 && (
+        <div className="bg-[var(--pulse-surface)] border border-[var(--pulse-accent)]/10 rounded-lg p-3">
+          <div className="flex items-center gap-2 mb-2">
+            <TrendingUp className="w-3.5 h-3.5 text-[var(--pulse-accent)]" />
+            <span className="text-xs font-semibold text-[var(--pulse-text)]">Prediction Markets</span>
+          </div>
+          <div className="grid grid-cols-4 gap-2 text-[10px]">
+            <div>
+              <div className="text-[var(--pulse-muted)]">Total</div>
+              <div className="text-[var(--pulse-text)] font-mono">{predictions.total}</div>
+            </div>
+            <div>
+              <div className="text-[var(--pulse-muted)]">Resolved</div>
+              <div className="text-[var(--pulse-text)] font-mono">{predictions.resolved}</div>
+            </div>
+            <div>
+              <div className="text-[var(--pulse-muted)]">Win Rate</div>
+              <div className={`font-mono ${predictions.winRate >= 50 ? 'text-emerald-400' : 'text-red-400'}`}>
+                {predictions.winRate.toFixed(0)}%
+              </div>
+            </div>
+            <div>
+              <div className="text-[var(--pulse-muted)]">W/L</div>
+              <div className="text-[var(--pulse-text)] font-mono">{predictions.wins}/{predictions.losses}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Proposal Tracker (daily journal entries) */}
       <div className="bg-[var(--pulse-surface)] border border-[var(--pulse-accent)]/10 rounded-lg p-3">
         <div className="flex items-center gap-2 mb-2">
           <Bot className="w-3.5 h-3.5 text-[var(--pulse-accent)]" />

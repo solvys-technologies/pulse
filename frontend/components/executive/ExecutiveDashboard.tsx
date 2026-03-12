@@ -11,8 +11,10 @@ import { SessionCalendarList } from './SessionCalendarList';
 import TradeIdeaModal from '../TradeIdeaModal';
 import { RegimeCard } from '../dashboard/RegimeCard';
 import { RegimeTrackerModal } from '../regimes/RegimeTrackerModal';
+import { SetupGuideCard, shouldShowSetupGuide } from '../onboarding/SetupGuideCard';
+import { RefreshCw } from 'lucide-react';
 
-const DASHBOARD_PAGES = ['Briefing', 'The Tape'];
+const DASHBOARD_PAGES = ['Briefing', 'RiskFlow'];
 
 export function ExecutiveDashboard() {
   const backend = useBackend();
@@ -22,15 +24,18 @@ export function ExecutiveDashboard() {
   const { items: scheduleItems, loaded: scheduleLoaded } = useSchedule();
   const [kpis, setKpis] = useState<ExecutiveKpi[]>([]);
   const [ntnLoaded, setNtnLoaded] = useState(false);
+  const [ntnRefreshing, setNtnRefreshing] = useState(false);
   const [kpisLoaded, setKpisLoaded] = useState(false);
+  const [showSetupGuide, setShowSetupGuide] = useState(() => shouldShowSetupGuide());
 
-  // Brief type based on time: Tale of the Tape (Sun + Mon<7AM), MDB (<11AM), ADB (11AM-5:29PM), PMDB (5:30PM+)
+  // Brief type: TOTT (Sun>=17:00 through Mon<7AM), MDB (<11AM), ADB (11AM-5:29PM), PMDB (5:30PM+)
   const getBriefLabel = () => {
     const now = new Date();
     const day = now.getDay();
     const h = now.getHours();
-    if (day === 0 || (day === 1 && h < 7)) return 'Tale of the Tape';
     const t = h * 60 + now.getMinutes();
+    // TOTT: Sunday >= 17:00 through Monday < 07:00
+    if ((day === 0 && t >= 17 * 60) || (day === 1 && h < 7)) return 'Tale of the Tape';
     if (t >= 17 * 60 + 30) return 'Post-Market Brief';
     if (t >= 11 * 60) return 'Afternoon Brief';
     return 'Morning Brief';
@@ -83,8 +88,21 @@ export function ExecutiveDashboard() {
     };
   }, [backend]);
 
-  // The Tape: same feed as RiskFlow panel and MinimalFeedSection (RiskFlowContext)
-  const { alerts, markAllSeen, isSeen, notionPollStatus } = useRiskFlow();
+  const refreshBrief = useCallback(async () => {
+    setNtnRefreshing(true);
+    try {
+      setBriefLabel(getBriefLabel());
+      const items = await backend.notion.getMdbBrief();
+      setNtnText(items[0]?.detail ?? '');
+    } catch (error) {
+      console.warn('[Dashboard] Brief refresh failed:', error);
+    } finally {
+      setNtnRefreshing(false);
+    }
+  }, [backend]);
+
+  // RiskFlow: same feed as RiskFlow panel and MinimalFeedSection (RiskFlowContext)
+  const { alerts, markAllSeen, isSeen, notionPollStatus, refresh, refreshing } = useRiskFlow();
   const [selectedIdea, setSelectedIdea] = useState<TradeIdeaDetail | null>(null);
   const [showRegimeTracker, setShowRegimeTracker] = useState(false);
   const tapeAlerts = useMemo(() => alerts.slice(0, 50), [alerts]);
@@ -147,11 +165,31 @@ export function ExecutiveDashboard() {
       >
         {/* Page 1: Briefing (default) — NTK Brief + Session Calendar + Core KPIs + Action Tape */}
         <div data-dash-page="0" className="min-h-full snap-start p-5 flex flex-col">
+          {/* Setup Guide — first-time onboarding */}
+          {showSetupGuide && (
+            <div className="shrink-0 mb-5">
+              <SetupGuideCard onDismiss={() => setShowSetupGuide(false)} />
+            </div>
+          )}
           {/* Row 1: Need-to-Know Brief (left) + Session Calendar (right) */}
           <div className="shrink-0 grid grid-cols-1 xl:grid-cols-2 gap-6 mb-5" style={{ height: '380px' }}>
             {/* Need-to-Know Brief */}
             <div className="flex flex-col h-full min-h-0">
-              <KanbanTitle title={briefLabel} tone="gold" />
+              <KanbanTitle
+                title={briefLabel}
+                tone="gold"
+                headerRight={
+                  <button
+                    type="button"
+                    onClick={refreshBrief}
+                    disabled={ntnRefreshing}
+                    className="p-1 rounded hover:bg-[var(--pulse-accent)]/10 text-zinc-500 hover:text-[var(--pulse-accent)] transition-colors disabled:opacity-40"
+                    title="Refresh brief"
+                  >
+                    <RefreshCw className={`w-3 h-3 ${ntnRefreshing ? 'animate-spin' : ''}`} />
+                  </button>
+                }
+              />
               <textarea
                 value={ntnText}
                 readOnly
@@ -222,9 +260,19 @@ export function ExecutiveDashboard() {
             <RegimeCard onOpenTracker={() => setShowRegimeTracker(true)} />
           </div>
 
-          {/* Row 3: The Tape — fills remaining space, expandable items, recency fade */}
+          {/* Row 3: RiskFlow — fills remaining space, expandable items, recency fade */}
           <div className="flex-1 min-h-0 flex flex-col">
-            <KanbanTitle title="The Tape" tag="Alerts + Signals" tone="emerald" />
+            <KanbanTitle title="RiskFlow" tag="Alerts + Signals" tone="emerald" headerRight={
+              <button
+                type="button"
+                onClick={() => { void refresh(); }}
+                disabled={refreshing}
+                className="p-1 rounded hover:bg-emerald-500/10 text-zinc-500 hover:text-emerald-400 transition-colors disabled:opacity-40"
+                title="Refresh feeds"
+              >
+                <RefreshCw className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`} />
+              </button>
+            } />
             <div className="mt-2 flex-1 min-h-0 overflow-y-auto pr-1 space-y-1.5">
               {tapeAlerts.length === 0 ? (
                 <div className="text-xs text-gray-500 px-1 py-4">No actions in the feed right now.</div>
@@ -255,9 +303,19 @@ export function ExecutiveDashboard() {
           </div>
         </div>
 
-        {/* Page 2: Full The Tape */}
+        {/* Page 2: Full RiskFlow */}
         <div data-dash-page="1" className="min-h-full snap-start p-5 flex flex-col">
-          <KanbanTitle title="The Tape" tag="Full Feed" tone="emerald" />
+          <KanbanTitle title="RiskFlow" tag="Full Feed" tone="emerald" headerRight={
+              <button
+                type="button"
+                onClick={() => { void refresh(); }}
+                disabled={refreshing}
+                className="p-1 rounded hover:bg-emerald-500/10 text-zinc-500 hover:text-emerald-400 transition-colors disabled:opacity-40"
+                title="Refresh feeds"
+              >
+                <RefreshCw className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`} />
+              </button>
+            } />
           <div className="mt-3 flex-1 min-h-0 overflow-y-auto pr-1 space-y-1.5">
             {tapeAlerts.length === 0 ? (
               <div className="text-xs text-gray-500 px-1 py-8 text-center">No actions in the feed right now.</div>

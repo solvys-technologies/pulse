@@ -81,6 +81,8 @@ interface SettingsContextType {
   setPrimaryBroker: (broker: PrimaryBroker) => void;
   iframeUrls: IframeUrls;
   setIframeUrls: (urls: IframeUrls) => void;
+  gatewayPort: number;
+  setGatewayPort: (port: number) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -186,6 +188,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       research: '',
     })
   );
+  const [gatewayPort, setGatewayPort] = useState<number>(() =>
+    loadFromStorage('gatewayPort', 7787)
+  );
 
   // Track whether initial backend fetch has completed to avoid saving back stale data
   const backendSynced = useRef(false);
@@ -204,6 +209,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         if (remote.autoPilotSettings) setAutoPilotSettings(prev => ({ ...prev, ...(remote.autoPilotSettings as AutoPilotSettings) }));
         if (remote.primaryBroker) setPrimaryBroker(remote.primaryBroker as PrimaryBroker);
         if (remote.iframeUrls) setIframeUrls(prev => ({ ...prev, ...(remote.iframeUrls as IframeUrls) }));
+        if (remote.gatewayPort) setGatewayPort(remote.gatewayPort as number);
       }
       backendSynced.current = true;
     });
@@ -222,6 +228,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       autoPilotSettings,
       primaryBroker,
       iframeUrls,
+      gatewayPort,
     };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
@@ -232,7 +239,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     if (backendSynced.current) {
       saveBackendSettings(settings);
     }
-  }, [apiKeys, tradingModels, alertConfig, mockDataEnabled, selectedSymbol, riskSettings, developerSettings, autoPilotSettings, primaryBroker, iframeUrls]);
+  }, [apiKeys, tradingModels, alertConfig, mockDataEnabled, selectedSymbol, riskSettings, developerSettings, autoPilotSettings, primaryBroker, iframeUrls, gatewayPort]);
 
   return (
     <SettingsContext.Provider
@@ -257,6 +264,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setPrimaryBroker,
         iframeUrls,
         setIframeUrls,
+        gatewayPort,
+        setGatewayPort,
       }}
     >
       {children}

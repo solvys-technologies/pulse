@@ -1,0 +1,393 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © Priced In Research — Playbook Sweep Reclaim Strategy (mirrors QC PlaybookSweepReclaim.cs 1:1)
+
+//@version=6
+strategy("Playbook Sweep Reclaim (Priced In)"
+  , shorttitle = "PBSR Backtest"
+  , overlay = true
+  , max_lines_count = 500
+  , max_labels_count = 500
+  , max_boxes_count = 500
+  , default_qty_type = strategy.fixed
+  , default_qty_value = 1
+  , initial_capital = 50000
+  , commission_type = strategy.commission.cash_per_contract
+  , commission_value = 0.62
+  , slippage = 2)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 1. Configuration — matches QC PlaybookSweepReclaim.cs constants exactly
+// ═══════════════════════════════════════════════════════════════════════════════
+grpCore        = "1. Core Parameters"
+pivotLookback  = input.int(7, "Pivot Left/Right Lookback", minval = 1, group = grpCore, tooltip = "PivotDetector uses PivotLookback/2 = 7 left and 7 right bars.")
+rsiLen         = input.int(14, "RSI Length", minval = 1, group = grpCore)
+rsiPivotL      = input.int(5, "RSI Pivot Left", minval = 1, group = grpCore)
+rsiPivotR      = input.int(5, "RSI Pivot Right", minval = 1, group = grpCore)
+emaFastLen     = input.int(20, "EMA Fast Length", minval = 1, group = grpCore)
+emaSlowLen     = input.int(100, "EMA Slow Length", minval = 1, group = grpCore)
+htfPatternBars = input.int(20, "HTF Pattern Lookback", minval = 5, group = grpCore)
+maxTradesDay   = input.int(3, "Max Trades Per Day", minval = 1, maxval = 10, group = grpCore)
+
+grpZone        = "2. Zone & Sweep"
+zoneWidthPct   = input.float(0.02, "Zone Width (%)", minval = 0.005, step = 0.005, group = grpZone, tooltip = "Width of liquidity zone as % of price. QC uses 0.02%.")
+reclaimBars    = input.int(2, "Reclaim Bars Required", minval = 1, maxval = 5, group = grpZone)
+sweepWindow    = input.int(20, "Max Bars After Sweep", minval = 5, group = grpZone)
+pinSensitivity = input.float(0.65, "Pin Bar Sensitivity", minval = 0.3, maxval = 0.9, step = 0.05, group = grpZone)
+
+grpRisk        = "3. Risk Management"
+riskReward     = input.float(1.5, "Risk:Reward Ratio", minval = 1.0, step = 0.1, group = grpRisk)
+atrMult        = input.float(0.5, "Stop Buffer (ATR multiple)", minval = 0.1, step = 0.1, group = grpRisk)
+
+grpSession     = "4. Session Filters"
+useSessions    = input.bool(true, "Enable Session Filters", group = grpSession)
+showMorning    = input.bool(true, "Morning Flush (8:00-10:45)", group = grpSession, inline = "s1")
+showFortyForty = input.bool(true, "40/40 Club (9:30-11:00)", group = grpSession, inline = "s1")
+showLunch      = input.bool(true, "Lunch Flush (11:30-12:30)", group = grpSession, inline = "s2")
+showPower      = input.bool(true, "Power Hour (3:00-4:00)", group = grpSession, inline = "s2")
+
+grpHTF         = "5. HTF Patterns (15min)"
+htfInput       = input.timeframe("15", "HTF Timeframe", group = grpHTF)
+showHTF        = input.bool(true, "Use HTF Confluence", group = grpHTF)
+
+grpVis         = "6. Visuals"
+showZones      = input.bool(true, "Show Liquidity Zones", group = grpVis)
+showSignals    = input.bool(true, "Show Confluence Labels", group = grpVis)
+bullCol        = input.color(#089981, "Long Color", group = grpVis, inline = "vc")
+bearCol        = input.color(#f23645, "Short Color", group = grpVis, inline = "vc")
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 2. Indicators — same as QC
+// ═══════════════════════════════════════════════════════════════════════════════
+n = bar_index
+rsi = ta.rsi(close, rsiLen)
+emaFast = ta.ema(close, emaFastLen)
+emaSlow = ta.ema(close, emaSlowLen)
+atr = ta.atr(14)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 3. Session Window Detection (EST/EDT) — matches QC SessionWindows.cs
+// ═══════════════════════════════════════════════════════════════════════════════
+isMorning    = not na(time(timeframe.period, "0800-1045:23456", "America/New_York"))
+isFortyForty = not na(time(timeframe.period, "0930-1100:23456", "America/New_York"))
+isLunch      = not na(time(timeframe.period, "1130-1230:23456", "America/New_York"))
+isPower      = not na(time(timeframe.period, "1500-1600:23456", "America/New_York"))
+
+inSession = not useSessions or (showMorning and isMorning) or (showFortyForty and isFortyForty) or (showLunch and isLunch) or (showPower and isPower)
+
+sessionName = isFortyForty ? "forty_forty" : isMorning ? "morning_flush" : isLunch ? "lunch_flush" : isPower ? "power_hour" : "none"
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 4. Pivot Detection & Liquidity Zones — matches QC PivotDetector + LiquidityZone
+// ═══════════════════════════════════════════════════════════════════════════════
+ph = ta.pivothigh(high, pivotLookback, pivotLookback)
+pl = ta.pivotlow(low, pivotLookback, pivotLookback)
+
+// Zone tracking via arrays (matches QC List<LiquidityZone>)
+var float[] zoneHi   = array.new_float()
+var float[] zoneLo   = array.new_float()
+var bool[]  zoneIsHi = array.new_bool()
+var bool[]  zonSwept = array.new_bool()
+var int[]   zonSwpBr = array.new_int()
+var int[]   zonRclCt = array.new_int()
+var bool[]  zonFired = array.new_bool()
+
+// Create zones on confirmed pivots
+if not na(ph)
+    zoneWidth = math.max(1.0, high[pivotLookback] * zoneWidthPct / 100)
+    array.push(zoneHi, high[pivotLookback])
+    array.push(zoneLo, high[pivotLookback] - zoneWidth)
+    array.push(zoneIsHi, true)
+    array.push(zonSwept, false)
+    array.push(zonSwpBr, 0)
+    array.push(zonRclCt, 0)
+    array.push(zonFired, false)
+    if showZones
+        box.new(n - pivotLookback, high[pivotLookback], n, high[pivotLookback] - zoneWidth, border_color = color.new(bearCol, 70), bgcolor = color.new(bearCol, 90))
+
+if not na(pl)
+    zoneWidth = math.max(1.0, low[pivotLookback] * zoneWidthPct / 100)
+    array.push(zoneHi, low[pivotLookback] + zoneWidth)
+    array.push(zoneLo, low[pivotLookback])
+    array.push(zoneIsHi, false)
+    array.push(zonSwept, false)
+    array.push(zonSwpBr, 0)
+    array.push(zonRclCt, 0)
+    array.push(zonFired, false)
+    if showZones
+        box.new(n - pivotLookback, low[pivotLookback] + zoneWidth, n, low[pivotLookback], border_color = color.new(bullCol, 70), bgcolor = color.new(bullCol, 90))
+
+// Trim old zones (keep last 30) — matches QC while (_zones.Count > 30) _zones.RemoveAt(0)
+while array.size(zoneHi) > 30
+    array.shift(zoneHi), array.shift(zoneLo), array.shift(zoneIsHi)
+    array.shift(zonSwept), array.shift(zonSwpBr), array.shift(zonRclCt), array.shift(zonFired)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 5. Sweep & Reclaim Detection — matches QC lines 176-222 exactly
+// ═══════════════════════════════════════════════════════════════════════════════
+var int sweepDir = 0  // 1 = long, -1 = short, 0 = none
+sweepDir := 0
+var float reclaimedZoneHi = na
+var float reclaimedZoneLo = na
+
+if array.size(zoneHi) > 0
+    for i = 0 to array.size(zoneHi) - 1
+        if array.get(zonFired, i)
+            continue
+        zH = array.get(zoneHi, i)
+        zL = array.get(zoneLo, i)
+        isHi = array.get(zoneIsHi, i)
+        sw = array.get(zonSwept, i)
+
+        if not sw
+            // Check for sweep: price takes out boundary, closes back inside
+            if isHi and high > zH and close <= zH
+                array.set(zonSwept, i, true)
+                array.set(zonSwpBr, i, n)
+                array.set(zonRclCt, i, 0)
+            else if not isHi and low < zL and close >= zL
+                array.set(zonSwept, i, true)
+                array.set(zonSwpBr, i, n)
+                array.set(zonRclCt, i, 0)
+        else
+            // Check for reclaim: consecutive closes inside zone
+            inZone = close >= zL and close <= zH
+            if inZone
+                array.set(zonRclCt, i, array.get(zonRclCt, i) + 1)
+            else
+                array.set(zonRclCt, i, 0)
+
+            // Reclaim confirmed
+            barsAfterSweep = n - array.get(zonSwpBr, i)
+            if array.get(zonRclCt, i) >= reclaimBars and barsAfterSweep <= sweepWindow
+                array.set(zonFired, i, true)
+                // Swing high swept + reclaimed = short (sellers defended)
+                // Swing low swept + reclaimed = long (buyers defended)
+                sweepDir := isHi ? -1 : 1
+                reclaimedZoneHi := zH
+                reclaimedZoneLo := zL
+                break
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 6. RSI Divergence — matches QC lines 224-257
+// ═══════════════════════════════════════════════════════════════════════════════
+ph_rsi = ta.pivothigh(rsi, rsiPivotL, rsiPivotR)
+pl_rsi = ta.pivotlow(rsi, rsiPivotL, rsiPivotR)
+
+// Price pivots for divergence comparison (separate from zone pivots)
+ph_price_div = ta.pivothigh(high, rsiPivotL, rsiPivotR)
+pl_price_div = ta.pivotlow(low, rsiPivotL, rsiPivotR)
+
+var float prevPricePivotLow = na
+var float lastPricePivotLow = na
+var float prevRsiPivotLow = na
+var float lastRsiPivotLow = na
+var float prevPricePivotHigh = na
+var float lastPricePivotHigh = na
+var float prevRsiPivotHigh = na
+var float lastRsiPivotHigh = na
+
+if not na(pl_price_div)
+    prevPricePivotLow := lastPricePivotLow
+    lastPricePivotLow := low[rsiPivotR]
+if not na(pl_rsi)
+    prevRsiPivotLow := lastRsiPivotLow
+    lastRsiPivotLow := rsi[rsiPivotR]
+if not na(ph_price_div)
+    prevPricePivotHigh := lastPricePivotHigh
+    lastPricePivotHigh := high[rsiPivotR]
+if not na(ph_rsi)
+    prevRsiPivotHigh := lastRsiPivotHigh
+    lastRsiPivotHigh := rsi[rsiPivotR]
+
+// Bullish divergence: price lower low, RSI higher low
+bullDiv = not na(lastPricePivotLow) and not na(prevPricePivotLow) and not na(lastRsiPivotLow) and not na(prevRsiPivotLow) and lastPricePivotLow < prevPricePivotLow and lastRsiPivotLow > prevRsiPivotLow
+
+// Bearish divergence: price higher high, RSI lower high
+bearDiv = not na(lastPricePivotHigh) and not na(prevPricePivotHigh) and not na(lastRsiPivotHigh) and not na(prevRsiPivotHigh) and lastPricePivotHigh > prevPricePivotHigh and lastRsiPivotHigh < prevRsiPivotHigh
+
+rsiDivDir = bullDiv ? 1 : bearDiv ? -1 : 0
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 7. EMA Cross + Retest State Machine — matches QC lines 259-283 exactly
+// ═══════════════════════════════════════════════════════════════════════════════
+var bool pendingBullRetest = false
+var bool pendingBearRetest = false
+var bool lastCrossWasBull = false
+
+emaBullCross = emaFast > emaSlow
+if emaBullCross and not lastCrossWasBull
+    pendingBullRetest := true
+    pendingBearRetest := false
+else if not emaBullCross and lastCrossWasBull
+    pendingBearRetest := true
+    pendingBullRetest := false
+lastCrossWasBull := emaBullCross
+
+emaRetestDir = 0
+if pendingBullRetest and low <= emaFast and close > emaSlow
+    emaRetestDir := 1
+    pendingBullRetest := false
+if pendingBearRetest and high >= emaFast and close < emaSlow
+    emaRetestDir := -1
+    pendingBearRetest := false
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 8. Volume Delta — matches QC lines 285-295
+// ═══════════════════════════════════════════════════════════════════════════════
+buyVol  = close > open ? volume : 0.0
+sellVol = close < open ? volume : 0.0
+volDelta = volume > 0 ? (buyVol - sellVol) / volume : 0.0
+volDir = volDelta > 0 ? 1 : volDelta < 0 ? -1 : 0
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 9. HTF Candlestick Patterns — matches QC GetHtfPattern() lines 407-489
+// ═══════════════════════════════════════════════════════════════════════════════
+[htfO, htfH, htfL, htfC, htfPO, htfPC] = request.security(syminfo.tickerid, htfInput, [open[1], high[1], low[1], close[1], open[2], close[2]])
+htfNewBar = ta.change(time(htfInput)) != 0
+
+htfDir = 0
+htfName = ""
+
+if showHTF and htfNewBar and not na(htfO)
+    currBody  = math.abs(htfC - htfO)
+    currRange = htfH - htfL
+    prevBody  = math.abs(htfPC - htfPO)
+
+    currBodyTop = math.max(htfC, htfO)
+    currBodyBot = math.min(htfC, htfO)
+    prevBodyTop = math.max(htfPC, htfPO)
+    prevBodyBot = math.min(htfPC, htfPO)
+
+    lowerWickPct = currRange > 0 ? (currBodyBot - htfL) / currRange : 0.0
+    upperWickPct = currRange > 0 ? (htfH - currBodyTop) / currRange : 0.0
+    smallBody    = currRange > 0 ? currBody < currRange * 0.35 : false
+
+    // Extremity filter — at highest high or lowest low of last N HTF bars
+    htfHighest = ta.highest(high, htfPatternBars)
+    htfLowest  = ta.lowest(low, htfPatternBars)
+    atHighExtremity = htfH >= htfHighest
+    atLowExtremity  = htfL <= htfLowest
+
+    // Bullish Engulfing at low extremity
+    if htfPC < htfPO and htfC > htfO and currBodyBot <= prevBodyBot and currBodyTop >= prevBodyTop and atLowExtremity
+        htfDir := 1
+        htfName := "bull_engulfing"
+    // Bearish Engulfing at high extremity
+    else if htfPC > htfPO and htfC < htfO and currBodyBot <= prevBodyBot and currBodyTop >= prevBodyTop and atHighExtremity
+        htfDir := -1
+        htfName := "bear_engulfing"
+    // Hammer at low extremity
+    else if smallBody and lowerWickPct > pinSensitivity and atLowExtremity
+        htfDir := 1
+        htfName := "hammer"
+    // Shooting Star at high extremity
+    else if smallBody and upperWickPct > pinSensitivity and atHighExtremity
+        htfDir := -1
+        htfName := "shooting_star"
+
+// Persist HTF signal for duration of the HTF bar
+var int htfDirPersist = 0
+var string htfNamePersist = ""
+if htfNewBar
+    htfDirPersist := htfDir
+    htfNamePersist := htfName
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 10. Daily Trade Counter — matches QC lines 308-314
+// ═══════════════════════════════════════════════════════════════════════════════
+var int tradesToday = 0
+isNewDay = ta.change(time("D")) != 0
+if isNewDay
+    tradesToday := 0
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 11. Confidence Scoring & Signal Composition — matches QC lines 305-345 exactly
+// ═══════════════════════════════════════════════════════════════════════════════
+canTrade = sweepDir != 0 and inSession and tradesToday < maxTradesDay and strategy.opentrades == 0
+
+var int lastConfidence = 0
+var string lastSignals = ""
+
+if canTrade
+    confidence = 70  // base from sweep + reclaim
+
+    signals = "sweep"
+
+    if rsiDivDir == sweepDir
+        confidence += 15
+        signals += "+rsiDiv"
+
+    if emaRetestDir == sweepDir
+        confidence += 10
+        signals += "+emaRetest"
+
+    if htfDirPersist == sweepDir
+        confidence += 10
+        signals += "+htf(" + htfNamePersist + ")"
+
+    if volDir == sweepDir
+        confidence += 5
+        signals += "+volDelta"
+
+    confidence := math.min(confidence, 100)
+    lastConfidence := confidence
+    lastSignals := signals
+
+    // ── Entry, Stop, Target — matches QC lines 347-361 ─────────────────
+    entry = close
+    float stopPrice = na
+    float targetPrice = na
+
+    if sweepDir == 1  // long
+        stopPrice   := not na(reclaimedZoneLo) ? reclaimedZoneLo - atr * atrMult : entry - atr * 2
+        targetPrice := entry + (entry - stopPrice) * riskReward
+
+    if sweepDir == -1  // short
+        stopPrice   := not na(reclaimedZoneHi) ? reclaimedZoneHi + atr * atrMult : entry + atr * 2
+        targetPrice := entry - (stopPrice - entry) * riskReward
+
+    // ── Execute — matches QC trade emission ─────────────────────────────
+    if sweepDir == 1
+        strategy.entry("Long", strategy.long)
+        strategy.exit("Long TP/SL", "Long", stop = stopPrice, limit = targetPrice)
+        tradesToday += 1
+    else if sweepDir == -1
+        strategy.entry("Short", strategy.short)
+        strategy.exit("Short TP/SL", "Short", stop = stopPrice, limit = targetPrice)
+        tradesToday += 1
+
+    // ── Visual labels ───────────────────────────────────────────────────
+    if showSignals
+        lbl_text = (sweepDir == 1 ? "LONG" : "SHORT") + " " + str.tostring(confidence) + "%\n" + signals + "\n" + sessionName
+        lbl_color = sweepDir == 1 ? bullCol : bearCol
+        lbl_style = sweepDir == 1 ? label.style_label_up : label.style_label_down
+        lbl_y = sweepDir == 1 ? low : high
+        lbl_yloc = sweepDir == 1 ? yloc.belowbar : yloc.abovebar
+        label.new(n, lbl_y, lbl_text, style = lbl_style, color = color.new(lbl_color, 30), textcolor = color.white, size = size.small)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 12. Overlay Plots — EMAs + zone boundaries
+// ═══════════════════════════════════════════════════════════════════════════════
+plot(emaFast, "EMA Fast", color = color.white, linewidth = 1)
+plot(emaSlow, "EMA Slow", color = #5b9cf6, linewidth = 2)
+
+// Session background shading
+bgcolor(inSession and useSessions ? color.new(#c79f4a, 95) : na, title = "Session Window")
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 13. Info Table — live signal state
+// ═══════════════════════════════════════════════════════════════════════════════
+if barstate.islast
+    var table infoTab = table.new(position.top_right, 2, 6, bgcolor = color.new(#050402, 20), border_width = 1, border_color = color.new(#c79f4a, 60))
+    table.cell(infoTab, 0, 0, "Trades Today", text_color = #f0ead6, text_size = size.small)
+    table.cell(infoTab, 1, 0, str.tostring(tradesToday) + "/" + str.tostring(maxTradesDay), text_color = #c79f4a, text_size = size.small)
+    table.cell(infoTab, 0, 1, "Session", text_color = #f0ead6, text_size = size.small)
+    table.cell(infoTab, 1, 1, sessionName, text_color = #c79f4a, text_size = size.small)
+    table.cell(infoTab, 0, 2, "RSI", text_color = #f0ead6, text_size = size.small)
+    table.cell(infoTab, 1, 2, str.tostring(rsi, "#.0"), text_color = rsi > 50 ? bullCol : bearCol, text_size = size.small)
+    table.cell(infoTab, 0, 3, "Vol Delta", text_color = #f0ead6, text_size = size.small)
+    table.cell(infoTab, 1, 3, str.tostring(volDelta, "#.##"), text_color = volDelta > 0 ? bullCol : bearCol, text_size = size.small)
+    table.cell(infoTab, 0, 4, "Last Signal", text_color = #f0ead6, text_size = size.small)
+    table.cell(infoTab, 1, 4, lastConfidence > 0 ? str.tostring(lastConfidence) + "%" : "—", text_color = #c79f4a, text_size = size.small)
+    table.cell(infoTab, 0, 5, "Confluences", text_color = #f0ead6, text_size = size.small)
+    table.cell(infoTab, 1, 5, lastSignals != "" ? lastSignals : "—", text_color = #c79f4a, text_size = size.small)

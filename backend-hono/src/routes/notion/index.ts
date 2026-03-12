@@ -3,7 +3,7 @@ import { Hono } from 'hono';
 import { generateText } from 'ai';
 import { fetchMDBBrief, fetchSchedule, writeMDBReportToNotion, getCurrentBriefType } from '../../services/notion-service.js';
 import type { BriefType } from '../../services/notion-service.js';
-import { getTradeIdeas, getPerformance, getPollStatus } from './handlers.js';
+import { getTradeIdeas, getPerformance, getPollStatus, updateTradeIdeaStatus } from './handlers.js';
 import { getFeed } from '../../services/riskflow/feed-service.js';
 import { fetchEconCalendar } from '../../services/econ-calendar-service.js';
 import { fetchEconomicFeed } from '../../services/riskflow/economic-feed.js';
@@ -91,6 +91,9 @@ export function createNotionRoutes(): Hono {
   // GET /api/notion/trade-ideas — live trade ideas from Notion poller cache
   app.get('/trade-ideas', getTradeIdeas);
 
+  // PATCH /api/notion/trade-ideas/:id/status — approve/deny trade proposals (updates Notion Kanban)
+  app.patch('/trade-ideas/:id/status', updateTradeIdeaStatus);
+
   // GET /api/notion/performance — KPI data from Daily P&L database
   app.get('/performance', getPerformance);
 
@@ -121,7 +124,11 @@ export function createNotionRoutes(): Hono {
         ? events.map((e) => `• ${e.name}${e.time ? ` at ${e.time}` : ''}${e.actual != null ? ` — Actual: ${e.actual}` : ''}${e.forecast != null ? `, Forecast: ${e.forecast}` : ''}`).join('\n')
         : 'No major economic events today.';
 
-      const prompt = `You are Pulse, a macro trading assistant for Priced In Capital. Generate a concise ${BRIEF_LABELS[briefType]}.
+      // MDB and TOTT get comprehensive reports; ADB and PMDB get short updates
+      const isFull = briefType === 'MDB' || briefType === 'TOTT';
+
+      const prompt = isFull
+        ? `You are Pulse, a macro trading assistant for Priced In Capital. Generate a comprehensive ${BRIEF_LABELS[briefType]}.
 
 ## Today's Economic Events
 ${econSummary}
@@ -130,14 +137,53 @@ ${econSummary}
 ${feedSummary}
 
 ## Instructions
-Write 3-5 bullet points covering:
-1. Key macro/risk themes from today's data
-2. Market implications (bullish/bearish signals)
-3. Actionable focus areas for the trading session
+${briefType === 'MDB'
+  ? `Write a full Morning Daily Brief in this exact format:
 
-Be direct, specific, and use financial shorthand. No filler. Max 200 words.`;
+**Day Type:** [Macro/Catalyst/Drift/Compounding] — one-line reason
+**Key Prints & Speeches (ET):** List each with time, actual vs expected, directional read (bullish/bearish)
+**After-Hours Movers:** Top movers with % and implied NQ/ES point impact
+**Macro/Political Take:** 2-3 sentences on the macro picture — labor, inflation, geopolitical, Fed
+**Pressure Summary:** Current price action, key levels, consolidation vs breakout
+**Market Risks & VIX:** Event risk status, VIX level and direction, what it means
+**Overall Sentiment:** One punchy sentence
+**Best Intraday Approach:** Specific strategy recommendation (Ripper, AWV, Snipe, etc.)
 
-      const { model, provider } = selectModel({ taskType: 'analysis', maxBudgetUsd: 0.01 });
+Be direct, use financial shorthand. Anchor ONLY to key macro events. No scattergun anchoring. 400-600 words.`
+  : `Write a comprehensive Tale of the Tape covering:
+
+**Past Week Recap:**
+- Market Overview (S&P, Nasdaq, equal-weight, sector rotation)
+- Top 3 S&P 500 Performers ($200B+) with headlines
+- Bottom 3 S&P 500 Performers ($200B+) with headlines
+- NQ Futures Daily % Change (each day)
+- Key Macro Data released
+- Political Commentary (administration figures, policy impact)
+- VIX Levels (range for the week)
+- Sentiment summary
+
+**Upcoming Week Preview:**
+- Scheduled Events with VolScore (1-10), Forecast, Prior, NQ Reaction expectation, Priced In assessment
+- Key earnings to watch
+- Sentiment outlook
+
+Be analytical, direct, use financial shorthand. 600-1000 words.`}
+`
+        : `You are Pulse, a macro trading assistant for Priced In Capital. Generate a brief ${BRIEF_LABELS[briefType]}.
+
+## Today's Economic Events
+${econSummary}
+
+## Recent RiskFlow Headlines
+${feedSummary}
+
+## Instructions
+${briefType === 'ADB'
+  ? 'Write 3-5 bullet points covering ONLY new headlines and data since the morning that moved or could move the market. Skip anything already covered in the MDB. Be direct and actionable. Max 200 words.'
+  : 'Write 3-5 bullet points covering ONLY new developments since the afternoon brief — post-market moves, after-hours earnings, overnight catalysts. Be direct and actionable. Max 200 words.'}
+`;
+
+      const { model, provider } = selectModel({ taskType: 'analysis', maxBudgetUsd: isFull ? 0.05 : 0.01 });
       const { text } = await generateText({ model, prompt });
 
       // Store in Notion (archives previous same-type entry)

@@ -1,11 +1,12 @@
 // [claude-code 2026-03-06] Full Regime Tracker modal — grouped by category, W-L tracking, add custom regimes
+// [claude-code 2026-03-12] Replaced W/L with ORB bullish/bearish, AI generate CTA, delete all regimes, 12H NY time, collapsed active regimes, labeled ORB record
 import { useState, useMemo } from 'react';
 import {
-  X, Plus, Check, Minus, Clock, TrendingUp, TrendingDown,
-  RotateCcw, Activity, ChevronDown, ChevronRight,
+  X, Plus, Clock, TrendingUp, TrendingDown,
+  ChevronDown, ChevronRight, Sparkles, Trash2,
 } from 'lucide-react';
 import { useRegimes } from '../../lib/regime-store';
-import { isRegimeActive, getTimeRemaining, getCurrentETTime } from '../../lib/regime-time';
+import { isRegimeActive, getTimeRemaining, getCurrentETTime, formatTimeRange12H } from '../../lib/regime-time';
 import type { TradingRegime } from '../../lib/regimes';
 
 const CATEGORY_LABELS: Record<TradingRegime['category'], string> = {
@@ -46,24 +47,45 @@ function ConfidenceBar({ value }: { value: number }) {
   );
 }
 
+/** ORB Direction record — shows bullish/bearish day count with label */
+function OrbRecord({ record }: { record: TradingRegime['record'] }) {
+  const total = record.bullishDays + record.bearishDays;
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="text-[8px] text-zinc-600 uppercase tracking-wider">ORB</span>
+      <span className="flex items-center gap-0.5 text-[10px]">
+        <TrendingUp className="w-2.5 h-2.5 text-emerald-400" />
+        <span className="text-emerald-400 font-semibold">{record.bullishDays}</span>
+      </span>
+      <span className="text-zinc-700">/</span>
+      <span className="flex items-center gap-0.5 text-[10px]">
+        <span className="text-red-400 font-semibold">{record.bearishDays}</span>
+        <TrendingDown className="w-2.5 h-2.5 text-red-400" />
+      </span>
+      {total > 0 && (
+        <span className="text-[9px] text-zinc-600 ml-0.5">
+          ({Math.round((record.bullishDays / total) * 100)}%)
+        </span>
+      )}
+    </div>
+  );
+}
+
 function RegimeCard({
   regime,
   isActive,
   timeInfo,
-  onRecordWin,
-  onRecordLoss,
+  onRecordBullish,
+  onRecordBearish,
   onDelete,
 }: {
   regime: TradingRegime;
   isActive: boolean;
   timeInfo: string;
-  onRecordWin: () => void;
-  onRecordLoss: () => void;
-  onDelete?: () => void;
+  onRecordBullish: () => void;
+  onRecordBearish: () => void;
+  onDelete: () => void;
 }) {
-  const totalTrades = regime.record.wins + regime.record.losses;
-  const winRate = totalTrades > 0 ? Math.round((regime.record.wins / totalTrades) * 100) : 0;
-
   return (
     <div className={`bg-[#0a0a06] border px-3 py-2.5 ${isActive ? 'border-[var(--pulse-accent)]/50 shadow-[0_0_12px_rgba(212,175,55,0.1)]' : 'border-zinc-800/60'}`}>
       {/* Header */}
@@ -80,18 +102,16 @@ function RegimeCard({
           </div>
           <p className="text-[10px] text-zinc-500 mt-0.5 line-clamp-2">{regime.description}</p>
         </div>
-        {onDelete && (
-          <button onClick={onDelete} className="shrink-0 p-1 text-zinc-700 hover:text-red-400 transition-colors" title="Delete">
-            <X className="w-3 h-3" />
-          </button>
-        )}
+        <button onClick={onDelete} className="shrink-0 p-1 text-zinc-700 hover:text-red-400 transition-colors" title="Delete regime">
+          <Trash2 className="w-3 h-3" />
+        </button>
       </div>
 
-      {/* Meta row */}
+      {/* Meta row — 12H NY time */}
       <div className="flex items-center gap-3 mb-2 flex-wrap">
         <span className="text-[9px] text-zinc-500 flex items-center gap-1">
           <Clock className="w-2.5 h-2.5" />
-          {regime.timeRange.start}-{regime.timeRange.end} {regime.timezone}
+          {formatTimeRange12H(regime.timeRange.start, regime.timeRange.end)}
         </span>
         <span className="text-[9px] text-zinc-600">{regime.daysActive.join(', ')}</span>
         <BiasBadge bias={regime.bias} />
@@ -115,27 +135,24 @@ function RegimeCard({
       {/* Stats + actions */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="text-[10px] text-zinc-400">
-            {regime.record.wins}W-{regime.record.losses}L
-            <span className="text-zinc-600 ml-1">({winRate}%)</span>
-          </span>
+          <OrbRecord record={regime.record} />
           <span className="text-[9px] text-zinc-600">{regime.daysObserved}d observed</span>
           <span className="text-[9px] text-[var(--pulse-accent)]/60">{timeInfo}</span>
         </div>
         <div className="flex items-center gap-1">
           <button
-            onClick={onRecordWin}
+            onClick={onRecordBullish}
             className="flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors"
-            title="Record Win"
+            title="Record Bullish ORB Day"
           >
-            <Check className="w-2.5 h-2.5" /> W
+            <TrendingUp className="w-2.5 h-2.5" />
           </button>
           <button
-            onClick={onRecordLoss}
+            onClick={onRecordBearish}
             className="flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-semibold text-red-400 bg-red-500/10 hover:bg-red-500/20 transition-colors"
-            title="Record Loss"
+            title="Record Bearish ORB Day"
           >
-            <Minus className="w-2.5 h-2.5" /> L
+            <TrendingDown className="w-2.5 h-2.5" />
           </button>
         </div>
       </div>
@@ -163,7 +180,7 @@ function AddRegimeForm({ onAdd, onCancel }: { onAdd: (r: TradingRegime) => void;
       timezone: 'ET',
       daysActive: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
       confidence,
-      record: { wins: 0, losses: 0 },
+      record: { bullishDays: 0, bearishDays: 0 },
       daysObserved: 0,
       bias,
       instruments: instruments.split(',').map((s) => s.trim()).filter(Boolean),
@@ -180,11 +197,11 @@ function AddRegimeForm({ onAdd, onCancel }: { onAdd: (r: TradingRegime) => void;
       <input className={inputClass} placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="text-[9px] text-zinc-600 uppercase">Start (ET)</label>
+          <label className="text-[9px] text-zinc-600 uppercase">Start (NY)</label>
           <input className={inputClass} type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
         </div>
         <div>
-          <label className="text-[9px] text-zinc-600 uppercase">End (ET)</label>
+          <label className="text-[9px] text-zinc-600 uppercase">End (NY)</label>
           <input className={inputClass} type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
         </div>
       </div>
@@ -227,7 +244,7 @@ interface RegimeTrackerModalProps {
 }
 
 export function RegimeTrackerModal({ onClose }: RegimeTrackerModalProps) {
-  const { regimes, addRegime, recordWin, recordLoss, deleteRegime } = useRegimes();
+  const { regimes, addRegime, recordBullish, recordBearish, deleteRegime } = useRegimes();
   const [showAddForm, setShowAddForm] = useState(false);
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
   const now = getCurrentETTime();
@@ -252,6 +269,14 @@ export function RegimeTrackerModal({ onClose }: RegimeTrackerModalProps) {
     });
   };
 
+  /** Open sidebar chat with Regimes skill attached */
+  const handleAIGenerate = () => {
+    window.dispatchEvent(new CustomEvent('pulse:open-chat-skill', {
+      detail: { skillId: 'regimes', prompt: 'Create a new trading regime for me' },
+    }));
+    onClose();
+  };
+
   return (
     <>
       <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm" onClick={onClose} />
@@ -268,10 +293,17 @@ export function RegimeTrackerModal({ onClose }: RegimeTrackerModalProps) {
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setShowAddForm((v) => !v)}
+                onClick={handleAIGenerate}
                 className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold text-[var(--pulse-accent)] border border-[var(--pulse-accent)]/30 hover:bg-[var(--pulse-accent)]/10 transition-colors"
+                title="AI Generate a new regime via chat"
               >
-                <Plus className="w-3 h-3" /> Add Regime
+                <Sparkles className="w-3 h-3" /> AI Generate
+              </button>
+              <button
+                onClick={() => setShowAddForm((v) => !v)}
+                className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold text-zinc-400 border border-zinc-700/50 hover:bg-zinc-800/50 transition-colors"
+              >
+                <Plus className="w-3 h-3" /> Manual
               </button>
               <button onClick={onClose} className="p-1 text-zinc-500 hover:text-[var(--pulse-text)] transition-colors">
                 <X className="w-4 h-4" />
@@ -292,7 +324,7 @@ export function RegimeTrackerModal({ onClose }: RegimeTrackerModalProps) {
               const items = grouped.get(cat) ?? [];
               if (items.length === 0 && cat !== 'custom') return null;
               const isCollapsed = collapsedCategories.has(cat);
-              const activeCount = items.filter((r) => isRegimeActive(r, now)).length;
+              const activeItems = items.filter((r) => isRegimeActive(r, now));
 
               return (
                 <div key={cat}>
@@ -308,11 +340,29 @@ export function RegimeTrackerModal({ onClose }: RegimeTrackerModalProps) {
                       {CATEGORY_LABELS[cat]}
                     </span>
                     <span className="text-[9px] text-zinc-600">{items.length} regime{items.length !== 1 ? 's' : ''}</span>
-                    {activeCount > 0 && (
-                      <span className="text-[9px] font-bold text-[var(--pulse-accent)]">{activeCount} active</span>
+                    {activeItems.length > 0 && (
+                      <span className="text-[9px] font-bold text-[var(--pulse-accent)]">{activeItems.length} active</span>
                     )}
                   </button>
 
+                  {/* Always show active regimes even when collapsed */}
+                  {isCollapsed && activeItems.length > 0 && (
+                    <div className="space-y-2 mb-2">
+                      {activeItems.map((r) => (
+                        <RegimeCard
+                          key={r.id}
+                          regime={r}
+                          isActive
+                          timeInfo={getTimeRemaining(r, now)}
+                          onRecordBullish={() => recordBullish(r.id)}
+                          onRecordBearish={() => recordBearish(r.id)}
+                          onDelete={() => deleteRegime(r.id)}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Full list when expanded */}
                   {!isCollapsed && (
                     <div className="space-y-2">
                       {items.length === 0 ? (
@@ -324,9 +374,9 @@ export function RegimeTrackerModal({ onClose }: RegimeTrackerModalProps) {
                             regime={r}
                             isActive={isRegimeActive(r, now)}
                             timeInfo={getTimeRemaining(r, now)}
-                            onRecordWin={() => recordWin(r.id)}
-                            onRecordLoss={() => recordLoss(r.id)}
-                            onDelete={r.category === 'custom' ? () => deleteRegime(r.id) : undefined}
+                            onRecordBullish={() => recordBullish(r.id)}
+                            onRecordBearish={() => recordBearish(r.id)}
+                            onDelete={() => deleteRegime(r.id)}
                           />
                         ))
                       )}
@@ -342,7 +392,7 @@ export function RegimeTrackerModal({ onClose }: RegimeTrackerModalProps) {
             <span className="text-[9px] text-zinc-700 tracking-wider uppercase">
               {regimes.length} regimes | {regimes.filter((r) => isRegimeActive(r, now)).length} active
             </span>
-            <span className="text-[9px] text-zinc-700">All times Eastern (ET)</span>
+            <span className="text-[9px] text-zinc-700">All times New York (ET)</span>
           </div>
         </div>
       </div>

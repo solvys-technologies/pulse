@@ -1,5 +1,5 @@
 // [claude-code 2026-03-10] Simplified ChatInterface — removed unused state, added AiLoader
-import { useState, useRef, useCallback, useMemo } from 'react';
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { AlertTriangle, CalendarCheck, X, Bookmark, Trash2 } from 'lucide-react';
 import { AssistantRuntimeProvider, useThread, useThreadRuntime } from '@assistant-ui/react';
 import { usePulseAgents } from '../contexts/PulseAgentContext';
@@ -7,6 +7,7 @@ import { useOpenClawRuntime } from './chat/useOpenClawRuntime';
 import { ChatHeader } from './chat/ChatHeader';
 import { PulseThread, AiLoader } from './chat/PulseThread';
 import { PulseComposer } from './chat/PulseComposer';
+import { SKILL_PREFIXES } from '../lib/skillPrefixes';
 import QuickPulseModal from './analysis/QuickPulseModal';
 import { addCheckpoint, deleteCheckpoint, listCheckpoints, type ChatCheckpoint } from '../lib/chatCheckpoints';
 import { useFeatureFlags } from '../hooks/useFeatureFlags';
@@ -68,6 +69,26 @@ function ChatInterfaceInner({ conversationId, clearConversationId, lastError, th
   const handleSend = useCallback((msg: string) => {
     runtime.append({ role: 'user', content: [{ type: 'text', text: msg }] });
   }, [runtime]);
+
+  // Skill-aware send — activates skill and prepends prefix before sending
+  const handleSkillSend = useCallback((skillId: string, msg: string) => {
+    setActiveSkill(skillId);
+    const prefix = SKILL_PREFIXES[skillId] || '';
+    const finalText = prefix ? `${prefix}\n\n${msg}` : msg;
+    runtime.append({ role: 'user', content: [{ type: 'text', text: finalText }] });
+  }, [runtime]);
+
+  // Listen for external open-chat-skill events (e.g. from Regime Tracker AI Generate)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.skillId && detail?.prompt) {
+        handleSkillSend(detail.skillId, detail.prompt);
+      }
+    };
+    window.addEventListener('pulse:open-chat-skill', handler);
+    return () => window.removeEventListener('pulse:open-chat-skill', handler);
+  }, [handleSkillSend]);
 
   const handleNewChat = useCallback(() => {
     clearConversationId();

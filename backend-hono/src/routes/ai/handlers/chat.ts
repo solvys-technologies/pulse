@@ -1,4 +1,4 @@
-// [claude-code 2026-03-10] Claude SDK bridge path + 21st API fallback for thinkHarder
+// [claude-code 2026-03-11] T3c: auto-screenshot injection for QUICKPULSE skill via Playwright
 /**
  * AI Chat Handler
  * Handle chat messages and AI responses - OpenClaw Local Processing
@@ -26,6 +26,7 @@ import { enqueue, completeJob } from '../../../services/chat-queue.js'
 import { isBridgeAvailable, bridgeChat, type BridgeStreamEvent } from '../../../services/claude-sdk/bridge.js'
 import { deepThink, is21stAvailable } from '../../../services/twenty-first/deep-think.js'
 import { resolveModelKey } from '../../../config/ai-config.js'
+import { takeScreenshot, isPlaywrightReady } from '../../../services/screenshot-service.js'
 
 // File attachment content part types
 type FileContentPart =
@@ -185,6 +186,28 @@ export async function handleChat(c: Context) {
     }
     if (detectedSkill) {
       cognition.step('skill-check', `Skill active: ${detectedSkill}`)
+    }
+
+    // Auto-screenshot for QUICKPULSE when no image parts present
+    if (detectedSkill === 'QUICKPULSE' && !multimodalContent?.some(p => p.type === 'image_url')) {
+      try {
+        if (await isPlaywrightReady()) {
+          cognition.step('tool-dispatch', 'Playwright screenshot', 'Auto-capturing dashboard for QuickPulse')
+          const shot = await takeScreenshot()
+          const imgPart: ContentPart = { type: 'image_url', image_url: { url: `data:image/png;base64,${shot.base64}` } }
+          if (multimodalContent) {
+            multimodalContent.push(imgPart)
+          } else {
+            multimodalContent = [
+              { type: 'text' as const, text: message },
+              imgPart,
+            ]
+          }
+          console.log(`[OpenClaw][${requestId}] QuickPulse auto-screenshot captured`)
+        }
+      } catch (err) {
+        console.warn(`[OpenClaw][${requestId}] QuickPulse auto-screenshot failed, proceeding without:`, err)
+      }
     }
 
     console.log(`[OpenClaw][${requestId}] Message: "${message.substring(0, 50)}..." (${message.length} chars)`)

@@ -175,6 +175,7 @@ export type TradingStrategy =
   | 'CHARGED_RIPPERS'
   | 'MEAN_REVERSION'
   | 'DISCRETIONARY'
+  | 'PLAYBOOK_SWEEP_RECLAIM'
 
 // Trading proposal from Trader agent
 export interface TradingProposal {
@@ -230,6 +231,24 @@ export interface RiskAssessment {
   rejectionReason?: string
   summary: string
   createdAt: string
+}
+
+// Signal event from external detectors (QuantConnect, TradingView)
+export interface SignalEvent {
+  source: 'quantconnect' | 'tradingview' | 'manual'
+  strategy: TradingStrategy
+  direction: 'long' | 'short'
+  instrument: string
+  confidence: number // 0-100
+  entryPrice: number
+  stopLoss: number
+  takeProfit: number[]
+  signals: string[] // e.g. ['liquidity_sweep', 'rsi_divergence']
+  htfContext?: string
+  volumeDelta?: number
+  rsiValue?: number
+  timestamp: string
+  sessionWindow?: string
 }
 
 // User psychology profile (for Risk Manager)

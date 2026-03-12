@@ -1,17 +1,18 @@
 /**
  * Feed Poller Service
- * Continuously polls X API for new news items and broadcasts Level 4 events instantly
+ * Continuously polls for new news items and broadcasts Level 4 events instantly
  * Runs independently of HTTP requests for real-time updates
  */
+// [claude-code 2026-03-12] Removed X API dependency — all tweet ingestion now via twitter-cli
 
-import { createXApiService, type ParsedTweetNews } from '../x-api-service.js';
 import * as newsCache from './news-cache.js';
 import { enrichFeedWithAnalysis } from './feed-service.js';
 import { broadcastLevel4 } from './sse-broadcaster.js';
-import type { FeedItem, NewsSource, UrgencyLevel } from '../../types/riskflow.js';
+import { fetchEconomicFeed } from './economic-feed.js';
+import { isTwitterCliInstalled, pollTwitterForEconNews } from '../twitter-cli/index.js';
+import type { FeedItem } from '../../types/riskflow.js';
 
 const POLL_INTERVAL_MS = 15_000; // Poll every 15 seconds for instant Level 4 detection
-const isDev = process.env.NODE_ENV !== 'production';
 let pollInterval: ReturnType<typeof setInterval> | null = null;
 let isPolling = false;
 
@@ -26,41 +27,28 @@ async function pollForNewItems(): Promise<void> {
   isPolling = true;
 
   try {
-    // Skip if no X API token in production
-    if (!isDev && !process.env.X_API_BEARER_TOKEN) {
+    // Gather items from twitter-cli + economic feed
+    const [twitterCliItems, econItems] = await Promise.all([
+      isTwitterCliInstalled().then(ok => ok ? pollTwitterForEconNews() : []).catch(() => []),
+      fetchEconomicFeed().catch(() => []),
+    ]);
+
+    const rawItems: FeedItem[] = [...econItems, ...twitterCliItems];
+
+    if (rawItems.length === 0) {
       return;
     }
 
-    const xApiService = createXApiService();
-    const tweets = await xApiService.fetchLatestTweets();
+    // Check which items are already cached
+    const itemIds = rawItems.map(i => i.id);
+    const cachedIds = await newsCache.getCachedTweetIds(itemIds);
+    const newItems = rawItems.filter(i => !cachedIds.has(i.id));
 
-    if (tweets.length === 0) {
-      return;
-    }
-
-    // Check which tweets are already cached
-    const tweetIds = tweets.map(t => t.tweetId);
-    const cachedIds = await newsCache.getCachedTweetIds(tweetIds);
-    const newTweets = tweets.filter(t => !cachedIds.has(t.tweetId));
-
-    if (newTweets.length === 0) {
+    if (newItems.length === 0) {
       return; // No new items
     }
 
-    console.log(`[FeedPoller] Found ${newTweets.length} new items (${cachedIds.size} already cached)`);
-
-    // Convert to FeedItems
-    const newItems: FeedItem[] = newTweets.map(tweet => ({
-      id: tweet.tweetId,
-      source: tweet.source as NewsSource,
-      headline: tweet.headline,
-      body: tweet.body,
-      symbols: tweet.symbols,
-      tags: tweet.tags,
-      isBreaking: tweet.isBreaking,
-      urgency: (tweet.isBreaking ? 'immediate' : 'normal') as UrgencyLevel,
-      publishedAt: tweet.publishedAt,
-    }));
+    console.log(`[FeedPoller] Found ${newItems.length} new items (${cachedIds.size} already cached)`);
 
     // Enrich with AI analysis (this calculates IV scores and macro levels)
     const enrichedItems = await enrichFeedWithAnalysis(newItems);
@@ -95,7 +83,7 @@ export function startFeedPoller(): void {
   }
 
   console.log(`[FeedPoller] Starting continuous polling (every ${POLL_INTERVAL_MS / 1000}s)`);
-  
+
   // Poll immediately on startup
   pollForNewItems();
 
@@ -114,6 +102,13 @@ export function stopFeedPoller(): void {
     pollInterval = null;
     console.log('[FeedPoller] Stopped');
   }
+}
+
+/**
+ * Force an immediate poll cycle (used by manual refresh endpoint)
+ */
+export async function forcePoll(): Promise<void> {
+  await pollForNewItems();
 }
 
 /**

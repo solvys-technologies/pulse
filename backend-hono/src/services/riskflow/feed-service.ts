@@ -4,13 +4,16 @@
  * Day 17 - Phase 5 Integration
  */
 
+// [claude-code 2026-03-11] Integrated point estimator for commentary point ranges + VIX feed
+// [claude-code 2026-03-12] Removed X API dependency — all tweet ingestion now via twitter-cli
+// [claude-code 2026-03-12] Task 2A: Polymarket sentiment inference + failed enrichment fallback
 // [claude-code 2026-03-10] Integrated twitter-cli (FJ emoji-filtered) as secondary social feed source
 // [claude-code 2026-03-10] Default minMacroLevel lowered 3→2 (Medium+ threshold per Track 1 spec)
 import type { FeedItem, FeedResponse, FeedFilters, NewsSource, UrgencyLevel, SentimentDirection, MacroLevel } from '../../types/riskflow.js';
-import { createXApiService, type ParsedTweetNews } from '../x-api-service.js';
 import { getWatchlist, matchesWatchlist } from './watchlist-service.js';
 import { analyzeHeadline, type AnalyzedHeadline } from '../analysis/grok-analyzer.js';
 import { calculateIVScore } from '../analysis/iv-scorer.js';
+import { classifyEventType } from '../iv-scoring-v2.js';
 import { broadcastLevel4 } from './sse-broadcaster.js';
 import * as newsCache from './news-cache.js';
 import { fetchEconomicFeed } from './economic-feed.js';
@@ -18,10 +21,29 @@ import { fetchPolymarket } from '../polymarket-service.js';
 import type { PolymarketMarket } from '../../types/polymarket.js';
 import type { NewsSource as AnalysisNewsSource } from '../../types/news-analysis.js';
 import { isTwitterCliInstalled, pollTwitterForEconNews, getWarmCacheItems } from '../twitter-cli/index.js';
+import { estimatePoints } from '../market-data/point-estimator.js';
+import { fetchVIX } from '../vix-service.js';
 
 const MAX_FEED_ITEMS = 50;
 const isDev = process.env.NODE_ENV !== 'production';
 const ALLOW_MOCK_FALLBACK = process.env.RISKFLOW_ALLOW_MOCK_FALLBACK === 'true';
+
+// Keyword lists for sentiment inference (used for Polymarket + failed enrichment fallback)
+const BULLISH_KEYWORDS = ['growth', 'rally', 'beat', 'rate cut', 'stimulus', 'surge', 'rise', 'gain', 'jump', 'soar', 'bull', 'record high', 'above', 'upgrade', 'boom', 'positive', 'strong'];
+const BEARISH_KEYWORDS = ['recession', 'crash', 'default', 'war', 'cut', 'drop', 'fall', 'plunge', 'decline', 'sink', 'bear', 'miss', 'below', 'downgrade', 'slump', 'negative', 'fear', 'risk', 'warn', 'sell', 'weak'];
+
+/**
+ * Infer bullish/bearish sentiment from headline text using keyword matching.
+ * Returns 'bullish' or 'bearish' (never neutral — always picks a side).
+ */
+function inferSentimentFromKeywords(text: string): 'bullish' | 'bearish' {
+  const lower = text.toLowerCase();
+  let bullCount = 0;
+  let bearCount = 0;
+  for (const kw of BULLISH_KEYWORDS) if (lower.includes(kw)) bullCount++;
+  for (const kw of BEARISH_KEYWORDS) if (lower.includes(kw)) bearCount++;
+  return bullCount >= bearCount ? 'bullish' : 'bearish';
+}
 
 // Enable/disable AI analysis (can be toggled via env)
 const ENABLE_AI_ANALYSIS = process.env.ENABLE_AI_ANALYSIS !== 'false';
@@ -29,25 +51,8 @@ const ENABLE_AI_ANALYSIS = process.env.ENABLE_AI_ANALYSIS !== 'false';
 // In-memory cache (short-term) - DB cache is primary
 let feedCache: { items: FeedItem[]; fetchedAt: number } | null = null;
 const CACHE_TTL_MS = 15_000; // 15 seconds (in-memory cache)
-const FETCH_INTERVAL_MS = 5 * 60_000; // 5 minutes between X API calls
-let lastXApiFetch: number = 0;
-
-/**
- * Convert X API tweet to FeedItem (base conversion)
- */
-function tweetToFeedItem(tweet: ParsedTweetNews): FeedItem {
-  return {
-    id: tweet.tweetId,
-    source: tweet.source as NewsSource,
-    headline: tweet.headline,
-    body: tweet.body,
-    symbols: tweet.symbols,
-    tags: tweet.tags,
-    isBreaking: tweet.isBreaking,
-    urgency: determineUrgency(tweet),
-    publishedAt: tweet.publishedAt,
-  };
-}
+const FETCH_INTERVAL_MS = 5 * 60_000; // 5 minutes between fresh fetches
+let lastFreshFetch: number = 0;
 
 /**
  * Convert Polymarket market to FeedItem
@@ -55,6 +60,26 @@ function tweetToFeedItem(tweet: ParsedTweetNews): FeedItem {
 function polymarketToFeedItem(market: PolymarketMarket): FeedItem {
   const macroLevel: MacroLevel =
     market.probability >= 0.6 ? 3 : 2
+
+  // Infer sentiment from market title keywords first, then fall back to YES price direction
+  const titleText = `${market.title} ${market.outcome}`;
+  const lower = titleText.toLowerCase();
+  let sentiment: SentimentDirection;
+
+  const hasBearish = BEARISH_KEYWORDS.some(kw => lower.includes(kw));
+  const hasBullish = BULLISH_KEYWORDS.some(kw => lower.includes(kw));
+
+  if (hasBearish && !hasBullish) {
+    sentiment = 'bearish';
+  } else if (hasBullish && !hasBearish) {
+    sentiment = 'bullish';
+  } else if (hasBearish && hasBullish) {
+    // Both present — use keyword scoring
+    sentiment = inferSentimentFromKeywords(titleText);
+  } else {
+    // No keywords matched — use YES price direction: >50% = bullish for the underlying question
+    sentiment = market.probability > 0.5 ? 'bullish' : 'bearish';
+  }
 
   return {
     id: `poly-${market.id}`,
@@ -65,7 +90,7 @@ function polymarketToFeedItem(market: PolymarketMarket): FeedItem {
     tags: ['POLYMARKET', 'ODDS'],
     isBreaking: false,
     urgency: 'high',
-    sentiment: 'neutral',
+    sentiment,
     ivScore: undefined,
     macroLevel,
     publishedAt: market.closeTime ?? new Date().toISOString(),
@@ -97,15 +122,44 @@ async function enrichWithAnalysis(item: FeedItem): Promise<FeedItem> {
   try {
     const analysisSource = mapToAnalysisSource(item.source);
     const analyzed = await analyzeHeadline(item.headline, analysisSource);
-    
-    // Calculate IV score using parsed data
+
+    // V3: Use V2's classifier to catch credit/yield/liquidity events that
+    // the basic headline parser might miss. Override only if it found something specific.
+    const v2EventType = classifyEventType(analyzed.parsed);
+    if ((!analyzed.parsed.eventType || analyzed.parsed.eventType === 'default' || analyzed.parsed.eventType === 'economicData')
+      && v2EventType !== 'economicData' && v2EventType !== 'default') {
+      analyzed.parsed.eventType = v2EventType;
+    }
+
+    // Calculate IV score using parsed data (now with V3-aware event types)
     const ivResult = calculateIVScore({
       parsed: analyzed.parsed,
       hotPrint: analyzed.hotPrint,
       timestamp: new Date(item.publishedAt),
     });
 
-    const enriched = {
+    // Compute point estimation from IV score × live VIX
+    let priceBrainScore: FeedItem['priceBrainScore'] = undefined;
+    if (ivResult.score >= 2) {
+      try {
+        const vixData = await fetchVIX();
+        const feedInstrument = process.env.PRIMARY_INSTRUMENT || '/ES';
+        const pts = estimatePoints(ivResult.score, vixData.level, feedInstrument);
+        const sentimentMap: Record<string, 'Bullish' | 'Bearish' | 'Neutral'> = {
+          bullish: 'Bullish', bearish: 'Bearish', neutral: 'Neutral',
+        };
+        priceBrainScore = {
+          sentiment: sentimentMap[ivResult.sentiment] ?? 'Neutral',
+          classification: 'Neutral',
+          impliedPoints: pts.scaledPoints,
+          instrument: feedInstrument,
+        };
+      } catch {
+        // VIX unavailable — skip point estimation
+      }
+    }
+
+    const enriched: FeedItem = {
       ...item,
       symbols: analyzed.parsed.symbols.length > item.symbols.length
         ? analyzed.parsed.symbols
@@ -118,6 +172,7 @@ async function enrichWithAnalysis(item: FeedItem): Promise<FeedItem> {
       // Preserve item's original macroLevel if it was explicitly set higher (e.g. from FJ keyword classifier)
       macroLevel: Math.max(ivResult.macroLevel, item.macroLevel ?? 1) as MacroLevel,
       analyzedAt: new Date().toISOString(),
+      priceBrainScore,
     };
 
     if (enriched.macroLevel === 4) {
@@ -127,6 +182,11 @@ async function enrichWithAnalysis(item: FeedItem): Promise<FeedItem> {
     return enriched;
   } catch (error) {
     console.error('[RiskFlow] Analysis enrichment failed for item:', item.id, error);
+    // Fallback: ensure every item gets bullish/bearish (never null/neutral from failed enrichment)
+    if (!item.sentiment || item.sentiment === 'neutral') {
+      const fallbackSentiment = inferSentimentFromKeywords(item.headline);
+      return { ...item, sentiment: fallbackSentiment as SentimentDirection };
+    }
     return item;
   }
 }
@@ -163,16 +223,6 @@ export async function enrichFeedWithAnalysis(items: FeedItem[]): Promise<FeedIte
   }
 
   return enriched;
-}
-
-/**
- * Determine urgency level based on tweet content
- */
-function determineUrgency(tweet: ParsedTweetNews): UrgencyLevel {
-  if (tweet.isBreaking) return 'immediate';
-  const urgentTags = ['CPI', 'PPI', 'NFP', 'FOMC', 'FED'];
-  if (tweet.tags.some(t => urgentTags.includes(t))) return 'high';
-  return 'normal';
 }
 
 /**
@@ -216,37 +266,29 @@ function applyFilters(items: FeedItem[], filters: FeedFilters): FeedItem[] {
 }
 
 /**
- * Fetch fresh feed from X API + economic prints + Polymarket odds
+ * Fetch fresh feed from twitter-cli + economic prints + Polymarket odds
  */
 async function fetchFreshFeed(): Promise<FeedItem[]> {
   try {
-    const xApiService = createXApiService();
-    const [tweets, econItems, polyResp, twitterCliItems] = await Promise.all([
-      xApiService.fetchLatestTweets().catch(() => []),
+    const [econItems, polyResp, twitterCliItems] = await Promise.all([
       fetchEconomicFeed(),
       fetchPolymarket().catch(() => ({ markets: [], fetchedAt: new Date().toISOString() })),
       isTwitterCliInstalled().then(ok => ok ? pollTwitterForEconNews() : []).catch(() => []),
     ]);
 
-    const tweetItems = tweets.map(tweetToFeedItem);
     const polyItems = polyResp.markets.map(polymarketToFeedItem);
     // Include warm-cached Critical/High posts seeded at startup
     const warmItems = getWarmCacheItems();
 
     // Merge and dedupe by id
-    const merged = [...econItems, ...polyItems, ...tweetItems, ...twitterCliItems, ...warmItems].filter(
+    const merged = [...econItems, ...polyItems, ...twitterCliItems, ...warmItems].filter(
       (item, idx, arr) => idx === arr.findIndex(i => i.id === item.id)
     );
 
-    console.log(`[RiskFlow] fetchFreshFeed: Merged ${merged.length} items (${tweetItems.length} xapi, ${econItems.length} econ, ${polyItems.length} poly, ${twitterCliItems.length} twcli)`);
+    console.log(`[RiskFlow] fetchFreshFeed: Merged ${merged.length} items (${econItems.length} econ, ${polyItems.length} poly, ${twitterCliItems.length} twcli)`);
     return merged;
   } catch (error) {
-    console.error('[RiskFlow] X API fetch error:', error);
-    console.error('[RiskFlow] Fetch error details:', {
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      hasXApiToken: !!process.env.X_API_BEARER_TOKEN,
-    });
+    console.error('[RiskFlow] Fetch error:', error);
     return [];
   }
 }
@@ -319,7 +361,7 @@ function generateMockFeed(): FeedItem[] {
 
 /**
  * Get feed items with database caching (shared across all users)
- * Only fetches from X API if enough time has passed
+ * Only fetches fresh data if enough time has passed
  */
 async function getCachedFeed(): Promise<FeedItem[]> {
   // Check in-memory cache first (fast path)
@@ -328,7 +370,7 @@ async function getCachedFeed(): Promise<FeedItem[]> {
   }
 
   // Optional mock fallback (disabled by default)
-  if (ALLOW_MOCK_FALLBACK && isDev && !process.env.X_API_BEARER_TOKEN) {
+  if (ALLOW_MOCK_FALLBACK && isDev) {
     const mockItems = generateMockFeed();
     const enrichedItems = await enrichFeedWithAnalysis(mockItems);
     feedCache = { items: enrichedItems, fetchedAt: Date.now() };
@@ -343,29 +385,28 @@ async function getCachedFeed(): Promise<FeedItem[]> {
   
   console.log(`[RiskFlow] getCachedFeed: Found ${dbItems.length} items in database cache`);
 
-  // Check if we need to fetch fresh data from X API
-  const shouldFetchFresh = Date.now() - lastXApiFetch >= FETCH_INTERVAL_MS;
+  // Check if we need to fetch fresh data
+  const shouldFetchFresh = Date.now() - lastFreshFetch >= FETCH_INTERVAL_MS;
   const isDatabaseEmpty = dbItems.length === 0;
 
   // If database is empty or we have < 15 items, always fetch fresh
   if (isDatabaseEmpty || dbItems.length < 15 || shouldFetchFresh) {
-    console.log(`[RiskFlow] Fetching fresh data from X API (empty: ${isDatabaseEmpty}, count: ${dbItems.length}, shouldFetch: ${shouldFetchFresh})...`);
-    lastXApiFetch = Date.now();
+    console.log(`[RiskFlow] Fetching fresh data (empty: ${isDatabaseEmpty}, count: ${dbItems.length}, shouldFetch: ${shouldFetchFresh})...`);
+    lastFreshFetch = Date.now();
     
     const rawItems = await fetchFreshFeed();
-    console.log(`[RiskFlow] Fetched ${rawItems.length} raw items from X API`);
+    console.log(`[RiskFlow] Fetched ${rawItems.length} raw items`);
 
     // If fetch failed and we have database items, use them
     if (rawItems.length === 0 && dbItems.length > 0) {
-      console.log(`[RiskFlow] X API fetch failed, using ${dbItems.length} items from database cache`);
+      console.log(`[RiskFlow] Fresh fetch returned 0 items, using ${dbItems.length} items from database cache`);
       feedCache = { items: dbItems, fetchedAt: Date.now() };
       return dbItems;
     }
 
     // If fetch failed and database is empty, return empty unless explicit mock fallback is enabled
     if (rawItems.length === 0 && dbItems.length === 0) {
-      console.warn(`[RiskFlow] No items from X API and database is empty`);
-      console.warn(`[RiskFlow] X_API_BEARER_TOKEN present: ${!!process.env.X_API_BEARER_TOKEN}`);
+      console.warn(`[RiskFlow] No items from fresh fetch and database is empty`);
       console.warn(`[RiskFlow] Environment: ${process.env.NODE_ENV}`);
 
       if (ALLOW_MOCK_FALLBACK) {
@@ -429,7 +470,7 @@ export async function getFeed(userId: string, filters?: FeedFilters): Promise<Fe
     
     if (allItems.length === 0) {
       console.error(`[RiskFlow] getCachedFeed returned 0 items - this is the root cause!`);
-      console.error(`[RiskFlow] Check: database connection, X API token, fetchFreshFeed function`);
+      console.error(`[RiskFlow] Check: database connection, fetchFreshFeed function`);
     }
     
     const watchlist = getWatchlist(userId);

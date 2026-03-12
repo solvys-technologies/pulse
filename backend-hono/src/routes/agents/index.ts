@@ -12,6 +12,8 @@ import {
   handleGetDebates,
   handleGetProposals,
   handleGetStatus,
+  handleGetPerformance,
+  handleGetPredictions,
 } from './handlers.js'
 
 export function createAgentRoutes(): Hono {
@@ -34,6 +36,12 @@ export function createAgentRoutes(): Hono {
 
   // GET /api/agents/status - Get pipeline status
   router.get('/status', handleGetStatus)
+
+  // GET /api/agents/performance - Combined agent performance stats
+  router.get('/performance', handleGetPerformance)
+
+  // GET /api/agents/predictions - Tracked polymarket predictions
+  router.get('/predictions', handleGetPredictions)
 
   return router
 }

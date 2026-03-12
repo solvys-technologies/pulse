@@ -1,4 +1,5 @@
 // [claude-code 2026-03-11] Redesigned to consume backend IVScoreResponse — point range, rationale tooltip, environment label
+// [claude-code 2026-03-11] VIX pulsating border: red >22, sunburst orange 16-22, yellow 14-16
 import { Info, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
 import type { IVScoreResponse } from '../types/market-data';
@@ -36,6 +37,49 @@ function getUrgencyColor(urgency: string) {
   }
 }
 
+/** Returns CSS for VIX-based pulsating border. Hardcoded colors — theme-independent. */
+function getVixPulseStyle(vixLevel: number): React.CSSProperties | undefined {
+  if (vixLevel >= 22) {
+    // Red pulse — high fear
+    return {
+      animation: 'vix-pulse 1.5s ease-in-out infinite',
+      borderColor: '#ef4444',
+      boxShadow: '0 0 6px rgba(239, 68, 68, 0.4)',
+    };
+  }
+  if (vixLevel >= 16) {
+    // Sunburst orange pulse — elevated
+    return {
+      animation: 'vix-pulse 2s ease-in-out infinite',
+      borderColor: '#f97316',
+      boxShadow: '0 0 5px rgba(249, 115, 22, 0.35)',
+    };
+  }
+  if (vixLevel >= 14) {
+    // Yellow pulse — caution
+    return {
+      animation: 'vix-pulse 2.5s ease-in-out infinite',
+      borderColor: '#eab308',
+      boxShadow: '0 0 4px rgba(234, 179, 8, 0.3)',
+    };
+  }
+  return undefined;
+}
+
+// Inject the keyframes once via a style tag
+const PULSE_KEYFRAMES_ID = 'vix-pulse-keyframes';
+if (typeof document !== 'undefined' && !document.getElementById(PULSE_KEYFRAMES_ID)) {
+  const style = document.createElement('style');
+  style.id = PULSE_KEYFRAMES_ID;
+  style.textContent = `
+    @keyframes vix-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
   const [showTooltip, setShowTooltip] = useState(false);
 
@@ -51,9 +95,13 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
   const color = getScoreColor(data.score);
   const envLabel = getEnvironmentLabel(data.score);
   const pts = data.points;
+  const vixPulse = getVixPulseStyle(data.vix.level);
 
   return (
-    <div className="relative bg-[var(--pulse-bg)] border border-[var(--pulse-accent)]/20 rounded-lg px-3 h-8 flex items-center">
+    <div
+      className="relative bg-[var(--pulse-bg)] border rounded-lg px-3 h-8 flex items-center"
+      style={vixPulse ?? { borderColor: 'rgba(var(--pulse-accent-rgb, 199, 159, 74), 0.2)' }}
+    >
       <div className="flex items-center gap-2">
         <span className="text-[10px] text-gray-400">IV</span>
         <span className={`text-sm font-bold ${color}`}>
@@ -89,7 +137,7 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
 
       {showTooltip && (
         <div
-          className={`absolute top-full mt-2 w-80 bg-[var(--pulse-surface)] border border-[var(--pulse-accent)]/30 rounded-lg p-4 shadow-xl z-50 ${
+          className={`absolute top-full mt-2 w-80 bg-[var(--pulse-surface)] border border-[var(--pulse-accent)]/30 rounded-lg p-4 shadow-xl z-[9999] ${
             layoutOption === 'tickers-only' ? 'right-0' : 'left-0'
           }`}
           style={{
@@ -158,12 +206,35 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
             </div>
           )}
 
-          {/* VIX spike indicator */}
-          {data.vix.isSpike && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 mb-3">
-              <span className="text-[10px] text-red-400 font-medium">
-                VIX spike detected ({data.vix.spikeDirection}) — {data.vix.percentChange.toFixed(1)}% change
-              </span>
+          {/* V3: Systemic risk overlay */}
+          {data.systemic && data.systemic.score > 0 && (
+            <div className="mb-3 space-y-1">
+              <h5 className="text-xs font-semibold text-amber-400">Systemic Risk</h5>
+              <div className="flex items-center gap-3 text-[10px]">
+                <span className="text-gray-400">Score: <span className="text-amber-400 font-medium">{data.systemic.score.toFixed(1)}/10</span></span>
+                <span className="text-gray-600">|</span>
+                <span className="text-gray-400">IV overlay: <span className="text-amber-400">+{data.systemic.overlay.toFixed(1)}</span></span>
+              </div>
+              {data.systemic.activeChains > 0 && (
+                <p className="text-[10px] text-gray-500">
+                  Causal chains: {data.systemic.activeChains} active
+                </p>
+              )}
+              {data.systemic.topRhyme && (
+                <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg px-2 py-1.5 mt-1">
+                  <p className="text-[10px] text-purple-300 font-medium">
+                    {Math.round(data.systemic.topRhyme.matchScore * 100)}% match to {data.systemic.topRhyme.crisisYear} {data.systemic.topRhyme.crisisName}
+                  </p>
+                  <p className="text-[9px] text-purple-400/70 mt-0.5">
+                    Peak VIX: {data.systemic.topRhyme.peakVix} | Max DD: {data.systemic.topRhyme.maxDrawdown}%
+                  </p>
+                </div>
+              )}
+              {data.systemic.creditSignals > 0 && (
+                <p className="text-[10px] text-red-400">
+                  Credit signals: {data.systemic.creditSignals} in last 48h
+                </p>
+              )}
             </div>
           )}
 

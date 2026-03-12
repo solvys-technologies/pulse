@@ -1,3 +1,4 @@
+// [claude-code 2026-03-11] T2b: Image part in user bubbles, T2c: CoT auto-open/close via useEffect
 // [claude-code 2026-03-10] Enhanced PulseThread — hover actions, scroll-to-bottom, CoT, fade-in
 import { type FC, type RefObject, useState, useRef, useEffect, useCallback } from 'react';
 import { ThreadPrimitive, MessagePrimitive, useMessage } from '@assistant-ui/react';
@@ -112,7 +113,17 @@ const PulseReasoningPart: FC<{ text: string }> = ({ text }) => {
 /* ------------------------------------------------------------------ */
 
 const ChainOfThoughtDisplay: FC<{ text: string; isStreaming?: boolean }> = ({ text, isStreaming }) => {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    if (isStreaming) {
+      setIsOpen(true);
+    } else if (text) {
+      const timer = setTimeout(() => setIsOpen(false), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [isStreaming, text]);
+
   if (!text) return null;
 
   return (
@@ -207,6 +218,13 @@ const PulseUserMessage: FC = () => {
           components={{
             Text: ({ text }) => (
               <p className="text-sm text-white whitespace-pre-wrap break-words">{text}</p>
+            ),
+            Image: ({ image }: { image: string }) => (
+              <img
+                src={image}
+                alt="Attached"
+                className="mt-2 rounded-lg max-w-full max-h-64 object-contain border border-white/10"
+              />
             ),
           }}
         />
