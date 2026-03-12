@@ -123,7 +123,6 @@ function ChatInterfaceInner({ conversationId, clearConversationId, lastError, th
         <div className="flex-1 flex flex-col min-h-0">
           <PulseThread
             onSend={handleSend}
-            onSkillSend={handleSkillSend}
             isLoading={isRunning}
             agentName={activeAgent?.name}
             onCheckpoint={createCheckpointFromMessage}

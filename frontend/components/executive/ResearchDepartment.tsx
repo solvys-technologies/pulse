@@ -1,5 +1,7 @@
+// [claude-code 2026-03-11] T2d: refactored sidebar to rounded bubble style + PulseChatInput
 import { useMemo, useState, useCallback } from 'react';
-import { ChevronRight, ChevronLeft, Send, Plus, Wrench, Brain } from 'lucide-react';
+import { ChevronRight, ChevronLeft } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import { useOpenClawChat } from '../chat/hooks/useOpenClawChat';
 import { usePulseAgents } from '../../contexts/PulseAgentContext';
 import { EmbeddedBrowserFrame } from '../layout/EmbeddedBrowserFrame';
@@ -8,10 +10,10 @@ import { usePersistentOpenClawConversation } from '../../hooks/usePersistentOpen
 import { PulseThinkingIndicator } from '../chat/PulseThinkingIndicator';
 import { normalizeChatMessages } from '../../lib/chatMessageNormalizer';
 import { useSettings } from '../../contexts/SettingsContext';
+import { PulseChatInput } from '../chat/PulseChatInput';
 
 export function ResearchDepartment() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [inputText, setInputText] = useState('');
   const [thinkHarder, setThinkHarder] = useState(false);
   const { iframeUrls } = useSettings();
   const notionResearchUrl = iframeUrls.research || import.meta.env.VITE_NOTION_RESEARCH_URL || 'https://www.notion.so';
@@ -49,17 +51,14 @@ export function ResearchDepartment() {
     return undefined;
   }, [uiMessages]);
 
-  const handleSend = useCallback(async (text?: string) => {
-    const msg = (text ?? inputText).trim();
+  const handleSend = useCallback(async (text: string) => {
+    const msg = text.trim();
     if (!msg) return;
-    setInputText('');
     await sendMessage(
       { text: msg },
       { body: { conversationId, agentOverride: openclawAgentOverride } }
     );
-  }, [inputText, sendMessage, conversationId, openclawAgentOverride]);
-
-  const textareaRef = useMemo(() => ({ current: null as HTMLTextAreaElement | null }), []);
+  }, [sendMessage, conversationId, openclawAgentOverride]);
 
   return (
     <div className="h-full w-full flex overflow-hidden">
@@ -111,25 +110,25 @@ export function ResearchDepartment() {
               uiMessages.map((m) => {
                 const isUser = m.role === 'user';
                 return (
-                  <div key={m.id} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+                  <div key={m.id} className={`group/msg flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
                     <div
-                      className={`max-w-[90%] px-3 py-2 border-l-2 ${
+                      className={`max-w-[85%] rounded-xl px-3 py-2 text-[12px] leading-relaxed ${
                         isUser
-                          ? 'bg-[var(--pulse-accent)]/10 border-[var(--pulse-accent)]/40'
-                          : 'bg-[#6366f1]/10 border-[#6366f1]/40'
+                          ? 'pulse-user-bubble text-white'
+                          : 'bg-[#0f0f0b]/92 border border-white/10 text-zinc-300'
                       }`}
                     >
-                      <div className="flex items-baseline gap-2 mb-1">
-                        <span
-                          className={`text-[10px] font-semibold tracking-[0.18em] uppercase ${
-                            isUser ? 'text-[var(--pulse-accent)]' : 'text-[#6366f1]'
-                          }`}
-                        >
-                          {isUser ? 'You' : agent.name}
-                        </span>
-                      </div>
-                      <div className="text-sm text-gray-200 whitespace-pre-wrap">{m.content}</div>
+                      {isUser ? (
+                        <div className="text-sm text-white whitespace-pre-wrap break-words">{m.content}</div>
+                      ) : (
+                        <div className="text-sm prose prose-invert prose-sm max-w-none break-words">
+                          <ReactMarkdown>{m.content}</ReactMarkdown>
+                        </div>
+                      )}
                     </div>
+                    <span className="text-[10px] text-zinc-700 mt-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity tabular-nums">
+                      {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
                   </div>
                 );
               })
@@ -159,88 +158,17 @@ export function ResearchDepartment() {
             )}
           </div>
 
-          {/* Input — PulseChatInput style (no agent selector) */}
+          {/* Input — PulseChatInput */}
           <div className="shrink-0 p-3">
-            <div
-              className={`relative flex flex-col rounded-[28px] border transition-colors ${
-                inputText ? 'border-[var(--pulse-accent)]/50' : 'border-[var(--pulse-accent)]/20'
-              }`}
-              style={{ backgroundColor: '#0b0b08' }}
-            >
-              <textarea
-                ref={(el) => { textareaRef.current = el; }}
-                value={inputText}
-                onChange={(e) => {
-                  setInputText(e.target.value);
-                  const el = e.target;
-                  el.style.height = 'auto';
-                  el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    if (isStreaming) { stop(); } else { handleSend(); }
-                  }
-                }}
-                placeholder={`Message ${agent.name}...`}
-                rows={1}
-                disabled={isStreaming}
-                className="resize-none bg-transparent text-[13px] text-white placeholder:text-gray-600 focus:outline-none overflow-y-auto"
-                style={{ padding: '14px 18px 6px', maxHeight: '120px', lineHeight: '1.5' }}
-              />
-
-              {/* Bottom bar — Attach + Skills | Think Harder + Send */}
-              <div className="flex items-center justify-between" style={{ padding: '4px 10px 8px' }}>
-                <div className="flex items-center gap-1">
-                  <button
-                    className="flex items-center justify-center rounded-full text-gray-500 hover:text-[var(--pulse-accent)] hover:bg-[var(--pulse-accent)]/10 transition-colors"
-                    style={{ width: '30px', height: '30px' }}
-                    title="Attach"
-                  >
-                    <Plus size={16} />
-                  </button>
-                  <button
-                    className="flex items-center justify-center rounded-full text-gray-500 hover:text-[var(--pulse-accent)] hover:bg-[var(--pulse-accent)]/10 transition-colors"
-                    style={{ width: '30px', height: '30px' }}
-                    title="Skills"
-                  >
-                    <Wrench size={14} />
-                  </button>
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => setThinkHarder(!thinkHarder)}
-                    title={thinkHarder ? 'Extended thinking ON' : 'Extended thinking OFF'}
-                    className={`flex items-center justify-center rounded-full border transition-all ${
-                      thinkHarder
-                        ? 'border-[var(--pulse-accent)] bg-[var(--pulse-accent)]/20 text-[var(--pulse-accent)] shadow-[0_0_8px_rgba(212,175,55,0.3)]'
-                        : 'border-[var(--pulse-accent)]/15 text-gray-500 hover:text-[var(--pulse-accent)] hover:border-[var(--pulse-accent)]/30'
-                    }`}
-                    style={{ width: '30px', height: '30px' }}
-                  >
-                    <Brain size={14} />
-                  </button>
-                  <button
-                    onClick={isStreaming ? () => stop() : () => handleSend()}
-                    disabled={!isStreaming && !inputText.trim()}
-                    className={`flex items-center justify-center rounded-full transition-all ${
-                      isStreaming
-                        ? 'bg-red-500 hover:bg-red-600 text-white'
-                        : 'bg-[var(--pulse-accent)] hover:bg-[#C5A030] text-black disabled:opacity-30 disabled:hover:bg-[var(--pulse-accent)]'
-                    }`}
-                    style={{ width: '30px', height: '30px' }}
-                    title={isStreaming ? 'Stop' : 'Send'}
-                  >
-                    {isStreaming ? (
-                      <div className="w-3 h-3 rounded-sm bg-white" />
-                    ) : (
-                      <Send size={14} />
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
+            <PulseChatInput
+              onSend={(msg) => handleSend(msg)}
+              onStop={() => stop()}
+              isProcessing={isStreaming}
+              thinkHarder={thinkHarder}
+              setThinkHarder={setThinkHarder}
+              placeholder={`Message ${agent.name}...`}
+              draftKey="pulse_draft_research"
+            />
           </div>
         </div>
       )}

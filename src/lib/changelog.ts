@@ -9,6 +9,70 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-12T01:30:00',
+    agent: 'claude-code',
+    summary: 'Track 3 v7.7.7: Autopilot frontend dashboard — AutopilotDashboard (shell with polling), AutopilotControls (toggle, thresholds, strategy list), SignalFeed (scrollable signals + pending proposals with countdown), SessionStatusBar (RTH status, P&L, EST clock). Added AutopilotService to services.ts with status/signals/proposals/acknowledge/execute/history endpoints. Added PLAYBOOK_SWEEP_RECLAIM strategy label to ProposalModal.',
+    files: [
+      'frontend/components/AutopilotDashboard.tsx',
+      'frontend/components/AutopilotControls.tsx',
+      'frontend/components/SignalFeed.tsx',
+      'frontend/components/SessionStatusBar.tsx',
+      'frontend/lib/services.ts',
+      'frontend/components/ProposalModal.tsx',
+    ],
+  },
+  {
+    date: '2026-03-11T23:59:00',
+    agent: 'claude-code',
+    summary: 'Created PlaybookSweepReclaim QuantConnect Lean algorithm for MNQ 5-min futures. Detects 5 signal types: liquidity sweep+reclaim (primary), RSI divergence, EMA cross+retest, volume delta, HTF candlestick patterns. Confidence scoring system (70% base + confluence boosts, capped at 100%). Session window filtering (morning_flush, forty_forty, lunch_flush, power_hour). Emits structured JSON signal events via Log().',
+    files: [
+      'docs/quantconnect/PlaybookSweepReclaim.cs',
+      'docs/quantconnect/SignalModels.cs',
+    ],
+  },
+  {
+    date: '2026-03-12T00:15:00',
+    agent: 'claude-code',
+    summary: 'Track 1 v7.7.7: Backend — (1a) Added initOpenClawAgent() to openclaw-handler.ts for gateway warm-up on startup with 10s timeout, non-fatal error handling. Called from index.ts after initClaudeSDK. (1b) Verified handleOpenClawChat receives full conversation history. (1c) Verified bridgeChat() receives history and buildPrompt() includes it.',
+    files: [
+      'backend-hono/src/services/openclaw-handler.ts',
+      'backend-hono/src/index.ts',
+    ],
+  },
+  {
+    date: '2026-03-12T00:15:00',
+    agent: 'claude-code',
+    summary: 'Track 2 v7.7.7 — Frontend Chat UI fixes: 2a) clear skill badge after send in PulseComposer. 2b) Image part renderer in user chat bubbles. 2c) CoT auto-open on stream, auto-close after 4s via useEffect. 2d) ResearchDepartment sidebar refactored to rounded bubble style + ReactMarkdown + PulseChatInput (matches InterventionSidebar). 2e) Persistent thread toggle + thread ID input in Gateway settings tab, hook updated to check localStorage persistent thread.',
+    files: [
+      'frontend/components/chat/PulseComposer.tsx',
+      'frontend/components/chat/PulseThread.tsx',
+      'frontend/components/executive/ResearchDepartment.tsx',
+      'frontend/components/SettingsPanel.tsx',
+      'frontend/hooks/usePersistentOpenClawConversation.ts',
+    ],
+  },
+  {
+    date: '2026-03-11T23:55:00',
+    agent: 'claude-code',
+    summary: 'Track 4 v7.7.7: Replace agent-plan.tsx with 21st.dev enhanced version — full framer-motion LayoutGroup animations, nested subtask expand/collapse, status toggling (completed/in-progress/pending/need-help/failed), priority badges, tool badges, progress bar header, dependency indicators, Pulse theme throughout. Backwards-compatible AgentPlan/PlanTask exports preserved.',
+    files: [
+      'frontend/components/ui/agent-plan.tsx',
+    ],
+  },
+  {
+    date: '2026-03-11T23:45:00',
+    agent: 'claude-code',
+    summary: 'Track 3 v7.7.7: 3A — mcpServers field added to SkillDef interface and all SKILLS entries (exa, notion, fmp, playwright mappings). 3B — MCP auto-activation in PulseComposer: merges skill mcpServers into localStorage pulse_mcp_active_connectors before append. 3C — QuickPulse prefix updated for auto-screenshot via Playwright; chat handler injects Playwright screenshot when QUICKPULSE skill detected and no image present. 3D — iFrame power switch guard: removed auto-enable from platform dropdown selection (power via dedicated button only). 3E — NarrativeFlow Coming Soon overlay.',
+    files: [
+      'frontend/lib/skills.ts',
+      'frontend/components/chat/PulseComposer.tsx',
+      'frontend/lib/skillPrefixes.ts',
+      'backend-hono/src/routes/ai/handlers/chat.ts',
+      'frontend/components/layout/MainLayout.tsx',
+      'frontend/components/narrative/NarrativeFlow.tsx',
+    ],
+  },
+  {
     date: '2026-03-11T22:00:00',
     agent: 'claude-code',
     summary: 'Phase 7: Agent performance auto-recording (polymarket-tracker, outcome-tracker, /api/agents/performance endpoint). IV Score persistence — runs as background ticker (60s), events use 7-day window (never restart decay), score cached to DB across restarts. RiskFlow 24h stalemate rule — items older than 24h filtered out on init. VIX spike popup replaced with pulsating border (red >22, orange 16-22, yellow 14-16). Frontend AgentPerformanceTab wired to combined futures+prediction performance data.',

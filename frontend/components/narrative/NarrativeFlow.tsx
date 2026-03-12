@@ -1,4 +1,4 @@
-// [claude-code 2026-03-06] NarrativeFlow — unified shell wiring all 4 tracks
+// [claude-code 2026-03-11] T3e: NarrativeFlow — added Coming Soon overlay
 import { useState, useCallback } from 'react';
 import { useNarrative } from '../../contexts/NarrativeContext';
 import { NarrativeToolbar } from './NarrativeToolbar';
@@ -45,6 +45,19 @@ export function NarrativeFlow() {
       />
 
       <div className="flex-1 min-h-0 relative overflow-hidden">
+        {/* Coming Soon overlay */}
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center" style={{ backgroundColor: 'rgba(5, 4, 2, 0.92)' }}>
+          <div className="text-center space-y-3">
+            <div className="text-[var(--pulse-accent)] text-lg font-semibold tracking-wide">
+              NarrativeFlow
+            </div>
+            <div className="text-zinc-500 text-sm">Coming Soon</div>
+            <div className="w-16 h-px mx-auto" style={{ backgroundColor: 'rgba(199, 159, 74, 0.3)' }} />
+            <p className="text-zinc-600 text-xs max-w-xs leading-relaxed">
+              Track macro narratives, thesis threads, and catalyst timelines in a visual canvas.
+            </p>
+          </div>
+        </div>
         {state.zoomLevel === 'week' && <NarrativeWeekView />}
         {state.zoomLevel === 'month' && <NarrativeMonthView />}
         {(state.zoomLevel === 'quarter' || state.zoomLevel === 'year') && (
