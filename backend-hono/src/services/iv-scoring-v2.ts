@@ -1,11 +1,14 @@
+// [claude-code 2026-03-11] IV Scoring V3: Added volatility taxonomy, regime-aware decay, new event types
 // [claude-code 2026-03-09] Added config-driven scoring: IVScoringConfig type, loadIVScoringConfig(), config param on calculateIVScoreV2
 /**
- * IV Scoring System v2
- * Complete implementation based on Grok consultation spec
- * Includes: Event weights, session multipliers, VIX correlation, time decay, stacking
+ * IV Scoring System v2/v3
+ * V2: Event weights, session multipliers, VIX correlation, time decay, stacking
+ * V3: Volatility taxonomy (multi-dimensional), regime-aware decay, causal chain triggers
  */
 
 import type { ParsedHeadline, HotPrint } from '../types/news-analysis.js'
+import type { VolatilityProfile, VolatilityTaxonomy, VixRegime } from '../types/volatility-taxonomy.js'
+import { classifyVixRegime } from '../types/volatility-taxonomy.js'
 import { readFileSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -124,6 +127,79 @@ export function getIVScoringConfig(): IVScoringConfig {
 }
 
 // ============================================================================
+// VOLATILITY TAXONOMY LOADER (V3)
+// ============================================================================
+
+let _loadedTaxonomy: VolatilityTaxonomy | null = null
+
+/**
+ * Load volatility taxonomy from JSON config.
+ * Falls back to deriving profiles from EVENT_WEIGHTS if missing.
+ */
+export function loadVolatilityTaxonomy(): VolatilityTaxonomy {
+  if (_loadedTaxonomy) return _loadedTaxonomy
+
+  try {
+    const __dirname = dirname(fileURLToPath(import.meta.url))
+    const configPath = resolve(__dirname, '../config/volatility-taxonomy.json')
+    const raw = readFileSync(configPath, 'utf-8')
+    const parsed = JSON.parse(raw)
+
+    _loadedTaxonomy = {
+      _version: parsed._version ?? '1.0.0',
+      profiles: parsed.profiles ?? {},
+    }
+
+    console.log('[IV-V3] Loaded volatility taxonomy')
+  } catch (err) {
+    console.warn('[IV-V3] Failed to load volatility taxonomy, using defaults:', err)
+    _loadedTaxonomy = null
+  }
+
+  return _loadedTaxonomy ?? getDefaultTaxonomy()
+}
+
+function getDefaultTaxonomy(): VolatilityTaxonomy {
+  // Build minimal profiles from flat EVENT_WEIGHTS
+  const profiles: Record<string, VolatilityProfile> = {}
+  for (const [key, weight] of Object.entries(EVENT_WEIGHTS)) {
+    profiles[key] = {
+      velocity: 3 as const,
+      persistence: 'hours' as const,
+      breadth: 3 as const,
+      transmissionChannels: ['equities'],
+      reflexivity: 0.1,
+      baseWeight: weight,
+      decayBaseMinutes: DECAY_HALF_LIVES[key] ?? DECAY_HALF_LIVES.default,
+      decayRegimeMultipliers: { low: 0.8, normal: 1.0, elevated: 1.3, crisis: 1.5 },
+    }
+  }
+  return { _version: '0.0.0', profiles }
+}
+
+/**
+ * Get volatility profile for an event type.
+ * Falls back to 'default' profile, then to a minimal profile.
+ */
+export function getVolatilityProfile(eventType: string): VolatilityProfile {
+  const taxonomy = loadVolatilityTaxonomy()
+  return taxonomy.profiles[eventType] ?? taxonomy.profiles['default'] ?? {
+    velocity: 2 as const,
+    persistence: 'hours' as const,
+    breadth: 1 as const,
+    transmissionChannels: ['equities'],
+    reflexivity: 0.0,
+    baseWeight: 3,
+    decayBaseMinutes: 30,
+    decayRegimeMultipliers: { low: 0.8, normal: 1.0, elevated: 1.0, crisis: 1.0 },
+  }
+}
+
+export function resetVolatilityTaxonomy(): void {
+  _loadedTaxonomy = null
+}
+
+// ============================================================================
 // EVENT WEIGHT TABLE (from Grok spec)
 // ============================================================================
 
@@ -166,6 +242,13 @@ export const EVENT_WEIGHTS: Record<string, number> = {
   merger: 3,
   other: 3,
   default: 3,
+
+  // V3: Credit/Yield/Liquidity/Bank events
+  creditSpreadWidening: 8,
+  yieldCurveSignal: 7,
+  liquidityStress: 9,
+  bankStress: 9,
+  leverageWarning: 6,
 }
 
 // ============================================================================
@@ -285,6 +368,13 @@ export const DECAY_HALF_LIVES: Record<string, number> = {
   
   // Other - 30 min
   default: 30,
+
+  // V3: Credit/Yield/Liquidity events (longer half-lives — slow burn)
+  creditSpreadWidening: 1440,  // 24 hours
+  yieldCurveSignal: 1440,     // 24 hours
+  liquidityStress: 720,       // 12 hours
+  bankStress: 1440,           // 24 hours
+  leverageWarning: 4320,      // 3 days
 }
 
 export function calculateDecayedScore(
@@ -295,6 +385,47 @@ export function calculateDecayedScore(
   const halfLife = DECAY_HALF_LIVES[eventType] ?? DECAY_HALF_LIVES.default
   const decayFactor = Math.pow(0.5, minutesSinceEvent / halfLife)
   return baseScore * decayFactor
+}
+
+/**
+ * V3 regime-aware decay: half-life scales with VIX regime.
+ * In crisis (VIX > 30), events persist 2-5x longer depending on type.
+ * Credit events get 1440-min base with 4x crisis multiplier = 4-day effective half-life.
+ */
+export function calculateDecayedScoreV3(
+  baseScore: number,
+  eventType: string,
+  minutesSinceEvent: number,
+  currentVixLevel: number
+): number {
+  const profile = getVolatilityProfile(eventType)
+  const regime = classifyVixRegime(currentVixLevel)
+  const regimeMultiplier = profile.decayRegimeMultipliers[regime]
+  const effectiveHalfLife = profile.decayBaseMinutes * regimeMultiplier
+  const decayFactor = Math.pow(0.5, minutesSinceEvent / effectiveHalfLife)
+  return baseScore * decayFactor
+}
+
+/**
+ * Get the event weight from the volatility taxonomy (V3) if available,
+ * falling back to flat EVENT_WEIGHTS (V2).
+ */
+export function getEventWeight(eventType: string): number {
+  const profile = getVolatilityProfile(eventType)
+  return profile.baseWeight
+}
+
+/**
+ * Get instrument-adjusted event weight.
+ * Uses taxonomy instrumentOverrides if available for the event type.
+ */
+export function getInstrumentAdjustedWeight(eventType: string, instrument: string): number {
+  const profile = getVolatilityProfile(eventType)
+  const override = profile.instrumentOverrides?.[instrument]
+  if (override !== undefined) {
+    return profile.baseWeight * override
+  }
+  return profile.baseWeight
 }
 
 // ============================================================================
@@ -342,16 +473,19 @@ export interface StackedEvent {
 
 export function calculateStackedScore(
   events: StackedEvent[],
-  now: Date = new Date()
+  now: Date = new Date(),
+  vixLevel?: number
 ): { score: number; synergy: boolean; events: StackedEvent[] } {
   if (events.length === 0) {
     return { score: 0, synergy: false, events: [] }
   }
-  
-  // Calculate decayed scores for all events
+
+  // Calculate decayed scores for all events (V3 regime-aware if VIX provided)
   const processedEvents = events.map(event => {
     const minutesSince = (now.getTime() - event.timestamp.getTime()) / 60000
-    const decayed = calculateDecayedScore(event.baseScore, event.eventType, minutesSince)
+    const decayed = vixLevel !== undefined
+      ? calculateDecayedScoreV3(event.baseScore, event.eventType, minutesSince, vixLevel)
+      : calculateDecayedScore(event.baseScore, event.eventType, minutesSince)
     return { ...event, decayedScore: decayed }
   })
   
@@ -516,6 +650,11 @@ export const INSTANT_TRIGGERS: Record<string, number> = {
   cpiPrint: 7,
   nfpPrint: 7,
   gdpPrint: 6,
+
+  // V3: Systemic risk triggers
+  liquidityStress: 9,
+  bankStress: 9,
+  creditSpreadWidening: 8,
 }
 
 export function isInstantTrigger(eventType: string): { isInstant: boolean; minScore: number } {
@@ -694,7 +833,7 @@ export function calculateIVScoreV2(input: IVScoreInputV2, config?: Partial<IVSco
     score = Math.min(sc.maxScore, vixLevel / sc.noEventBaselineDivisor)
     rationale.push(`No events - VIX baseline: ${score.toFixed(1)}`)
   } else {
-    const stacked = calculateStackedScore(events, now)
+    const stacked = calculateStackedScore(events, now, vixLevel)
     score = stacked.score
     synergy = stacked.synergy
 
@@ -776,6 +915,46 @@ export function classifyEventType(parsed: ParsedHeadline): string {
   }
   if (headline.includes('crisis') || headline.includes('collapse') || headline.includes('emergency')) {
     return 'majorCrisis'
+  }
+
+  // V3: Credit risk detection
+  if (headline.includes('credit spread') || headline.includes('credit default swap')
+    || (headline.includes('high yield') && (headline.includes('spread') || headline.includes('widen') || headline.includes('blow')))
+    || (headline.includes('junk bond') && (headline.includes('sell') || headline.includes('spread') || headline.includes('stress')))
+    || (wordMatch(headline, 'cds') && (headline.includes('spike') || headline.includes('widen') || headline.includes('surge')))) {
+    return 'creditSpreadWidening'
+  }
+
+  // V3: Yield curve signals
+  if ((headline.includes('yield curve') || headline.includes('2s10s') || wordMatch(headline, '3m10y')
+    || headline.includes('2-year') && headline.includes('10-year'))
+    && (headline.includes('invert') || headline.includes('steepen') || headline.includes('flatten')
+      || headline.includes('uninvert') || headline.includes('signal'))) {
+    return 'yieldCurveSignal'
+  }
+
+  // V3: Liquidity stress
+  if (headline.includes('repo rate') || headline.includes('ted spread')
+    || headline.includes('dollar funding') || headline.includes('liquidity crunch')
+    || headline.includes('liquidity crisis') || headline.includes('funding stress')
+    || (headline.includes('overnight') && headline.includes('rate') && headline.includes('spike'))) {
+    return 'liquidityStress'
+  }
+
+  // V3: Bank stress
+  if ((wordMatch(headline, 'bank') || headline.includes('banking'))
+    && (headline.includes('stress') || headline.includes('fail') || headline.includes('run')
+      || headline.includes('insolvency') || headline.includes('bailout')
+      || headline.includes('deposit flight') || headline.includes('fdic'))) {
+    return 'bankStress'
+  }
+
+  // V3: Leverage warnings
+  if ((headline.includes('margin debt') || headline.includes('leverage ratio')
+    || headline.includes('record margin') || headline.includes('margin call'))
+    && (headline.includes('record') || headline.includes('high') || headline.includes('surge')
+      || headline.includes('warning') || headline.includes('cascade'))) {
+    return 'leverageWarning'
   }
 
   // Fed/Policy

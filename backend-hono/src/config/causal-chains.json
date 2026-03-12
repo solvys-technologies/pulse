@@ -1,0 +1,303 @@
+{
+  "_version": "1.0.0",
+  "_note": "Causal chain definitions for third-order macro thinking. Each chain models a cause-effect sequence with lag times, probabilities, and score transmission factors.",
+  "chains": [
+    {
+      "id": "tariff-escalation",
+      "name": "Tariff Escalation Chain",
+      "description": "Tariffs disrupt supply chains, raise input costs, compress margins, and eventually force earnings downgrades and sector rotation.",
+      "totalTimelineDescription": "Full chain: 3-9 months from tariff announcement to earnings impact",
+      "affectedInstrumentClasses": ["equities", "commodities", "fx"],
+      "links": [
+        {
+          "from": "tariffs",
+          "to": "supplyChainDisruption",
+          "lagMinMinutes": 20160,
+          "lagMaxMinutes": 40320,
+          "probability": 0.8,
+          "scoreTransmission": 0.7,
+          "description": "Tariffs disrupt established supply chains within 2-4 weeks"
+        },
+        {
+          "from": "supplyChainDisruption",
+          "to": "inputCostInflation",
+          "lagMinMinutes": 40320,
+          "lagMaxMinutes": 80640,
+          "probability": 0.7,
+          "scoreTransmission": 0.6,
+          "description": "Supply chain disruption raises input costs within 4-8 weeks"
+        },
+        {
+          "from": "inputCostInflation",
+          "to": "marginCompression",
+          "lagMinMinutes": 86400,
+          "lagMaxMinutes": 172800,
+          "probability": 0.6,
+          "scoreTransmission": 0.5,
+          "description": "Higher input costs compress corporate margins over 2-4 months"
+        },
+        {
+          "from": "marginCompression",
+          "to": "earningsDowngrades",
+          "lagMinMinutes": 129600,
+          "lagMaxMinutes": 259200,
+          "probability": 0.5,
+          "scoreTransmission": 0.4,
+          "description": "Compressed margins lead to earnings downgrades in 3-6 months"
+        },
+        {
+          "from": "earningsDowngrades",
+          "to": "sectorRotation",
+          "lagMinMinutes": 7200,
+          "lagMaxMinutes": 21600,
+          "probability": 0.7,
+          "scoreTransmission": 0.3,
+          "description": "Downgrades trigger sector rotation within 5-15 days"
+        }
+      ]
+    },
+    {
+      "id": "credit-deterioration",
+      "name": "Credit Deterioration Chain",
+      "description": "Credit spreads widen → corporate bond stress → bank CDS rise → lending tightens → housing weakens → consumer spending drops. The classic 2007-2008 playbook.",
+      "totalTimelineDescription": "Full chain: 6-18 months from initial credit spread widening to consumer weakness",
+      "affectedInstrumentClasses": ["credit", "equities", "rates"],
+      "links": [
+        {
+          "from": "creditSpreadWidening",
+          "to": "corporateBondStress",
+          "lagMinMinutes": 10080,
+          "lagMaxMinutes": 30240,
+          "probability": 0.75,
+          "scoreTransmission": 0.8,
+          "description": "Credit spreads widening stresses corporate bond market within 1-3 weeks"
+        },
+        {
+          "from": "corporateBondStress",
+          "to": "bankStress",
+          "lagMinMinutes": 20160,
+          "lagMaxMinutes": 43200,
+          "probability": 0.6,
+          "scoreTransmission": 0.7,
+          "description": "Corporate bond stress raises bank CDS within 2-4 weeks"
+        },
+        {
+          "from": "bankStress",
+          "to": "lendingTightening",
+          "lagMinMinutes": 43200,
+          "lagMaxMinutes": 129600,
+          "probability": 0.65,
+          "scoreTransmission": 0.6,
+          "description": "Bank stress leads to lending tightening within 1-3 months"
+        },
+        {
+          "from": "lendingTightening",
+          "to": "housingWeakness",
+          "lagMinMinutes": 86400,
+          "lagMaxMinutes": 259200,
+          "probability": 0.5,
+          "scoreTransmission": 0.4,
+          "description": "Tighter lending weakens housing market within 2-6 months"
+        },
+        {
+          "from": "housingWeakness",
+          "to": "consumerWeakness",
+          "lagMinMinutes": 129600,
+          "lagMaxMinutes": 259200,
+          "probability": 0.5,
+          "scoreTransmission": 0.3,
+          "description": "Housing weakness hits consumer spending within 3-6 months"
+        }
+      ]
+    },
+    {
+      "id": "fed-policy-pivot",
+      "name": "Fed Policy Pivot Chain",
+      "description": "Hawkish Fed surprise steepens yield curve, strengthens dollar, stresses emerging markets, and weakens commodities.",
+      "totalTimelineDescription": "Full chain: 1-4 weeks from Fed surprise to commodity weakness",
+      "affectedInstrumentClasses": ["rates", "fx", "commodities", "equities"],
+      "links": [
+        {
+          "from": "fedDecision",
+          "to": "yieldCurveSignal",
+          "lagMinMinutes": 0,
+          "lagMaxMinutes": 1440,
+          "probability": 0.9,
+          "scoreTransmission": 0.8,
+          "description": "Fed hawkish surprise immediately moves yield curve"
+        },
+        {
+          "from": "yieldCurveSignal",
+          "to": "dollarStrengthening",
+          "lagMinMinutes": 1440,
+          "lagMaxMinutes": 4320,
+          "probability": 0.8,
+          "scoreTransmission": 0.7,
+          "description": "Yield curve move strengthens dollar within 1-3 days"
+        },
+        {
+          "from": "dollarStrengthening",
+          "to": "emergingMarketStress",
+          "lagMinMinutes": 10080,
+          "lagMaxMinutes": 43200,
+          "probability": 0.6,
+          "scoreTransmission": 0.5,
+          "description": "Strong dollar stresses emerging markets within 1-4 weeks"
+        },
+        {
+          "from": "dollarStrengthening",
+          "to": "commodityWeakness",
+          "lagMinMinutes": 4320,
+          "lagMaxMinutes": 20160,
+          "probability": 0.65,
+          "scoreTransmission": 0.5,
+          "description": "Strong dollar weakens dollar-denominated commodities within 3-14 days"
+        }
+      ]
+    },
+    {
+      "id": "liquidity-crisis",
+      "name": "Liquidity Crisis Chain",
+      "description": "Repo rate spike → dollar funding stress → credit freezing → forced deleveraging → contagion selling. The 2019 repo spike and 2008 credit freeze playbook.",
+      "totalTimelineDescription": "Full chain: 1-3 weeks from repo spike to contagion selling — FAST",
+      "affectedInstrumentClasses": ["rates", "credit", "equities", "vol"],
+      "links": [
+        {
+          "from": "liquidityStress",
+          "to": "dollarFundingStress",
+          "lagMinMinutes": 1440,
+          "lagMaxMinutes": 4320,
+          "probability": 0.85,
+          "scoreTransmission": 0.9,
+          "description": "Repo rate spike creates dollar funding stress within 1-3 days"
+        },
+        {
+          "from": "dollarFundingStress",
+          "to": "creditFreezing",
+          "lagMinMinutes": 4320,
+          "lagMaxMinutes": 10080,
+          "probability": 0.7,
+          "scoreTransmission": 0.8,
+          "description": "Dollar funding stress freezes credit markets within 3-7 days"
+        },
+        {
+          "from": "creditFreezing",
+          "to": "forcedDeleveraging",
+          "lagMinMinutes": 1440,
+          "lagMaxMinutes": 7200,
+          "probability": 0.75,
+          "scoreTransmission": 0.85,
+          "description": "Frozen credit forces deleveraging within 1-5 days"
+        },
+        {
+          "from": "forcedDeleveraging",
+          "to": "contagionSelling",
+          "lagMinMinutes": 0,
+          "lagMaxMinutes": 2880,
+          "probability": 0.8,
+          "scoreTransmission": 0.9,
+          "description": "Forced deleveraging triggers contagion selling within 0-2 days"
+        }
+      ]
+    },
+    {
+      "id": "bubble-pop",
+      "name": "Bubble Pop Sequence",
+      "description": "Excessive leverage + narrow market leadership → vol spike → margin call cascade → forced selling → credit contagion → recession risk. The dot-com, 2008, and every bubble's endgame.",
+      "totalTimelineDescription": "Full chain: 2 weeks to 6 months from vol spike to recession risk",
+      "affectedInstrumentClasses": ["equities", "credit", "vol", "rates"],
+      "links": [
+        {
+          "from": "leverageWarning",
+          "to": "volatilitySpike",
+          "lagMinMinutes": 0,
+          "lagMaxMinutes": 10080,
+          "probability": 0.7,
+          "scoreTransmission": 0.8,
+          "description": "Excessive leverage makes markets fragile — any catalyst spikes vol within 0-7 days"
+        },
+        {
+          "from": "volatilitySpike",
+          "to": "marginCallCascade",
+          "lagMinMinutes": 1440,
+          "lagMaxMinutes": 4320,
+          "probability": 0.8,
+          "scoreTransmission": 0.85,
+          "description": "Vol spike triggers margin calls within 1-3 days"
+        },
+        {
+          "from": "marginCallCascade",
+          "to": "forcedSelling",
+          "lagMinMinutes": 0,
+          "lagMaxMinutes": 2880,
+          "probability": 0.85,
+          "scoreTransmission": 0.9,
+          "description": "Margin calls force selling within 0-2 days — reflexive loop"
+        },
+        {
+          "from": "forcedSelling",
+          "to": "creditSpreadWidening",
+          "lagMinMinutes": 4320,
+          "lagMaxMinutes": 20160,
+          "probability": 0.6,
+          "scoreTransmission": 0.7,
+          "description": "Forced selling widens credit spreads within 3-14 days"
+        },
+        {
+          "from": "creditSpreadWidening",
+          "to": "recessionRisk",
+          "lagMinMinutes": 86400,
+          "lagMaxMinutes": 259200,
+          "probability": 0.5,
+          "scoreTransmission": 0.4,
+          "description": "Credit contagion raises recession probability over 2-6 months"
+        }
+      ]
+    },
+    {
+      "id": "inflation-spiral",
+      "name": "Inflation Spiral Chain",
+      "description": "Hot inflation print → hawkish Fed expectations → rate hike fears → equity derating → growth scare. The 2022 playbook.",
+      "totalTimelineDescription": "Full chain: 1-6 months from hot print to growth scare",
+      "affectedInstrumentClasses": ["rates", "equities", "commodities"],
+      "links": [
+        {
+          "from": "cpiPrint",
+          "to": "hawkishFedExpectations",
+          "lagMinMinutes": 0,
+          "lagMaxMinutes": 1440,
+          "probability": 0.85,
+          "scoreTransmission": 0.8,
+          "description": "Hot CPI print immediately shifts Fed rate expectations"
+        },
+        {
+          "from": "hawkishFedExpectations",
+          "to": "rateHikeFears",
+          "lagMinMinutes": 1440,
+          "lagMaxMinutes": 7200,
+          "probability": 0.8,
+          "scoreTransmission": 0.7,
+          "description": "Hawkish expectations build rate hike fears within 1-5 days"
+        },
+        {
+          "from": "rateHikeFears",
+          "to": "equityDerating",
+          "lagMinMinutes": 7200,
+          "lagMaxMinutes": 43200,
+          "probability": 0.7,
+          "scoreTransmission": 0.6,
+          "description": "Rate hike fears cause equity P/E compression within 5-30 days"
+        },
+        {
+          "from": "equityDerating",
+          "to": "growthScare",
+          "lagMinMinutes": 43200,
+          "lagMaxMinutes": 129600,
+          "probability": 0.5,
+          "scoreTransmission": 0.4,
+          "description": "Sustained equity weakness triggers growth scare narrative in 1-3 months"
+        }
+      ]
+    }
+  ]
+}

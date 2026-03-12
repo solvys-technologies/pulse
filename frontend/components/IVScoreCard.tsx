@@ -1,6 +1,7 @@
 // [claude-code 2026-03-11] Redesigned to consume backend IVScoreResponse — point range, rationale tooltip, environment label
+// [claude-code 2026-03-12] VIX spike notice shows only once per session (sessionStorage guard)
 import { Info, TrendingUp } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { IVScoreResponse } from '../types/market-data';
 
 interface IVScoreCardProps {
@@ -36,8 +37,25 @@ function getUrgencyColor(urgency: string) {
   }
 }
 
+const VIX_SPIKE_SESSION_KEY = 'pulse_vix_spike_shown';
+
 export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
   const [showTooltip, setShowTooltip] = useState(false);
+  const [spikeAcknowledged, setSpikeAcknowledged] = useState(() => {
+    try { return sessionStorage.getItem(VIX_SPIKE_SESSION_KEY) === '1'; } catch { return false; }
+  });
+
+  // Mark spike as shown once per session
+  useEffect(() => {
+    if (data?.vix.isSpike && !spikeAcknowledged) {
+      // Auto-acknowledge after 10 seconds
+      const t = setTimeout(() => {
+        setSpikeAcknowledged(true);
+        try { sessionStorage.setItem(VIX_SPIKE_SESSION_KEY, '1'); } catch {}
+      }, 10_000);
+      return () => clearTimeout(t);
+    }
+  }, [data?.vix.isSpike, spikeAcknowledged]);
 
   if (loading || !data) {
     return (
@@ -158,8 +176,8 @@ export function IVScoreCard({ data, loading, layoutOption }: IVScoreCardProps) {
             </div>
           )}
 
-          {/* VIX spike indicator */}
-          {data.vix.isSpike && (
+          {/* VIX spike indicator — only shown once per session */}
+          {data.vix.isSpike && !spikeAcknowledged && (
             <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 mb-3">
               <span className="text-[10px] text-red-400 font-medium">
                 VIX spike detected ({data.vix.spikeDirection}) — {data.vix.percentChange.toFixed(1)}% change

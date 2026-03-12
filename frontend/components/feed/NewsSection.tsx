@@ -1,21 +1,16 @@
 // [claude-code 2026-03-05] Add filter tabs: All, High, Medium, Proposals
 // [claude-code 2026-03-10] Dropdown filters (Priority + Source), X/FJ filter, X CLI status dot.
 // [claude-code 2026-03-10] T3: critical severity support in labels, points, color display
+// [claude-code 2026-03-12] Card overhaul: SVG logos replace source text, remove Neutral bias,
+//   right-justify cyclical badge, fix point scoring, match sidebar card design
 import { useEffect, useState, useMemo } from 'react';
-import { Bell, BellOff } from 'lucide-react';
+import { Bell, BellOff, ExternalLink, TrendingUp, TrendingDown } from 'lucide-react';
 import { useRiskFlow } from '../../contexts/RiskFlowContext';
-import { useSettings } from '../../contexts/SettingsContext';
 import { useSourceStatus } from '../../hooks/useSourceStatus';
+import { SEVERITY_CONFIG } from '../../lib/severity-config';
 
 type PriorityFilter = 'all' | 'high' | 'medium';
 type SourceFilter = 'all' | 'notion' | 'twitter';
-
-function severityLabel(severity: 'critical' | 'high' | 'medium' | 'low'): string {
-  if (severity === 'critical') return 'CRITICAL';
-  if (severity === 'high') return 'HIGH';
-  if (severity === 'medium') return 'MEDIUM';
-  return 'LOW';
-}
 
 type FlowTag = 'Commentary' | 'Econ' | 'Geopol';
 type FlowBias = 'Bullish' | 'Bearish' | 'Neutral';
@@ -29,6 +24,7 @@ const ECON_KEYWORDS = [
 const GEOPOL_KEYWORDS = [
   'war', 'geopolitical', 'sanction', 'tariff', 'military', 'border', 'opec',
   'iran', 'china', 'russia', 'ukraine', 'conflict', 'election', 'embargo',
+  'attack', 'strike', 'bomb', 'missile', 'naval', 'tanker', 'oil port', 'invasion',
 ];
 
 const BULLISH_KEYWORDS = [
@@ -38,7 +34,8 @@ const BULLISH_KEYWORDS = [
 
 const BEARISH_KEYWORDS = [
   'miss', 'misses', 'drop', 'selloff', 'fall', 'falls', 'down', 'crisis', 'downgrade',
-  'hot inflation', 'above expectations', 'recession', 'panic',
+  'hot inflation', 'above expectations', 'recession', 'panic', 'risk', 'collapse',
+  'attack', 'war', 'strike', 'bomb',
 ];
 
 function classifyTag(text: string): FlowTag {
@@ -65,28 +62,67 @@ function classifyCycle(tag: FlowTag): FlowCycle {
 
 function impliedPoints(
   severity: 'critical' | 'high' | 'medium' | 'low',
-  bias: FlowBias,
   tag: FlowTag
 ): number {
-  const base = severity === 'critical' ? 24 : severity === 'high' ? 18 : severity === 'medium' ? 10 : 6;
-  const multiplier = tag === 'Geopol' ? 1.4 : tag === 'Econ' ? 1.2 : 1.0;
-  const signed = bias === 'Bullish' ? 1 : bias === 'Bearish' ? -1 : 0;
-  return Number((base * multiplier * signed).toFixed(1));
+  const base = severity === 'critical' ? 30 : severity === 'high' ? 22 : severity === 'medium' ? 12 : 6;
+  const multiplier = tag === 'Geopol' ? 1.6 : tag === 'Econ' ? 1.3 : 1.0;
+  return Number((base * multiplier).toFixed(0));
 }
 
-function biasColor(bias: FlowBias): string {
-  if (bias === 'Bullish') return 'text-emerald-400';
-  if (bias === 'Bearish') return 'text-red-400';
-  return 'text-zinc-400';
+// ── SVG Source Logos ──────────────────────────────────────────────────────────
+
+function XLogo({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-label="X">
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+    </svg>
+  );
 }
 
-function cycleColor(cycle: FlowCycle): string {
-  return cycle === 'Cyclical' ? 'text-cyan-400' : 'text-amber-400';
+function NotionLogo({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-label="Notion">
+      <path d="M4.459 4.208c.746.606 1.026.56 2.428.466l13.215-.793c.28 0 .047-.28-.046-.326L18.45 2.29c-.42-.326-.98-.7-2.055-.607L3.62 2.87c-.466.046-.56.28-.374.466zm.793 3.08v13.904c0 .747.373 1.027 1.214.98l14.523-.84c.84-.046.933-.56.933-1.167V6.354c0-.606-.233-.933-.746-.886l-15.177.887c-.56.046-.747.326-.747.933zm14.337.745c.093.42 0 .84-.42.886l-.7.14v10.264c-.607.327-1.167.514-1.634.514-.747 0-.933-.234-1.494-.934l-4.577-7.186v6.952l1.447.327s0 .84-1.167.84l-3.22.187c-.093-.187 0-.653.327-.746l.84-.233V9.854L7.46 9.76c-.093-.42.14-1.026.793-1.073l3.453-.233 4.763 7.28v-6.44l-1.214-.14c-.093-.513.28-.886.747-.933zM2.667 1.21l13.728-1.027c1.68-.14 2.1.093 2.8.606l3.874 2.707c.466.326.606.746.606 1.26v15.7c0 .933-.326 1.493-1.494 1.586l-15.457.933c-.84.047-1.26-.093-1.727-.653L1.88 19.01c-.513-.653-.746-1.166-.746-1.86V2.89c0-.84.373-1.54 1.54-1.68z" />
+    </svg>
+  );
+}
+
+function SourceIcon({ source, className }: { source: string; className?: string }) {
+  const s = source.toLowerCase();
+  if (s === 'notion-trade-idea' || s.includes('notion')) {
+    return <NotionLogo className={className} />;
+  }
+  // Everything else (financial-juice, twitter, X CLI, etc.) → X logo
+  return <XLogo className={className} />;
+}
+
+function CyclicalBadge({ cycle }: { cycle: FlowCycle }) {
+  const isCyclical = cycle === 'Cyclical';
+  return (
+    <span
+      className={`text-[9px] font-bold tracking-[0.12em] uppercase px-1.5 py-0.5 border ${
+        isCyclical
+          ? 'border-[var(--pulse-accent)]/30 text-[var(--pulse-accent)]/80 bg-[var(--pulse-accent)]/5'
+          : 'border-violet-500/30 text-violet-400/80 bg-violet-500/5'
+      }`}
+    >
+      {isCyclical ? 'Cyclical' : 'Counter-cyclical'}
+    </span>
+  );
+}
+
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
 }
 
 export function NewsSection() {
   const { alerts, markAllSeen, isSeen, notionPollStatus } = useRiskFlow();
-  const { selectedSymbol } = useSettings();
   const sourceStatus = useSourceStatus();
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('all');
@@ -182,7 +218,7 @@ export function NewsSection() {
         </button>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-2">
         {items.length === 0 ? (
           <div className="text-center text-gray-500 py-12">
             <p>No RiskFlow items available</p>
@@ -191,79 +227,74 @@ export function NewsSection() {
         ) : (
           items.map((item) => {
             const seen = isSeen(item.id);
-            const combinedText = `${item.headline} ${item.summary} ${(item.tags || []).join(' ')}`;
+            const combinedText = `${item.headline} ${item.summary ?? ''} ${(item.tags || []).join(' ')}`;
             const tag = classifyTag(combinedText);
             const bias = classifyBias(combinedText, item.tradeIdea?.direction);
             const cycle = classifyCycle(tag);
-            const points = impliedPoints(item.severity, bias, tag);
+            const pts = impliedPoints(item.severity, tag);
+            const sev = SEVERITY_CONFIG[item.severity];
+            const isHigh = item.severity === 'high' || item.severity === 'critical';
+            const isBullish = bias === 'Bullish';
+            const isBearish = bias === 'Bearish';
             return (
-              <div
+              <a
                 key={item.id}
-                className={`bg-[var(--pulse-bg)] border rounded-lg p-4 transition-colors border-b-2 ${
-                  seen
-                    ? 'border-zinc-800/60 opacity-70'
-                    : 'border-[var(--pulse-accent)]/20 hover:border-[var(--pulse-accent)]/40'
-                }`}
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`group block bg-[var(--pulse-bg)] border border-zinc-800/60 px-4 py-3 transition-colors hover:border-[var(--pulse-accent)]/30 ${
+                  seen ? 'opacity-60' : ''
+                } ${isHigh ? 'riskflow-pulse-row' : ''}`}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs font-semibold text-[var(--pulse-accent)]">{item.source}</span>
-                      <span className={`text-xs ${
-                        item.severity === 'critical' ? 'text-orange-400' :
-                        item.severity === 'high' ? 'text-red-400' :
-                        item.severity === 'medium' ? 'text-yellow-400' :
-                        'text-blue-400'
-                      }`}>
-                        {severityLabel(item.severity)}
-                      </span>
-                      <span className={`text-xs ${cycleColor(cycle)}`}>{cycle}</span>
-                    </div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${biasColor(bias)}`}>
-                        {bias}
-                      </span>
-                      <h3 className="text-sm font-semibold text-white">{item.headline}</h3>
-                    </div>
-                    {item.summary && (
-                      <p className="text-xs text-gray-400 line-clamp-2">{item.summary}</p>
-                    )}
-                    <div className="flex items-center gap-3 mt-2">
-                      <span className="text-xs text-gray-500">
-                        {new Date(item.publishedAt).toLocaleString()}
-                      </span>
-                      {item.url && (
-                        <a
-                          href={item.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-[var(--pulse-accent)] hover:underline"
-                        >
-                          Read more →
-                        </a>
-                      )}
-                    </div>
+                {/* Row 1: Priority badge + Headline + Cyclical right-justified */}
+                <div className="flex items-start gap-2">
+                  <span className={`inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold tracking-wider ${sev.bg} ${sev.text} ${sev.border} border ${sev.glow || ''} flex-shrink-0 mt-0.5`}>
+                    {sev.label}
+                  </span>
+                  <p className={`flex-1 text-sm leading-snug font-medium ${
+                    item.severity === 'critical' ? 'text-orange-300' : isHigh ? 'text-red-300' : 'text-zinc-200'
+                  } group-hover:text-white transition-colors`}>
+                    {item.headline}
+                  </p>
+                  <div className="flex-shrink-0 ml-2">
+                    <CyclicalBadge cycle={cycle} />
                   </div>
                 </div>
 
-                <div className="flex gap-2 mt-4 pt-4 border-t border-[var(--pulse-accent)]/10">
-                  <div className="flex-1 px-3 py-2 text-xs font-semibold text-center text-zinc-300">
-                    {tag}
-                  </div>
-                  <div className={`flex-1 px-3 py-2 text-xs font-semibold text-center ${biasColor(bias)}`}>
-                    {bias}
-                  </div>
-                  <div className={`flex-1 px-3 py-2 text-xs font-semibold text-center ${
-                    points > 0 ? 'text-emerald-400' : points < 0 ? 'text-red-400' : 'text-zinc-400'
-                  }`}>
-                    {points > 0 ? '+' : ''}{points.toFixed(1)} {selectedSymbol.symbol} pts
-                  </div>
+                {/* Row 2: Summary (if present) */}
+                {item.summary && item.summary !== item.headline && (
+                  <p className="text-[11px] text-zinc-500 line-clamp-2 mt-1.5 ml-8">{item.summary}</p>
+                )}
+
+                {/* Row 3: Source logo + time + direction + points + link */}
+                <div className="flex items-center gap-2 mt-2 ml-8">
+                  <SourceIcon source={item.source} className="w-3 h-3 text-zinc-500" />
+                  <span className="text-[10px] text-zinc-600">{timeAgo(item.publishedAt)}</span>
+                  <span className="text-zinc-700">&middot;</span>
+                  <span className={`text-[10px] font-semibold ${isBullish ? 'text-emerald-400' : isBearish ? 'text-red-400' : 'text-zinc-600'}`}>
+                    {isBullish ? <TrendingUp className="w-3 h-3 inline" /> : isBearish ? <TrendingDown className="w-3 h-3 inline" /> : null}
+                    {bias !== 'Neutral' && <span className="ml-0.5">{bias}</span>}
+                  </span>
+                  <span className="text-zinc-700">&middot;</span>
+                  <span className="text-[10px] text-zinc-500 tabular-nums">
+                    /ES ±{pts} pts
+                  </span>
+                  <ExternalLink className="w-3 h-3 text-zinc-700 opacity-0 group-hover:opacity-100 transition-opacity ml-auto flex-shrink-0" />
                 </div>
-              </div>
+              </a>
             );
           })
         )}
       </div>
+
+      {/* Pulse animation for high-severity rows */}
+      <style>{`
+        @keyframes riskflow-pulse {
+          0%, 100% { box-shadow: none; }
+          50% { box-shadow: inset 0 0 12px rgba(239, 68, 68, 0.08); }
+        }
+        .riskflow-pulse-row { animation: riskflow-pulse 3s ease-in-out infinite; }
+      `}</style>
     </div>
   );
 }

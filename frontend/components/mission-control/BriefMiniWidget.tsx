@@ -111,8 +111,15 @@ export function BriefMiniWidget() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await fetchBrief();
-    setRefreshing(false);
+    try {
+      setLabel(getBriefLabel());
+      const items = await backend.notion.getMdbBrief();
+      setBriefText(items[0]?.detail ?? '');
+    } catch {
+      // silent
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleGenerate = async () => {

@@ -9,6 +9,20 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-12T09:00:00',
+    agent: 'claude-code',
+    summary: 'RiskFlow full-feed overhaul: replaced source text with X/Notion SVG logos, removed Neutral bias display, right-justified cyclical/counter-cyclical badges, fixed point scoring (severity × tag multiplier). VIX spike notice shows once per session via sessionStorage. Removed floating VIX ticker in combined panels layout. Fixed Brief refresh button. Reverted all calendars (Dashboard, Mission Control, full tab) to TradingView widget embeds — reliable data, TV-style layout.',
+    files: [
+      'frontend/components/feed/NewsSection.tsx',
+      'frontend/components/IVScoreCard.tsx',
+      'frontend/components/layout/MainLayout.tsx',
+      'frontend/components/mission-control/BriefMiniWidget.tsx',
+      'frontend/components/executive/SessionCalendarList.tsx',
+      'frontend/components/mission-control/SessionCalendarMini.tsx',
+      'frontend/components/econ/EconCalendar.tsx',
+    ],
+  },
+  {
     date: '2026-03-12T06:00:00',
     agent: 'claude-code',
     summary: 'Regime Tracker: W/L→ORB bullish/bearish days, AI Generate CTA (opens chat with regimes skill), delete any regime, 12H NY time, active regimes shown in collapsed categories. Brief widget: scrollable full reports, AI generate button, comprehensive MDB/TOTT prompts (400-600w / 600-1000w), short ADB/PMDB. Added regimes skill to registry.',

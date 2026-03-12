@@ -78,6 +78,10 @@ const CRITICAL_CHECKS: Array<(t: string) => boolean> = [
   (t) => t.includes('emergency') && (t.includes('fed') || t.includes('meeting')),
   (t) => t.includes('government shutdown'),
   (t) => t.includes('debt ceiling') && (t.includes('default') || t.includes('deadline')),
+  // V3: credit/liquidity stress
+  (t) => t.includes('liquidity crisis') || t.includes('liquidity crunch') || t.includes('funding stress'),
+  (t) => t.includes('bank run') || (t.includes('bank') && t.includes('insolvency')),
+  (t) => t.includes('repo rate') && t.includes('spike'),
 ];
 
 /** High: major macro prints with data, Fed decisions, geopolitical escalation */
@@ -114,6 +118,11 @@ const MEDIUM_CHECKS: Array<(t: string) => boolean> = [
   (t) => t.includes('consumer') && t.includes('confidence') && (t.includes('data') || t.includes('index')),
   (t) => t.includes('treasury') && t.includes('auction'),
   (t) => t.includes('yield') && (t.includes('surge') || t.includes('spike') || t.includes('invert')),
+  // V3: credit spread and leverage signals
+  (t) => t.includes('credit spread') && (t.includes('widen') || t.includes('blow')),
+  (t) => t.includes('high yield') && (t.includes('stress') || t.includes('spread')),
+  (t) => t.includes('margin debt') && (t.includes('record') || t.includes('surge')),
+  (t) => t.includes('leverage') && (t.includes('warning') || t.includes('unwind')),
 ];
 
 function classifySeverity(text: string): AlertSeverity {

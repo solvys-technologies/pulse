@@ -35,7 +35,6 @@ import { PsychAssistDockable, type PsychAssistDockTarget } from './PsychAssistDo
 import { FooterToolbar } from './FooterToolbar';
 import { EmbeddedBrowserFrame } from './EmbeddedBrowserFrame';
 import { ScheduleProvider } from '../../contexts/ScheduleContext';
-import { EconCalendarProvider } from '../../contexts/EconCalendarContext';
 import { EconCalendar } from '../econ/EconCalendar';
 import { NarrativeProvider } from '../../contexts/NarrativeContext';
 import { NarrativeFlow } from '../narrative/NarrativeFlow';
@@ -292,7 +291,7 @@ export function MainLayout() {
   // Determine layout based on TopStepX state and layout option
   const showMissionControl = topStepXEnabled && missionControlPosition !== 'floating';
   const showTape = topStepXEnabled && tapePosition !== 'floating';
-  const showFloatingWidget = topStepXEnabled && (layoutOption === 'tickers-only' || (layoutOption === 'combined' && combinedPanelCollapsed));
+  const showFloatingWidget = topStepXEnabled && layoutOption === 'tickers-only';
   const showCombinedPanel = topStepXEnabled && layoutOption === 'combined';
 
   // Determine panel order based on position and layout option
@@ -695,9 +694,7 @@ export function MainLayout() {
               )}
               {activeTab === 'econ' && (
                 <div key="econ" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
-                  <EconCalendarProvider>
-                    <EconCalendar />
-                  </EconCalendarProvider>
+                  <EconCalendar />
                 </div>
               )}
               {activeTab === 'narrative' && (
