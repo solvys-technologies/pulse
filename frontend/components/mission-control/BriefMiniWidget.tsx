@@ -1,6 +1,6 @@
 // [claude-code 2026-03-11] Mini Brief widget for Mission Control — compact daily brief view
 // [claude-code 2026-03-12] Made scrollable, removed line-clamp, renders markdown-style formatting for MDB/TOTT reports
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { FileText, RefreshCw, Sparkles } from 'lucide-react';
 import { useBackend } from '../../lib/backend';
 
@@ -61,7 +61,7 @@ function BriefContent({ text }: { text: string }) {
 }
 
 /** Render inline **bold** text */
-function renderInlineBold(text: string): (string | JSX.Element)[] {
+function renderInlineBold(text: string): (string | React.ReactElement)[] {
   const parts = text.split(/\*\*(.*?)\*\*/g);
   return parts.map((part, i) =>
     i % 2 === 1

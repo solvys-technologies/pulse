@@ -1,5 +1,5 @@
 // [claude-code 2026-03-10] Simplified ChatInterface — removed unused state, added AiLoader
-import { useState, useRef, useCallback, useMemo } from 'react';
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { AlertTriangle, CalendarCheck, X, Bookmark, Trash2 } from 'lucide-react';
 import { AssistantRuntimeProvider, useThread, useThreadRuntime } from '@assistant-ui/react';
 import { usePulseAgents } from '../contexts/PulseAgentContext';
