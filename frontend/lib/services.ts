@@ -253,11 +253,12 @@ export class AccountService {
 export class RiskFlowService {
   constructor(private client: ApiClient) { }
 
-  async list(params?: { limit?: number; offset?: number; symbol?: string; minMacroLevel?: number }): Promise<RiskFlowListResponse> {
+  async list(params?: { limit?: number; offset?: number; symbol?: string; minMacroLevel?: number; instrument?: string }): Promise<RiskFlowListResponse> {
     const query = new URLSearchParams();
     if (params?.limit) query.append('limit', params.limit.toString());
     if (params?.offset) query.append('offset', params.offset.toString());
     if (params?.symbol) query.append('symbols', params.symbol); // Backend expects 'symbols' not 'symbol'
+    if (params?.instrument) query.append('instrument', params.instrument);
     // Allow frontend to override minMacroLevel for debugging (default is 3)
     if (params?.minMacroLevel !== undefined) {
       query.append('minMacroLevel', params.minMacroLevel.toString());
@@ -930,76 +931,6 @@ export class NotionService {
   }
 }
 
-// ER Scoring Service (psych scoring around earnings events)
-import type {
-  EarningsReview,
-  EarningsHistoryFilter,
-  EarningsHistoryPage,
-  EarningsReviewCreate,
-  EarningsReviewUpdate,
-  EarningsContextRequest,
-  EarningsContextResponse,
-} from '../types/earnings-history';
-
-export class ERScoringService {
-  constructor(private client: ApiClient) {}
-
-  async list(filter?: EarningsHistoryFilter): Promise<EarningsHistoryPage> {
-    try {
-      const query = new URLSearchParams();
-      if (filter?.symbol) query.append('symbol', filter.symbol);
-      if (filter?.setupType) query.append('setupType', filter.setupType);
-      if (filter?.dateFrom) query.append('dateFrom', filter.dateFrom);
-      if (filter?.dateTo) query.append('dateTo', filter.dateTo);
-      if (filter?.grade) query.append('grade', filter.grade);
-      if (filter?.direction) query.append('direction', filter.direction);
-      if (filter?.limit) query.append('limit', filter.limit.toString());
-      if (filter?.offset) query.append('offset', filter.offset.toString());
-      const suffix = query.toString() ? `?${query.toString()}` : '';
-      return await this.client.get<EarningsHistoryPage>(`/api/er-scoring${suffix}`);
-    } catch {
-      return { items: [], total: 0, hasMore: false };
-    }
-  }
-
-  async getById(id: string): Promise<EarningsReview | null> {
-    try {
-      return await this.client.get<EarningsReview>(`/api/er-scoring/${id}`);
-    } catch {
-      return null;
-    }
-  }
-
-  async create(data: EarningsReviewCreate): Promise<EarningsReview> {
-    return this.client.post<EarningsReview>('/api/er-scoring', data);
-  }
-
-  async update(id: string, data: EarningsReviewUpdate): Promise<EarningsReview | null> {
-    try {
-      return await this.client.patch<EarningsReview>(`/api/er-scoring/${id}`, data);
-    } catch {
-      return null;
-    }
-  }
-
-  async deleteReview(id: string): Promise<boolean> {
-    try {
-      await this.client.delete(`/api/er-scoring/${id}`);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  async agentRetrieve(req: EarningsContextRequest): Promise<EarningsContextResponse> {
-    return this.client.post<EarningsContextResponse>('/api/er-scoring/agent-retrieve', req);
-  }
-
-  async setup(): Promise<{ success: boolean; dbId: string }> {
-    return this.client.post('/api/er-scoring/setup', {});
-  }
-}
-
 // Market Data Service
 import type {
   StockQuote,
@@ -1325,7 +1256,6 @@ export interface BackendClient {
   narrative: NarrativeService;
   notion: NotionService;
   econCalendar: EconCalendarService;
-  erScoring: ERScoringService;
   marketData: MarketDataService;
   mcp: McpService;
   journal: JournalService;
@@ -1355,7 +1285,6 @@ export function createBackendClient(client: ApiClient): BackendClient {
     narrative: new NarrativeService(client),
     notion: new NotionService(client),
     econCalendar: new EconCalendarService(client),
-    erScoring: new ERScoringService(client),
     marketData: new MarketDataService(client),
     mcp: new McpService(client),
     journal: new JournalService(client),

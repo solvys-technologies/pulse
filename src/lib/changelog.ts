@@ -9,6 +9,42 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-13T00:30:00',
+    agent: 'claude-code',
+    summary: 'Scoring consistency + instrument persistence + X API removal. Aligned V1 scorer EVENT_WEIGHTS with V3 matrix (credit, yield, liquidity, bank, leverage). Feed enrichment now uses V2 classifyEventType() for V3 event detection. RiskFlow feed endpoint re-computes priceBrainScore for user-selected instrument (no more hardcoded /ES). RiskFlowContext passes selectedSymbol to backend. Removed x-api-service.ts + x-api-config.ts — all tweet ingestion via twitter-cli. Feed poller cleaned of X API dependency.',
+    files: [
+      'backend-hono/src/services/analysis/iv-scorer.ts',
+      'backend-hono/src/services/riskflow/feed-service.ts',
+      'backend-hono/src/services/riskflow/feed-poller.ts',
+      'backend-hono/src/routes/riskflow/handlers.ts',
+      'frontend/contexts/RiskFlowContext.tsx',
+      'frontend/lib/services.ts',
+    ],
+  },
+  {
+    date: '2026-03-12T23:55:00',
+    agent: 'claude-code',
+    summary: 'Notion dependency sync from March 12 audit. Harper Messages pipeline fix: added Status property (Active/Archived) to all Notion writes — briefs and econ-twitter push. Archive step now sets Status=Archived alongside page-level archive. Created journal_entries migration (012). Removed dead Earnings History Notion adapter + routes + frontend service (replaced by Postgres-backed TradingJournal). Codebase sanitization: removed 8 orphaned files (PsychAssistBackgroundProvider, FeatureLockScreen, BoardroomChat, grok-service, news-processor, openrouter-service, tool-policy, iv-scoring-engine v1).',
+    files: [
+      'backend-hono/src/services/notion-service.ts',
+      'backend-hono/src/services/twitter-cli/econ-triggered-poller.ts',
+      'backend-hono/migrations/012_journal_entries.sql',
+      'backend-hono/src/routes/index.ts',
+      'frontend/lib/services.ts',
+    ],
+  },
+  {
+    date: '2026-03-12T23:45:00',
+    agent: 'claude-code',
+    summary: 'Fixed voice assistant dual-instance bug. HeaderVoiceControl and PulseComposer each called useVoiceAssistant() independently, creating two SpeechRecognition instances that fought for the mic. Created shared VoiceContext so both entry points (header toolbar + chat input) control a single voice instance. Voice now cues for input immediately on activation from either location.',
+    files: [
+      'frontend/contexts/VoiceContext.tsx',
+      'frontend/components/voice/HeaderVoiceControl.tsx',
+      'frontend/components/chat/PulseComposer.tsx',
+      'frontend/App.tsx',
+    ],
+  },
+  {
     date: '2026-03-12T01:30:00',
     agent: 'claude-code',
     summary: 'Track 3 v7.7.7: Autopilot frontend dashboard — AutopilotDashboard (shell with polling), AutopilotControls (toggle, thresholds, strategy list), SignalFeed (scrollable signals + pending proposals with countdown), SessionStatusBar (RTH status, P&L, EST clock). Added AutopilotService to services.ts with status/signals/proposals/acknowledge/execute/history endpoints. Added PLAYBOOK_SWEEP_RECLAIM strategy label to ProposalModal.',

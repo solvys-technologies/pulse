@@ -14,16 +14,17 @@ import type { FeedFilters, WatchlistUpdateRequest, NewsSource, MacroLevel } from
 import { getNotionPollerStatus } from '../../services/notion-poller.js';
 import { isTwitterCliInstalled } from '../../services/twitter-cli/index.js';
 import { fetchVIX, getVIXSpikeAdjustment, getVIXScoringMultiplier, getVIXBaseline } from '../../services/vix-service.js';
-import { 
-  calculateIVScoreV2, 
-  classifyEventType, 
+import {
+  calculateIVScoreV2,
+  classifyEventType,
   calculateImpliedPoints,
   getCurrentSession,
   getInstrumentConfig,
   getSupportedInstruments,
   INSTRUMENT_BETAS,
-  type StackedEvent 
+  type StackedEvent
 } from '../../services/iv-scoring-v2.js';
+import { estimatePoints } from '../../services/market-data/point-estimator.js';
 
 /**
  * Internal function to trigger feed pre-fetching
@@ -97,25 +98,49 @@ export async function handleGetFeed(c: Context) {
       }
     }
 
-    console.log(`[RiskFlow] handleGetFeed called for user ${userId} with filters:`, JSON.stringify(filters));
-    
+    // Instrument for point estimation (from user's selected instrument)
+    const instrument = c.req.query('instrument') || '/ES';
+
+    console.log(`[RiskFlow] handleGetFeed called for user ${userId} (instrument=${instrument}) with filters:`, JSON.stringify(filters));
+
     const feed = await feedService.getFeed(userId, filters);
-    
+
     // Log feed response for debugging
     console.log(`[RiskFlow] Feed response for user ${userId}: ${feed.items.length} items (total: ${feed.total}, hasMore: ${feed.hasMore})`);
     if (feed.items.length === 0) {
       console.warn(`[RiskFlow] Empty feed returned - check database cache and filters`);
-      console.warn(`[RiskFlow] Feed response structure:`, JSON.stringify({
-        items: feed.items,
-        total: feed.total,
-        hasMore: feed.hasMore,
-        fetchedAt: feed.fetchedAt
-      }));
     }
-    
+
+    // Re-compute priceBrainScore for the user's selected instrument
+    // Items are cached with /ES default — we re-estimate points per-request
+    let vixLevel = 16; // fallback
+    try {
+      const vixData = await fetchVIX();
+      vixLevel = vixData.level;
+    } catch { /* use fallback */ }
+
+    const items = (feed.items || []).map((item: any) => {
+      if (item.ivScore != null && item.ivScore >= 2) {
+        const pts = estimatePoints(item.ivScore, vixLevel, instrument);
+        return {
+          ...item,
+          priceBrainScore: {
+            ...item.priceBrainScore,
+            impliedPoints: pts.scaledPoints,
+            instrument,
+          },
+        };
+      }
+      // For items without ivScore, still set the instrument
+      if (item.priceBrainScore) {
+        return { ...item, priceBrainScore: { ...item.priceBrainScore, instrument } };
+      }
+      return item;
+    });
+
     // Ensure we always return a valid FeedResponse structure
     const response = {
-      items: feed.items || [],
+      items,
       total: feed.total || 0,
       hasMore: feed.hasMore || false,
       fetchedAt: feed.fetchedAt || new Date().toISOString(),
@@ -472,7 +497,6 @@ export async function handleDebug(c: Context) {
         ...(showAll && { body: item.body }),
       })),
       env: {
-        hasXApiToken: !!process.env.X_API_BEARER_TOKEN,
         nodeEnv: process.env.NODE_ENV,
       },
       query: {
@@ -651,6 +675,6 @@ export async function handleGetSources(c: Context) {
   return c.json({
     notion: notionStatus.running,
     twitterCli,
-    xApi: !!process.env.X_API_BEARER_TOKEN,
+    xApi: false, // Deprecated — replaced by twitter-cli
   });
 }

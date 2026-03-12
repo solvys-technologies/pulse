@@ -7,6 +7,7 @@
 import type { ParsedHeadline, HotPrint, IVScoreResult } from '../../types/news-analysis.js'
 import { hasLevel4Emoji, MAJOR_MACRO_PRINTS } from '../headline-parser.js'
 
+// [claude-code 2026-03-12] Aligned V1 weights with V3 scoring matrix
 // Base impact weights by event type
 const EVENT_WEIGHTS: Record<string, number> = {
   fedDecision: 10,
@@ -24,6 +25,18 @@ const EVENT_WEIGHTS: Record<string, number> = {
   jobless: 4,
   housing: 4,
   trade: 5,
+  // V3 event types — must match iv-scoring-v2 and iv-scoring-config.json
+  creditSpreadWidening: 8,
+  yieldCurveSignal: 7,
+  liquidityStress: 9,
+  bankStress: 9,
+  leverageWarning: 6,
+  // V2 event types
+  tariffEscalation: 8,
+  datacenterHalt: 9,
+  governmentShutdown: 7,
+  majorCrisis: 10,
+  powellSpeak: 8,
   default: 3,
 }
 

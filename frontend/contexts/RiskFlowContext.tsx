@@ -2,10 +2,12 @@
 // injects them as RiskFlowAlerts with source='notion-trade-idea' pinned at top.
 // [claude-code 2026-03-10] Added pollBackendFeed (30s) — wires /api/riskflow/feed into context.
 // Merge order: notionAlerts → backendAlerts → rssAlerts. minMacroLevel=2, limit=30.
+// [claude-code 2026-03-12] Instrument persistence: passes selectedSymbol to backend feed poll
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { riskFlowPoller, type RiskFlowAlert } from '../lib/riskflow-feed';
 import baseBackend from '../lib/backend';
 import { decodeHtmlEntities } from '../lib/html-entities';
+import { useSettings } from './SettingsContext';
 import type { NotionPollStatus } from '../lib/services';
 import type { RiskFlowItem } from '../types/api';
 
@@ -79,6 +81,7 @@ function persistIds(key: string, ids: Set<string>): void {
 }
 
 export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
+  const { selectedSymbol } = useSettings();
   const [rssAlerts, setRssAlerts] = useState<RiskFlowAlert[]>([]);
   const [notionAlerts, setNotionAlerts] = useState<RiskFlowAlert[]>([]);
   const [backendAlerts, setBackendAlerts] = useState<RiskFlowAlert[]>([]);
@@ -156,10 +159,10 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
     };
   }, [pollNotion]);
 
-  // Backend feed polling (twitter-cli, X API, Polymarket, Economic Calendar)
+  // Backend feed polling (twitter-cli, Polymarket, Economic Calendar)
   const pollBackendFeed = useCallback(async () => {
     try {
-      const response = await baseBackend.riskflow.list({ minMacroLevel: 2, limit: 30 });
+      const response = await baseBackend.riskflow.list({ minMacroLevel: 2, limit: 30, instrument: selectedSymbol.symbol });
       const alerts: RiskFlowAlert[] = response.items.map((item) => ({
         id: `backend-${item.id}`,
         headline: item.title,
@@ -181,11 +184,11 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
         authorHandle: item.authorHandle ?? null,
       }));
       setBackendAlerts(alerts);
-      console.debug(`[RiskFlowContext] Backend feed poll: ${alerts.length} items`);
+      console.debug(`[RiskFlowContext] Backend feed poll: ${alerts.length} items (instrument=${selectedSymbol.symbol})`);
     } catch (err) {
       console.warn('[RiskFlowContext] Backend feed poll error:', err);
     }
-  }, []);
+  }, [selectedSymbol.symbol]);
 
   useEffect(() => {
     void pollBackendFeed();
