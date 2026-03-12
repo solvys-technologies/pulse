@@ -15,7 +15,7 @@ import { WhatsNewButton } from '../onboarding/FirstTimeTour';
 import type { IVScoreResponse } from '../../types/market-data';
 import type { TradingPlatform } from '../TopStepXBrowser';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'settings';
+type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'team' | 'settings';
 
 const TAB_LABELS: Record<NavTab, string> = {
   executive: 'Dashboard',
@@ -27,6 +27,7 @@ const TAB_LABELS: Record<NavTab, string> = {
   econ: 'Economic Calendar',
   narrative: 'NarrativeFlow',
   earnings: 'Trading Journal',
+  team: 'Team',
   settings: 'Settings',
 };
 
