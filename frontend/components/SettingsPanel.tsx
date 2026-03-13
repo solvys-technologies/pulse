@@ -39,6 +39,8 @@ export function SettingsPage() {
     setPrimaryBroker,
     iframeUrls,
     setIframeUrls,
+    traderName,
+    setTraderName,
   } = useSettings();
   const backend = useBackend();
   const voiceMemory = useVoiceMemory();
@@ -584,6 +586,21 @@ export function SettingsPage() {
 
             {activeTab === 'general' && (
               <div key="general" className={tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}>
+                <section className="mb-6">
+                  <h3 className="text-sm font-semibold text-[var(--pulse-accent)] mb-3">Trader Identity</h3>
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1.5">Trader Name</label>
+                    <input
+                      type="text"
+                      value={traderName}
+                      onChange={(e) => setTraderName(e.target.value.slice(0, 24))}
+                      maxLength={24}
+                      placeholder="Enter your name"
+                      className="w-full bg-[var(--pulse-surface)] border border-zinc-800 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-[var(--pulse-accent)]/30 transition-colors"
+                    />
+                    <p className="text-[10px] text-gray-500 mt-1.5">Displayed in the toolbar next to your tier badge</p>
+                  </div>
+                </section>
                 <section>
                   <h3 className="text-sm font-semibold text-[var(--pulse-accent)] mb-3">Trading Symbol</h3>
                   <div className="relative">

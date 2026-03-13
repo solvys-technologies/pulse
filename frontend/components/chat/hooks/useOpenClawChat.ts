@@ -30,6 +30,9 @@ export function useOpenClawChat(
   // [claude-code 2026-03-10] Track requestId from X-Request-Id header for cognition stream
   const [lastRequestId, setLastRequestId] = useState<string | null>(null);
   const hydratedRef = useRef<string | undefined>(undefined);
+  // [claude-code 2026-03-13] Ref to avoid stale closure in DefaultChatTransport's prepareSendMessagesRequest
+  const thinkHarderRef = useRef(thinkHarder);
+  useEffect(() => { thinkHarderRef.current = thinkHarder; }, [thinkHarder]);
 
   const fetchFn = useCallback(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
@@ -131,7 +134,7 @@ export function useOpenClawChat(
           }),
           ...(conversationId && { conversationId }),
           ...(agentOverride && { agentOverride }),
-          ...(thinkHarder && { thinkHarder: true }),
+          ...(thinkHarderRef.current && { thinkHarder: true }),
           // Active MCP connector IDs — backend uses these to scope available tools
           mcpServers: (() => {
             try { return JSON.parse(localStorage.getItem('pulse_mcp_active_connectors') ?? '[]'); }

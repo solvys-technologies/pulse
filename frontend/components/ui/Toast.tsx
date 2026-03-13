@@ -10,6 +10,7 @@ const VARIANT_CONFIG: Record<ToastVariant, { border: string; color: string; Icon
   error: { border: '#EF4444', color: '#EF4444', Icon: AlertTriangle },
   updating: { border: 'var(--pulse-accent)', color: 'var(--pulse-accent)', Icon: Loader2 },
   info: { border: 'rgba(212,175,55,0.4)', color: '#9CA3AF', Icon: Info },
+  reminder: { border: 'var(--pulse-accent)', color: 'var(--pulse-accent)', Icon: AlertTriangle },
 };
 
 /* ------------------------------------------------------------------ */
@@ -21,53 +22,70 @@ export function ToastContainer() {
 
   if (toasts.length === 0) return null;
 
-  return (
-    <div
-      className="fixed z-[100] flex flex-col items-end"
-      style={{ bottom: '24px', right: '24px', gap: '10px', pointerEvents: 'none' }}
-    >
-      {toasts.map((toast) => {
-        const cfg = VARIANT_CONFIG[toast.variant];
-        return (
-          <div
-            key={toast.id}
-            className={`transition-all duration-300 ${toast.exiting ? 'opacity-0 translate-x-4' : 'opacity-100 translate-x-0'}`}
-            style={{
-              pointerEvents: 'auto',
-              minWidth: '280px',
-              maxWidth: '400px',
-              borderRadius: '10px',
-              border: `1px solid ${cfg.border}`,
-              backgroundColor: 'var(--pulse-surface)',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
-              overflow: 'hidden',
-            }}
-          >
-            <div className="flex items-center justify-between" style={{ padding: '10px 12px' }}>
-              <div className="flex items-center" style={{ gap: '8px' }}>
-                <cfg.Icon
-                  size={14}
-                  className={`flex-shrink-0 ${toast.variant === 'updating' ? 'animate-spin' : ''}`}
-                  style={{ color: cfg.color }}
-                />
-                <span
-                  className="text-[13px] font-medium"
-                  style={{ color: cfg.color }}
-                >
-                  {toast.message}
-                </span>
-              </div>
-              <button
-                onClick={() => dismissToast(toast.id)}
-                className="flex items-center justify-center rounded text-gray-500 hover:text-white transition-colors flex-shrink-0"
-                style={{ width: '20px', height: '20px', marginLeft: '8px' }}
-              >
-                <X size={12} />
-              </button>
-            </div>
+  const normalToasts = toasts.filter(t => t.variant !== 'reminder');
+  const reminderToasts = toasts.filter(t => t.variant === 'reminder');
+
+  const renderToast = (toast: typeof toasts[number]) => {
+    const cfg = VARIANT_CONFIG[toast.variant];
+    return (
+      <div
+        key={toast.id}
+        className={`transition-all duration-300 ${toast.exiting ? 'opacity-0 translate-x-4' : 'opacity-100 translate-x-0'}`}
+        style={{
+          pointerEvents: 'auto',
+          minWidth: '280px',
+          maxWidth: '400px',
+          borderRadius: '10px',
+          border: `1px solid ${cfg.border}`,
+          backgroundColor: 'var(--pulse-surface)',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+          overflow: 'hidden',
+        }}
+      >
+        <div className="flex items-center justify-between" style={{ padding: '10px 12px' }}>
+          <div className="flex items-center" style={{ gap: '8px' }}>
+            <cfg.Icon
+              size={14}
+              className={`flex-shrink-0 ${toast.variant === 'updating' ? 'animate-spin' : ''}`}
+              style={{ color: cfg.color }}
+            />
+            <span
+              className="text-[13px] font-medium"
+              style={{ color: cfg.color }}
+            >
+              {toast.message}
+            </span>
           </div>
-        );
-      })}
-    </div>
+          <button
+            onClick={() => dismissToast(toast.id)}
+            className="flex items-center justify-center rounded text-gray-500 hover:text-white transition-colors flex-shrink-0"
+            style={{ width: '20px', height: '20px', marginLeft: '8px' }}
+          >
+            <X size={12} />
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <>
+      {normalToasts.length > 0 && (
+        <div
+          className="fixed z-[100] flex flex-col items-end"
+          style={{ bottom: '24px', right: '24px', gap: '10px', pointerEvents: 'none' }}
+        >
+          {normalToasts.map(renderToast)}
+        </div>
+      )}
+      {reminderToasts.length > 0 && (
+        <div
+          className="fixed z-[100] flex flex-col items-start"
+          style={{ bottom: '24px', left: '24px', gap: '10px', pointerEvents: 'none' }}
+        >
+          {reminderToasts.map(renderToast)}
+        </div>
+      )}
+    </>
   );
 }

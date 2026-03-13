@@ -8,12 +8,44 @@ import { PulseAgentProvider } from './contexts/PulseAgentContext';
 import { RiskFlowProvider } from './contexts/RiskFlowContext';
 import { ContextBankProvider } from './contexts/ContextBankContext';
 import { ThemeProvider } from './contexts/ThemeContext';
-import { VoiceProvider } from './contexts/VoiceContext';
+import { VoiceProvider, useVoice } from './contexts/VoiceContext';
 import { MainLayout } from './components/layout/MainLayout';
 import { NotificationContainer } from './components/NotificationToast';
 import { ToastContainer } from './components/ui/Toast';
+import { PreMarketReminder } from './components/PreMarketReminder';
 import { GitHubOAuthCallback } from './components/GitHubOAuthCallback';
 import { UpdateBanner } from './components/UpdateBanner';
+
+// [claude-code 2026-03-13] VoiceBorderPulse — green pulse when listening, gold when speaking
+function VoiceBorderPulse() {
+  const { runtimeState, enabled } = useVoice();
+  if (!enabled || runtimeState === 'idle') return null;
+
+  const isListening = runtimeState === 'listening';
+  const isSpeaking = runtimeState === 'speaking';
+  if (!isListening && !isSpeaking) return null;
+
+  const color = isListening ? 'rgba(34,197,94,' : 'rgba(199,159,74,';
+
+  return (
+    <>
+      <style>{`
+        @keyframes voiceBorderPulse {
+          0%, 100% { opacity: 0.3; }
+          50% { opacity: 0.8; }
+        }
+      `}</style>
+      <div
+        className="fixed inset-0 pointer-events-none z-[90]"
+        style={{
+          border: `2px solid ${color}0.5)`,
+          animation: 'voiceBorderPulse 2s ease-in-out infinite',
+          boxShadow: `inset 0 0 20px ${color}0.15)`,
+        }}
+      />
+    </>
+  );
+}
 
 /**
  * Pulse - Local Single-User Trading Platform
@@ -32,6 +64,7 @@ export default function App() {
               <ThreadProvider>
               <VoiceProvider>
                 <div className="dark">
+                  <VoiceBorderPulse />
                   <style>{`
                     @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&display=swap');
 
@@ -74,6 +107,7 @@ export default function App() {
                   <MainLayout />
                   <NotificationContainer />
                   <ToastContainer />
+                  <PreMarketReminder />
                 </div>
               </VoiceProvider>
               </ThreadProvider>

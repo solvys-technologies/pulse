@@ -259,8 +259,13 @@ export async function handleChat(c: Context) {
     // Only use GitHub Models if explicitly requested via model param.
     const useGitHubModel = Boolean(githubToken) && model === 'github-deepseek'
 
+    // [claude-code 2026-03-13] Check if Claude SDK bridge should take priority over OpenClaw
+    const bridgeAvailable = await isBridgeAvailable()
+    const preferClaudeSDK = thinkHarder && bridgeAvailable
+
     // PRIMARY PATH: Local OpenClaw processing via P.I.C. agent network
-    if (USE_LOCAL_OPENCLAW && !useGitHubModel) {
+    // Skip when thinkHarder is enabled AND Claude SDK bridge is available (prefer Opus)
+    if (USE_LOCAL_OPENCLAW && !useGitHubModel && !preferClaudeSDK) {
       console.log(`[OpenClaw][${requestId}] Using LOCAL processing via P.I.C. agents`)
 
       // Deep research via Exa when thinkHarder is enabled

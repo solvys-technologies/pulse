@@ -83,6 +83,8 @@ interface SettingsContextType {
   setIframeUrls: (urls: IframeUrls) => void;
   gatewayPort: number;
   setGatewayPort: (port: number) => void;
+  traderName: string;
+  setTraderName: (name: string) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -191,6 +193,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [gatewayPort, setGatewayPort] = useState<number>(() =>
     loadFromStorage('gatewayPort', 7787)
   );
+  const [traderName, setTraderName] = useState<string>(() =>
+    loadFromStorage('traderName', '')
+  );
 
   // Track whether initial backend fetch has completed to avoid saving back stale data
   const backendSynced = useRef(false);
@@ -210,6 +215,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         if (remote.primaryBroker) setPrimaryBroker(remote.primaryBroker as PrimaryBroker);
         if (remote.iframeUrls) setIframeUrls(prev => ({ ...prev, ...(remote.iframeUrls as IframeUrls) }));
         if (remote.gatewayPort) setGatewayPort(remote.gatewayPort as number);
+        if (remote.traderName) setTraderName(remote.traderName as string);
       }
       backendSynced.current = true;
     });
@@ -229,6 +235,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       primaryBroker,
       iframeUrls,
       gatewayPort,
+      traderName,
     };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
@@ -239,7 +246,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     if (backendSynced.current) {
       saveBackendSettings(settings);
     }
-  }, [apiKeys, tradingModels, alertConfig, mockDataEnabled, selectedSymbol, riskSettings, developerSettings, autoPilotSettings, primaryBroker, iframeUrls, gatewayPort]);
+  }, [apiKeys, tradingModels, alertConfig, mockDataEnabled, selectedSymbol, riskSettings, developerSettings, autoPilotSettings, primaryBroker, iframeUrls, gatewayPort, traderName]);
 
   return (
     <SettingsContext.Provider
@@ -266,6 +273,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setIframeUrls,
         gatewayPort,
         setGatewayPort,
+        traderName,
+        setTraderName,
       }}
     >
       {children}

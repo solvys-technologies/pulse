@@ -12,6 +12,7 @@ import { getToolbarOrder, setToolbarOrder, type ToolbarItemId } from '../../lib/
 import { HeaderVoiceControl } from '../voice/HeaderVoiceControl';
 import { GripVertical, Layers, ChevronDown, ChevronLeft, ChevronRight, Monitor, MessageCircle, Power } from 'lucide-react';
 import { WhatsNewButton } from '../onboarding/FirstTimeTour';
+import { TraderNametag } from '../TraderNametag';
 import type { IVScoreResponse } from '../../types/market-data';
 import type { TradingPlatform } from '../TopStepXBrowser';
 
@@ -74,7 +75,7 @@ export function TopHeader({
 }: TopHeaderProps) {
   const { tier } = useAuth();
   const backend = useBackend();
-  const { selectedSymbol } = useSettings();
+  const { selectedSymbol, traderName } = useSettings();
   const instanceName = import.meta.env.VITE_PULSE_INSTANCE_NAME || 'Pulse';
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [ivData, setIvData] = useState<IVScoreResponse | null>(null);
@@ -233,6 +234,7 @@ export function TopHeader({
           >
             <span className="text-[13px] text-gray-300">{getTierDisplayName()}</span>
           </button>
+          {traderName && <TraderNametag name={traderName} />}
         </div>
       </div>
       

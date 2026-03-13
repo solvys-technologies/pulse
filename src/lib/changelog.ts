@@ -9,6 +9,30 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-13T15:00:00',
+    agent: 'claude-code',
+    summary: 'Track 2: Voice engine fix — sentiment analysis pipeline dispatches psychassist:infraction events after voice interactions, recognition auto-restarts after TTS playback, enhanced waveform (7 bars + glow), global border pulse (green=listening, gold=speaking)',
+    files: ['frontend/hooks/useVoiceAssistant.ts', 'frontend/components/voice/VoiceAuroraOrb.tsx', 'frontend/App.tsx'],
+  },
+  {
+    date: '2026-03-13T14:30:00',
+    agent: 'claude-code',
+    summary: 'Track 1: Trader nametag with gloss effect next to tier badge, pre-market reminder bottom-left toast',
+    files: ['frontend/contexts/SettingsContext.tsx', 'frontend/components/SettingsPanel.tsx', 'frontend/components/TraderNametag.tsx', 'frontend/components/layout/TopHeader.tsx', 'frontend/contexts/ToastContext.tsx', 'frontend/components/ui/Toast.tsx', 'frontend/components/PreMarketReminder.tsx', 'frontend/App.tsx'],
+  },
+  {
+    date: '2026-03-13T14:00:00',
+    agent: 'claude-code',
+    summary: 'Track 3: Fix thinkHarder routing — Claude SDK Bridge now prioritized over OpenClaw when thinking enabled. Added preferClaudeSDK guard to skip OpenClaw PATH 1 when bridge available. Fixed stale closure for thinkHarder in useOpenClawChat via useRef.',
+    files: ['backend-hono/src/routes/ai/handlers/chat.ts', 'frontend/components/chat/hooks/useOpenClawChat.ts'],
+  },
+  {
+    date: '2026-03-12T10:00:00',
+    agent: 'claude-code',
+    summary: 'Created Remotion mockup project (remotion/) — 6-scene animated video showcasing Pulse dashboard: intro logo reveal with gold particle convergence, three-panel dashboard assembly, live news feed with IV impact scores, Mission Control widgets (ER waveform, Account Tracker pendulum chart, Blindspots, Algo Status), performance metrics with animated counters and daily P&L bar chart, and Priced In Capital brand outro. 1920x1080 @ 30fps, ~20s total, TransitionSeries with fade/slide/wipe. Full Solvys Gold palette.',
+    files: ['remotion/package.json', 'remotion/src/Root.tsx', 'remotion/src/PulseMockup.tsx', 'remotion/src/theme.ts', 'remotion/src/scenes/IntroScene.tsx', 'remotion/src/scenes/DashboardScene.tsx', 'remotion/src/scenes/FeedScene.tsx', 'remotion/src/scenes/MissionControlScene.tsx', 'remotion/src/scenes/MetricsScene.tsx', 'remotion/src/scenes/OutroScene.tsx'],
+  },
+  {
     date: '2026-03-12T02:00:00',
     agent: 'claude-code',
     summary: 'Created Notion onboarding course: "How to Use Pulse to Trade Narratives & Risk Events" — 7 modules under PIC covering foundation, news reading (second-level thinking, data cycles, distribution of expectations), RiskFlow pipeline, risk events & Playbook models (40/40 Club, Flush, Ripper, 22 VIX Fixer), divergent prepositioning & safe havens, Pulse execution workflow, and risk management psychology (13 Commandments).',
