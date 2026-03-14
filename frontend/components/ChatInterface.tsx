@@ -214,7 +214,7 @@ function ChatInterfaceInner({ conversationId, clearConversationId, lastError, th
 
 export default function ChatInterface() {
   const { activeAgent } = usePulseAgents();
-  const [thinkHarderState, setThinkHarderState] = useState(false);
+  const [thinkHarderState, setThinkHarderState] = useState(true);
   const { runtime, conversationId, clearConversationId, lastError, lastRequestId } = useHermesRuntime(activeAgent?.id ?? 'default', thinkHarderState, 'analysis');
 
   return (

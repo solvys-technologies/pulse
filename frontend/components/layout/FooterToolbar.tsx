@@ -1,6 +1,7 @@
 // [claude-code 2026-03-05] Phase 2A: Added iframe controls + heartbeat status
 // [claude-code 2026-03-07] Slide-up panel with Terminal + Changelog tabs
 // [claude-code 2026-03-10] Notion + X CLI status indicators in toolbar strip.
+// [claude-code 2026-03-14] Pulse CLI: run shell commands via Electron; "/" slash-command suggestions.
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ChevronUp, ChevronDown, Terminal, ExternalLink, SplitSquareVertical, Power, FileText } from 'lucide-react';
 import { PLATFORM_LABELS, PLATFORM_URLS, type TradingPlatform } from '../TopStepXBrowser';
@@ -8,6 +9,15 @@ import { changelog } from '../../../src/lib/changelog';
 import { useSourceStatus } from '../../hooks/useSourceStatus';
 
 type PanelTab = 'terminal' | 'changelog';
+
+/** Slash-command suggestions (like Claude Code skills) for the Pulse CLI */
+const CLI_SLASH_COMMANDS: { slug: string; label: string; command: string }[] = [
+  { slug: 'backend', label: 'Start backend', command: 'cd backend-hono && npm run dev' },
+  { slug: 'frontend', label: 'Start frontend', command: 'cd frontend && npm run dev' },
+  { slug: 'install', label: 'Install all deps', command: 'npm install && npm --prefix frontend install && npm --prefix backend-hono install' },
+  { slug: 'build', label: 'Build backend', command: 'cd backend-hono && npx tsc' },
+  { slug: 'typecheck', label: 'Typecheck backend', command: 'cd backend-hono && npx tsc --noEmit' },
+];
 
 interface FooterToolbarProps {
   topStepXEnabled?: boolean;
@@ -32,10 +42,47 @@ export function FooterToolbar({
   const [activeTab, setActiveTab] = useState<PanelTab>('terminal');
   const [cliInput, setCliInput] = useState('');
   const [cliHistory, setCliHistory] = useState<Array<{ type: 'input' | 'output'; text: string }>>([
-    { type: 'output', text: 'Pulse CLI v7.0.1 — type "help" for commands' },
+    { type: 'output', text: 'Pulse CLI v7.0.1 — type "help" or "/" for script suggestions' },
   ]);
+  const [slashSuggestionsOpen, setSlashSuggestionsOpen] = useState(false);
+  const [slashSuggestionsIndex, setSlashSuggestionsIndex] = useState(0);
   const terminalEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const cliContainerRef = useRef<HTMLDivElement>(null);
+
+  const isElectron = typeof window !== 'undefined' && window.electron?.runShellCommand != null;
+  const slashFilter = cliInput.startsWith('/') ? cliInput.slice(1).toLowerCase().trim() : '';
+  const slashSuggestions = slashFilter
+    ? CLI_SLASH_COMMANDS.filter(
+        (c) =>
+          c.slug.toLowerCase().includes(slashFilter) || c.label.toLowerCase().includes(slashFilter)
+      )
+    : CLI_SLASH_COMMANDS;
+  const showSlashSuggestions = slashSuggestionsOpen && (cliInput === '/' || slashSuggestions.length > 0);
+
+  useEffect(() => {
+    setSlashSuggestionsIndex(0);
+  }, [slashFilter, slashSuggestions.length]);
+
+  // Subscribe to CLI output from Electron
+  useEffect(() => {
+    if (!window.electron?.setCliOutputCallback) return;
+    const append = (event: { type: string; data?: string; code?: number | null; signal?: string | null }) => {
+      setCliHistory((prev) => {
+        if (event.type === 'stdout' || event.type === 'stderr') {
+          const lines = String(event.data ?? '').split('\n').filter(Boolean);
+          return [...prev, ...lines.map((text) => ({ type: 'output' as const, text }))];
+        }
+        if (event.type === 'exit') {
+          const code = event.code ?? event.signal ?? '?';
+          return [...prev, { type: 'output', text: `[exit ${code}]` }];
+        }
+        return prev;
+      });
+    };
+    window.electron.setCliOutputCallback(append);
+    return () => window.electron?.setCliOutputCallback(null);
+  }, []);
 
   // Auto-scroll terminal
   useEffect(() => {
@@ -49,33 +96,102 @@ export function FooterToolbar({
     }
   }, [panelOpen, activeTab]);
 
-  const handleCli = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key !== 'Enter') return;
-    const cmd = cliInput.trim();
-    if (!cmd) return;
-    setCliInput('');
+  // Click outside to close slash suggestions
+  useEffect(() => {
+    if (!showSlashSuggestions) return;
+    const onMouseDown = (e: MouseEvent) => {
+      if (cliContainerRef.current?.contains(e.target as Node)) return;
+      setSlashSuggestionsOpen(false);
+    };
+    document.addEventListener('mousedown', onMouseDown);
+    return () => document.removeEventListener('mousedown', onMouseDown);
+  }, [showSlashSuggestions]);
 
-    const newHistory = [...cliHistory, { type: 'input' as const, text: cmd }];
+  const runShellCommand = useCallback((cmd: string) => {
+    if (!window.electron?.runShellCommand) return;
+    setCliHistory((prev) => [...prev, { type: 'input', text: cmd }, { type: 'output', text: 'Running...' }]);
+    window.electron.runShellCommand(cmd).then((r) => {
+      if (!r.ok) {
+        setCliHistory((prev) => [...prev, { type: 'output', text: r.error ?? 'Failed to run command' }]);
+      }
+    });
+  }, []);
 
-    const lower = cmd.toLowerCase();
-    if (lower === 'help') {
-      newHistory.push({ type: 'output', text: 'Commands: help, changelog, clear, status, version' });
-    } else if (lower === 'clear') {
-      setCliHistory([{ type: 'output', text: 'Cleared.' }]);
-      return;
-    } else if (lower === 'changelog') {
-      setActiveTab('changelog');
-      newHistory.push({ type: 'output', text: 'Switched to changelog tab.' });
-    } else if (lower === 'status') {
-      newHistory.push({ type: 'output', text: `System: online | Backend: localhost:8080 | Agents: standby` });
-    } else if (lower === 'version') {
-      newHistory.push({ type: 'output', text: 'Pulse v7.0.1 | Build 2026-03-07' });
+  const handleCli = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      const cmd = cliInput.trim();
+
+      if (showSlashSuggestions && slashSuggestions.length > 0) {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setSlashSuggestionsIndex((i) => (i + 1) % slashSuggestions.length);
+          return;
+        }
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setSlashSuggestionsIndex((i) => (i - 1 + slashSuggestions.length) % slashSuggestions.length);
+          return;
+        }
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const selected = slashSuggestions[slashSuggestionsIndex];
+          setCliInput(selected.command);
+          setSlashSuggestionsOpen(false);
+          inputRef.current?.focus();
+          return;
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          setSlashSuggestionsOpen(false);
+          return;
+        }
+      }
+
+      if (e.key !== 'Enter') return;
+      if (!cmd) return;
+      setCliInput('');
+      setSlashSuggestionsOpen(false);
+
+      const newHistory = [...cliHistory, { type: 'input' as const, text: cmd }];
+
+      const lower = cmd.toLowerCase();
+      if (lower === 'help') {
+        newHistory.push({
+          type: 'output',
+          text: 'Commands: help, changelog, clear, status, version. Type "/" for script suggestions. In Electron, any other input runs as a shell command.',
+        });
+      } else if (lower === 'clear') {
+        setCliHistory([{ type: 'output', text: 'Cleared.' }]);
+        return;
+      } else if (lower === 'changelog') {
+        setActiveTab('changelog');
+        newHistory.push({ type: 'output', text: 'Switched to changelog tab.' });
+      } else if (lower === 'status') {
+        newHistory.push({ type: 'output', text: `System: online | Backend: localhost:8080 | Agents: standby` });
+      } else if (lower === 'version') {
+        newHistory.push({ type: 'output', text: 'Pulse v7.0.1 | Build 2026-03-07' });
+      } else if (isElectron) {
+        setCliHistory(newHistory);
+        runShellCommand(cmd);
+        return;
+      } else {
+        newHistory.push({ type: 'output', text: `Unknown command: ${cmd} (run Pulse in Electron to execute shell commands)` });
+      }
+
+      setCliHistory(newHistory);
+    },
+    [cliInput, cliHistory, isElectron, runShellCommand, showSlashSuggestions, slashSuggestions, slashSuggestionsIndex]
+  );
+
+  const onCliInputChange = (value: string) => {
+    setCliInput(value);
+    if (value.startsWith('/')) {
+      setSlashSuggestionsOpen(true);
+      setSlashSuggestionsIndex(0);
     } else {
-      newHistory.push({ type: 'output', text: `Unknown command: ${cmd}` });
+      setSlashSuggestionsOpen(false);
     }
-
-    setCliHistory(newHistory);
-  }, [cliInput, cliHistory]);
+  };
 
   const sourceStatus = useSourceStatus();
   const togglePanel = () => setPanelOpen((v) => !v);
@@ -136,18 +252,43 @@ export function FooterToolbar({
                   ))}
                   <div ref={terminalEndRef} />
                 </div>
-                {/* Terminal input */}
-                <div className="flex items-center gap-1.5 px-3 py-2 border-t border-[var(--pulse-accent)]/10 shrink-0">
-                  <span className="text-[var(--pulse-accent)]/50 text-[11px] font-mono">{'>'}</span>
-                  <input
-                    ref={inputRef}
-                    value={cliInput}
-                    onChange={(e) => setCliInput(e.target.value)}
-                    onKeyDown={handleCli}
-                    className="flex-1 bg-transparent text-[11px] text-[var(--pulse-accent)] placeholder-zinc-700 focus:outline-none font-mono"
-                    placeholder="type a command..."
-                    spellCheck={false}
-                  />
+                {/* Terminal input + slash suggestions */}
+                <div className="relative shrink-0">
+                  <div className="flex items-center gap-1.5 px-3 py-2 border-t border-[var(--pulse-accent)]/10">
+                    <span className="text-[var(--pulse-accent)]/50 text-[11px] font-mono">{'>'}</span>
+                    <input
+                      ref={inputRef}
+                      value={cliInput}
+                      onChange={(e) => onCliInputChange(e.target.value)}
+                      onKeyDown={handleCli}
+                      className="flex-1 bg-transparent text-[11px] text-[var(--pulse-accent)] placeholder-zinc-700 focus:outline-none font-mono"
+                      placeholder="type a command or / for scripts..."
+                      spellCheck={false}
+                    />
+                  </div>
+                  {showSlashSuggestions && panelOpen && activeTab === 'terminal' && (
+                    <div className="absolute left-0 right-0 bottom-full mb-0.5 z-50 max-h-48 overflow-y-auto rounded border border-[var(--pulse-accent)]/20 bg-[var(--pulse-bg)] shadow-lg">
+                      {slashSuggestions.map((item, i) => (
+                        <button
+                          key={item.slug}
+                          type="button"
+                          onClick={() => {
+                            setCliInput(item.command);
+                            setSlashSuggestionsOpen(false);
+                            inputRef.current?.focus();
+                          }}
+                          className={`w-full text-left px-3 py-1.5 text-[11px] font-mono transition-colors ${
+                            i === slashSuggestionsIndex
+                              ? 'bg-[var(--pulse-accent)]/20 text-[var(--pulse-accent)]'
+                              : 'text-zinc-400 hover:bg-[var(--pulse-accent)]/10 hover:text-zinc-300'
+                          }`}
+                        >
+                          <span className="text-[var(--pulse-accent)]/70">/{item.slug}</span>
+                          <span className="ml-2 text-zinc-500">{item.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -212,11 +353,12 @@ export function FooterToolbar({
         <div className="w-px h-3.5 bg-[var(--pulse-accent)]/10" />
 
         {/* Quick CLI — always available in toolbar */}
-        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+        <div ref={cliContainerRef} className="relative flex items-center gap-1.5 flex-1 min-w-0">
           <Terminal className="w-3 h-3 text-[var(--pulse-accent)]/30 shrink-0" />
           <input
             value={cliInput}
-            onChange={(e) => setCliInput(e.target.value)}
+            onChange={(e) => onCliInputChange(e.target.value)}
+            onFocus={() => cliInput.startsWith('/') && setSlashSuggestionsOpen(true)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && cliInput.trim()) {
                 setPanelOpen(true);
@@ -225,9 +367,34 @@ export function FooterToolbar({
               }
             }}
             className="flex-1 bg-transparent text-[11px] text-gray-500 placeholder-gray-700 focus:outline-none font-mono"
-            placeholder=">"
+            placeholder="> or / for scripts"
             spellCheck={false}
           />
+          {showSlashSuggestions && !panelOpen && (
+            <div className="absolute left-0 right-0 top-full mt-0.5 z-50 max-h-48 overflow-y-auto rounded border border-[var(--pulse-accent)]/20 bg-[var(--pulse-bg)] shadow-lg">
+              {slashSuggestions.map((item, i) => (
+                <button
+                  key={item.slug}
+                  type="button"
+                  onClick={() => {
+                    setCliInput(item.command);
+                    setSlashSuggestionsOpen(false);
+                    setPanelOpen(true);
+                    setActiveTab('terminal');
+                    inputRef.current?.focus();
+                  }}
+                  className={`w-full text-left px-3 py-1.5 text-[11px] font-mono transition-colors ${
+                    i === slashSuggestionsIndex
+                      ? 'bg-[var(--pulse-accent)]/20 text-[var(--pulse-accent)]'
+                      : 'text-zinc-400 hover:bg-[var(--pulse-accent)]/10 hover:text-zinc-300'
+                  }`}
+                >
+                  <span className="text-[var(--pulse-accent)]/70">/{item.slug}</span>
+                  <span className="ml-2 text-zinc-500">{item.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Iframe controls (when TopStepX active) */}

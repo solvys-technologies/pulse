@@ -47,28 +47,28 @@ const checkDatabase = async () => {
 
 const checkAiGateway = async () => {
   const baseUrl =
-    defaultAiConfig.models.grok.baseUrl ??
-    process.env.VERCEL_AI_GATEWAY_BASE_URL ??
-    'https://ai-gateway.vercel.sh/v1/chat/completions'
-  const apiKey = process.env.VERCEL_AI_GATEWAY_API_KEY
+    defaultAiConfig.models['openrouter-opus']?.baseUrl ??
+    process.env.OPENROUTER_BASE_URL ??
+    'https://openrouter.ai/api/v1'
+  const apiKey = process.env.OPENROUTER_API_KEY
 
   if (!apiKey) {
     return {
       status: 'error' as ComponentStatus,
-      details: { error: 'Missing VERCEL_AI_GATEWAY_API_KEY' }
+      details: { error: 'Missing OPENROUTER_API_KEY' }
     }
   }
 
   try {
     const response = await fetchWithTimeout(
-      baseUrl,
+      `${baseUrl.replace(/\/v1$/, '')}/v1/models`,
       {
-        method: 'HEAD',
+        method: 'GET',
         headers: {
           Authorization: `Bearer ${apiKey}`
         }
       },
-      4000
+      8000
     )
 
     const statusCode = response.status

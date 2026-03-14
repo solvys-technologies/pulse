@@ -1,13 +1,12 @@
-// [claude-code 2026-03-13] Hermes migration — replaced OpenClaw with Hermes/Groq direct
+// [claude-code 2026-03-14] Default: OpenRouter (Nous) + Claude Opus 4.6; Groq removed
 /**
  * AI Model Selector
- * Vercel AI Gateway integration with model routing and fallback logic
+ * OpenRouter (Nous subscription) + Claude Opus 4.6 as default inference
  */
 
 import { createOpenAI } from '@ai-sdk/openai'
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { createXai } from '@ai-sdk/xai'
-import { createGroq } from '@ai-sdk/groq'
 import {
   defaultAiConfig,
   type AiModelKey as ConfigAiModelKey,
@@ -32,49 +31,30 @@ const HEALTH_CHECK_TTL_MS = 60_000
 
 /**
  * Task type to model routing
- * All tasks through Hermes/Groq direct (free tier)
- * OpenRouter kept as fallback only
+ * All tasks through OpenRouter (Nous subscription) — Claude Opus 4.6
  */
 const TASK_MODEL_PREFERENCES: Record<string, AiModelKey[]> = {
-  // News/sentiment — Hermes realtime (Groq Scout), OpenRouter fallback
-  news: ['hermes-realtime', 'openrouter-grok', 'openrouter-llama'],
-  sentiment: ['hermes-realtime', 'openrouter-grok', 'openrouter-llama'],
-
-  // Chat/general — Hermes fast (Groq Scout @ ~750 tok/s)
-  chat: ['hermes-fast', 'openrouter-llama', 'openrouter-grok'],
-  general: ['hermes-fast', 'openrouter-llama', 'openrouter-grok'],
-
-  // Technical analysis — Hermes fast
-  technical: ['hermes-fast', 'openrouter-llama', 'openrouter-grok'],
-  quickpulse: ['hermes-fast', 'openrouter-llama', 'openrouter-grok'],
-
-  // Deep research / reasoning — Hermes CAO (Kimi K2), OpenRouter fallback
-  research: ['hermes-cao', 'openrouter-opus', 'openrouter-sonnet'],
-  reasoning: ['hermes-cao', 'openrouter-opus', 'openrouter-sonnet'],
-
-  // Hermes P.I.C. Agent-specific task routing
-  // Harper/CAO - Executive reasoning
-  'harper-cao': ['hermes-cao', 'openrouter-opus', 'openrouter-sonnet'],
-  'cao-approval': ['hermes-cao', 'openrouter-opus', 'openrouter-sonnet'],
-  'cao-consolidation': ['hermes-research', 'openrouter-sonnet', 'openrouter-llama'],
-
-  // PMA agents - Real-time prediction market analysis
-  'pma-1': ['hermes-realtime', 'openrouter-grok', 'openrouter-llama'],
-  'pma-2': ['hermes-realtime', 'openrouter-grok', 'openrouter-llama'],
-  'prediction-market': ['hermes-realtime', 'openrouter-grok', 'openrouter-llama'],
-
-  // Futures Desk - Fast technical analysis
-  'futures-desk': ['hermes-fast', 'openrouter-llama', 'openrouter-grok'],
-  'fa-rippers': ['hermes-fast', 'openrouter-llama', 'openrouter-grok'],
-  'economic-analysis': ['hermes-realtime', 'openrouter-grok', 'openrouter-llama'],
-
-  // Fundamentals Desk - Deep research
-  'fundamentals-desk': ['hermes-cao', 'openrouter-opus', 'openrouter-sonnet'],
-  'earnings-analysis': ['hermes-cao', 'openrouter-opus', 'openrouter-sonnet'],
-  'tech-mega-cap': ['hermes-research', 'openrouter-sonnet', 'openrouter-llama'],
-
-  // Default fallback chain — Hermes (Groq direct) first
-  default: ['hermes-fast', 'openrouter-llama', 'openrouter-grok'],
+  news: ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
+  sentiment: ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
+  chat: ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
+  general: ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
+  technical: ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
+  quickpulse: ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
+  research: ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
+  reasoning: ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
+  'harper-cao': ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
+  'cao-approval': ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
+  'cao-consolidation': ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
+  'pma-1': ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
+  'pma-2': ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
+  'prediction-market': ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
+  'futures-desk': ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
+  'fa-rippers': ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
+  'economic-analysis': ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
+  'fundamentals-desk': ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
+  'earnings-analysis': ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
+  'tech-mega-cap': ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
+  default: ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
 }
 
 // Runtime token store for user-provided tokens (e.g. GitHub OAuth)
@@ -282,35 +262,28 @@ export function createModelClient(modelKey: AiModelKey) {
     return client(config.id)
   }
 
-  // Hermes P.I.C. agent models — Groq direct (no gateway, no clawdbot:main)
+  // Hermes P.I.C. agent keys — OpenRouter (Nous) + Opus 4.6
   if (isHermesModel(modelKey)) {
     const client = createOpenAI({
       apiKey,
       baseURL: config.baseUrl,
       headers: {
-        'X-Hermes-App': process.env.HERMES_APP_NAME ?? 'Pulse-PIC-Hermes',
+        'HTTP-Referer': process.env.OPENROUTER_APP_URL ?? 'https://pulse-solvys.vercel.app',
+        'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Pulse-AI-Gateway',
       },
     })
-    // Use the actual Groq model ID directly
-    return client(getHermesModelId(modelKey))
+    return client(config.id)
   }
 
   // Vercel Gateway models - route based on provider type in model ID
   if (config.providerType === 'vercel-gateway') {
-    // Use gateway URL with appropriate SDK
     if (config.id.startsWith('anthropic/')) {
       const client = createAnthropic({ apiKey })
       return client(config.id.replace('anthropic/', ''))
     }
-
     if (config.id.startsWith('xai/')) {
       const client = createXai({ apiKey })
       return client(config.id.replace('xai/', ''))
-    }
-
-    if (config.id.startsWith('groq/')) {
-      const client = createGroq({ apiKey })
-      return client(config.id.replace('groq/', ''))
     }
 
     // Fallback to OpenAI-compatible client

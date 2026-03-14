@@ -1,6 +1,6 @@
-// [claude-code 2026-03-13] Hermes migration — Groq direct, no gateway middleman
+// [claude-code 2026-03-14] Hermes descriptions via OpenRouter (Opus 4.6)
 // Notion poller — polls Trade Ideas + Daily P&L on 60s interval,
-// generates Hermes descriptions for new trade ideas, caches results for API responses.
+// generates Hermes descriptions for new trade ideas via OpenRouter (Nous subscription).
 
 import {
   queryTradeIdeas,
@@ -28,12 +28,10 @@ const cache: PollerCache = {
 let intervalId: ReturnType<typeof setInterval> | null = null;
 
 async function generateHermesDescription(idea: NotionTradeIdea): Promise<string> {
-  const apiKey = process.env.HERMES_API_KEY;
+  const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) return '';
 
-  const rawBase = process.env.HERMES_BASE_URL ?? 'https://api.groq.com/openai/v1';
-  const base = rawBase.trim().replace(/\/+$/, '');
-  const url = base.endsWith('/v1') ? `${base}/chat/completions` : `${base}/v1/chat/completions`;
+  const url = 'https://openrouter.ai/api/v1/chat/completions';
 
   const slTp = idea.entry
     ? ` Entry ~${idea.entry}${idea.stopLoss ? `, SL ${idea.stopLoss}` : ''}${idea.takeProfit ? `, TP ${idea.takeProfit}` : ''}.`
@@ -47,10 +45,11 @@ async function generateHermesDescription(idea: NotionTradeIdea): Promise<string>
       headers: {
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        'X-Hermes-App': 'Pulse-Notion-Poller',
+        'HTTP-Referer': process.env.OPENROUTER_APP_URL ?? 'https://pulse-solvys.vercel.app',
+        'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Pulse-AI-Gateway',
       },
       body: JSON.stringify({
-        model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+        model: 'anthropic/claude-opus-4.6',
         messages: [{ role: 'user', content: prompt }],
         max_tokens: 120,
         temperature: 0.3,

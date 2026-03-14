@@ -105,7 +105,7 @@ function FloatingInner({
 
 export function PulseFloatingChat({ visible, onExpandToAnalysis }: PulseFloatingChatProps) {
   const [expanded, setExpanded] = useState(false);
-  const [thinkHarder, setThinkHarder] = useState(false);
+  const [thinkHarder, setThinkHarder] = useState(true);
   const { activeAgent } = usePulseAgents();
 
   const { runtime, lastError, lastRequestId } = useHermesRuntime(

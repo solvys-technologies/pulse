@@ -1,4 +1,4 @@
-// [claude-code 2026-03-13] Hermes migration — replaced OpenClaw gateway with Groq direct
+// [claude-code 2026-03-14] Default inference: OpenRouter (Nous subscription) + Claude Opus 4.6; Groq removed as primary
 import priceSystemPrompt from '../prompts/price-system-prompt.js'
 import type { AiProviderType, CrossProviderFallback } from '../types/ai-types.js'
 
@@ -18,11 +18,11 @@ export type AiModelKey =
   | 'openrouter-opus'    // Claude Opus 4.5 via OpenRouter
   | 'openrouter-llama'   // Llama 3.3 70B via OpenRouter
   | 'openrouter-grok'    // Grok 4.1 via OpenRouter
-  // Hermes P.I.C. agents (Groq direct, no gateway)
-  | 'hermes-cao'         // CAO/Harper reasoning (Kimi K2)
-  | 'hermes-research'    // Deep research (Maverick 128E)
-  | 'hermes-fast'        // Fast analysis (Scout)
-  | 'hermes-realtime'    // Real-time news (Scout)
+  // Hermes P.I.C. agent keys (routed to OpenRouter Opus 4.6 via Nous subscription)
+  | 'hermes-cao'         // CAO/Harper reasoning
+  | 'hermes-research'    // Deep research
+  | 'hermes-fast'        // Fast analysis
+  | 'hermes-realtime'    // Real-time
   // Claude Code SDK Bridge (free via Max subscription)
   | 'claude-local'      // Claude Opus via local CLI bridge
   // GitHub Models (free, OAuth-powered)
@@ -100,7 +100,7 @@ const vercelGatewayBaseUrl =
 const openRouterBaseUrl = 'https://openrouter.ai/api/v1'
 const githubModelsBaseUrl = 'https://models.inference.ai.azure.com'
 
-// Hermes / Groq direct — no gateway middleman
+// OpenRouter (Nous subscription) — primary inference; Hermes base URL optional for legacy
 const normalizeHermesBaseUrl = (value: string): string => {
   const trimmed = value.trim().replace(/\/+$/, '')
   return trimmed.endsWith('/v1') ? trimmed.slice(0, -3) : trimmed
@@ -108,9 +108,9 @@ const normalizeHermesBaseUrl = (value: string): string => {
 
 const getHermesOpenAIBaseUrl = (): string => {
   const base = normalizeHermesBaseUrl(
-    getEnv('HERMES_BASE_URL') ?? 'https://api.groq.com/openai/v1'
+    getEnv('HERMES_BASE_URL') ?? getEnv('OPENROUTER_BASE_URL') ?? 'https://openrouter.ai/api'
   )
-  return `${base}/v1`
+  return base.includes('openrouter') ? `${base}/v1` : `${base}/v1`
 }
 
 // Backward compat
@@ -127,10 +127,10 @@ const modelAliases: Record<string, AiModelKey> = {
   grok: 'grok',
   'grok-4.1': 'grok',
   general: 'grok',
-  groq: 'hermes-fast',
-  'llama-3.3-70b': 'hermes-fast',
-  haiku: 'hermes-fast',
-  tech: 'hermes-fast',
+  groq: 'openrouter-opus',
+  'llama-3.3-70b': 'openrouter-opus',
+  haiku: 'openrouter-opus',
+  tech: 'openrouter-opus',
   // OpenRouter alternative routes
   'openrouter-sonnet': 'openrouter-sonnet',
   'openrouter-claude': 'openrouter-sonnet',
@@ -140,21 +140,21 @@ const modelAliases: Record<string, AiModelKey> = {
   'openrouter-grok': 'openrouter-grok',
   'grok-openrouter': 'openrouter-grok',
   // Hermes P.I.C. agent routes
-  'hermes-cao': 'hermes-cao',
-  'harper': 'hermes-cao',
-  'cao': 'hermes-cao',
-  'hermes-research': 'hermes-research',
-  'pic-research': 'hermes-research',
-  'hermes-fast': 'hermes-fast',
-  'pic-fast': 'hermes-fast',
-  'hermes-realtime': 'hermes-realtime',
-  'pic-realtime': 'hermes-realtime',
-  'pma': 'hermes-realtime',
-  // Backward compat — old openclaw aliases still resolve
-  'openclaw-cao': 'hermes-cao',
-  'openclaw-research': 'hermes-research',
-  'openclaw-fast': 'hermes-fast',
-  'openclaw-realtime': 'hermes-realtime',
+  'hermes-cao': 'openrouter-opus',
+  'harper': 'openrouter-opus',
+  'cao': 'openrouter-opus',
+  'hermes-research': 'openrouter-opus',
+  'pic-research': 'openrouter-opus',
+  'hermes-fast': 'openrouter-opus',
+  'pic-fast': 'openrouter-opus',
+  'hermes-realtime': 'openrouter-opus',
+  'pic-realtime': 'openrouter-opus',
+  'pma': 'openrouter-opus',
+  // Backward compat — old openclaw aliases resolve to Opus 4.6
+  'openclaw-cao': 'openrouter-opus',
+  'openclaw-research': 'openrouter-opus',
+  'openclaw-fast': 'openrouter-opus',
+  'openclaw-realtime': 'openrouter-opus',
   // Claude Code SDK Bridge (Max subscription)
   'claude-local': 'claude-local',
   'claude-sdk': 'claude-local',
@@ -184,9 +184,9 @@ const getPrimaryProvider = (): AiProviderType => {
 
 const enableProviderFallback = getEnv('AI_ENABLE_PROVIDER_FALLBACK') !== 'false'
 
-// Default to Hermes (Groq direct, free tier) — falls back to OpenRouter
+// Default: Opus 4.6 via OpenRouter (Nous subscription)
 const defaultModel = resolveModelKey(getEnv('AI_DEFAULT_MODEL'))
-  ?? (getEnv('HERMES_API_KEY') ? 'hermes-fast' as AiModelKey : 'openrouter-llama')
+  ?? (getEnv('OPENROUTER_API_KEY') ? 'openrouter-opus' as AiModelKey : 'openrouter-llama')
 
 export const defaultAiConfig: AiConfig = {
   models: {
@@ -273,8 +273,8 @@ export const defaultAiConfig: AiConfig = {
       supportsVision: false
     },
     'openrouter-opus': {
-      id: 'anthropic/claude-opus-4',
-      displayName: 'Claude Opus 4.5 (OpenRouter)',
+      id: 'anthropic/claude-opus-4.6',
+      displayName: 'Claude Opus 4.6 (OpenRouter / Nous)',
       provider: 'openai-compatible',
       providerType: 'openrouter',
       apiKeyEnv: 'OPENROUTER_API_KEY',
@@ -282,78 +282,77 @@ export const defaultAiConfig: AiConfig = {
       temperature: 0.4,
       maxTokens: 8192,
       timeoutMs: 90_000,
-      costPer1kInputUsd: 0.015,
-      costPer1kOutputUsd: 0.075,
-      contextWindow: 200_000,
+      costPer1kInputUsd: 0.005,
+      costPer1kOutputUsd: 0.025,
+      contextWindow: 1_000_000,
       supportsStreaming: true,
       supportsVision: true
     },
 
-    // Hermes P.I.C. Agent Models (Groq direct, free tier — no gateway)
-    // [claude-code 2026-03-13] Groq direct — model IDs without groq/ prefix
+    // Hermes P.I.C. agent keys — resolve to OpenRouter Opus 4.6 (same config as openrouter-opus)
     'hermes-cao': {
-      id: 'moonshotai/kimi-k2-instruct',
-      displayName: 'Hermes CAO (Kimi K2)',
+      id: 'anthropic/claude-opus-4.6',
+      displayName: 'Claude Opus 4.6 (Hermes CAO)',
       provider: 'openai-compatible',
-      providerType: 'hermes',
-      apiKeyEnv: 'HERMES_API_KEY',
-      baseUrl: getHermesOpenAIBaseUrl(),
+      providerType: 'openrouter',
+      apiKeyEnv: 'OPENROUTER_API_KEY',
+      baseUrl: openRouterBaseUrl,
       temperature: 0.3,
       maxTokens: 8192,
-      timeoutMs: 30_000,
-      costPer1kInputUsd: 0,
-      costPer1kOutputUsd: 0,
-      contextWindow: 131_072,
+      timeoutMs: 90_000,
+      costPer1kInputUsd: 0.005,
+      costPer1kOutputUsd: 0.025,
+      contextWindow: 1_000_000,
       supportsStreaming: true,
-      supportsVision: false
+      supportsVision: true
     },
     'hermes-research': {
-      id: 'meta-llama/llama-4-maverick-17b-128e-instruct',
-      displayName: 'Hermes Research (Maverick 128E)',
+      id: 'anthropic/claude-opus-4.6',
+      displayName: 'Claude Opus 4.6 (Hermes Research)',
       provider: 'openai-compatible',
-      providerType: 'hermes',
-      apiKeyEnv: 'HERMES_API_KEY',
-      baseUrl: getHermesOpenAIBaseUrl(),
+      providerType: 'openrouter',
+      apiKeyEnv: 'OPENROUTER_API_KEY',
+      baseUrl: openRouterBaseUrl,
       temperature: 0.4,
       maxTokens: 8192,
-      timeoutMs: 30_000,
-      costPer1kInputUsd: 0,
-      costPer1kOutputUsd: 0,
-      contextWindow: 131_072,
+      timeoutMs: 90_000,
+      costPer1kInputUsd: 0.005,
+      costPer1kOutputUsd: 0.025,
+      contextWindow: 1_000_000,
       supportsStreaming: true,
-      supportsVision: false
+      supportsVision: true
     },
     'hermes-fast': {
-      id: 'meta-llama/llama-4-scout-17b-16e-instruct',
-      displayName: 'Hermes Fast (Scout)',
+      id: 'anthropic/claude-opus-4.6',
+      displayName: 'Claude Opus 4.6 (Hermes Fast)',
       provider: 'openai-compatible',
-      providerType: 'hermes',
-      apiKeyEnv: 'HERMES_API_KEY',
-      baseUrl: getHermesOpenAIBaseUrl(),
+      providerType: 'openrouter',
+      apiKeyEnv: 'OPENROUTER_API_KEY',
+      baseUrl: openRouterBaseUrl,
       temperature: 0.25,
       maxTokens: 8192,
-      timeoutMs: 20_000,
-      costPer1kInputUsd: 0,
-      costPer1kOutputUsd: 0,
-      contextWindow: 131_072,
+      timeoutMs: 90_000,
+      costPer1kInputUsd: 0.005,
+      costPer1kOutputUsd: 0.025,
+      contextWindow: 1_000_000,
       supportsStreaming: true,
-      supportsVision: false
+      supportsVision: true
     },
     'hermes-realtime': {
-      id: 'meta-llama/llama-4-scout-17b-16e-instruct',
-      displayName: 'Hermes Realtime (Scout)',
+      id: 'anthropic/claude-opus-4.6',
+      displayName: 'Claude Opus 4.6 (Hermes Realtime)',
       provider: 'openai-compatible',
-      providerType: 'hermes',
-      apiKeyEnv: 'HERMES_API_KEY',
-      baseUrl: getHermesOpenAIBaseUrl(),
+      providerType: 'openrouter',
+      apiKeyEnv: 'OPENROUTER_API_KEY',
+      baseUrl: openRouterBaseUrl,
       temperature: 0.3,
       maxTokens: 8192,
-      timeoutMs: 25_000,
-      costPer1kInputUsd: 0,
-      costPer1kOutputUsd: 0,
-      contextWindow: 131_072,
+      timeoutMs: 90_000,
+      costPer1kInputUsd: 0.005,
+      costPer1kOutputUsd: 0.025,
+      contextWindow: 1_000_000,
       supportsStreaming: true,
-      supportsVision: false
+      supportsVision: true
     },
 
     // GitHub Models (free via GitHub OAuth) — fallback model
@@ -396,37 +395,29 @@ export const defaultAiConfig: AiConfig = {
   routing: {
     defaultModel,
     taskModelMap: {
-      // All tasks through Hermes/Groq direct (free tier)
-      // Fast technical analysis
-      analysis: 'hermes-fast',
-      // Deep research — Hermes CAO (Kimi K2)
-      research: 'hermes-cao',
-      // Complex reasoning — Hermes CAO
-      reasoning: 'hermes-cao',
-      // Ultra-fast technical
-      technical: 'hermes-fast',
-      'quick-pulse': 'hermes-fast',
-      quickpulse: 'hermes-fast',
-      // Real-time news
-      news: 'hermes-realtime',
-      // Sentiment analysis
-      sentiment: 'hermes-realtime',
-      // General chat
-      chat: 'hermes-fast',
-      general: 'hermes-fast',
-      // Hermes P.I.C. agent-specific tasks
-      'harper-cao': 'hermes-cao',
-      'cao-approval': 'hermes-cao',
-      'cao-consolidation': 'hermes-research',
-      'pma-1': 'hermes-realtime',
-      'pma-2': 'hermes-realtime',
-      'prediction-market': 'hermes-realtime',
-      'futures-desk': 'hermes-fast',
-      'fa-rippers': 'hermes-fast',
-      'economic-analysis': 'hermes-realtime',
-      'fundamentals-desk': 'hermes-cao',
-      'earnings-analysis': 'hermes-cao',
-      'tech-mega-cap': 'hermes-research'
+      // All tasks through OpenRouter (Nous subscription) — Claude Opus 4.6
+      analysis: 'openrouter-opus',
+      research: 'openrouter-opus',
+      reasoning: 'openrouter-opus',
+      technical: 'openrouter-opus',
+      'quick-pulse': 'openrouter-opus',
+      quickpulse: 'openrouter-opus',
+      news: 'openrouter-opus',
+      sentiment: 'openrouter-opus',
+      chat: 'openrouter-opus',
+      general: 'openrouter-opus',
+      'harper-cao': 'openrouter-opus',
+      'cao-approval': 'openrouter-opus',
+      'cao-consolidation': 'openrouter-opus',
+      'pma-1': 'openrouter-opus',
+      'pma-2': 'openrouter-opus',
+      'prediction-market': 'openrouter-opus',
+      'futures-desk': 'openrouter-opus',
+      'fa-rippers': 'openrouter-opus',
+      'economic-analysis': 'openrouter-opus',
+      'fundamentals-desk': 'openrouter-opus',
+      'earnings-analysis': 'openrouter-opus',
+      'tech-mega-cap': 'openrouter-opus'
     },
     // OpenRouter + Hermes fallback chain
     fallbackMap: {
@@ -488,7 +479,7 @@ export const isOpenRouterModel = (modelKey: AiModelKey): boolean => {
   return modelKey.startsWith('openrouter-')
 }
 
-// Helper to check if a model uses Hermes (Groq direct)
+// Hermes agent keys (routed to OpenRouter Opus 4.6)
 export const isHermesModel = (modelKey: AiModelKey): boolean => {
   return modelKey.startsWith('hermes-')
 }
@@ -506,11 +497,10 @@ export const isClaudeLocalModel = (modelKey: AiModelKey): boolean => {
   return modelKey === 'claude-local'
 }
 
-// Get the actual Groq model ID for Hermes models
-// Groq direct — no gateway, no clawdbot:main alias, just the real model ID
+// Get the model ID for Hermes agent keys (OpenRouter Opus 4.6)
 export const getHermesModelId = (modelKey: AiModelKey): string => {
   const config = defaultAiConfig.models[modelKey]
-  return config?.id ?? 'meta-llama/llama-4-scout-17b-16e-instruct'
+  return config?.id ?? 'anthropic/claude-opus-4.6'
 }
 
 // Backward compat

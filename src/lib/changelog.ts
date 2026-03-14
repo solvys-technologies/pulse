@@ -9,6 +9,24 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-14T09:00:00',
+    agent: 'claude-code',
+    summary: 'Default inference: Claude Opus 4.6 via OpenRouter (Nous subscription). Replaced all Groq usage with OpenRouter Opus 4.6. ai-config defaultModel and taskModelMap, model-selector preferences, hermes-handler and hermes-service, conversation-store, notion-poller, health-service. Updated SETUP.md, SETUP-HANDOFF.md, .env.example, and codebase docs/comments.',
+    files: ['backend-hono/src/config/ai-config.ts', 'backend-hono/src/services/ai/model-selector.ts', 'backend-hono/src/services/hermes-handler.ts', 'backend-hono/src/services/hermes-service.ts', 'backend-hono/src/services/ai/conversation-store.ts', 'backend-hono/src/services/notion-poller.ts', 'backend-hono/src/services/health-service.ts', 'backend-hono/.env.example', 'SETUP.md', 'docs/SETUP-HANDOFF.md', 'frontend/components/SettingsPanel.tsx', 'frontend/lib/iv-agent.ts', 'components/ChatInterface.tsx'],
+  },
+  {
+    date: '2026-03-14T08:00:00',
+    agent: 'claude-code',
+    summary: "Thinking toggle → Nous Hermes 4 deep reasoning. When thinkHarder=true and OPENROUTER_API_KEY set, route to OpenRouter nousresearch/hermes-4-70b with reasoning.enabled; stream reasoning + text. Default thinkHarder=true in PulseFloatingChat, ChatInterface, AskHarpChatPanel, InterventionSidebar, ResearchDepartment.",
+    files: ['backend-hono/src/routes/ai/handlers/chat.ts', 'frontend/components/chat/PulseFloatingChat.tsx', 'frontend/components/ChatInterface.tsx', 'frontend/components/chat/AskHarpChatPanel.tsx', 'frontend/components/InterventionSidebar.tsx', 'frontend/components/executive/ResearchDepartment.tsx'],
+  },
+  {
+    date: '2026-03-14T07:00:00',
+    agent: 'claude-code',
+    summary: 'Pulse CLI: run shell commands from footer in Electron (e.g. cd backend-hono && npm run dev). Added / slash-command suggestions (backend, frontend, install, build, typecheck). IPC run-shell-command + cli-output streaming in main/preload.',
+    files: ['electron/main.cjs', 'electron/preload.cjs', 'frontend/components/layout/FooterToolbar.tsx', 'frontend/types/electron.d.ts', 'types/electron.d.ts'],
+  },
+  {
     date: '2026-03-14T06:00:00',
     agent: 'claude-code',
     summary: 'Remotion V4 rebuild: Inter/JetBrains Mono fonts (matching Pulse frontend swap), all screenshots faded to near-black (0.04-0.06 opacity) as dark texture, overlay items significantly bigger and centered for presentation/keynote vibe. Same Apple/Perplexity editorial style (easeOut, crossfades, glass-morphism, hero-number-at-a-time). Recaptured dashboard + riskflow screenshots with new fonts.',

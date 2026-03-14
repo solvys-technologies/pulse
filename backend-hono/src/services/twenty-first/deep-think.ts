@@ -5,7 +5,7 @@
  * Uses 21st API (21st.dev) for deep thinking inference.
  *
  * Priority chain position: #3
- *   1. Hermes/Groq (fast, free) — default
+ *   1. OpenRouter Opus 4.6 (Nous subscription) — default
  *   2. Claude SDK Bridge (Opus, free via Max) — for thinkHarder
  *   3. 21st API (this) — when Claude SDK unavailable + thinkHarder
  *   4. OpenRouter (paid) — last resort

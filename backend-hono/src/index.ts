@@ -97,7 +97,7 @@ startAutopilotScheduler();
 // Start Context Bank ticker (120s — unified snapshot for all agents)
 startContextBankTicker();
 
-// Initialize Hermes/Groq connection (health check — non-blocking)
+// Initialize Hermes/OpenRouter connection (health check — non-blocking)
 initHermesAgent().catch((err) => console.warn('[API] Hermes init failed (non-fatal):', err));
 
 // Initialize Claude SDK bridge (health check — non-blocking)

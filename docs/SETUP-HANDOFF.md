@@ -24,9 +24,8 @@ This document is for any LLM agent (Claude Code, Cursor, OpenClaw, Codex) settin
 ### Required Environment Variables (`backend-hono/.env`)
 
 ```bash
-# Core
-OPENCLAW_BASE_URL=http://localhost:7787   # OpenClaw gateway
-OPENCLAW_API_KEY=<key>                     # OpenClaw auth
+# Core — OpenRouter (Nous subscription) = Claude Opus 4.6 default
+OPENROUTER_API_KEY=<key>                   # OpenRouter API key (get at openrouter.ai/settings/keys)
 NOTION_API_KEY=<key>                       # Notion integration token
 
 # Optional but recommended

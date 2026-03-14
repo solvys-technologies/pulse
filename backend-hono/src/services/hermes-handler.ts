@@ -1,15 +1,14 @@
-// [claude-code 2026-03-13] Hermes migration — replaced OpenClaw gateway with Groq direct
+// [claude-code 2026-03-14] Hermes routes to OpenRouter (Nous subscription) + Claude Opus 4.6
 /**
  * Hermes Handler
  * LOCAL orchestration layer for P.I.C. (Priced In Capital)
- * Processes messages through agent logic, routes to Groq API directly
+ * Processes messages through agent logic, routes to OpenRouter (Opus 4.6)
  *
- * Architecture: User Message → Hermes → P.I.C. Agent → Groq → Response
+ * Architecture: User Message → Hermes → P.I.C. Agent → OpenRouter (Opus 4.6) → Response
  */
 
 import { execFile, spawn as spawnProcess } from 'node:child_process'
 import type { HermesAgentRole } from './hermes-service.js'
-import { HERMES_TASK_MODEL_MAP } from './hermes-service.js'
 import { getAgentSystemPrompt, extractSkillTag } from './ai/agent-instructions.js'
 
 export type ContentPart =
@@ -387,8 +386,10 @@ ${agent === 'fundamentals-desk' ? '- Mega-cap tech analysis\n- Earnings deep-div
 *Hermes local processing is active.*`
 }
 
+const OPENROUTER_OPUS_MODEL = 'anthropic/claude-opus-4.6'
+
 /**
- * Main handler — routes through Groq API directly (no gateway middleman)
+ * Main handler — routes through OpenRouter (Nous subscription) + Claude Opus 4.6
  */
 export async function handleHermesChat(request: HermesChatRequest): Promise<HermesChatResponse> {
   const agentInfo = request.agentOverride
@@ -411,38 +412,35 @@ export async function handleHermesChat(request: HermesChatRequest): Promise<Herm
     messages.push({ role: 'user', content: request.message })
   }
 
-  // Call Groq API directly — no gateway middleman
-  const normalizeBaseUrl = (value: string): string => {
-    const trimmed = value.trim().replace(/\/+$/, '')
-    return trimmed.endsWith('/v1') ? trimmed.slice(0, -3) : trimmed
+  const apiKey = process.env.OPENROUTER_API_KEY ?? ''
+  const baseUrl = 'https://openrouter.ai/api/v1'
+
+  if (!apiKey) {
+    console.warn('[Hermes] OPENROUTER_API_KEY not set, using local fallback')
+    return generateLocalResponse(request, agentInfo)
   }
 
-  const baseUrl = normalizeBaseUrl(
-    process.env.HERMES_BASE_URL ?? 'https://api.groq.com/openai/v1'
-  )
-  const apiKey = process.env.HERMES_API_KEY ?? ''
-
-  // Select model based on detected agent
-  const model = HERMES_TASK_MODEL_MAP[agentInfo.agent] ?? 'meta-llama/llama-4-scout-17b-16e-instruct'
-
-  console.log(`[Hermes] Calling Groq at ${baseUrl} with model ${model} (${messages.length} messages)`)
+  console.log(`[Hermes] Calling OpenRouter (Opus 4.6) for agent ${agentInfo.agent} (${messages.length} messages)`)
 
   try {
-    const response = await fetch(`${baseUrl}/v1/chat/completions`, {
+    const response = await fetch(`${baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
+        'HTTP-Referer': process.env.OPENROUTER_APP_URL ?? 'https://pulse-solvys.vercel.app',
+        'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Pulse-AI-Gateway',
       },
       body: JSON.stringify({
-        model,
-        messages
-      })
+        model: OPENROUTER_OPUS_MODEL,
+        messages,
+        max_tokens: 8192,
+      }),
     })
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error(`[Hermes] Groq error ${response.status}: ${errorText}`)
+      console.error(`[Hermes] OpenRouter error ${response.status}: ${errorText}`)
       return generateLocalResponse(request, agentInfo)
     }
 
@@ -452,11 +450,11 @@ export async function handleHermesChat(request: HermesChatRequest): Promise<Herm
     const content = data.choices?.[0]?.message?.content ?? ''
 
     if (!content) {
-      console.warn('[Hermes] Empty response from Groq, using local fallback')
+      console.warn('[Hermes] Empty response from OpenRouter, using local fallback')
       return generateLocalResponse(request, agentInfo)
     }
 
-    console.log(`[Hermes] Groq response received: ${content.substring(0, 50)}...`)
+    console.log(`[Hermes] OpenRouter (Opus 4.6) response received: ${content.substring(0, 50)}...`)
 
     return {
       content,
@@ -468,7 +466,7 @@ export async function handleHermesChat(request: HermesChatRequest): Promise<Herm
       }
     }
   } catch (error) {
-    console.error('[Hermes] Groq request failed:', error)
+    console.error('[Hermes] OpenRouter request failed:', error)
     return generateLocalResponse(request, agentInfo)
   }
 }
@@ -478,13 +476,12 @@ export const handleOpenClawChat = handleHermesChat
 
 /**
  * Initialize Hermes agent on startup:
- * 1. Launch Hermes gateway process if not already running
- * 2. Warm up the Groq API connection with a Harper (CAO) ping
+ * 1. Optionally launch Hermes gateway process if configured
+ * 2. Warm up OpenRouter (Opus 4.6) connection with a Harper (CAO) ping
  */
 export async function initHermesAgent(): Promise<void> {
   const hermesBin = process.env.HERMES_BINARY_PATH ?? 'hermes'
 
-  // Step 1: Launch Hermes gateway if not running
   try {
     const gatewayRunning = await new Promise<boolean>((resolve) => {
       execFile(hermesBin, ['gateway', 'status'], { timeout: 5_000 }, (err, stdout) => {
@@ -492,13 +489,9 @@ export async function initHermesAgent(): Promise<void> {
         resolve(stdout.toLowerCase().includes('running'))
       })
     })
-
     if (!gatewayRunning) {
       console.log('[Hermes] Gateway not running — starting...')
-      const gw = spawnProcess(hermesBin, ['gateway', 'start'], {
-        stdio: 'ignore',
-        detached: true,
-      })
+      const gw = spawnProcess(hermesBin, ['gateway', 'start'], { stdio: 'ignore', detached: true })
       gw.unref()
       console.log('[Hermes] Gateway start dispatched (PID:', gw.pid, ')')
     } else {
@@ -508,47 +501,41 @@ export async function initHermesAgent(): Promise<void> {
     console.warn(`[Hermes] Gateway launch skipped (non-fatal): ${err instanceof Error ? err.message : String(err)}`)
   }
 
-  // Step 2: Warm up Groq API connection
-  const normalizeBaseUrl = (value: string): string => {
-    const trimmed = value.trim().replace(/\/+$/, '')
-    return trimmed.endsWith('/v1') ? trimmed.slice(0, -3) : trimmed
+  const apiKey = process.env.OPENROUTER_API_KEY ?? ''
+  if (!apiKey) {
+    console.log('[Hermes] OPENROUTER_API_KEY not set — skipping OpenRouter warm-up')
+    return
   }
-
-  const baseUrl = normalizeBaseUrl(
-    process.env.HERMES_BASE_URL ?? 'https://api.groq.com/openai/v1'
-  )
-  const apiKey = process.env.HERMES_API_KEY ?? ''
-  const model = HERMES_TASK_MODEL_MAP['harper-cao'] ?? 'moonshotai/kimi-k2-instruct'
 
   try {
     const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 10_000)
-
-    const response = await fetch(`${baseUrl}/v1/chat/completions`, {
+    const timeout = setTimeout(() => controller.abort(), 15_000)
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
+        'HTTP-Referer': process.env.OPENROUTER_APP_URL ?? 'https://pulse-solvys.vercel.app',
+        'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Pulse-AI-Gateway',
       },
       body: JSON.stringify({
-        model,
+        model: OPENROUTER_OPUS_MODEL,
         messages: [
           { role: 'system', content: 'You are Harper, CAO of Priced In Capital.' },
-          { role: 'user', content: '[SYSTEM] Agent initialization ping — confirm availability and warm up context.' },
+          { role: 'user', content: '[SYSTEM] Agent initialization ping — confirm availability.' },
         ],
+        max_tokens: 64,
       }),
       signal: controller.signal,
     })
-
     clearTimeout(timeout)
-
     if (response.ok) {
-      console.log('[Hermes] Groq warm-up complete (harper-cao ready)')
+      console.log('[Hermes] OpenRouter (Opus 4.6) warm-up complete (harper-cao ready)')
     } else {
-      console.warn(`[Hermes] Groq warm-up failed (non-fatal): HTTP ${response.status}`)
+      console.warn(`[Hermes] OpenRouter warm-up failed (non-fatal): HTTP ${response.status}`)
     }
   } catch (error) {
-    console.warn(`[Hermes] Groq warm-up failed (non-fatal): ${error instanceof Error ? error.message : String(error)}`)
+    console.warn(`[Hermes] OpenRouter warm-up failed (non-fatal): ${error instanceof Error ? error.message : String(error)}`)
   }
 }
 

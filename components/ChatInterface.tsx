@@ -38,7 +38,7 @@ const AI_MODELS = [
   { id: 'claude-opus-4', name: 'Claude Opus 4', level: 'Complex Reasoning', description: 'Best for deep analysis' },
   { id: 'grok-4.1', name: 'Grok 4.1', level: 'Fast Reasoning', description: 'X.AI - Speed optimized, real-time' },
   { id: 'claude-sonnet-4.5', name: 'Claude Sonnet', level: 'Moderate Reasoning', description: 'Balanced performance' },
-  { id: 'groq-llama-3-70b', name: 'Llama 3 70B', level: 'Fast Fallback', description: 'Backup model' },
+  { id: 'openrouter-opus', name: 'Claude Opus 4.6', level: 'Default', description: 'OpenRouter (Nous subscription)' },
 ] as const;
 
 const THINKING_TERMS = [

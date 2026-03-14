@@ -1,14 +1,16 @@
 // [claude-code 2026-03-13] Hermes migration — replaced OpenClaw with Hermes/Groq direct
+// [claude-code 2026-03-14] thinkHarder maps to OpenRouter Nous Hermes 4 deep reasoning (reasoning.enabled)
 /**
  * AI Chat Handler
  * Handle chat messages and AI responses - Hermes Local Processing
  * Routes through P.I.C. agent network for local single-user mode
  *
  * Inference priority chain:
- *   1. Hermes/Groq direct (fast, free) — default for all chat
- *   2. Claude SDK Bridge (Opus, free via Max) — for thinkHarder or explicit claude-local model
- *   3. 21st API (deep thinking fallback) — when Claude SDK unavailable + thinkHarder
- *   4. OpenRouter (paid) — last resort
+ *   1. OpenRouter Nous Hermes 4 (reasoning enabled) — when thinkHarder + OPENROUTER_API_KEY
+ *   2. Hermes/OpenRouter (Opus 4.6, Nous subscription) — default for all chat
+ *   3. Claude SDK Bridge (Opus, free via Max) — for thinkHarder or explicit claude-local model
+ *   4. 21st API (deep thinking fallback) — when Claude SDK unavailable + thinkHarder
+ *   5. OpenRouter (paid) — last resort
  */
 
 import type { Context } from 'hono'
@@ -19,6 +21,7 @@ import { defaultAiConfig } from '../../../config/ai-config.js'
 import type { ChatRequest } from '../../../types/ai-chat.js'
 import type { HermesAgentRole } from '../../../services/hermes-service.js'
 import { handleHermesChat, detectAgent, type ContentPart } from '../../../services/hermes-handler.js'
+import { getAgentSystemPrompt, extractSkillTag } from '../../../services/ai/agent-instructions.js'
 import { exaSearch, formatExaContext, isExaAvailable } from '../../../services/exa-service.js'
 import { extractSkillFromMessage, isSkillEnabled, getSkillDisabledReason } from '../../../config/feature-flags.js'
 import { createRequestCognition } from '../../../services/cognition-emitter.js'
@@ -27,6 +30,8 @@ import { isBridgeAvailable, bridgeChat, type BridgeStreamEvent } from '../../../
 import { deepThink, is21stAvailable } from '../../../services/twenty-first/deep-think.js'
 import { resolveModelKey } from '../../../config/ai-config.js'
 import { takeScreenshot, isPlaywrightReady } from '../../../services/screenshot-service.js'
+
+const OPENROUTER_HERMES_4_MODEL = 'nousresearch/hermes-4-70b'
 
 // File attachment content part types
 type FileContentPart =
@@ -255,13 +260,152 @@ export async function handleChat(c: Context) {
     )
 
     // LOCAL HERMES is always the primary path.
-    // GitHub Models (GPT-4o) is available as a fallback when Hermes/Groq is down.
+    // GitHub Models (GPT-4o) is available as a fallback when OpenRouter is down.
     // Only use GitHub Models if explicitly requested via model param.
     const useGitHubModel = Boolean(githubToken) && model === 'github-deepseek'
 
-    // [claude-code 2026-03-13] Check if Claude SDK bridge should take priority over Hermes
     const bridgeAvailable = await isBridgeAvailable()
     const preferClaudeSDK = thinkHarder && bridgeAvailable
+    const openRouterKey = process.env.OPENROUTER_API_KEY
+    const useNousHermesReasoning = thinkHarder && Boolean(openRouterKey?.trim())
+
+    // PATH 1: OpenRouter Nous Hermes 4 with deep reasoning (thinking toggle → Hermes reasoning.enabled)
+    if (useNousHermesReasoning && !useGitHubModel) {
+      console.log(`[Hermes][${requestId}] Using OpenRouter Nous Hermes 4 (reasoning enabled)`)
+      cognition.step('agent-route', 'Nous Hermes 4', 'Deep reasoning via OpenRouter')
+
+      let researchContext = ''
+      if (isExaAvailable()) {
+        cognition.step('tool-dispatch', 'Exa deep research', 'ThinkHarder — searching live sources')
+        const results = await exaSearch(message, { numResults: 5 })
+        researchContext = formatExaContext(results)
+        if (researchContext) cognition.step('tool-dispatch', `Exa: ${results.length} sources found`)
+      }
+      const augmentedMessage = researchContext ? `${researchContext}\n\n${message}` : message
+
+      const skillTag = extractSkillTag(message)
+      const systemPrompt = getAgentSystemPrompt(agentInfo.agent, { skillTag, thinkHarder: true })
+      const openRouterMessages: { role: string; content: string | unknown[] }[] = [
+        { role: 'system', content: systemPrompt },
+        ...history.map(h => ({ role: h.role, content: h.content })),
+      ]
+      if (multimodalContent?.length) {
+        openRouterMessages.push({ role: 'user', content: multimodalContent })
+      } else {
+        openRouterMessages.push({ role: 'user', content: augmentedMessage })
+      }
+
+      try {
+        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openRouterKey}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': process.env.OPENROUTER_APP_URL ?? 'https://pulse-solvys.vercel.app',
+            'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Pulse-AI-Gateway',
+          },
+          body: JSON.stringify({
+            model: OPENROUTER_HERMES_4_MODEL,
+            messages: openRouterMessages,
+            stream: true,
+            reasoning: { enabled: true },
+            max_tokens: 8192,
+          }),
+        })
+
+        if (!res.ok || !res.body) {
+          const errText = await res.text()
+          console.warn(`[Hermes][${requestId}] OpenRouter Hermes 4 failed ${res.status}, falling through: ${errText.slice(0, 200)}`)
+        } else {
+          const uiMessageId = `assistant-${Date.now()}`
+          const uiReasoningId = `reasoning-${Date.now()}`
+          let fullText = ''
+          let reasoningStarted = false
+          let textEndSent = false
+
+          const stream = new ReadableStream({
+            async start(controller) {
+              try {
+                const reader = res.body!.getReader()
+                const decoder = new TextDecoder()
+                let buffer = ''
+                controller.enqueue({ type: 'reasoning-start', id: uiReasoningId })
+                while (true) {
+                  const { value, done } = await reader.read()
+                  if (done) break
+                  buffer += decoder.decode(value, { stream: true })
+                  const lines = buffer.split('\n')
+                  buffer = lines.pop() ?? ''
+                  for (const line of lines) {
+                    if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+                      try {
+                        const json = JSON.parse(line.slice(6)) as {
+                          choices?: { delta?: { content?: string; reasoning?: string }; finish_reason?: string }[]
+                        }
+                        const delta = json.choices?.[0]?.delta
+                        if (delta?.reasoning) {
+                          reasoningStarted = true
+                          controller.enqueue({ type: 'reasoning-delta', id: uiReasoningId, delta: delta.reasoning })
+                        }
+                        if (delta?.content) {
+                          if (reasoningStarted) {
+                            controller.enqueue({ type: 'reasoning-end', id: uiReasoningId })
+                            reasoningStarted = false
+                          }
+                          if (fullText === '') controller.enqueue({ type: 'text-start', id: uiMessageId })
+                          fullText += delta.content
+                          controller.enqueue({ type: 'text-delta', id: uiMessageId, delta: delta.content })
+                        }
+                        if (json.choices?.[0]?.finish_reason) {
+                          if (reasoningStarted) controller.enqueue({ type: 'reasoning-end', id: uiReasoningId })
+                          if (!textEndSent) {
+                            controller.enqueue({ type: 'text-end', id: uiMessageId })
+                            textEndSent = true
+                          }
+                        }
+                      } catch (_) { /* skip malformed chunk */ }
+                    }
+                  }
+                }
+                if (reasoningStarted) controller.enqueue({ type: 'reasoning-end', id: uiReasoningId })
+                if (fullText && !textEndSent) controller.enqueue({ type: 'text-end', id: uiMessageId })
+                if (fullText) {
+                  await conversationStore.addMessage(conversation.id, {
+                    conversationId: conversation.id,
+                    role: 'assistant',
+                    content: fullText,
+                    model: 'nous-hermes-4-70b',
+                  })
+                }
+                cognition.step('response-ready', 'Nous Hermes 4 complete', `${fullText.length} chars`)
+                cognition.done()
+                controller.close()
+              } catch (err) {
+                console.error(`[Hermes][${requestId}] OpenRouter stream error:`, err)
+                cognition.step('error', 'Stream error', err instanceof Error ? err.message : String(err))
+                cognition.done()
+                controller.error(err)
+              }
+            },
+          })
+
+          c.header('X-Conversation-Id', conversation.id)
+          c.header('X-Hermes-Agent', 'nous-hermes-4')
+          return createUIMessageStreamResponse({
+            stream,
+            headers: {
+              'X-Conversation-Id': conversation.id,
+              'X-Hermes-Agent': 'nous-hermes-4',
+              'Access-Control-Allow-Origin': c.req.header('Origin') || '*',
+              'Access-Control-Allow-Credentials': 'true',
+              'Access-Control-Expose-Headers': 'X-Conversation-Id, X-Hermes-Agent, X-Research-Sources',
+            },
+          })
+        }
+      } catch (err) {
+        console.warn(`[Hermes][${requestId}] OpenRouter Hermes 4 error, falling through:`, err)
+      }
+    }
 
     // PRIMARY PATH: Local Hermes processing via P.I.C. agent network
     // Skip when thinkHarder is enabled AND Claude SDK bridge is available (prefer Opus)
@@ -289,7 +433,7 @@ export async function handleChat(c: Context) {
         : message
 
       // Generate response locally through Hermes
-      cognition.step('gateway-call', 'Calling Hermes/Groq', `agent, agent: ${agentInfo.agent}`)
+      cognition.step('gateway-call', 'Calling OpenRouter (Opus 4.6)', `agent: ${agentInfo.agent}`)
       const hermesResponse = await handleHermesChat({
         message: augmentedMessage,
         multimodalContent,

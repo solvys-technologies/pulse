@@ -1,8 +1,8 @@
-// [claude-code 2026-03-13] Hermes migration — replaced OpenClaw with Hermes/Groq direct
+// [claude-code 2026-03-14] Default: OpenRouter (Nous) + Opus 4.6
 /**
  * Shared AI types for multi-provider architecture
- * Supports OpenRouter primary with Vercel Gateway fallback
- * Hermes integration for P.I.C. agentic backend (Groq direct)
+ * OpenRouter (Nous subscription) + Claude Opus 4.6 primary
+ * Hermes integration for P.I.C. agentic backend (OpenRouter Opus 4.6)
  */
 
 // Provider type discriminator

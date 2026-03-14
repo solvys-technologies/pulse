@@ -2,10 +2,10 @@
 /**
  * IV Agent Integration for PULSE
  *
- * Formats IV scoring data for AI-powered analysis via Hermes agent (Groq API).
+ * Formats IV scoring data for AI-powered analysis via Hermes agent (OpenRouter Opus 4.6).
  *
  * TODO: Full agent integration with Hermes
- * - Send IV context as structured prompt to Groq API
+ * - Send IV context as structured prompt to OpenRouter API
  * - Receive AI-enhanced analysis (regime detection, anomaly alerts, trade ideas)
  *
  * For now, this module provides local formatting of IV score results
@@ -88,7 +88,7 @@ export function formatIVForDisplay(result: IVScoreResult): FormattedIVDisplay {
  *
  * Expected flow:
  * 1. computeIVScore() locally for fast display
- * 2. Send IVAgentRequest to backend for enhanced analysis via Groq API
+ * 2. Send IVAgentRequest to backend for enhanced analysis via OpenRouter (Opus 4.6) API
  * 3. Backend routes to an IV-specialist agent prompt
  * 4. Agent returns regime analysis, anomaly alerts, trade ideas
  * 5. Merge agent response into UI alongside local score

@@ -1,27 +1,21 @@
-// [claude-code 2026-03-13] Hermes migration — replaced OpenClaw gateway with Groq direct + Hermes Agent
+// [claude-code 2026-03-14] Hermes inference via OpenRouter (Nous) + Claude Opus 4.6
 /**
  * Hermes Service
  * Agentic backend layer for Priced In Capital (P.I.C.)
  * Orchestrates AI agents: Harper (CAO), PMA-1, PMA-2, Futures Desk, Fundamentals Desk
  *
  * Architecture: HERMES AGENT → PULSE UI → H.E's (Human Executives)
- * Inference: Groq API direct (free tier) — no gateway middleman
+ * Inference: OpenRouter (Nous subscription) + Claude Opus 4.6
  */
 
 import { createOpenAI } from '@ai-sdk/openai'
 import type { AiProviderType, AiRequestCost } from '../types/ai-types.js'
 
-// Hermes / Groq API configuration
-// Calls Groq directly — no gateway middleman
-const normalizeBaseUrl = (value: string): string => {
-  const trimmed = value.trim().replace(/\/+$/, '')
-  return trimmed.endsWith('/v1') ? trimmed.slice(0, -3) : trimmed
-}
-
-const HERMES_BASE_URL = `${normalizeBaseUrl(
-  process.env.HERMES_BASE_URL ?? 'https://api.groq.com/openai/v1'
-)}/v1`
-const HERMES_API_KEY = process.env.HERMES_API_KEY
+const OPENROUTER_BASE = 'https://openrouter.ai/api/v1'
+const HERMES_BASE_URL = process.env.OPENROUTER_BASE_URL
+  ? `${process.env.OPENROUTER_BASE_URL.replace(/\/+$/, '')}/v1`
+  : OPENROUTER_BASE
+const HERMES_API_KEY = process.env.OPENROUTER_API_KEY
 
 // P.I.C. Agent Hierarchy
 export type HermesAgentRole =
@@ -128,36 +122,27 @@ const HERMES_AGENTS: Record<HermesAgentRole, Omit<HermesAgent, 'id' | 'lastCheck
   }
 }
 
-// [claude-code 2026-03-13] Groq direct — optimal model per task (free tier)
-// Scout (30K TPM, 500K TPD) = fast/realtime, Maverick (128E MoE, 500K TPD) = research,
-// Kimi K2 (10K TPM, 300K TPD) = reasoning/CAO, Qwen3 (reasoning mode) = backup
+// All P.I.C. agents use OpenRouter Claude Opus 4.6 (Nous subscription)
 export const HERMES_TASK_MODEL_MAP: Record<string, string> = {
-  // CAO uses Kimi K2 for executive reasoning
-  'harper-cao': 'moonshotai/kimi-k2-instruct',
-  'cao-approval': 'moonshotai/kimi-k2-instruct',
-  'cao-consolidation': 'meta-llama/llama-4-maverick-17b-128e-instruct',
-
-  // PMA agents use Scout for fast prediction market analysis
-  'pma-1': 'meta-llama/llama-4-scout-17b-16e-instruct',
-  'pma-2': 'meta-llama/llama-4-scout-17b-16e-instruct',
-  'prediction-market': 'meta-llama/llama-4-scout-17b-16e-instruct',
-
-  // Futures desk uses Scout for fast technical analysis
-  'futures-desk': 'meta-llama/llama-4-scout-17b-16e-instruct',
-  'fa-rippers': 'meta-llama/llama-4-scout-17b-16e-instruct',
-  'economic-analysis': 'meta-llama/llama-4-scout-17b-16e-instruct',
-
-  // Fundamentals desk uses Maverick 128E for deep research
-  'fundamentals-desk': 'meta-llama/llama-4-maverick-17b-128e-instruct',
-  'earnings-analysis': 'meta-llama/llama-4-maverick-17b-128e-instruct',
-  'tech-mega-cap': 'meta-llama/llama-4-maverick-17b-128e-instruct'
+  'harper-cao': 'anthropic/claude-opus-4.6',
+  'cao-approval': 'anthropic/claude-opus-4.6',
+  'cao-consolidation': 'anthropic/claude-opus-4.6',
+  'pma-1': 'anthropic/claude-opus-4.6',
+  'pma-2': 'anthropic/claude-opus-4.6',
+  'prediction-market': 'anthropic/claude-opus-4.6',
+  'futures-desk': 'anthropic/claude-opus-4.6',
+  'fa-rippers': 'anthropic/claude-opus-4.6',
+  'economic-analysis': 'anthropic/claude-opus-4.6',
+  'fundamentals-desk': 'anthropic/claude-opus-4.6',
+  'earnings-analysis': 'anthropic/claude-opus-4.6',
+  'tech-mega-cap': 'anthropic/claude-opus-4.6',
 }
 
 // Backward compat
 export const OPENCLAW_TASK_MODEL_MAP = HERMES_TASK_MODEL_MAP
 
 /**
- * Build headers for Groq API calls
+ * Build headers for OpenRouter API calls
  */
 export const buildHermesHeaders = (config?: {
   appName?: string
@@ -174,7 +159,7 @@ export const buildHermesHeaders = (config?: {
 export const buildOpenClawHeaders = buildHermesHeaders
 
 /**
- * Check if Hermes / Groq is available
+ * Check if Hermes / OpenRouter is available
  */
 export const isHermesAvailable = (): boolean => {
   return Boolean(HERMES_API_KEY && HERMES_API_KEY.length > 0)
@@ -185,11 +170,11 @@ export const isOpenClawAvailable = isHermesAvailable
 
 /**
  * Create a Hermes client using OpenAI-compatible interface
- * Calls Groq API directly (no gateway)
+ * Calls OpenRouter (Opus 4.6) via Nous subscription
  */
 export const createHermesClient = (modelId?: string) => {
   if (!HERMES_API_KEY) {
-    throw new Error('Missing HERMES_API_KEY environment variable')
+    throw new Error('Missing OPENROUTER_API_KEY environment variable')
   }
 
   const headers = buildHermesHeaders()
@@ -197,11 +182,14 @@ export const createHermesClient = (modelId?: string) => {
   const hermes = createOpenAI({
     apiKey: HERMES_API_KEY,
     baseURL: HERMES_BASE_URL,
-    headers: headers as Record<string, string>
+    headers: {
+      ...(headers as Record<string, string>),
+      'HTTP-Referer': process.env.OPENROUTER_APP_URL ?? 'https://pulse-solvys.vercel.app',
+      'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Pulse-AI-Gateway',
+    },
   })
 
-  // Default model: Scout (highest throughput — 30K TPM, 500K TPD)
-  return hermes(modelId ?? 'meta-llama/llama-4-scout-17b-16e-instruct')
+  return hermes(modelId ?? 'anthropic/claude-opus-4.6')
 }
 
 // Backward compat
@@ -249,7 +237,7 @@ export const agentRoleToTaskType = (role: HermesAgentRole): string => {
 }
 
 /**
- * Calculate cost from token usage (Groq free tier — $0)
+ * Calculate cost from token usage (OpenRouter Opus 4.6 pricing)
  */
 export const calculateHermesCost = (
   usage: { inputTokens?: number; outputTokens?: number },
@@ -259,15 +247,11 @@ export const calculateHermesCost = (
   const outputTokens = usage.outputTokens ?? 0
   const totalTokens = inputTokens + outputTokens
 
-  // Groq free tier — all $0
   const pricing: Record<string, { input: number; output: number }> = {
-    'meta-llama/llama-4-scout-17b-16e-instruct': { input: 0, output: 0 },
-    'meta-llama/llama-4-maverick-17b-128e-instruct': { input: 0, output: 0 },
-    'moonshotai/kimi-k2-instruct': { input: 0, output: 0 },
-    'qwen/qwen3-32b': { input: 0, output: 0 }
+    'anthropic/claude-opus-4.6': { input: 0.005, output: 0.025 },
   }
 
-  const modelPricing = pricing[model] ?? { input: 0.003, output: 0.015 }
+  const modelPricing = pricing[model] ?? { input: 0.005, output: 0.025 }
 
   const inputCostUsd = (inputTokens / 1000) * modelPricing.input
   const outputCostUsd = (outputTokens / 1000) * modelPricing.output
@@ -367,14 +351,13 @@ export const validateTradeProposal = (proposal: Partial<HermesTradeProposal>): {
 }
 
 /**
- * Hermes model IDs used by P.I.C. (Groq direct, no prefix)
+ * Hermes model IDs used by P.I.C. (OpenRouter Opus 4.6)
  */
 export const HERMES_MODELS = {
-  // [claude-code 2026-03-13] Task-optimized Groq models direct (free tier)
-  CAO_REASONING: 'moonshotai/kimi-k2-instruct',
-  FAST_ANALYSIS: 'meta-llama/llama-4-scout-17b-16e-instruct',
-  NEWS_REALTIME: 'meta-llama/llama-4-scout-17b-16e-instruct',
-  RESEARCH: 'meta-llama/llama-4-maverick-17b-128e-instruct'
+  CAO_REASONING: 'anthropic/claude-opus-4.6',
+  FAST_ANALYSIS: 'anthropic/claude-opus-4.6',
+  NEWS_REALTIME: 'anthropic/claude-opus-4.6',
+  RESEARCH: 'anthropic/claude-opus-4.6',
 } as const
 
 // Backward compat

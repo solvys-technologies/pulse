@@ -1,4 +1,4 @@
-// [claude-code 2026-03-13] Hermes migration — replaced OpenClaw with Hermes/Groq direct
+// [claude-code 2026-03-14] Hermes inference via OpenRouter (Opus 4.6)
 import type { HermesAgentRole } from '../hermes-service.js'
 
 /**

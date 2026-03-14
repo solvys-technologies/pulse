@@ -1132,7 +1132,7 @@ function GatewayTab() {
           </div>
         </div>
         <p className="text-xs text-gray-500">
-          Hermes connects Pulse to Groq's inference API. Health checks run every 30 seconds.
+          Hermes connects Pulse to OpenRouter (Nous subscription) for Claude Opus 4.6 inference. Health checks run every 30 seconds.
         </p>
 
         {/* Persistent Thread */}

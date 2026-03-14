@@ -148,3 +148,42 @@ ipcMain.handle("toggle-mini-widget", () => {
   // Placeholder for widget toggle behavior.
   return { ok: true };
 });
+
+// Pulse CLI: run shell command from project root and stream output to renderer
+const projectRoot = path.join(__dirname, "..");
+ipcMain.handle("run-shell-command", (event, command) => {
+  if (typeof command !== "string" || !command.trim()) {
+    return { ok: false, error: "Empty command" };
+  }
+  const sender = event.sender;
+  const child = spawn(command.trim(), {
+    shell: true,
+    cwd: projectRoot,
+    env: process.env,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  child.stdout.setEncoding("utf8");
+  child.stderr.setEncoding("utf8");
+  child.stdout.on("data", (data) => {
+    try {
+      sender.send("cli-output", { type: "stdout", data: String(data) });
+    } catch (_) {}
+  });
+  child.stderr.on("data", (data) => {
+    try {
+      sender.send("cli-output", { type: "stderr", data: String(data) });
+    } catch (_) {}
+  });
+  child.on("exit", (code, signal) => {
+    try {
+      sender.send("cli-output", { type: "exit", code: code ?? null, signal: signal ?? null });
+    } catch (_) {}
+  });
+  child.on("error", (err) => {
+    try {
+      sender.send("cli-output", { type: "stderr", data: err.message + "\n" });
+      sender.send("cli-output", { type: "exit", code: null, signal: null });
+    } catch (_) {}
+  });
+  return { ok: true };
+});
