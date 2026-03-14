@@ -39,8 +39,8 @@ function computeFallback(now: Date): BoardroomMeetingSchedule {
 }
 
 export function getBoardroomMeetingSchedule(now = new Date()): BoardroomMeetingSchedule {
-  const cron = process.env.OPENCLAW_BOARDROOM_CRON?.trim();
-  const tz = process.env.OPENCLAW_BOARDROOM_TZ?.trim();
+  const cron = process.env.HERMES_BOARDROOM_CRON?.trim();
+  const tz = process.env.HERMES_BOARDROOM_TZ?.trim();
   const meetingWindowMinutesRaw = process.env.BOARDROOM_MEETING_WINDOW_MINUTES;
   const meetingWindowMinutes = Number.isFinite(Number(meetingWindowMinutesRaw))
     ? Number(meetingWindowMinutesRaw)

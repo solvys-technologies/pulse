@@ -1,3 +1,4 @@
+// [claude-code 2026-03-13] Hermes migration — replaced OpenClaw gateway with Groq direct
 import priceSystemPrompt from '../prompts/price-system-prompt.js'
 import type { AiProviderType, CrossProviderFallback } from '../types/ai-types.js'
 
@@ -17,11 +18,11 @@ export type AiModelKey =
   | 'openrouter-opus'    // Claude Opus 4.5 via OpenRouter
   | 'openrouter-llama'   // Llama 3.3 70B via OpenRouter
   | 'openrouter-grok'    // Grok 4.1 via OpenRouter
-  // OpenClaw P.I.C. agents (Groq-powered via gateway)
-  | 'openclaw-cao'       // CAO/Harper reasoning
-  | 'openclaw-research'  // Deep research
-  | 'openclaw-fast'      // Fast analysis (Groq Llama 3.3 70B)
-  | 'openclaw-realtime'  // Real-time news
+  // Hermes P.I.C. agents (Groq direct, no gateway)
+  | 'hermes-cao'         // CAO/Harper reasoning (Kimi K2)
+  | 'hermes-research'    // Deep research (Maverick 128E)
+  | 'hermes-fast'        // Fast analysis (Scout)
+  | 'hermes-realtime'    // Real-time news (Scout)
   // Claude Code SDK Bridge (free via Max subscription)
   | 'claude-local'      // Claude Opus via local CLI bridge
   // GitHub Models (free, OAuth-powered)
@@ -64,7 +65,7 @@ export interface AiProviderSettings {
   vercelGateway: {
     baseUrl: string
   }
-  openClaw: {
+  hermes: {
     baseUrl: string
     appName: string
   }
@@ -99,18 +100,22 @@ const vercelGatewayBaseUrl =
 const openRouterBaseUrl = 'https://openrouter.ai/api/v1'
 const githubModelsBaseUrl = 'https://models.inference.ai.azure.com'
 
-const normalizeOpenClawGatewayBaseUrl = (value: string): string => {
+// Hermes / Groq direct — no gateway middleman
+const normalizeHermesBaseUrl = (value: string): string => {
   const trimmed = value.trim().replace(/\/+$/, '')
-  // Allow passing either http://host:port or http://host:port/v1
   return trimmed.endsWith('/v1') ? trimmed.slice(0, -3) : trimmed
 }
 
-const getOpenClawOpenAIBaseUrl = (): string => {
-  const gateway = normalizeOpenClawGatewayBaseUrl(
-    getEnv('OPENCLAW_BASE_URL') ?? 'http://localhost:7787'
+const getHermesOpenAIBaseUrl = (): string => {
+  const base = normalizeHermesBaseUrl(
+    getEnv('HERMES_BASE_URL') ?? 'https://api.groq.com/openai/v1'
   )
-  return `${gateway}/v1`
+  return `${base}/v1`
 }
+
+// Backward compat
+const normalizeOpenClawGatewayBaseUrl = normalizeHermesBaseUrl
+const getOpenClawOpenAIBaseUrl = getHermesOpenAIBaseUrl
 
 // Model aliases for backward compatibility
 const modelAliases: Record<string, AiModelKey> = {
@@ -122,10 +127,10 @@ const modelAliases: Record<string, AiModelKey> = {
   grok: 'grok',
   'grok-4.1': 'grok',
   general: 'grok',
-  groq: 'openclaw-fast',
-  'llama-3.3-70b': 'openclaw-fast',
-  haiku: 'openclaw-fast',
-  tech: 'openclaw-fast',
+  groq: 'hermes-fast',
+  'llama-3.3-70b': 'hermes-fast',
+  haiku: 'hermes-fast',
+  tech: 'hermes-fast',
   // OpenRouter alternative routes
   'openrouter-sonnet': 'openrouter-sonnet',
   'openrouter-claude': 'openrouter-sonnet',
@@ -134,17 +139,22 @@ const modelAliases: Record<string, AiModelKey> = {
   'llama-70b': 'openrouter-llama',
   'openrouter-grok': 'openrouter-grok',
   'grok-openrouter': 'openrouter-grok',
-  // OpenClaw P.I.C. agent routes
-  'openclaw-cao': 'openclaw-cao',
-  'harper': 'openclaw-cao',
-  'cao': 'openclaw-cao',
-  'openclaw-research': 'openclaw-research',
-  'pic-research': 'openclaw-research',
-  'openclaw-fast': 'openclaw-fast',
-  'pic-fast': 'openclaw-fast',
-  'openclaw-realtime': 'openclaw-realtime',
-  'pic-realtime': 'openclaw-realtime',
-  'pma': 'openclaw-realtime',
+  // Hermes P.I.C. agent routes
+  'hermes-cao': 'hermes-cao',
+  'harper': 'hermes-cao',
+  'cao': 'hermes-cao',
+  'hermes-research': 'hermes-research',
+  'pic-research': 'hermes-research',
+  'hermes-fast': 'hermes-fast',
+  'pic-fast': 'hermes-fast',
+  'hermes-realtime': 'hermes-realtime',
+  'pic-realtime': 'hermes-realtime',
+  'pma': 'hermes-realtime',
+  // Backward compat — old openclaw aliases still resolve
+  'openclaw-cao': 'hermes-cao',
+  'openclaw-research': 'hermes-research',
+  'openclaw-fast': 'hermes-fast',
+  'openclaw-realtime': 'hermes-realtime',
   // Claude Code SDK Bridge (Max subscription)
   'claude-local': 'claude-local',
   'claude-sdk': 'claude-local',
@@ -167,16 +177,16 @@ const getPrimaryProvider = (): AiProviderType => {
   const envValue = getEnv('AI_PRIMARY_PROVIDER')
   if (envValue === 'vercel-gateway') return 'vercel-gateway'
   if (envValue === 'openrouter') return 'openrouter'
-  if (envValue === 'openclaw') return 'openclaw'
+  if (envValue === 'hermes' || envValue === 'openclaw') return 'hermes'
   // Default to openrouter if API key is present
   return getEnv('OPENROUTER_API_KEY') ? 'openrouter' : 'vercel-gateway'
 }
 
 const enableProviderFallback = getEnv('AI_ENABLE_PROVIDER_FALLBACK') !== 'false'
 
-// Default to OpenClaw (Groq-powered) — falls back to OpenRouter
+// Default to Hermes (Groq direct, free tier) — falls back to OpenRouter
 const defaultModel = resolveModelKey(getEnv('AI_DEFAULT_MODEL'))
-  ?? (getEnv('OPENCLAW_API_KEY') ? 'openclaw-fast' as AiModelKey : 'openrouter-llama')
+  ?? (getEnv('HERMES_API_KEY') ? 'hermes-fast' as AiModelKey : 'openrouter-llama')
 
 export const defaultAiConfig: AiConfig = {
   models: {
@@ -224,7 +234,6 @@ export const defaultAiConfig: AiConfig = {
       temperature: 0.4,
       maxTokens: 4096,
       timeoutMs: 60_000,
-      // OpenRouter pricing for Claude Sonnet
       costPer1kInputUsd: 0.003,
       costPer1kOutputUsd: 0.015,
       contextWindow: 200_000,
@@ -280,15 +289,15 @@ export const defaultAiConfig: AiConfig = {
       supportsVision: true
     },
 
-    // OpenClaw P.I.C. Agent Models (Groq-powered via gateway, free tier)
-    // [claude-code 2026-03-09] Switched from llama-3.3-70b (100K TPD) to optimal Groq models
-    'openclaw-cao': {
-      id: 'groq/moonshotai/kimi-k2-instruct',
-      displayName: 'OpenClaw CAO (Kimi K2)',
+    // Hermes P.I.C. Agent Models (Groq direct, free tier — no gateway)
+    // [claude-code 2026-03-13] Groq direct — model IDs without groq/ prefix
+    'hermes-cao': {
+      id: 'moonshotai/kimi-k2-instruct',
+      displayName: 'Hermes CAO (Kimi K2)',
       provider: 'openai-compatible',
-      providerType: 'openclaw',
-      apiKeyEnv: 'OPENCLAW_API_KEY',
-      baseUrl: getOpenClawOpenAIBaseUrl(),
+      providerType: 'hermes',
+      apiKeyEnv: 'HERMES_API_KEY',
+      baseUrl: getHermesOpenAIBaseUrl(),
       temperature: 0.3,
       maxTokens: 8192,
       timeoutMs: 30_000,
@@ -298,13 +307,13 @@ export const defaultAiConfig: AiConfig = {
       supportsStreaming: true,
       supportsVision: false
     },
-    'openclaw-research': {
-      id: 'groq/meta-llama/llama-4-maverick-17b-128e-instruct',
-      displayName: 'OpenClaw Research (Maverick 128E)',
+    'hermes-research': {
+      id: 'meta-llama/llama-4-maverick-17b-128e-instruct',
+      displayName: 'Hermes Research (Maverick 128E)',
       provider: 'openai-compatible',
-      providerType: 'openclaw',
-      apiKeyEnv: 'OPENCLAW_API_KEY',
-      baseUrl: getOpenClawOpenAIBaseUrl(),
+      providerType: 'hermes',
+      apiKeyEnv: 'HERMES_API_KEY',
+      baseUrl: getHermesOpenAIBaseUrl(),
       temperature: 0.4,
       maxTokens: 8192,
       timeoutMs: 30_000,
@@ -314,13 +323,13 @@ export const defaultAiConfig: AiConfig = {
       supportsStreaming: true,
       supportsVision: false
     },
-    'openclaw-fast': {
-      id: 'groq/meta-llama/llama-4-scout-17b-16e-instruct',
-      displayName: 'OpenClaw Fast (Scout)',
+    'hermes-fast': {
+      id: 'meta-llama/llama-4-scout-17b-16e-instruct',
+      displayName: 'Hermes Fast (Scout)',
       provider: 'openai-compatible',
-      providerType: 'openclaw',
-      apiKeyEnv: 'OPENCLAW_API_KEY',
-      baseUrl: getOpenClawOpenAIBaseUrl(),
+      providerType: 'hermes',
+      apiKeyEnv: 'HERMES_API_KEY',
+      baseUrl: getHermesOpenAIBaseUrl(),
       temperature: 0.25,
       maxTokens: 8192,
       timeoutMs: 20_000,
@@ -330,13 +339,13 @@ export const defaultAiConfig: AiConfig = {
       supportsStreaming: true,
       supportsVision: false
     },
-    'openclaw-realtime': {
-      id: 'groq/meta-llama/llama-4-scout-17b-16e-instruct',
-      displayName: 'OpenClaw Realtime (Scout)',
+    'hermes-realtime': {
+      id: 'meta-llama/llama-4-scout-17b-16e-instruct',
+      displayName: 'Hermes Realtime (Scout)',
       provider: 'openai-compatible',
-      providerType: 'openclaw',
-      apiKeyEnv: 'OPENCLAW_API_KEY',
-      baseUrl: getOpenClawOpenAIBaseUrl(),
+      providerType: 'hermes',
+      apiKeyEnv: 'HERMES_API_KEY',
+      baseUrl: getHermesOpenAIBaseUrl(),
       temperature: 0.3,
       maxTokens: 8192,
       timeoutMs: 25_000,
@@ -387,39 +396,39 @@ export const defaultAiConfig: AiConfig = {
   routing: {
     defaultModel,
     taskModelMap: {
-      // All tasks through OpenClaw gateway (Groq-powered, free tier)
+      // All tasks through Hermes/Groq direct (free tier)
       // Fast technical analysis
-      analysis: 'openclaw-fast',
-      // Deep research — OpenClaw CAO (Groq Llama 70B)
-      research: 'openclaw-cao',
-      // Complex reasoning — OpenClaw CAO
-      reasoning: 'openclaw-cao',
+      analysis: 'hermes-fast',
+      // Deep research — Hermes CAO (Kimi K2)
+      research: 'hermes-cao',
+      // Complex reasoning — Hermes CAO
+      reasoning: 'hermes-cao',
       // Ultra-fast technical
-      technical: 'openclaw-fast',
-      'quick-pulse': 'openclaw-fast',
-      quickpulse: 'openclaw-fast',
+      technical: 'hermes-fast',
+      'quick-pulse': 'hermes-fast',
+      quickpulse: 'hermes-fast',
       // Real-time news
-      news: 'openclaw-realtime',
+      news: 'hermes-realtime',
       // Sentiment analysis
-      sentiment: 'openclaw-realtime',
+      sentiment: 'hermes-realtime',
       // General chat
-      chat: 'openclaw-fast',
-      general: 'openclaw-fast',
-      // OpenClaw P.I.C. agent-specific tasks
-      'harper-cao': 'openclaw-cao',
-      'cao-approval': 'openclaw-cao',
-      'cao-consolidation': 'openclaw-research',
-      'pma-1': 'openclaw-realtime',
-      'pma-2': 'openclaw-realtime',
-      'prediction-market': 'openclaw-realtime',
-      'futures-desk': 'openclaw-fast',
-      'fa-rippers': 'openclaw-fast',
-      'economic-analysis': 'openclaw-realtime',
-      'fundamentals-desk': 'openclaw-cao',
-      'earnings-analysis': 'openclaw-cao',
-      'tech-mega-cap': 'openclaw-research'
+      chat: 'hermes-fast',
+      general: 'hermes-fast',
+      // Hermes P.I.C. agent-specific tasks
+      'harper-cao': 'hermes-cao',
+      'cao-approval': 'hermes-cao',
+      'cao-consolidation': 'hermes-research',
+      'pma-1': 'hermes-realtime',
+      'pma-2': 'hermes-realtime',
+      'prediction-market': 'hermes-realtime',
+      'futures-desk': 'hermes-fast',
+      'fa-rippers': 'hermes-fast',
+      'economic-analysis': 'hermes-realtime',
+      'fundamentals-desk': 'hermes-cao',
+      'earnings-analysis': 'hermes-cao',
+      'tech-mega-cap': 'hermes-research'
     },
-    // OpenRouter + OpenClaw fallback chain
+    // OpenRouter + Hermes fallback chain
     fallbackMap: {
       sonnet: 'openrouter-sonnet',
       grok: 'openrouter-grok',
@@ -427,11 +436,11 @@ export const defaultAiConfig: AiConfig = {
       'openrouter-llama': 'openrouter-grok',
       'openrouter-grok': 'openrouter-opus',
       'openrouter-opus': 'openrouter-sonnet',
-      // OpenClaw fallbacks (fall back to OpenRouter equivalents)
-      'openclaw-cao': 'openrouter-opus',
-      'openclaw-research': 'openrouter-sonnet',
-      'openclaw-fast': 'openrouter-llama',
-      'openclaw-realtime': 'openrouter-grok',
+      // Hermes fallbacks (fall back to OpenRouter equivalents)
+      'hermes-cao': 'openrouter-opus',
+      'hermes-research': 'openrouter-sonnet',
+      'hermes-fast': 'openrouter-llama',
+      'hermes-realtime': 'openrouter-grok',
       // Claude Local SDK fallback to OpenRouter Opus
       'claude-local': 'openrouter-opus',
       // GitHub Models fallback to OpenRouter
@@ -452,9 +461,9 @@ export const defaultAiConfig: AiConfig = {
     vercelGateway: {
       baseUrl: vercelGatewayBaseUrl
     },
-    openClaw: {
-      baseUrl: getOpenClawOpenAIBaseUrl(),
-      appName: getEnv('OPENCLAW_APP_NAME') ?? 'Pulse-PIC-Gateway'
+    hermes: {
+      baseUrl: getHermesOpenAIBaseUrl(),
+      appName: getEnv('HERMES_APP_NAME') ?? 'Pulse-PIC-Hermes'
     },
     githubModels: {
       baseUrl: githubModelsBaseUrl
@@ -479,10 +488,13 @@ export const isOpenRouterModel = (modelKey: AiModelKey): boolean => {
   return modelKey.startsWith('openrouter-')
 }
 
-// Helper to check if a model uses OpenClaw
-export const isOpenClawModel = (modelKey: AiModelKey): boolean => {
-  return modelKey.startsWith('openclaw-')
+// Helper to check if a model uses Hermes (Groq direct)
+export const isHermesModel = (modelKey: AiModelKey): boolean => {
+  return modelKey.startsWith('hermes-')
 }
+
+// Backward compat
+export const isOpenClawModel = isHermesModel
 
 // Helper to check if a model uses GitHub Models
 export const isGitHubModelsModel = (modelKey: AiModelKey): boolean => {
@@ -494,13 +506,15 @@ export const isClaudeLocalModel = (modelKey: AiModelKey): boolean => {
   return modelKey === 'claude-local'
 }
 
-// Translate OpenClaw model ID for the Clawdbot gateway
-// Gateway expects 'clawdbot:main' or 'clawdbot:<agentId>' format
-export const getOpenClawGatewayModel = (modelKey: AiModelKey): string => {
-  // All OpenClaw models route through the main agent (Harper)
-  // The gateway handles internal model selection
-  return 'clawdbot:main'
+// Get the actual Groq model ID for Hermes models
+// Groq direct — no gateway, no clawdbot:main alias, just the real model ID
+export const getHermesModelId = (modelKey: AiModelKey): string => {
+  const config = defaultAiConfig.models[modelKey]
+  return config?.id ?? 'meta-llama/llama-4-scout-17b-16e-instruct'
 }
+
+// Backward compat
+export const getOpenClawGatewayModel = getHermesModelId
 
 // Helper to get equivalent model across providers
 export const getCrossProviderEquivalent = (

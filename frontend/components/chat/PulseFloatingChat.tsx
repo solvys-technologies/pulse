@@ -1,9 +1,10 @@
-// [claude-code 2026-03-10] Migrated to useOpenClawRuntime + AssistantRuntimeProvider + PulseThread + PulseComposer
+// [claude-code 2026-03-13] Hermes migration: useOpenClawRuntime -> useHermesRuntime
+// [claude-code 2026-03-10] Migrated to useHermesRuntime + AssistantRuntimeProvider + PulseThread + PulseComposer
 import { useState, useCallback } from 'react';
 import { MessageSquare, X, Maximize2 } from 'lucide-react';
 import { AssistantRuntimeProvider, useThread, useThreadRuntime } from '@assistant-ui/react';
 import { usePulseAgents } from '../../contexts/PulseAgentContext';
-import { useOpenClawRuntime } from './useOpenClawRuntime';
+import { useHermesRuntime } from './useHermesRuntime';
 import { PulseThread } from './PulseThread';
 import { PulseComposer } from './PulseComposer';
 
@@ -107,7 +108,7 @@ export function PulseFloatingChat({ visible, onExpandToAnalysis }: PulseFloating
   const [thinkHarder, setThinkHarder] = useState(false);
   const { activeAgent } = usePulseAgents();
 
-  const { runtime, lastError, lastRequestId } = useOpenClawRuntime(
+  const { runtime, lastError, lastRequestId } = useHermesRuntime(
     activeAgent?.id ?? 'default',
     thinkHarder,
     'floating'

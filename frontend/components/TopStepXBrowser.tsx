@@ -2,11 +2,11 @@
 import { EmbeddedBrowserFrame } from './layout/EmbeddedBrowserFrame';
 import { useSettings } from '../contexts/SettingsContext';
 
-export type TradingPlatform = 'topstepx' | 'tradelocker' | 'kalshi' | 'research' | 'tradesea';
+export type TradingPlatform = 'topstepx' | 'hyperliquid' | 'kalshi' | 'research' | 'tradesea';
 
 export const PLATFORM_LABELS: Record<TradingPlatform, string> = {
   topstepx: 'TopStepX',
-  tradelocker: 'TradeLocker',
+  hyperliquid: 'Hyperliquid',
   kalshi: 'Kalshi',
   research: 'Research',
   tradesea: 'TradeSea',
@@ -14,7 +14,7 @@ export const PLATFORM_LABELS: Record<TradingPlatform, string> = {
 
 export const PLATFORM_URLS: Record<TradingPlatform, string> = {
   topstepx: 'https://www.topstepx.com',
-  tradelocker: 'https://platform.tradelocker.com',
+  hyperliquid: 'https://app.hyperliquid.xyz',
   kalshi: 'https://kalshi.com/markets',
   research: import.meta.env.VITE_NOTION_RESEARCH_URL || 'https://www.notion.so',
   tradesea: 'https://app.tradesea.ai/trade',

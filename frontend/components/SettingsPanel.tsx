@@ -1,3 +1,4 @@
+// [claude-code 2026-03-13] Hermes migration: OpenClaw Gateway -> Hermes Agent in UI text
 // [claude-code 2026-03-11] T2e: persistent thread toggle in Gateway tab
 // [claude-code 2026-03-11] T5: added mic device selector to notifications tab
 import { Settings, Bell, CreditCard, Cpu, Code, Volume2, Terminal, Wifi, Palette, Users, AlertTriangle, ArrowLeft, Globe, Mic } from 'lucide-react';
@@ -166,7 +167,7 @@ export function SettingsPage() {
 
   const tabs = [
     { id: 'general' as const, label: 'Profile', icon: Settings, description: 'Trading symbol, billing, and account preferences' },
-    { id: 'gateway' as const, label: 'Gateway', icon: Wifi, description: 'OpenClaw gateway connection and health status' },
+    { id: 'gateway' as const, label: 'Gateway', icon: Wifi, description: 'Hermes agent connection and health status' },
     { id: 'appearance' as const, label: 'Appearance', icon: Palette, description: 'Theme and visual customization options' },
     { id: 'desk' as const, label: 'Clawnalyst Desk', icon: Users, description: 'Configure analyst personas and agent settings' },
     { id: 'trading' as const, label: 'Trading', icon: Cpu, description: 'Risk management, autopilot, and strategy toggles' },
@@ -468,17 +469,29 @@ export function SettingsPage() {
                         >
                           ProjectX
                         </button>
+                        <button
+                          onClick={() => setPrimaryBroker('hyperliquid')}
+                          className={`px-3 py-2 rounded-lg border text-sm transition-all ${
+                            primaryBroker === 'hyperliquid'
+                              ? 'bg-[var(--pulse-accent)]/20 border-[var(--pulse-accent)]/40 text-[var(--pulse-accent)]'
+                              : 'bg-[var(--pulse-bg)] border-zinc-800 hover:border-zinc-700 text-gray-400'
+                          }`}
+                        >
+                          Hyperliquid (perps)
+                        </button>
                       </div>
                       <p className="text-xs text-gray-500 mt-2">
-                        Autopilot execution uses the selected broker. Rithmic is the primary; ProjectX remains available.
+                        Autopilot execution uses the selected broker. Rithmic for futures, ProjectX for sim, Hyperliquid for crypto perps.
                       </p>
                     </div>
 
-                    {/* Rithmic connection placeholder */}
+                    {/* Broker connection info */}
                     <div>
-                      <h4 className="text-sm font-semibold text-[var(--pulse-accent)] mb-3">Rithmic</h4>
-                      <div className="bg-[var(--pulse-surface)] border border-zinc-800 rounded-lg p-4 text-sm text-gray-400">
-                        Rithmic connection – coming soon. Configure credentials when the integration is available.
+                      <h4 className="text-sm font-semibold text-[var(--pulse-accent)] mb-3">Broker Status</h4>
+                      <div className="bg-[var(--pulse-surface)] border border-zinc-800 rounded-lg p-4 text-sm text-gray-400 space-y-1">
+                        <p><span className="text-gray-500">Rithmic:</span> Gateway sidecar on localhost:3002</p>
+                        <p><span className="text-gray-500">ProjectX:</span> TopStepX API</p>
+                        <p><span className="text-gray-500">Hyperliquid:</span> Wallet auth — set HYPERLIQUID_PRIVATE_KEY in backend .env</p>
                       </div>
                     </div>
 
@@ -1014,7 +1027,7 @@ function GatewayTab() {
 
   return (
     <section>
-      <h3 className="text-sm font-semibold text-[var(--pulse-accent)] mb-4">OpenClaw Gateway</h3>
+      <h3 className="text-sm font-semibold text-[var(--pulse-accent)] mb-4">Hermes Agent</h3>
       <div className="space-y-4">
         <div className="bg-[var(--pulse-bg)] border border-[var(--pulse-accent)]/20 rounded-lg p-4">
           <div className="flex items-center justify-between mb-3">
@@ -1037,7 +1050,7 @@ function GatewayTab() {
           </div>
         </div>
         <p className="text-xs text-gray-500">
-          The gateway connects Pulse to your OpenClaw agent sessions. Health checks run every 30 seconds.
+          The gateway connects Pulse to your Hermes agent sessions. Health checks run every 30 seconds.
         </p>
 
         {/* Persistent Thread */}

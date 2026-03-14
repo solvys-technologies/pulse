@@ -1,3 +1,4 @@
+// [claude-code 2026-03-13] Hermes migration: OpenClaw Gateway -> Hermes Agent
 // [claude-code 2026-03-11] First-time setup guide card with status indicators
 import { useState, useEffect, useCallback } from 'react';
 import { CheckCircle2, AlertCircle, Loader2, RefreshCw, X, Server, Globe, FileText, TrendingUp } from 'lucide-react';
@@ -70,7 +71,7 @@ export function SetupGuideCard({ onDismiss }: { onDismiss?: () => void }) {
 
   const services: ServiceCheck[] = [
     { id: 'backend', label: 'Backend API', description: 'Hono server on port 8080', icon: Server, status: backendStatus },
-    { id: 'gateway', label: 'OpenClaw Gateway', description: 'AI agent router', icon: Globe, status: gwStatus },
+    { id: 'gateway', label: 'Hermes Agent', description: 'AI agent router', icon: Globe, status: gwStatus },
     { id: 'notion', label: 'Notion Integration', description: 'Trade ideas & briefs', icon: FileText, status: notionStatus },
     { id: 'market', label: 'Market Data (VIX)', description: 'FMP API for IV scoring', icon: TrendingUp, status: marketDataStatus },
   ];

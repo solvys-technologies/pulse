@@ -1,6 +1,7 @@
+// [claude-code 2026-03-13] Hermes migration: renamed from useOpenClawChat.ts
 /**
- * useOpenClawChat Hook
- * Simple chat hook for local OpenClaw processing
+ * useHermesChat Hook
+ * Simple chat hook for Hermes AI processing
  */
 
 // [claude-code 2026-03-09] Added conversation history hydration on remount
@@ -10,7 +11,7 @@ import { DefaultChatTransport } from 'ai';
 import type { UIMessage } from 'ai';
 import { API_BASE_URL } from '../constants.js';
 
-/** Convert backend ChatMessage → UIMessage for useChat hydration */
+/** Convert backend ChatMessage -> UIMessage for useChat hydration */
 function backendToUIMessage(msg: { id: string; role: string; content: string; createdAt?: string }): UIMessage {
   return {
     id: msg.id,
@@ -19,7 +20,7 @@ function backendToUIMessage(msg: { id: string; role: string; content: string; cr
   };
 }
 
-export function useOpenClawChat(
+export function useHermesChat(
   conversationId: string | undefined,
   setConversationId: (id: string) => void,
   agentOverride?: string,
@@ -54,7 +55,7 @@ export function useOpenClawChat(
           body = JSON.stringify(bodyObj);
         }
       } catch (e) {
-        console.warn('[useOpenClawChat] Could not inject conversationId:', e);
+        console.warn('[useHermesChat] Could not inject conversationId:', e);
       }
     }
 

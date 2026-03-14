@@ -58,7 +58,7 @@ export interface IframeUrls {
   research: string;
 }
 
-export type PrimaryBroker = 'rithmic' | 'projectx';
+export type PrimaryBroker = 'rithmic' | 'projectx' | 'hyperliquid';
 
 interface SettingsContextType {
   apiKeys: APIKeys;

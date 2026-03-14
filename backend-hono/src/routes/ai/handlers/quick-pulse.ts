@@ -6,7 +6,7 @@
  */
 
 import type { Context } from 'hono'
-import { handleOpenClawChat } from '../../../services/openclaw-handler.js'
+import { handleHermesChat } from '../../../services/hermes-handler.js'
 import { takeScreenshot, isPlaywrightReady } from '../../../services/screenshot-service.js'
 import type { QuickPulseRequest, QuickPulseResult } from '../../../types/quick-pulse.js'
 
@@ -79,7 +79,7 @@ export async function handleQuickPulse(c: Context): Promise<Response> {
 
   let rawContent: string
   try {
-    const response = await handleOpenClawChat({
+    const response = await handleHermesChat({
       message: userText,
       multimodalContent,
       history: [],
@@ -87,7 +87,7 @@ export async function handleQuickPulse(c: Context): Promise<Response> {
     })
     rawContent = response.content
   } catch (err) {
-    console.error('[QuickPulse] OpenClaw call failed:', err)
+    console.error('[QuickPulse] Hermes call failed:', err)
     return c.json({ error: 'AI analysis failed. Please try again.' }, 500)
   }
 

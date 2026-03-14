@@ -1,3 +1,4 @@
+// [claude-code 2026-03-13] Hermes migration: openclawDescription -> hermesDescription
 // [claude-code 2026-03-03] Extended: polls Notion trade ideas on 60s interval,
 // injects them as RiskFlowAlerts with source='notion-trade-idea' pinned at top.
 // [claude-code 2026-03-10] Added pollBackendFeed (30s) — wires /api/riskflow/feed into context.
@@ -119,7 +120,7 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
         id: `notion-ti-${idea.id}`,
         headline: decodeHtmlEntities(`${idea.direction.toUpperCase()} — ${displayName}${idea.entry ? ` @ ${idea.entry}` : ''}`),
         summary: decodeHtmlEntities(
-          idea.openclawDescription
+          idea.hermesDescription
           ?? `${displayName} — ${idea.direction} trade idea${idea.confidence ? ` (${idea.confidence} confidence)` : ''}`
         ),
         url: idea.notionUrl,
@@ -141,7 +142,7 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
           confidence: idea.confidence,
           timeframe: idea.timeframe,
           sourceAgent: idea.sourceAgent,
-          openclawDescription: idea.openclawDescription,
+          hermesDescription: idea.hermesDescription,
           notionUrl: idea.notionUrl,
         },
       };

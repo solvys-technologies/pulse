@@ -621,7 +621,7 @@ This document provides detailed technical specifications for each Autopilot trad
 
 ### Antilag Detection (For FORTY_FORTY_CLUB and CHARGED_RIPPERS)
 
-**Antilag** is a critical confirmation signal that detects early price movement in correlated instruments. Since TradeLocker doesn't have tick-level data, we approximate antilag using 5-minute bars:
+**Antilag** is a critical confirmation signal that detects early price movement in correlated instruments. We approximate antilag using 5-minute bars:
 
 1. **Volume Surge Detection** (Tick Surge Approximation):
    - Check volume in recent 5-minute bars (approximating 90-second window)

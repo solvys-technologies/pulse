@@ -1,10 +1,10 @@
-// [claude-code 2026-03-10] Dynamic agent system prompt builder with skill injection and caching
-import type { OpenClawAgentRole } from '../openclaw-service.js'
+// [claude-code 2026-03-13] Hermes migration — replaced OpenClaw with Hermes/Groq direct
+import type { HermesAgentRole } from '../hermes-service.js'
 
 /**
- * Base agent prompts — extracted from openclaw-handler.ts AGENT_PROMPTS
+ * Base agent prompts — extracted from hermes-handler.ts AGENT_PROMPTS
  */
-const BASE_PROMPTS: Record<OpenClawAgentRole, string> = {
+const BASE_PROMPTS: Record<HermesAgentRole, string> = {
   'harper-cao': `You are Harper, the Chief Agentic Officer (CAO) of Priced In Capital.
 You oversee all trading operations and provide executive-level guidance.
 You consolidate reports from PMA agents, Futures Desk, and Fundamentals Desk.
@@ -63,7 +63,7 @@ const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
  * Build a dynamic system prompt for the given agent role + context
  */
 export function getAgentSystemPrompt(
-  role: OpenClawAgentRole,
+  role: HermesAgentRole,
   context?: {
     skillTag?: string | null
     thinkHarder?: boolean

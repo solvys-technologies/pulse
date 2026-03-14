@@ -1,9 +1,10 @@
+// [claude-code 2026-03-13] Hermes migration: useOpenClawRuntime -> useHermesRuntime
 // [claude-code 2026-03-10] Simplified ChatInterface — removed unused state, added AiLoader
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { AlertTriangle, CalendarCheck, X, Bookmark, Trash2 } from 'lucide-react';
 import { AssistantRuntimeProvider, useThread, useThreadRuntime } from '@assistant-ui/react';
 import { usePulseAgents } from '../contexts/PulseAgentContext';
-import { useOpenClawRuntime } from './chat/useOpenClawRuntime';
+import { useHermesRuntime } from './chat/useHermesRuntime';
 import { ChatHeader } from './chat/ChatHeader';
 import { PulseThread, AiLoader } from './chat/PulseThread';
 import { PulseComposer } from './chat/PulseComposer';
@@ -214,7 +215,7 @@ function ChatInterfaceInner({ conversationId, clearConversationId, lastError, th
 export default function ChatInterface() {
   const { activeAgent } = usePulseAgents();
   const [thinkHarderState, setThinkHarderState] = useState(false);
-  const { runtime, conversationId, clearConversationId, lastError, lastRequestId } = useOpenClawRuntime(activeAgent?.id ?? 'default', thinkHarderState, 'analysis');
+  const { runtime, conversationId, clearConversationId, lastError, lastRequestId } = useHermesRuntime(activeAgent?.id ?? 'default', thinkHarderState, 'analysis');
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>

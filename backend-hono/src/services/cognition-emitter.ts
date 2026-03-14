@@ -9,7 +9,7 @@ export type CognitionStepKind =
   | 'context-build'    // Conversation history loaded, context assembled
   | 'skill-check'      // Skill permission enforcement
   | 'tool-dispatch'    // External tool call (Exa, Notion, market data)
-  | 'gateway-call'     // OpenClaw gateway request
+  | 'gateway-call'     // Hermes/Groq API request
   | 'gateway-fallback' // Gateway failed → local fallback
   | 'response-ready'   // Full response assembled, streaming begins
   | 'error'            // Processing error

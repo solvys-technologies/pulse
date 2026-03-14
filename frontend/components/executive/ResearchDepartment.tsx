@@ -1,12 +1,13 @@
+// [claude-code 2026-03-13] Hermes migration: OpenClaw -> Hermes imports
 // [claude-code 2026-03-11] T2d: refactored sidebar to rounded bubble style + PulseChatInput
 import { useMemo, useState, useCallback } from 'react';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { useOpenClawChat } from '../chat/hooks/useOpenClawChat';
+import { useHermesChat } from '../chat/hooks/useHermesChat';
 import { usePulseAgents } from '../../contexts/PulseAgentContext';
 import { EmbeddedBrowserFrame } from '../layout/EmbeddedBrowserFrame';
-import { toOpenClawAgentOverride } from '../../lib/openclawAgentRouting';
-import { usePersistentOpenClawConversation } from '../../hooks/usePersistentOpenClawConversation';
+import { toHermesAgentOverride } from '../../lib/hermesAgentRouting';
+import { usePersistentHermesConversation } from '../../hooks/usePersistentHermesConversation';
 import { PulseThinkingIndicator } from '../chat/PulseThinkingIndicator';
 import { normalizeChatMessages } from '../../lib/chatMessageNormalizer';
 import { useSettings } from '../../contexts/SettingsContext';
@@ -26,9 +27,9 @@ export function ResearchDepartment() {
     // fallback
   }
   const agent = activeAgent || { name: 'Harper', icon: 'H' };
-  const openclawAgentOverride = toOpenClawAgentOverride((activeAgent as any)?.id);
-  const { conversationId, setConversationId } = usePersistentOpenClawConversation((activeAgent as any)?.id, 'research');
-  const { messages, sendMessage, status, stop } = useOpenClawChat(conversationId, setConversationId as any, openclawAgentOverride);
+  const hermesAgentOverride = toHermesAgentOverride((activeAgent as any)?.id);
+  const { conversationId, setConversationId } = usePersistentHermesConversation((activeAgent as any)?.id, 'research');
+  const { messages, sendMessage, status, stop } = useHermesChat(conversationId, setConversationId as any, hermesAgentOverride);
 
   const uiMessages = useMemo(() => {
     return normalizeChatMessages(messages as any[]).map((m) => ({
@@ -56,9 +57,9 @@ export function ResearchDepartment() {
     if (!msg) return;
     await sendMessage(
       { text: msg },
-      { body: { conversationId, agentOverride: openclawAgentOverride } }
+      { body: { conversationId, agentOverride: hermesAgentOverride } }
     );
-  }, [sendMessage, conversationId, openclawAgentOverride]);
+  }, [sendMessage, conversationId, hermesAgentOverride]);
 
   return (
     <div className="h-full w-full flex overflow-hidden">

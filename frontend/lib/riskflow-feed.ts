@@ -1,3 +1,4 @@
+// [claude-code 2026-03-13] Hermes migration: openclawDescription -> hermesDescription in TradeIdeaDetail
 /**
  * RiskFlow RSS Feed Poller — MarketWatch Real-Time Headlines
  * Fetches, parses, classifies, and deduplicates market news alerts.
@@ -30,7 +31,7 @@ export interface TradeIdeaDetail {
   confidence?: string;
   timeframe?: string;
   sourceAgent?: string;
-  openclawDescription?: string;
+  hermesDescription?: string;
   notionUrl: string;
 }
 

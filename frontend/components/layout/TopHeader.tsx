@@ -136,7 +136,7 @@ export function TopHeader({
   const platformOptions: Array<{ value: TradingPlatform; label: string; description: string }> = [
     { value: 'tradesea', label: 'TradeSea', description: 'TradeSea Trading' },
     { value: 'topstepx', label: 'TopStepX', description: 'Real-Time Futures Trading Platform' },
-    { value: 'tradelocker', label: 'TradeLocker', description: 'Real-Time CFDs Trading Platform' },
+    { value: 'hyperliquid', label: 'Hyperliquid', description: 'Perpetual Futures DEX' },
     { value: 'kalshi', label: 'Kalshi', description: 'Prediction Market' },
     { value: 'research', label: 'Research', description: 'Notion Research iFrame' },
   ];

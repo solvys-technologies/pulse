@@ -1,11 +1,12 @@
+// [claude-code 2026-03-13] Hermes migration — replaced OpenClaw with Hermes/Groq direct
 /**
  * Shared AI types for multi-provider architecture
  * Supports OpenRouter primary with Vercel Gateway fallback
- * OpenClaw integration for P.I.C. agentic backend
+ * Hermes integration for P.I.C. agentic backend (Groq direct)
  */
 
 // Provider type discriminator
-export type AiProviderType = 'openrouter' | 'vercel-gateway' | 'openclaw' | 'github-models' | 'claude-local'
+export type AiProviderType = 'openrouter' | 'vercel-gateway' | 'hermes' | 'github-models' | 'claude-local'
 
 // Circuit breaker states
 export type CircuitState = 'closed' | 'open' | 'half-open'

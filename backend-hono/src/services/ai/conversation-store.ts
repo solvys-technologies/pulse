@@ -33,7 +33,7 @@ export function estimateTokens(messages: { role: string; content: string }[]): n
 }
 
 /**
- * Summarize older messages via OpenClaw gateway when context exceeds threshold
+ * Summarize older messages via Hermes/Groq direct when context exceeds threshold
  */
 async function summarizeOlderMessages(
   messages: { role: 'user' | 'assistant'; content: string }[]
@@ -41,20 +41,21 @@ async function summarizeOlderMessages(
   const olderMessages = messages.slice(0, messages.length - VERBATIM_TAIL)
   if (olderMessages.length === 0) return null
 
-  const gatewayUrl = (process.env.OPENCLAW_BASE_URL ?? 'http://localhost:7787').replace(/\/+$/, '')
-  const apiKey = process.env.OPENCLAW_API_KEY ?? ''
+  const rawBase = (process.env.HERMES_BASE_URL ?? 'https://api.groq.com/openai/v1').replace(/\/+$/, '')
+  const baseUrl = rawBase.endsWith('/v1') ? rawBase : `${rawBase}/v1`
+  const apiKey = process.env.HERMES_API_KEY ?? ''
 
   const summaryPrompt = `Summarize this conversation history concisely, preserving key facts, decisions, and context:\n\n${olderMessages.map(m => `${m.role}: ${m.content}`).join('\n\n')}`
 
   try {
-    const response = await fetch(`${gatewayUrl}/v1/chat/completions`, {
+    const response = await fetch(`${baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'clawdbot:main',
+        model: 'meta-llama/llama-4-scout-17b-16e-instruct',
         messages: [
           { role: 'system', content: 'You are a concise conversation summarizer. Preserve key facts, trade ideas, decisions, and numbers. Be brief.' },
           { role: 'user', content: summaryPrompt },

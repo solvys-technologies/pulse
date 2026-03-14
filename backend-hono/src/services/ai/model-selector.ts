@@ -1,7 +1,7 @@
+// [claude-code 2026-03-13] Hermes migration — replaced OpenClaw with Hermes/Groq direct
 /**
  * AI Model Selector
  * Vercel AI Gateway integration with model routing and fallback logic
- * Day 15 - Phase 5 Implementation
  */
 
 import { createOpenAI } from '@ai-sdk/openai'
@@ -15,9 +15,9 @@ import {
   resolveModelKey,
   getCrossProviderEquivalent,
   isOpenRouterModel,
-  isOpenClawModel,
+  isHermesModel,
   isGitHubModelsModel,
-  getOpenClawGatewayModel,
+  getHermesModelId,
 } from '../../config/ai-config.js'
 
 // Re-export for use by other modules
@@ -32,49 +32,49 @@ const HEALTH_CHECK_TTL_MS = 60_000
 
 /**
  * Task type to model routing
- * All tasks through OpenClaw gateway (Groq-powered, free tier)
+ * All tasks through Hermes/Groq direct (free tier)
  * OpenRouter kept as fallback only
  */
 const TASK_MODEL_PREFERENCES: Record<string, AiModelKey[]> = {
-  // News/sentiment — OpenClaw realtime (Groq), OpenRouter fallback
-  news: ['openclaw-realtime', 'openrouter-grok', 'openrouter-llama'],
-  sentiment: ['openclaw-realtime', 'openrouter-grok', 'openrouter-llama'],
+  // News/sentiment — Hermes realtime (Groq Scout), OpenRouter fallback
+  news: ['hermes-realtime', 'openrouter-grok', 'openrouter-llama'],
+  sentiment: ['hermes-realtime', 'openrouter-grok', 'openrouter-llama'],
 
-  // Chat/general — OpenClaw fast (Groq Llama 3.3 70B @ ~750 tok/s)
-  chat: ['openclaw-fast', 'openrouter-llama', 'openrouter-grok'],
-  general: ['openclaw-fast', 'openrouter-llama', 'openrouter-grok'],
+  // Chat/general — Hermes fast (Groq Scout @ ~750 tok/s)
+  chat: ['hermes-fast', 'openrouter-llama', 'openrouter-grok'],
+  general: ['hermes-fast', 'openrouter-llama', 'openrouter-grok'],
 
-  // Technical analysis — OpenClaw fast
-  technical: ['openclaw-fast', 'openrouter-llama', 'openrouter-grok'],
-  quickpulse: ['openclaw-fast', 'openrouter-llama', 'openrouter-grok'],
+  // Technical analysis — Hermes fast
+  technical: ['hermes-fast', 'openrouter-llama', 'openrouter-grok'],
+  quickpulse: ['hermes-fast', 'openrouter-llama', 'openrouter-grok'],
 
-  // Deep research / reasoning — OpenClaw CAO (Groq), OpenRouter fallback
-  research: ['openclaw-cao', 'openrouter-opus', 'openrouter-sonnet'],
-  reasoning: ['openclaw-cao', 'openrouter-opus', 'openrouter-sonnet'],
+  // Deep research / reasoning — Hermes CAO (Kimi K2), OpenRouter fallback
+  research: ['hermes-cao', 'openrouter-opus', 'openrouter-sonnet'],
+  reasoning: ['hermes-cao', 'openrouter-opus', 'openrouter-sonnet'],
 
-  // OpenClaw P.I.C. Agent-specific task routing
-  // Harper/CAO - Executive reasoning (Opus via OpenClaw, fallback to OpenRouter)
-  'harper-cao': ['openclaw-cao', 'openrouter-opus', 'openrouter-sonnet'],
-  'cao-approval': ['openclaw-cao', 'openrouter-opus', 'openrouter-sonnet'],
-  'cao-consolidation': ['openclaw-research', 'openrouter-sonnet', 'openrouter-llama'],
+  // Hermes P.I.C. Agent-specific task routing
+  // Harper/CAO - Executive reasoning
+  'harper-cao': ['hermes-cao', 'openrouter-opus', 'openrouter-sonnet'],
+  'cao-approval': ['hermes-cao', 'openrouter-opus', 'openrouter-sonnet'],
+  'cao-consolidation': ['hermes-research', 'openrouter-sonnet', 'openrouter-llama'],
 
-  // PMA agents - Real-time prediction market analysis (Grok)
-  'pma-1': ['openclaw-realtime', 'openrouter-grok', 'openrouter-llama'],
-  'pma-2': ['openclaw-realtime', 'openrouter-grok', 'openrouter-llama'],
-  'prediction-market': ['openclaw-realtime', 'openrouter-grok', 'openrouter-llama'],
+  // PMA agents - Real-time prediction market analysis
+  'pma-1': ['hermes-realtime', 'openrouter-grok', 'openrouter-llama'],
+  'pma-2': ['hermes-realtime', 'openrouter-grok', 'openrouter-llama'],
+  'prediction-market': ['hermes-realtime', 'openrouter-grok', 'openrouter-llama'],
 
-  // Futures Desk - Fast technical analysis (Llama)
-  'futures-desk': ['openclaw-fast', 'openrouter-llama', 'openrouter-grok'],
-  'fa-rippers': ['openclaw-fast', 'openrouter-llama', 'openrouter-grok'],
-  'economic-analysis': ['openclaw-realtime', 'openrouter-grok', 'openrouter-llama'],
+  // Futures Desk - Fast technical analysis
+  'futures-desk': ['hermes-fast', 'openrouter-llama', 'openrouter-grok'],
+  'fa-rippers': ['hermes-fast', 'openrouter-llama', 'openrouter-grok'],
+  'economic-analysis': ['hermes-realtime', 'openrouter-grok', 'openrouter-llama'],
 
-  // Fundamentals Desk - Deep research (Opus)
-  'fundamentals-desk': ['openclaw-cao', 'openrouter-opus', 'openrouter-sonnet'],
-  'earnings-analysis': ['openclaw-cao', 'openrouter-opus', 'openrouter-sonnet'],
-  'tech-mega-cap': ['openclaw-research', 'openrouter-sonnet', 'openrouter-llama'],
+  // Fundamentals Desk - Deep research
+  'fundamentals-desk': ['hermes-cao', 'openrouter-opus', 'openrouter-sonnet'],
+  'earnings-analysis': ['hermes-cao', 'openrouter-opus', 'openrouter-sonnet'],
+  'tech-mega-cap': ['hermes-research', 'openrouter-sonnet', 'openrouter-llama'],
 
-  // Default fallback chain — OpenClaw (Groq-powered) first
-  default: ['openclaw-fast', 'openrouter-llama', 'openrouter-grok'],
+  // Default fallback chain — Hermes (Groq direct) first
+  default: ['hermes-fast', 'openrouter-llama', 'openrouter-grok'],
 }
 
 // Runtime token store for user-provided tokens (e.g. GitHub OAuth)
@@ -153,7 +153,7 @@ export function selectModel(context: ModelSelectionContext = {}): ModelSelection
   // Find first available model from preference chain
   for (const modelKey of preferredChain) {
     if (!hasApiKey(modelKey)) continue
-    
+
     const config = defaultAiConfig.models[modelKey]
     if (!isProviderHealthy(config.providerType)) continue
 
@@ -202,7 +202,7 @@ function estimateCost(modelKey: AiModelKey, inputChars: number): number {
   const config = defaultAiConfig.models[modelKey]
   const inputTokens = Math.ceil(inputChars / 4) // rough estimate
   const outputTokens = 500 // assume moderate response
-  
+
   return (inputTokens / 1000) * config.costPer1kInputUsd +
          (outputTokens / 1000) * config.costPer1kOutputUsd
 }
@@ -212,7 +212,7 @@ function estimateCost(modelKey: AiModelKey, inputChars: number): number {
  */
 export function getFallbackModel(failedModel: AiModelKey): ModelSelectionResult | null {
   const config = defaultAiConfig.models[failedModel]
-  
+
   // Try same-provider fallback first
   const sameProviderFallback = defaultAiConfig.routing.fallbackMap[failedModel]
   if (sameProviderFallback && hasApiKey(sameProviderFallback)) {
@@ -251,7 +251,7 @@ export function getFallbackModel(failedModel: AiModelKey): ModelSelectionResult 
 export function createModelClient(modelKey: AiModelKey) {
   const config = defaultAiConfig.models[modelKey]
   const apiKey = process.env[config.apiKeyEnv]
-  
+
   if (!apiKey) {
     throw new Error(`Missing API key for model ${modelKey} (env: ${config.apiKeyEnv})`)
   }
@@ -282,16 +282,17 @@ export function createModelClient(modelKey: AiModelKey) {
     return client(config.id)
   }
 
-  // OpenClaw P.I.C. agent models use OpenAI-compatible client
-  if (isOpenClawModel(modelKey)) {
+  // Hermes P.I.C. agent models — Groq direct (no gateway, no clawdbot:main)
+  if (isHermesModel(modelKey)) {
     const client = createOpenAI({
       apiKey,
       baseURL: config.baseUrl,
       headers: {
-        'X-OpenClaw-App': process.env.OPENCLAW_APP_NAME ?? 'Pulse-PIC-Gateway',
+        'X-Hermes-App': process.env.HERMES_APP_NAME ?? 'Pulse-PIC-Hermes',
       },
     })
-    return client(getOpenClawGatewayModel(modelKey))
+    // Use the actual Groq model ID directly
+    return client(getHermesModelId(modelKey))
   }
 
   // Vercel Gateway models - route based on provider type in model ID
@@ -301,17 +302,17 @@ export function createModelClient(modelKey: AiModelKey) {
       const client = createAnthropic({ apiKey })
       return client(config.id.replace('anthropic/', ''))
     }
-    
+
     if (config.id.startsWith('xai/')) {
       const client = createXai({ apiKey })
       return client(config.id.replace('xai/', ''))
     }
-    
+
     if (config.id.startsWith('groq/')) {
       const client = createGroq({ apiKey })
       return client(config.id.replace('groq/', ''))
     }
-    
+
     // Fallback to OpenAI-compatible client
     const client = createOpenAI({
       apiKey,

@@ -1,6 +1,7 @@
+// [claude-code 2026-03-13] Hermes migration — replaced OpenClaw with Hermes/Groq direct
 import type { Context } from 'hono';
 import * as conversationStore from '../../services/ai/conversation-store.js';
-import { handleOpenClawChat } from '../../services/openclaw-handler.js';
+import { handleHermesChat } from '../../services/hermes-handler.js';
 import { synthesizeVoice, transcribeVoice } from '../../services/voice-service.js';
 import { analyzeSentiment } from '../../services/voice-sentiment.js';
 
@@ -17,7 +18,7 @@ async function resolveConversation(userId: string, conversationId: string | unde
 
   return conversationStore.createConversation(userId, {
     title: conversationStore.generateTitle(text),
-    model: 'openclaw-harper-cao-voice',
+    model: 'hermes-harper-cao-voice',
     metadata: {
       channel: 'voice',
       agent: 'harper-cao',
@@ -91,13 +92,13 @@ export async function handleSpeak(c: Context) {
     const conversation = await resolveConversation(userId, body?.conversationId, text);
     const history = await conversationStore.getRecentContext(conversation.id);
 
-    const openClawInput =
+    const hermesInput =
       mode === 'infraction'
         ? `Psych Assist infraction signal. Provide a concise intervention with immediate de-escalation guidance. Context: ${text}`
         : text;
 
-    const response = await handleOpenClawChat({
-      message: openClawInput,
+    const response = await handleHermesChat({
+      message: hermesInput,
       conversationId: conversation.id,
       history,
       agentOverride: 'harper-cao',
@@ -118,7 +119,7 @@ export async function handleSpeak(c: Context) {
       conversationId: conversation.id,
       role: 'assistant',
       content: response.content,
-      model: `openclaw-${response.agent}`,
+      model: `hermes-${response.agent}`,
       metadata: {
         channel: 'voice',
         mode,

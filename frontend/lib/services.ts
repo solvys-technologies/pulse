@@ -561,6 +561,34 @@ export class RithmicService {
   }
 }
 
+// Hyperliquid Service
+export interface HyperliquidStatusResponse {
+  connected: boolean;
+  message: string;
+}
+
+export interface HyperliquidAccountResponse {
+  accountValue: number;
+  totalMarginUsed: number;
+  availableBalance: number;
+}
+
+export class HyperliquidService {
+  constructor(private client: ApiClient) {}
+
+  async getStatus(): Promise<HyperliquidStatusResponse> {
+    return this.client.get<HyperliquidStatusResponse>('/api/hyperliquid/status');
+  }
+
+  async getPositions(): Promise<{ positions: any[] }> {
+    return this.client.get<{ positions: any[] }>('/api/hyperliquid/positions');
+  }
+
+  async getAccountInfo(): Promise<HyperliquidAccountResponse> {
+    return this.client.get<HyperliquidAccountResponse>('/api/hyperliquid/account');
+  }
+}
+
 // Autopilot Service
 export interface AutopilotStatusResponse {
   enabled: boolean;
@@ -846,7 +874,7 @@ export interface NotionTradeIdeaItem {
   confidence?: string;
   timeframe?: string;
   sourceAgent?: string;
-  openclawDescription?: string;
+  hermesDescription?: string;
   notionUrl: string;
   createdAt: string;
   updatedAt: string;
@@ -1251,6 +1279,7 @@ export interface BackendClient {
   trading: TradingService;
   projectx: ProjectXService;
   rithmic: RithmicService;
+  hyperliquid: HyperliquidService;
   notifications: NotificationsService;
   er: ERService;
   voice: VoiceService;
@@ -1280,6 +1309,7 @@ export function createBackendClient(client: ApiClient): BackendClient {
     trading: new TradingService(client),
     projectx: new ProjectXService(client),
     rithmic: new RithmicService(client),
+    hyperliquid: new HyperliquidService(client),
     notifications: new NotificationsService(client),
     er: new ERService(client),
     voice: new VoiceService(client),

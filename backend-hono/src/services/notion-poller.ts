@@ -1,5 +1,6 @@
-// [claude-code 2026-03-03] Notion poller — polls Trade Ideas + Daily P&L on 60s interval,
-// generates OpenClaw descriptions for new trade ideas, caches results for API responses.
+// [claude-code 2026-03-13] Hermes migration — Groq direct, no gateway middleman
+// Notion poller — polls Trade Ideas + Daily P&L on 60s interval,
+// generates Hermes descriptions for new trade ideas, caches results for API responses.
 
 import {
   queryTradeIdeas,
@@ -26,11 +27,11 @@ const cache: PollerCache = {
 
 let intervalId: ReturnType<typeof setInterval> | null = null;
 
-async function generateOpenClawDescription(idea: NotionTradeIdea): Promise<string> {
-  const apiKey = process.env.OPENCLAW_API_KEY;
+async function generateHermesDescription(idea: NotionTradeIdea): Promise<string> {
+  const apiKey = process.env.HERMES_API_KEY;
   if (!apiKey) return '';
 
-  const rawBase = process.env.OPENCLAW_BASE_URL ?? 'http://localhost:7787';
+  const rawBase = process.env.HERMES_BASE_URL ?? 'https://api.groq.com/openai/v1';
   const base = rawBase.trim().replace(/\/+$/, '');
   const url = base.endsWith('/v1') ? `${base}/chat/completions` : `${base}/v1/chat/completions`;
 
@@ -46,10 +47,10 @@ async function generateOpenClawDescription(idea: NotionTradeIdea): Promise<strin
       headers: {
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        'X-OpenClaw-App': 'Pulse-Notion-Poller',
+        'X-Hermes-App': 'Pulse-Notion-Poller',
       },
       body: JSON.stringify({
-        model: 'meta-llama/llama-3.3-70b-instruct',
+        model: 'meta-llama/llama-4-scout-17b-16e-instruct',
         messages: [{ role: 'user', content: prompt }],
         max_tokens: 120,
         temperature: 0.3,
@@ -75,14 +76,14 @@ async function poll(): Promise<void> {
     if (brandNew.length > 0) {
       console.log(`[NotionPoller] ${brandNew.length} new trade idea(s) — generating descriptions`);
       for (const idea of brandNew) {
-        idea.openclawDescription = await generateOpenClawDescription(idea);
+        idea.hermesDescription = await generateHermesDescription(idea);
       }
     }
 
     // Preserve descriptions for existing ideas
-    const descMap = new Map(cache.tradeIdeas.map((i) => [i.id, i.openclawDescription]));
+    const descMap = new Map(cache.tradeIdeas.map((i) => [i.id, i.hermesDescription]));
     for (const idea of newIdeas) {
-      if (!idea.openclawDescription) idea.openclawDescription = descMap.get(idea.id);
+      if (!idea.hermesDescription) idea.hermesDescription = descMap.get(idea.id);
     }
 
     cache.tradeIdeas = newIdeas;

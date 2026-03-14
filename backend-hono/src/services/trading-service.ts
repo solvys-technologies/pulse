@@ -13,6 +13,7 @@ import type {
 import * as projectxService from './projectx-service.js';
 import * as projectxClient from './projectx/client.js';
 import * as rithmicService from './rithmic-service.js';
+import * as hyperliquidService from './hyperliquid-service.js';
 import { recordActivityEvent } from './projectx-activity-service.js';
 
 // In-memory store for algo status (per user)
@@ -87,9 +88,45 @@ export async function fireTestTrade(
     side: 'buy' | 'sell';
   }
 ): Promise<{ success: boolean; orderId?: string | number; message: string }> {
-  const broker = (process.env.PRIMARY_BROKER ?? 'rithmic') as 'rithmic' | 'projectx';
+  const broker = (process.env.PRIMARY_BROKER ?? 'rithmic') as 'rithmic' | 'projectx' | 'hyperliquid';
   const symbolSearch = params.symbol.replace(/^\//, '');
   const direction = params.side === 'buy' ? 'long' : 'short';
+
+  if (broker === 'hyperliquid') {
+    const result = await hyperliquidService.executeOrder(userId, {
+      symbol: symbolSearch,
+      direction,
+      quantity: 1,
+    });
+    if (!result.success) {
+      throw new Error(result.error ?? 'Hyperliquid order failed');
+    }
+
+    const numericAccountId = Number.parseInt(params.accountId, 10);
+    if (Number.isFinite(numericAccountId)) {
+      await recordActivityEvent(userId, {
+        accountId: numericAccountId,
+        eventType: 'order_filled',
+        eventSource: 'hyperliquid',
+        eventTimestamp: new Date(),
+        isTrade: true,
+        symbol: symbolSearch,
+        side: params.side,
+        quantity: 1,
+        eventWeight: 1,
+        payload: {
+          broker: 'hyperliquid',
+          orderId: result.orderId,
+        },
+      });
+    }
+
+    return {
+      success: true,
+      orderId: result.orderId,
+      message: `Order #${result.orderId} placed — 1 ${symbolSearch} ${direction.toUpperCase()} @ Market (Hyperliquid)`,
+    };
+  }
 
   if (broker === 'rithmic') {
     const result = await rithmicService.executeOrder(userId, {

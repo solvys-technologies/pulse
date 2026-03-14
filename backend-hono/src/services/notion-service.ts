@@ -367,7 +367,7 @@ export interface NotionTradeIdea {
   confidence?: string;
   timeframe?: string;
   sourceAgent?: string;
-  openclawDescription?: string;
+  hermesDescription?: string;
   notionUrl: string;
   createdAt: string;
   updatedAt: string;
@@ -481,7 +481,7 @@ export async function queryTradeIdeas(): Promise<NotionTradeIdea[]> {
           confidence,
           timeframe: String(extractPropValue(props['Date']) ?? '') || undefined,
           sourceAgent,
-          openclawDescription: thesis ? thesis.slice(0, 300) : undefined, // Seed with thesis excerpt
+          hermesDescription: thesis ? thesis.slice(0, 300) : undefined, // Seed with thesis excerpt
           notionUrl: page.url ?? '',
           createdAt: page.created_time ?? new Date().toISOString(),
           updatedAt: page.last_edited_time ?? new Date().toISOString(),

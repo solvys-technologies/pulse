@@ -1,9 +1,10 @@
+// [claude-code 2026-03-13] Hermes migration: renamed from usePersistentOpenClawConversation.ts
 // [claude-code 2026-03-11] T2e: persistent thread support from Gateway settings
 import { useCallback, useEffect, useState } from 'react';
-import { openClawConversationStorageKey } from '../lib/openclawAgentRouting';
+import { hermesConversationStorageKey } from '../lib/hermesAgentRouting';
 
 // [claude-code 2026-03-09] Added surfaceId for per-surface session isolation
-export function usePersistentOpenClawConversation(
+export function usePersistentHermesConversation(
   pulseAgentId: string | undefined | null,
   surfaceId?: string,
 ) {
@@ -19,14 +20,14 @@ export function usePersistentOpenClawConversation(
       return;
     }
 
-    const key = openClawConversationStorageKey(pulseAgentId, surfaceId);
+    const key = hermesConversationStorageKey(pulseAgentId, surfaceId);
     const stored = localStorage.getItem(key) || undefined;
     setConversationIdState(stored);
   }, [pulseAgentId, surfaceId]);
 
   const setConversationId = useCallback(
     (id: string) => {
-      const key = openClawConversationStorageKey(pulseAgentId, surfaceId);
+      const key = hermesConversationStorageKey(pulseAgentId, surfaceId);
       localStorage.setItem(key, id);
 
       // Also update persistent thread ID if persistent mode is enabled
@@ -42,11 +43,10 @@ export function usePersistentOpenClawConversation(
 
   const clearConversationId = useCallback(() => {
     // Only clear the per-agent key, not the persistent thread
-    const key = openClawConversationStorageKey(pulseAgentId, surfaceId);
+    const key = hermesConversationStorageKey(pulseAgentId, surfaceId);
     localStorage.removeItem(key);
     setConversationIdState(undefined);
   }, [pulseAgentId, surfaceId]);
 
   return { conversationId, setConversationId, clearConversationId };
 }
-

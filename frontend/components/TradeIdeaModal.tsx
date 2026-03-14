@@ -1,3 +1,4 @@
+// [claude-code 2026-03-13] Hermes migration: openclawDescription -> hermesDescription
 // [claude-code 2026-03-03] Trade Idea modal — shown when a Notion trade idea RiskFlow item is clicked.
 // [claude-code 2026-03-03] Layout polish: tighter padding, formatted price values.
 // Solvys Gold palette: BG #050402, Accent #c79f4a, Text #f0ead6. No gradients, no colored emojis.
@@ -94,14 +95,14 @@ export default function TradeIdeaModal({ idea, onClose }: TradeIdeaModalProps) {
 
           {/* Body */}
           <div className="flex-1 overflow-y-auto px-4 py-3.5 space-y-3.5">
-            {/* OpenClaw description */}
-            {idea.openclawDescription && (
+            {/* Hermes description */}
+            {idea.hermesDescription && (
               <div className="border-l-2 border-[var(--pulse-accent)]/50 pl-3">
                 <div className="text-[9px] tracking-[0.2em] uppercase text-[var(--pulse-accent)]/60 mb-1.5">
                   Trade Brief
                 </div>
                 <p className="text-xs text-zinc-300 leading-relaxed">
-                  {idea.openclawDescription}
+                  {idea.hermesDescription}
                 </p>
               </div>
             )}
