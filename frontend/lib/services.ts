@@ -1098,6 +1098,7 @@ export interface JournalEntryItem {
   infractions?: string[];
   disciplineScore?: number;
   notes?: string;
+  emotionalControlRating?: number;
   agentName?: string;
   proposalCount?: number;
   acceptedCount?: number;
