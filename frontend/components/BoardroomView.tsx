@@ -1,10 +1,12 @@
 // [claude-code 2026-03-11] Add popup interception via window message listener → window.open in new tab.
+// [claude-code 2026-03-13] T3: Agent Chat toggle — default view is now BoardroomChat
 
 import { useEffect, useMemo, useState } from 'react';
 import { InterventionSidebar } from './InterventionSidebar';
 import { useBoardroom } from '../hooks/useBoardroom';
 import { EmbeddedBrowserFrame } from './layout/EmbeddedBrowserFrame';
 import { useSettings } from '../contexts/SettingsContext';
+import { BoardroomChat } from './boardroom/BoardroomChat';
 
 type BoardroomMeetingSchedule = {
   nowIso: string;
@@ -15,7 +17,11 @@ type BoardroomMeetingSchedule = {
   source: 'cron' | 'fallback';
 };
 
+type BoardroomViewMode = 'chat' | 'notion';
+
 export function BoardroomView() {
+  const [viewMode, setViewMode] = useState<BoardroomViewMode>('chat');
+
   const {
     interventionMessages,
     status,
@@ -126,12 +132,12 @@ export function BoardroomView() {
     return () => window.removeEventListener('message', onMessage);
   }, []);
 
-  return (
-    <div className="h-full w-full flex">
-      {/* Main panel: Notion iframe + countdown */}
-      <div className="flex-[2] min-w-0 flex flex-col">
-        {/* Header strip */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--pulse-accent)]/10">
+  // Agent Chat view — full bleed, no sidebar (chat IS the sidebar)
+  if (viewMode === 'chat') {
+    return (
+      <div className="h-full w-full flex flex-col">
+        {/* Header with view toggle */}
+        <div className="flex items-center justify-between px-5 py-2.5 border-b border-[var(--pulse-accent)]/10">
           <div className="flex items-baseline gap-3 min-w-0">
             <div className="text-xs font-semibold tracking-[0.18em] uppercase text-[var(--pulse-accent)]">
               Board Room
@@ -141,6 +147,59 @@ export function BoardroomView() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <div className="flex rounded-md border border-[var(--pulse-accent)]/20 overflow-hidden text-[10px]">
+              <button
+                onClick={() => setViewMode('chat')}
+                className="px-2.5 py-1 font-medium transition-colors bg-[var(--pulse-accent)]/15 text-[var(--pulse-accent)]"
+              >
+                Agent Chat
+              </button>
+              <button
+                onClick={() => setViewMode('notion')}
+                className="px-2.5 py-1 font-medium transition-colors text-gray-500 hover:text-gray-300"
+              >
+                Notion View
+              </button>
+            </div>
+          </div>
+        </div>
+        <div className="flex-1 min-h-0">
+          <BoardroomChat />
+        </div>
+      </div>
+    );
+  }
+
+  // Notion View — original layout
+  return (
+    <div className="h-full w-full flex">
+      {/* Main panel: Notion iframe + countdown */}
+      <div className="flex-[2] min-w-0 flex flex-col">
+        {/* Header strip */}
+        <div className="flex items-center justify-between px-5 py-2.5 border-b border-[var(--pulse-accent)]/10">
+          <div className="flex items-baseline gap-3 min-w-0">
+            <div className="text-xs font-semibold tracking-[0.18em] uppercase text-[var(--pulse-accent)]">
+              Board Room
+            </div>
+            <div className="text-xs text-gray-300 truncate" title={countdownText}>
+              {countdownText}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex rounded-md border border-[var(--pulse-accent)]/20 overflow-hidden text-[10px]">
+              <button
+                onClick={() => setViewMode('chat')}
+                className="px-2.5 py-1 font-medium transition-colors text-gray-500 hover:text-gray-300"
+              >
+                Agent Chat
+              </button>
+              <button
+                onClick={() => setViewMode('notion')}
+                className="px-2.5 py-1 font-medium transition-colors bg-[var(--pulse-accent)]/15 text-[var(--pulse-accent)]"
+              >
+                Notion View
+              </button>
+            </div>
             <div
               className={`w-2.5 h-2.5 rounded-full ${
                 isLive ? 'bg-green-400' : 'bg-gray-600'
@@ -154,7 +213,7 @@ export function BoardroomView() {
           </div>
         </div>
 
-        {/* Notion iframe; URL from VITE_NOTION_BOARDROOM_URL. If embed fails, open in browser. */}
+        {/* Notion iframe */}
         <div className="flex-1 min-h-0 w-full bg-white relative">
           <EmbeddedBrowserFrame
             title="Boardroom (Notion)"

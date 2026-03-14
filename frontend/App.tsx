@@ -9,6 +9,7 @@ import { RiskFlowProvider } from './contexts/RiskFlowContext';
 import { ContextBankProvider } from './contexts/ContextBankContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { VoiceProvider, useVoice } from './contexts/VoiceContext';
+import { ERProvider } from './contexts/ERContext';
 import { MainLayout } from './components/layout/MainLayout';
 import { NotificationContainer } from './components/NotificationToast';
 import { ToastContainer } from './components/ui/Toast';
@@ -63,10 +64,11 @@ export default function App() {
               <ContextBankProvider>
               <ThreadProvider>
               <VoiceProvider>
+              <ERProvider>
                 <div className="dark">
                   <VoiceBorderPulse />
                   <style>{`
-                    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&display=swap');
+                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
                     * {
                       scrollbar-width: thin;
@@ -109,6 +111,7 @@ export default function App() {
                   <ToastContainer />
                   <PreMarketReminder />
                 </div>
+              </ERProvider>
               </VoiceProvider>
               </ThreadProvider>
               </ContextBankProvider>

@@ -8,6 +8,8 @@ export interface APIKeys {
   newsAPI?: string;
   topstepxUsername?: string;
   topstepxApiKey?: string;
+  xBearerToken?: string;
+  anthropicApiKey?: string;
 }
 
 interface TradingModelToggles {
@@ -191,7 +193,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     })
   );
   const [gatewayPort, setGatewayPort] = useState<number>(() =>
-    loadFromStorage('gatewayPort', 7787)
+    loadFromStorage('gatewayPort', 8080)
   );
   const [traderName, setTraderName] = useState<string>(() =>
     loadFromStorage('traderName', '')

@@ -21,14 +21,14 @@ const GatewayContext = createContext<GatewayContextValue>({
   status: 'disconnected',
   lastHealthCheck: null,
   reconnect: () => {},
-  gatewayUrl: 'http://localhost:7787',
+  gatewayUrl: 'http://localhost:8080',
 });
 
 /* ------------------------------------------------------------------ */
 /*  Constants                                                          */
 /* ------------------------------------------------------------------ */
 
-const DEFAULT_GATEWAY_PORT = 7787;
+const DEFAULT_GATEWAY_PORT = 8080;
 const HEALTH_INTERVAL_MS = 30_000; // 30 seconds
 const MAX_BACKOFF_MS = 60_000;
 
@@ -67,7 +67,7 @@ export function GatewayProvider({ children }: { children: ReactNode }) {
           // [claude-code 2026-03-10] Gateway toast: show once per session only
           if (!sessionStorage.getItem('gateway_connected_shown')) {
             sessionStorage.setItem('gateway_connected_shown', '1');
-            addToast('Gateway connected', 'success');
+            addToast('Hermes connected', 'success');
           }
         }
       } else {
@@ -79,7 +79,7 @@ export function GatewayProvider({ children }: { children: ReactNode }) {
 
       // Only toast when we were previously connected (avoid noise on first load / no gateway)
       if (wasConnected) {
-        addToast('Gateway disconnected — retrying...', 'error');
+        addToast('Hermes disconnected — retrying...', 'error');
       }
 
       // Exponential backoff retry
@@ -91,7 +91,7 @@ export function GatewayProvider({ children }: { children: ReactNode }) {
   const reconnect = useCallback(() => {
     if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
     setStatus('connecting');
-    connectingToastRef.current = addToast('Reconnecting to gateway...', 'updating');
+    connectingToastRef.current = addToast('Reconnecting to Hermes...', 'updating');
     backoffRef.current = 2000;
     checkHealth();
   }, [checkHealth, addToast]);

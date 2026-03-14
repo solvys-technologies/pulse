@@ -7,6 +7,7 @@
  * Architecture: User Message → Hermes → P.I.C. Agent → Groq → Response
  */
 
+import { execFile, spawn as spawnProcess } from 'node:child_process'
 import type { HermesAgentRole } from './hermes-service.js'
 import { HERMES_TASK_MODEL_MAP } from './hermes-service.js'
 import { getAgentSystemPrompt, extractSkillTag } from './ai/agent-instructions.js'
@@ -476,9 +477,38 @@ export async function handleHermesChat(request: HermesChatRequest): Promise<Herm
 export const handleOpenClawChat = handleHermesChat
 
 /**
- * Initialize Hermes agent on startup — warm up the Groq connection.
+ * Initialize Hermes agent on startup:
+ * 1. Launch Hermes gateway process if not already running
+ * 2. Warm up the Groq API connection with a Harper (CAO) ping
  */
 export async function initHermesAgent(): Promise<void> {
+  const hermesBin = process.env.HERMES_BINARY_PATH ?? 'hermes'
+
+  // Step 1: Launch Hermes gateway if not running
+  try {
+    const gatewayRunning = await new Promise<boolean>((resolve) => {
+      execFile(hermesBin, ['gateway', 'status'], { timeout: 5_000 }, (err, stdout) => {
+        if (err) { resolve(false); return }
+        resolve(stdout.toLowerCase().includes('running'))
+      })
+    })
+
+    if (!gatewayRunning) {
+      console.log('[Hermes] Gateway not running — starting...')
+      const gw = spawnProcess(hermesBin, ['gateway', 'start'], {
+        stdio: 'ignore',
+        detached: true,
+      })
+      gw.unref()
+      console.log('[Hermes] Gateway start dispatched (PID:', gw.pid, ')')
+    } else {
+      console.log('[Hermes] Gateway already running')
+    }
+  } catch (err) {
+    console.warn(`[Hermes] Gateway launch skipped (non-fatal): ${err instanceof Error ? err.message : String(err)}`)
+  }
+
+  // Step 2: Warm up Groq API connection
   const normalizeBaseUrl = (value: string): string => {
     const trimmed = value.trim().replace(/\/+$/, '')
     return trimmed.endsWith('/v1') ? trimmed.slice(0, -3) : trimmed
@@ -513,12 +543,12 @@ export async function initHermesAgent(): Promise<void> {
     clearTimeout(timeout)
 
     if (response.ok) {
-      console.log('[Hermes] Agent initialized successfully (harper-cao warm)')
+      console.log('[Hermes] Groq warm-up complete (harper-cao ready)')
     } else {
-      console.warn(`[Hermes] Agent init failed (non-fatal): HTTP ${response.status}`)
+      console.warn(`[Hermes] Groq warm-up failed (non-fatal): HTTP ${response.status}`)
     }
   } catch (error) {
-    console.warn(`[Hermes] Agent init failed (non-fatal): ${error instanceof Error ? error.message : String(error)}`)
+    console.warn(`[Hermes] Groq warm-up failed (non-fatal): ${error instanceof Error ? error.message : String(error)}`)
   }
 }
 

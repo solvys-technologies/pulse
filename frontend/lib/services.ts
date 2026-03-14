@@ -1086,6 +1086,17 @@ export class BoardroomService {
   async postTradeIdea(params: TradeIdeaParams): Promise<{ success: boolean; id: string }> {
     return this.client.post('/api/boardroom/trade-idea', params);
   }
+
+  async getMeetingSchedule(): Promise<{ lastMeeting: string; nextMeeting: string; live: boolean }> {
+    const res = await this.client.get<{ lastMeetingIso?: string; nextMeetingIso?: string; live?: boolean }>(
+      '/api/boardroom/meeting-schedule',
+    );
+    return {
+      lastMeeting: res.lastMeetingIso || '',
+      nextMeeting: res.nextMeetingIso || '',
+      live: res.live ?? false,
+    };
+  }
 }
 
 // Journal Service (Track 7A)

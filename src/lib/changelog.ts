@@ -9,6 +9,36 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-14T05:00:00',
+    agent: 'claude-code',
+    summary: 'Hermes migration final sweep: renamed Settings sidebar tab Gateway→Hermes, updated toast messages (Gateway connected→Hermes connected, etc.), updated description text to reference Groq API directly.',
+    files: ['frontend/components/SettingsPanel.tsx', 'frontend/contexts/GatewayContext.tsx'],
+  },
+  {
+    date: '2026-03-14T04:00:00',
+    agent: 'claude-code',
+    summary: 'T4: PsychAssist activation — mounted ERProvider in App.tsx provider stack so EmotionalResonanceMonitor and PsychAssistDockable get shared ER context instead of falling back to local state. Verified Hermes pipeline: startEconEnricher(), startEconTwitterPoller(), psych-assist routes (/api/psych, /api/er), econ-calendar routes all active. DB migration 008_psych_assist_vnext.sql confirmed. PsychAssistDockable already integrated in frontend MainLayout (floating + header dock modes).',
+    files: ['frontend/App.tsx'],
+  },
+  {
+    date: '2026-03-14T03:00:00',
+    agent: 'claude-code',
+    summary: 'T3: Boardroom Agent Chat UI — new BoardroomChat + AgentMessage components. Full-height chat with 3s polling, color-coded agent messages (Harper gold, Oracle blue, Feucht amber, Sentinel emerald, Charles red, Horace purple), @mention dropdown, LIVE badge, meeting countdown, scroll-to-bottom. Added Agent Chat / Notion View toggle to BoardroomView (defaults to Agent Chat). Added getMeetingSchedule() to BoardroomService.',
+    files: ['frontend/components/boardroom/BoardroomChat.tsx', 'frontend/components/boardroom/AgentMessage.tsx', 'frontend/components/BoardroomView.tsx', 'frontend/lib/services.ts'],
+  },
+  {
+    date: '2026-03-14T02:00:00',
+    agent: 'claude-code',
+    summary: 'T1 Settings Foundation + UI Polish: Added xBearerToken and anthropicApiKey to APIKeys interface. Renamed API Keys tab to API. Moved Danger Zone to middle of grid (position 5). Removed separator borders in Notifications and Developer tabs. Added X Bearer Token and Anthropic API Key fields with CTA buttons. Added Login with Google buttons to iFrames. Redesigned ClawnalystDesk cards with 48px rounded-full avatars, sector pills, model badges, description textarea, instructions doc ID field.',
+    files: ['frontend/contexts/SettingsContext.tsx', 'frontend/components/SettingsPanel.tsx', 'frontend/components/settings/ClawnalystDesk.tsx'],
+  },
+  {
+    date: '2026-03-14T01:30:00',
+    agent: 'claude-code',
+    summary: 'Hermes init: launches hermes gateway + Groq warm-up on backend startup. Gateway port default 7787→8080 (Pulse backend). Updated .env.example with HERMES_* vars. Final OpenClaw remnant scrub.',
+    files: ['backend-hono/src/index.ts', 'backend-hono/src/services/hermes-handler.ts', 'frontend/contexts/GatewayContext.tsx', 'frontend/contexts/SettingsContext.tsx', 'backend-hono/.env.example'],
+  },
+  {
     date: '2026-03-14T00:00:00',
     agent: 'claude-code',
     summary: 'Remotion V3: Apple/Perplexity editorial redesign. SF Pro Display typography, cubic easeOut motion (no springy bounces), all-crossfade transitions (1s each), glass-morphism floating cards with backdrop-filter blur. Hero-number-at-a-time reveal in Metrics (each stat dominates center screen then settles into grid). Cinematic zoom with vignette in Dashboard. Floating IV ring gauge in Feed. ER waveform with parallax blindspot cards in Mission Control. ~31s @ 1920x1080.',

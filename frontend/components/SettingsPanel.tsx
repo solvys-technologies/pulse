@@ -167,15 +167,15 @@ export function SettingsPage() {
 
   const tabs = [
     { id: 'general' as const, label: 'Profile', icon: Settings, description: 'Trading symbol, billing, and account preferences' },
-    { id: 'gateway' as const, label: 'Gateway', icon: Wifi, description: 'Hermes agent connection and health status' },
+    { id: 'gateway' as const, label: 'Hermes', icon: Wifi, description: 'Hermes agent connection and health status' },
     { id: 'appearance' as const, label: 'Appearance', icon: Palette, description: 'Theme and visual customization options' },
     { id: 'desk' as const, label: 'Clawnalyst Desk', icon: Users, description: 'Configure analyst personas and agent settings' },
+    { id: 'danger' as const, label: 'Danger Zone', icon: AlertTriangle, description: 'Reset analysts, clear data, and export config' },
     { id: 'trading' as const, label: 'Trading', icon: Cpu, description: 'Risk management, autopilot, and strategy toggles' },
     { id: 'notifications' as const, label: 'Notifications', icon: Bell, description: 'Alerts, sounds, and notification preferences' },
-    { id: 'api' as const, label: 'API Keys', icon: Code, description: 'TopstepX credentials and external service keys' },
+    { id: 'api' as const, label: 'API', icon: Code, description: 'API keys and external service credentials' },
     { id: 'iframes' as const, label: 'iFrames', icon: Globe, description: 'Notion embed URLs for Boardroom, Research, and more' },
     { id: 'developer' as const, label: 'Developer', icon: Terminal, description: 'Mock data, test tools, and tier management' },
-    { id: 'danger' as const, label: 'Danger Zone', icon: AlertTriangle, description: 'Reset analysts, clear data, and export config' },
   ];
 
   return (
@@ -279,7 +279,7 @@ export function SettingsPage() {
                   </div>
                 </section>
 
-                <section className="pt-6 border-t border-zinc-800">
+                <section className="pt-6">
                   <h3 className="text-sm font-semibold text-[var(--pulse-accent)] mb-3">Healing Bowl Sound</h3>
                   <p className="text-xs text-gray-500 mb-4">
                     Select a sound to play when emotional tilt is detected. Calm sounds are relaxing, shock sounds are alerting.
@@ -789,6 +789,72 @@ export function SettingsPage() {
                     </p>
                   </div>
                 </section>
+
+                <section className="pt-6">
+                  <h3 className="text-sm font-semibold text-[var(--pulse-accent)] mb-4">X (Twitter) API</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm text-gray-300 mb-2">Bearer Token</label>
+                      <input
+                        type="password"
+                        value={apiKeys.xBearerToken || ''}
+                        onChange={(e) => setAPIKeys({ ...apiKeys, xBearerToken: e.target.value })}
+                        placeholder="Enter your X API bearer token"
+                        className="w-full bg-[var(--pulse-surface)] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--pulse-accent)]/30"
+                      />
+                    </div>
+                    <button
+                      onClick={() => window.open('https://developer.x.com/en/portal/projects-and-apps', '_blank')}
+                      className="text-[13px] font-medium text-[var(--pulse-accent)] border border-[var(--pulse-accent)]/30 rounded-md px-3 py-1.5 hover:bg-[var(--pulse-accent)]/10 transition-colors"
+                    >
+                      Get Bearer Token
+                    </button>
+                  </div>
+                </section>
+
+                <section className="pt-6">
+                  <h3 className="text-sm font-semibold text-[var(--pulse-accent)] mb-4">Anthropic</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm text-gray-300 mb-2">API Key</label>
+                      <input
+                        type="password"
+                        value={apiKeys.anthropicApiKey || ''}
+                        onChange={(e) => setAPIKeys({ ...apiKeys, anthropicApiKey: e.target.value })}
+                        placeholder="Enter your Anthropic API key"
+                        className="w-full bg-[var(--pulse-surface)] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--pulse-accent)]/30"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => window.open('https://console.anthropic.com/settings/keys', '_blank')}
+                        className="text-[13px] font-medium text-[var(--pulse-accent)] border border-[var(--pulse-accent)]/30 rounded-md px-3 py-1.5 hover:bg-[var(--pulse-accent)]/10 transition-colors"
+                      >
+                        Get API Key
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (!apiKeys.anthropicApiKey) return;
+                          try {
+                            const res = await fetch('/api/test-anthropic-key', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ apiKey: apiKeys.anthropicApiKey }),
+                            });
+                            const data = await res.json();
+                            alert(data.success ? 'API key is valid!' : `Invalid key: ${data.error || 'unknown error'}`);
+                          } catch {
+                            alert('Could not reach backend to test key');
+                          }
+                        }}
+                        disabled={!apiKeys.anthropicApiKey}
+                        className="text-[13px] font-medium text-gray-400 border border-zinc-700 rounded-md px-3 py-1.5 hover:bg-zinc-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        Test Key
+                      </button>
+                    </div>
+                  </div>
+                </section>
               </div>
             )}
 
@@ -807,7 +873,15 @@ export function SettingsPage() {
                         placeholder={import.meta.env.VITE_NOTION_BOARDROOM_URL || 'https://www.notion.so/your-boardroom-page'}
                         className="w-full bg-[var(--pulse-surface)] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--pulse-accent)]/30 placeholder:text-zinc-600"
                       />
-                      <p className="text-[10px] text-gray-600 mt-1">Embedded in the Board Room tab</p>
+                      <div className="flex items-center justify-between mt-1">
+                        <p className="text-[10px] text-gray-600">Embedded in the Board Room tab</p>
+                        <button
+                          onClick={() => window.open(iframeUrls.boardroom || import.meta.env.VITE_NOTION_BOARDROOM_URL || '', '_blank')}
+                          className="text-[11px] font-medium text-[var(--pulse-accent)] hover:underline"
+                        >
+                          Login with Google
+                        </button>
+                      </div>
                     </div>
                     <div>
                       <label className="block text-sm text-gray-300 mb-2">Research URL</label>
@@ -818,7 +892,15 @@ export function SettingsPage() {
                         placeholder={import.meta.env.VITE_NOTION_RESEARCH_URL || 'https://www.notion.so/your-research-page'}
                         className="w-full bg-[var(--pulse-surface)] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--pulse-accent)]/30 placeholder:text-zinc-600"
                       />
-                      <p className="text-[10px] text-gray-600 mt-1">Embedded in the Research tab and preloaded browser</p>
+                      <div className="flex items-center justify-between mt-1">
+                        <p className="text-[10px] text-gray-600">Embedded in the Research tab and preloaded browser</p>
+                        <button
+                          onClick={() => window.open(iframeUrls.research || import.meta.env.VITE_NOTION_RESEARCH_URL || '', '_blank')}
+                          className="text-[11px] font-medium text-[var(--pulse-accent)] hover:underline"
+                        >
+                          Login with Google
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </section>
@@ -886,7 +968,7 @@ export function SettingsPage() {
                   </div>
                 </section>
 
-                <section className="pt-6 border-t border-zinc-800">
+                <section className="pt-6">
                   <h3 className="text-sm font-semibold text-[var(--pulse-accent)] mb-3">Developer Settings</h3>
                   <div className="space-y-3">
                     <Toggle
@@ -1050,7 +1132,7 @@ function GatewayTab() {
           </div>
         </div>
         <p className="text-xs text-gray-500">
-          The gateway connects Pulse to your Hermes agent sessions. Health checks run every 30 seconds.
+          Hermes connects Pulse to Groq's inference API. Health checks run every 30 seconds.
         </p>
 
         {/* Persistent Thread */}

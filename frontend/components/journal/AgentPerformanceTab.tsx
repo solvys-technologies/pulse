@@ -1,6 +1,6 @@
-// [claude-code 2026-03-11] Track 7: Agent performance tab — combined futures + prediction market tracking
+// [claude-code 2026-03-13] T2: Past proposals with WIN/LOSS/PENDING pills, real KPI data
 import { useState, useEffect, useMemo } from 'react';
-import { Bot, Target, TrendingUp, BarChart3, ChevronDown, ChevronUp } from 'lucide-react';
+import { Bot, Target, TrendingUp, BarChart3, ChevronDown, ChevronUp, History } from 'lucide-react';
 import { useBackend } from '../../lib/backend';
 import type { JournalEntryItem, JournalSummaryResponse, AgentPerformanceResponse } from '../../lib/services';
 
@@ -66,10 +66,12 @@ export function AgentPerformanceTab({ entries, summary }: AgentPerformanceTabPro
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
   const backend = useBackend();
   const [performance, setPerformance] = useState<AgentPerformanceResponse | null>(null);
+  const [pastProposals, setPastProposals] = useState<any[]>([]);
 
-  // Fetch combined performance from backend
+  // Fetch combined performance and proposal history from backend
   useEffect(() => {
     backend.agentPerformance.getPerformance(30).then(setPerformance);
+    backend.autopilot.getHistory(20).then(res => setPastProposals(res.proposals ?? []));
   }, [backend]);
 
   const agentEntries = useMemo(
@@ -235,6 +237,65 @@ export function AgentPerformanceTab({ entries, summary }: AgentPerformanceTabPro
                       ))}
                     </div>
                   )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Past Proposals */}
+      <div className="bg-[var(--pulse-surface)] border border-[var(--pulse-accent)]/10 rounded-lg p-3">
+        <div className="flex items-center gap-2 mb-2">
+          <History className="w-3.5 h-3.5 text-[var(--pulse-accent)]" />
+          <span className="text-xs font-semibold text-[var(--pulse-text)]">Past Proposals</span>
+          <span className="text-[9px] text-[var(--pulse-muted)] ml-auto">{pastProposals.length} recent</span>
+        </div>
+
+        {pastProposals.length === 0 ? (
+          <div className="text-[10px] text-[var(--pulse-muted)] py-4 text-center">
+            No proposals in history
+          </div>
+        ) : (
+          <div className="space-y-0">
+            {pastProposals.map((p: any) => {
+              const outcome = (() => {
+                if (p.status === 'executed' && p.executionResult) {
+                  const pnl = p.executionResult?.pnl ?? p.executionResult?.realizedPnl;
+                  if (typeof pnl === 'number') return pnl >= 0 ? 'win' : 'loss';
+                }
+                if (['pending', 'approved'].includes(p.status)) return 'pending';
+                if (p.status === 'rejected' || p.status === 'expired' || p.status === 'cancelled') return 'closed';
+                return 'pending';
+              })();
+
+              return (
+                <div key={p.id} className="flex items-center justify-between py-1.5 border-b border-[var(--pulse-accent)]/5 last:border-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-mono text-[var(--pulse-accent)]">{p.instrument}</span>
+                    <span className={`text-[9px] ${p.direction === 'long' ? 'text-emerald-400' : p.direction === 'short' ? 'text-red-400' : 'text-gray-400'}`}>
+                      {p.direction === 'long' ? '\u2191' : p.direction === 'short' ? '\u2193' : '-'}
+                    </span>
+                    <span className="text-[9px] text-[var(--pulse-muted)]">{p.strategyName}</span>
+                    <span className="text-[9px] text-[var(--pulse-muted)] font-mono">{p.createdAt?.slice(0, 10)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {p.entryPrice && (
+                      <span className="text-[10px] text-[var(--pulse-muted)] font-mono">{Number(p.entryPrice).toFixed(2)}</span>
+                    )}
+                    {outcome === 'win' && (
+                      <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full px-2 py-0.5 text-[9px] uppercase font-medium">WIN</span>
+                    )}
+                    {outcome === 'loss' && (
+                      <span className="bg-red-500/20 text-red-400 border border-red-500/30 rounded-full px-2 py-0.5 text-[9px] uppercase font-medium">LOSS</span>
+                    )}
+                    {outcome === 'pending' && (
+                      <span className="bg-gray-500/20 text-gray-400 border border-gray-500/30 rounded-full px-2 py-0.5 text-[9px] uppercase font-medium">PENDING</span>
+                    )}
+                    {outcome === 'closed' && (
+                      <span className="bg-gray-500/10 text-gray-500 border border-gray-500/20 rounded-full px-2 py-0.5 text-[9px] uppercase font-medium">{p.status}</span>
+                    )}
+                  </div>
                 </div>
               );
             })}
