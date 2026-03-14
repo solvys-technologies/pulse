@@ -1,3 +1,4 @@
+// [claude-code 2026-03-14] Fix brief sort: property-based sort instead of timestamp sort
 // [claude-code 2026-03-03] Phase 3: Notion service — fetches MDB Brief from Harper Messages DB
 // [claude-code 2026-03-03] Extended: Trade Ideas + Daily P&L query functions for Notion poller.
 // [claude-code 2026-03-04] Economic calendar now sourced from Notion DB via alias-based field mapping.
@@ -272,7 +273,7 @@ export async function fetchMDBBrief(overrideType?: BriefType): Promise<MDBBriefI
         property: 'Source',
         select: { equals: 'Harper-Notion' },
       },
-      sorts: [{ timestamp: 'last_edited_time', direction: 'descending' } as any],
+      sorts: [{ timestamp: 'created_time', direction: 'descending' }],
       pageSize: 20,
     });
 

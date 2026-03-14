@@ -1,4 +1,4 @@
-// [claude-code 2026-03-14] Theme settings — color presets + custom HEX + font style selector
+// [claude-code 2026-03-14] Theme settings — font style with samples + color presets + custom HEX
 import { useState } from 'react';
 import { Check } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -16,6 +16,9 @@ const COLOR_FIELDS: { key: keyof ThemeConfig; label: string }[] = [
 function isValidHex(v: string): boolean {
   return /^#[0-9A-Fa-f]{6}$/.test(v);
 }
+
+const SAMPLE_HEADING = 'The quick brown fox';
+const SAMPLE_BODY = 'Market conditions remain volatile as traders assess incoming economic data and geopolitical developments.';
 
 export function ThemeSettings() {
   const { theme, setTheme, presets, fontTheme, setFontTheme, fontThemes } = useTheme();
@@ -36,11 +39,38 @@ export function ThemeSettings() {
 
   return (
     <div className="space-y-6">
-      {/* Font Style */}
+      {/* Font Style — with live samples */}
       <section>
-        <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--pulse-accent)' }}>
+        <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--pulse-accent)' }}>
           Font Style
         </h3>
+
+        {/* Live sample preview — uses current active font */}
+        <div
+          className="mb-4 p-4 rounded-lg border"
+          style={{
+            borderColor: 'color-mix(in srgb, var(--pulse-accent) 20%, transparent)',
+            backgroundColor: 'rgba(10,10,0,0.3)',
+          }}
+        >
+          <div
+            className="text-lg font-semibold text-white mb-1.5"
+            style={{ fontFamily: fontTheme.fontHeading }}
+          >
+            {SAMPLE_HEADING}
+          </div>
+          <div
+            className="text-[13px] leading-relaxed text-zinc-400"
+            style={{ fontFamily: fontTheme.fontBody }}
+          >
+            {SAMPLE_BODY}
+          </div>
+          <div className="mt-2 text-[10px] text-zinc-600 font-mono">
+            Active: {fontTheme.label}
+          </div>
+        </div>
+
+        {/* Font theme cards — each with its own inline sample */}
         <div className="grid grid-cols-3 gap-3">
           {Object.values(fontThemes).map((ft) => {
             const active = fontTheme.id === ft.id;
@@ -63,12 +93,19 @@ export function ThemeSettings() {
                   </div>
                 )}
                 <div className="text-[12px] font-medium text-white">{ft.label}</div>
-                <div className="text-[10px] text-zinc-500 mt-0.5">{ft.description}</div>
+                <div className="text-[9px] text-zinc-500 mt-0.5">{ft.description}</div>
+                {/* Inline font sample per card */}
                 <div
-                  className="text-[11px] text-zinc-400 mt-1.5"
+                  className="mt-2 text-[14px] font-semibold text-zinc-300 leading-tight"
                   style={{ fontFamily: ft.fontHeading }}
                 >
-                  Aa Bb Cc 123
+                  Aa Bb Cc
+                </div>
+                <div
+                  className="text-[11px] text-zinc-500 mt-0.5"
+                  style={{ fontFamily: ft.fontBody }}
+                >
+                  0123456789
                 </div>
               </button>
             );

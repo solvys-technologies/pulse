@@ -37,20 +37,27 @@
   src: url('/fonts/inter-bold.woff2') format('woff2');
 }
 
-/* Inter Tight — Solvys headings */
+/* Playfair Display — Solvys elegant headings */
 @font-face {
-  font-family: 'Inter Tight';
+  font-family: 'Playfair Display';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/playfair-display-regular.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Playfair Display';
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url('/fonts/inter-tight-semibold.woff2') format('woff2');
+  src: url('/fonts/playfair-display-semibold.woff2') format('woff2');
 }
 @font-face {
-  font-family: 'Inter Tight';
+  font-family: 'Playfair Display';
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url('/fonts/inter-tight-bold.woff2') format('woff2');
+  src: url('/fonts/playfair-display-bold.woff2') format('woff2');
 }
 
 /* Roboto — Classic theme */

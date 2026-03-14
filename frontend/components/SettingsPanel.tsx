@@ -1,6 +1,7 @@
 // [claude-code 2026-03-13] Hermes migration: OpenClaw Gateway -> Hermes Agent in UI text
 // [claude-code 2026-03-11] T2e: persistent thread toggle in Gateway tab
 // [claude-code 2026-03-11] T5: added mic device selector to notifications tab
+import React from 'react';
 import { Settings, Bell, CreditCard, Cpu, Code, Volume2, Terminal, Wifi, Palette, Users, AlertTriangle, ArrowLeft, Globe, Mic } from 'lucide-react';
 import { useSettings, type APIKeys } from '../contexts/SettingsContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -170,12 +171,12 @@ export function SettingsPage() {
     { id: 'gateway' as const, label: 'Hermes', icon: Wifi, description: 'Hermes agent connection and health status' },
     { id: 'appearance' as const, label: 'Appearance', icon: Palette, description: 'Theme and visual customization options' },
     { id: 'desk' as const, label: 'Clawnalyst Desk', icon: Users, description: 'Configure analyst personas and agent settings' },
-    { id: 'danger' as const, label: 'Danger Zone', icon: AlertTriangle, description: 'Reset analysts, clear data, and export config' },
     { id: 'trading' as const, label: 'Trading', icon: Cpu, description: 'Risk management, autopilot, and strategy toggles' },
     { id: 'notifications' as const, label: 'Notifications', icon: Bell, description: 'Alerts, sounds, and notification preferences' },
     { id: 'api' as const, label: 'API', icon: Code, description: 'API keys and external service credentials' },
     { id: 'iframes' as const, label: 'iFrames', icon: Globe, description: 'Notion embed URLs for Boardroom, Research, and more' },
     { id: 'developer' as const, label: 'Developer', icon: Terminal, description: 'Mock data, test tools, and tier management' },
+    { id: 'danger' as const, label: 'Danger Zone', icon: AlertTriangle, description: 'Reset analysts, clear data, and export config' },
   ];
 
   return (
@@ -197,34 +198,37 @@ export function SettingsPage() {
                   const Icon = tab.icon;
                   const isDanger = tab.id === 'danger';
                   return (
-                    <button
-                      key={tab.id}
-                      onClick={() => handleTabChange(tab.id)}
-                      className={`group text-left p-4 rounded-lg border transition-all hover:scale-[1.01] ${
-                        isDanger
-                          ? 'border-red-500/15 hover:border-red-500/30 hover:bg-red-500/5'
-                          : 'pulse-accent-border pulse-accent-border-hover'
-                      }`}
-                      style={{ backgroundColor: 'rgba(10,10,0,0.4)' }}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className={`mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                    <React.Fragment key={tab.id}>
+                      {/* Spacer before Danger Zone — pushes it to row 4, col 2 */}
+                      {isDanger && <div className="hidden lg:block" />}
+                      <button
+                        onClick={() => handleTabChange(tab.id)}
+                        className={`group text-left p-4 rounded-lg border transition-all hover:scale-[1.01] ${
                           isDanger
-                            ? 'bg-red-500/10 text-red-400 group-hover:bg-red-500/20'
-                            : 'pulse-settings-icon'
-                        } transition-colors`}>
-                          <Icon className="w-4 h-4" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className={`text-[13px] font-semibold ${isDanger ? 'text-red-400' : 'text-white'}`}>
-                            {tab.label}
+                            ? 'border-red-500/15 hover:border-red-500/30 hover:bg-red-500/5'
+                            : 'pulse-accent-border pulse-accent-border-hover'
+                        }`}
+                        style={{ backgroundColor: 'rgba(10,10,0,0.4)' }}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className={`mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                            isDanger
+                              ? 'bg-red-500/10 text-red-400 group-hover:bg-red-500/20'
+                              : 'pulse-settings-icon'
+                          } transition-colors`}>
+                            <Icon className="w-4 h-4" />
                           </div>
-                          <div className="text-[11px] text-gray-500 mt-0.5 leading-relaxed">
-                            {tab.description}
+                          <div className="min-w-0">
+                            <div className={`text-[13px] font-semibold ${isDanger ? 'text-red-400' : 'text-white'}`}>
+                              {tab.label}
+                            </div>
+                            <div className="text-[11px] text-gray-500 mt-0.5 leading-relaxed">
+                              {tab.description}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </button>
+                      </button>
+                    </React.Fragment>
                   );
                 })}
               </div>

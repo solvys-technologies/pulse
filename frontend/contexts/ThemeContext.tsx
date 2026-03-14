@@ -42,6 +42,8 @@ function applyFontThemeToDOM(fontTheme: FontTheme) {
   const root = document.documentElement;
   root.style.setProperty('--font-body', fontTheme.fontBody);
   root.style.setProperty('--font-heading', fontTheme.fontHeading);
+  // Apply directly to body to bypass Tailwind v4 preflight specificity
+  document.body.style.fontFamily = fontTheme.fontBody;
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
