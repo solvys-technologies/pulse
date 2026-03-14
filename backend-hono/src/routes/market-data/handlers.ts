@@ -1,7 +1,7 @@
-// [claude-code 2026-03-11] Market-data route handlers — FMP + Unusual Whales + blended IV score
+// [claude-code 2026-03-14] Market-data route handlers — Yahoo Finance + Unusual Whales + blended IV score
 // [claude-code 2026-03-11] IV score now served from persistent ticker cache (decay never restarts)
 import type { Context } from 'hono';
-import { getMarketContext, fmpMarket, unusualWhales } from '../../services/market-data/index.js';
+import { getMarketContext, yahooMarket, unusualWhales } from '../../services/market-data/index.js';
 import { calculateBlendedIVScore, classifyEventType } from '../../services/market-data/iv-scorer.js';
 import { estimatePoints } from '../../services/market-data/point-estimator.js';
 import { getCachedIVScore } from '../../services/market-data/iv-score-ticker.js';
@@ -11,7 +11,7 @@ export async function handleQuote(c: Context) {
   const symbol = c.req.param('symbol');
   if (!symbol) return c.json({ error: 'Symbol is required' }, 400);
   try {
-    const quote = await fmpMarket.getQuote(symbol.toUpperCase());
+    const quote = await yahooMarket.getQuote(symbol.toUpperCase());
     return c.json(quote);
   } catch (err: any) {
     console.error('[market-data] quote error:', err.message);
@@ -21,7 +21,7 @@ export async function handleQuote(c: Context) {
 
 export async function handleVix(c: Context) {
   try {
-    const vix = await fmpMarket.getVix();
+    const vix = await yahooMarket.getVix();
     return c.json(vix);
   } catch (err: any) {
     console.error('[market-data] VIX error:', err.message);

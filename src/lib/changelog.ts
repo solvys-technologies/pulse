@@ -9,6 +9,12 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-14T06:00:00',
+    agent: 'claude-code',
+    summary: 'Remotion V4 rebuild: Inter/JetBrains Mono fonts (matching Pulse frontend swap), all screenshots faded to near-black (0.04-0.06 opacity) as dark texture, overlay items significantly bigger and centered for presentation/keynote vibe. Same Apple/Perplexity editorial style (easeOut, crossfades, glass-morphism, hero-number-at-a-time). Recaptured dashboard + riskflow screenshots with new fonts.',
+    files: ['remotion/src/theme.ts', 'remotion/src/scenes/IntroScene.tsx', 'remotion/src/scenes/DashboardScene.tsx', 'remotion/src/scenes/FeedScene.tsx', 'remotion/src/scenes/MissionControlScene.tsx', 'remotion/src/scenes/MetricsScene.tsx', 'remotion/src/scenes/OutroScene.tsx', 'remotion/public/pulse-dashboard-clean.png', 'remotion/public/pulse-riskflow.png'],
+  },
+  {
     date: '2026-03-14T05:00:00',
     agent: 'claude-code',
     summary: 'Hermes migration final sweep: renamed Settings sidebar tab Gateway→Hermes, updated toast messages (Gateway connected→Hermes connected, etc.), updated description text to reference Groq API directly.',

@@ -1,137 +1,87 @@
-/**
- * Economic Feed Service
- * Pulls latest economic prints from FMP and emits as feed items for RiskFlow
- * Used as a fallback when X headlines are late/missing for economic releases.
- */
-// [claude-code 2026-03-05] Extended: hot prints now write actuals to Notion Econ Prints DB.
-
-import { createFmpService } from '../fmp-service.js'
+// [claude-code 2026-03-14] Economic feed for RiskFlow — FMP removed, uses Notion calendar only
+import { fetchEconCalendar } from '../econ-calendar-service.js'
 import { calculateIVScore } from '../analysis/iv-scorer.js'
-import { writeEconPrint } from '../econ-calendar-service.js'
 import type { FeedItem, NewsSource, SentimentDirection } from '../../types/riskflow.js'
 import type { HotPrint, ParsedHeadline } from '../../types/news-analysis.js'
 
-const fmp = createFmpService()
 const ECON_SOURCE: NewsSource = 'EconomicCalendar'
 
 /**
- * Convert economic event to a feed item
- */
-type NormalizedEvent = {
-  id: string
-  name: string
-  eventType?: string
-  actual: number | null
-  forecast: number | null
-  previous: number | null
-  releaseTime: string
-  deviation: number
-  isHot: boolean
-}
-
-function econEventToFeedItem(event: NormalizedEvent): FeedItem {
-  const headlineParts = [
-    event.name,
-    event.actual !== null && event.actual !== undefined ? `Actual: ${event.actual}` : null,
-    event.forecast !== null && event.forecast !== undefined ? `Forecast: ${event.forecast}` : null,
-    event.previous !== null && event.previous !== undefined ? `Prev: ${event.previous}` : null,
-  ].filter(Boolean)
-
-  const headline = headlineParts.join(' | ')
-  const tags = [event.eventType ?? 'ECON', 'ECON_DATA']
-
-  const hotPrint: HotPrint | null = event.isHot
-    ? {
-        type: event.eventType ?? 'economicData',
-        actual: event.actual ?? 0,
-        forecast: event.forecast ?? 0,
-        previous: event.previous ?? undefined,
-        deviation: event.deviation ?? 0,
-        direction: event.actual !== null && event.forecast !== null && event.actual < event.forecast ? 'below' : 'above',
-        impact: 'high',
-        tradingImplication: 'High impact economic release',
-        releaseTime: event.releaseTime,
-      }
-    : null
-
-  const parsed: ParsedHeadline = {
-    raw: headline,
-    source: ECON_SOURCE,
-    symbols: [],
-    tags,
-    isBreaking: true,
-    urgency: 'immediate',
-    eventType: event.eventType ?? 'economicData',
-    numbers: {
-      actual: event.actual ?? undefined,
-      forecast: event.forecast ?? undefined,
-      previous: event.previous ?? undefined,
-    },
-    confidence: 0.9,
-  }
-
-  const iv = calculateIVScore({
-    parsed,
-    hotPrint,
-    timestamp: new Date(event.releaseTime),
-  })
-
-  return {
-    id: event.id,
-    source: ECON_SOURCE,
-    headline,
-    body: undefined,
-    symbols: [],
-    tags,
-    isBreaking: true,
-    urgency: 'immediate',
-    sentiment: iv.sentiment as SentimentDirection,
-    ivScore: iv.score,
-    macroLevel: iv.macroLevel,
-    publishedAt: event.releaseTime,
-    analyzedAt: new Date().toISOString(),
-  }
-}
-
-function normalizeEvent(event: Awaited<ReturnType<ReturnType<typeof createFmpService>['getLatestPrints']>>['events'][number]): NormalizedEvent {
-  return {
-    id: event.id,
-    name: event.name,
-    eventType: event.eventType,
-    actual: event.actual ?? null,
-    forecast: event.forecast ?? null,
-    previous: event.previous ?? null,
-    releaseTime: event.releaseTime,
-    deviation: event.deviation ?? 0,
-    isHot: event.isHot,
-  }
-}
-
-/**
- * Fetch latest economic prints (time-windowed) and map to feed items.
- * Hot prints are also written to Notion Econ Prints DB for historical tracking.
+ * Fetch today's economic events from Notion calendar and map to feed items.
+ * Only includes events that have actual values (released prints).
  */
 export async function fetchEconomicFeed(): Promise<FeedItem[]> {
   try {
-    const latest = await fmp.getLatestPrints()
-    if (!latest?.events?.length) return []
+    const today = new Date().toISOString().slice(0, 10)
+    const events = await fetchEconCalendar({ from: today, to: today })
+    if (!events.length) return []
 
-    const normalized = latest.events.map(normalizeEvent)
+    const items: FeedItem[] = []
+    for (const event of events) {
+      if (!event.actual) continue
 
-    // Write hot prints to Notion (fire-and-forget)
-    for (const event of normalized) {
-      if (event.isHot && event.actual !== null) {
-        writeEconPrint({
-          eventName: event.name,
-          date: new Date(event.releaseTime).toISOString().slice(0, 10),
-          actual: event.actual,
-          forecast: event.forecast ?? undefined,
-          previous: event.previous ?? undefined,
-        }).catch((err) => console.warn('[EconomicFeed] Notion write failed:', err))
+      const actual = parseFloat(event.actual)
+      const forecast = event.forecast ? parseFloat(event.forecast) : null
+      const previous = event.previous ? parseFloat(event.previous) : null
+      const deviation = forecast != null ? Math.abs(actual - forecast) : 0
+      const isHot = forecast != null && Math.abs(actual - forecast) / Math.max(Math.abs(forecast), 0.01) > 0.1
+
+      const headlineParts = [
+        event.name,
+        `Actual: ${actual}`,
+        forecast != null ? `Forecast: ${forecast}` : null,
+        previous != null ? `Prev: ${previous}` : null,
+      ].filter(Boolean)
+      const headline = headlineParts.join(' | ')
+
+      const hotPrint: HotPrint | null = isHot ? {
+        type: 'economicData',
+        actual,
+        forecast: forecast ?? 0,
+        previous: previous ?? undefined,
+        deviation,
+        direction: forecast != null && actual < forecast ? 'below' : 'above',
+        impact: 'high',
+        tradingImplication: 'High impact economic release',
+        releaseTime: event.date ?? today,
+      } : null
+
+      const parsed: ParsedHeadline = {
+        raw: headline,
+        source: ECON_SOURCE,
+        symbols: [],
+        tags: ['ECON_DATA'],
+        isBreaking: true,
+        urgency: 'immediate',
+        eventType: 'economicData',
+        numbers: {
+          actual,
+          forecast: forecast ?? undefined,
+          previous: previous ?? undefined,
+        },
+        confidence: 0.9,
       }
+
+      const iv = calculateIVScore({ parsed, hotPrint, timestamp: new Date() })
+
+      items.push({
+        id: `econ-${event.id ?? event.name}-${today}`,
+        source: ECON_SOURCE,
+        headline,
+        body: undefined,
+        symbols: [],
+        tags: ['ECON_DATA'],
+        isBreaking: true,
+        urgency: 'immediate',
+        sentiment: iv.sentiment as SentimentDirection,
+        ivScore: iv.score,
+        macroLevel: iv.macroLevel,
+        publishedAt: event.date ?? new Date().toISOString(),
+        analyzedAt: new Date().toISOString(),
+      })
     }
 
-    return normalized.map(econEventToFeedItem)
+    return items
   } catch (error) {
     console.error('[EconomicFeed] Failed to fetch economic prints:', error)
     return []
