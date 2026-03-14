@@ -83,8 +83,8 @@ export function RiskFlowImportModal({ open, onClose, onImport, lanes }: RiskFlow
     setLoading(true);
     setError('');
     try {
-      const items = await baseBackend.notion.getMdbBrief();
-      const briefText = items.map(i => `${i.title}: ${i.detail}`).join('\n\n');
+      const res = await baseBackend.notion.getMdbBrief();
+      const briefText = res.items.map(i => `${i.title}: ${i.detail}`).join('\n\n');
       const { scored, provider: p } = await baseBackend.narrative.scoreBrief(briefText);
       const matched = matchCandidatesToLanes(scored, lanes);
       setCandidates(matched);
