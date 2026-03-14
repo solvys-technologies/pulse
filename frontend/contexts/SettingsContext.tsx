@@ -8,8 +8,6 @@ export interface APIKeys {
   newsAPI?: string;
   topstepxUsername?: string;
   topstepxApiKey?: string;
-  xBearerToken?: string;
-  anthropicApiKey?: string;
 }
 
 interface TradingModelToggles {

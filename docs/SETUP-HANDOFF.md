@@ -24,17 +24,21 @@ This document is for any LLM agent (Claude Code, Cursor, OpenClaw, Codex) settin
 ### Required Environment Variables (`backend-hono/.env`)
 
 ```bash
-# Core — OpenRouter (Nous subscription) = Claude Opus 4.6 default
+# Core — OpenRouter (Nous subscription) = Claude Opus 4.6; also used for voice sentiment
 OPENROUTER_API_KEY=<key>                   # OpenRouter API key (get at openrouter.ai/settings/keys)
 NOTION_API_KEY=<key>                       # Notion integration token
 
+# Voice Engine — transcription (Whisper) + TTS; required for voice features
+OPENAI_API_KEY=<key>                       # OpenAI API key (platform.openai.com/api-keys)
+
 # Optional but recommended
 DATABASE_URL=postgresql://...              # PostgreSQL
-X_API_BEARER_TOKEN=<token>                 # X/Twitter API
 FMP_API_KEY=<key>                          # Financial Modeling Prep
 GITHUB_CLIENT_ID=<id>                      # GitHub OAuth
 GITHUB_CLIENT_SECRET=<secret>              # GitHub OAuth
 ```
+
+No other agent API keys (Anthropic, 21st, Exa) are required. Voice sentiment uses OpenRouter.
 
 ### External CLI Tools
 

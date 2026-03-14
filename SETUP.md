@@ -29,11 +29,16 @@ cp backend-hono/.env.example backend-hono/.env
 
 | Variable | Where | Description |
 |----------|-------|-------------|
-| `OPENROUTER_API_KEY` | `backend-hono/.env` | OpenRouter API key (Nous subscription — Claude Opus 4.6) |
+| `OPENROUTER_API_KEY` | `backend-hono/.env` | OpenRouter API key (Nous subscription — Claude Opus 4.6; also used for voice sentiment) |
+| `OPENAI_API_KEY` | `backend-hono/.env` | **Voice Engine**: Whisper (transcription) + OpenAI TTS (synthesis). Required for voice features. |
 | `NOTION_API_KEY` | `backend-hono/.env` | Notion integration token for trade ideas DB |
 | `FMP_API_KEY` | `backend-hono/.env` | Financial Modeling Prep key (free at financialmodelingprep.com) |
 
-Default inference is **Claude Opus 4.6** via OpenRouter (Nous subscription). No Groq or separate gateway required. Everything else (database, Claude SDK, etc.) is pre-configured on the backend. **Do NOT ask users for PostgreSQL credentials or database URLs.**
+Default inference is **Claude Opus 4.6** via OpenRouter. No other agent API keys (Anthropic, 21st, Exa, etc.) are required. **Do NOT ask users for PostgreSQL credentials or database URLs.**
+
+## Voice Engine (OpenAI)
+
+Voice features (mic input → transcription, TTS responses) use **OpenAI** only. Set `OPENAI_API_KEY` in `backend-hono/.env` (from [OpenAI API keys](https://platform.openai.com/api-keys)). Optional env vars: `OPENAI_TRANSCRIBE_MODEL` (default `whisper-1`), `OPENAI_TTS_MODEL` (default `gpt-4o-mini-tts`), `OPENAI_TTS_VOICE` (default `alloy`). Voice sentiment analysis uses OpenRouter (same `OPENROUTER_API_KEY`), not Anthropic.
 
 ## Hermes / OpenRouter (Opus 4.6)
 
@@ -105,7 +110,8 @@ When helping a user set up Pulse:
 1. Install Node.js 20+ if not present
 2. Clone and install deps (see Installation above)
 3. **Get OpenRouter API key** — from OpenRouter (Nous subscription) at openrouter.ai/settings/keys; set `OPENROUTER_API_KEY` in `backend-hono/.env`
-4. **Get Notion API key** — user creates integration at notion.so/my-integrations
-5. **Get FMP API key** — free at financialmodelingprep.com
-6. **Do NOT** ask for: PostgreSQL, database URLs
-7. Start the app and use the in-app Setup Guide to verify connections
+4. **Get OpenAI API key (Voice Engine)** — from platform.openai.com/api-keys; set `OPENAI_API_KEY` in `backend-hono/.env` for voice transcription and TTS
+5. **Get Notion API key** — user creates integration at notion.so/my-integrations
+6. **Get FMP API key** — free at financialmodelingprep.com
+7. **Do NOT** ask for: PostgreSQL, database URLs; no Anthropic, 21st, or Exa keys
+8. Start the app and use the in-app Setup Guide to verify connections

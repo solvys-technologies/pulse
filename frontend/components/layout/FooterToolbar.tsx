@@ -12,12 +12,22 @@ type PanelTab = 'terminal' | 'changelog';
 
 /** Slash-command suggestions (like Claude Code skills) for the Pulse CLI */
 const CLI_SLASH_COMMANDS: { slug: string; label: string; command: string }[] = [
+  { slug: 'start-backend', label: 'Start backend', command: 'cd backend-hono && npm run dev' },
   { slug: 'backend', label: 'Start backend', command: 'cd backend-hono && npm run dev' },
   { slug: 'frontend', label: 'Start frontend', command: 'cd frontend && npm run dev' },
   { slug: 'install', label: 'Install all deps', command: 'npm install && npm --prefix frontend install && npm --prefix backend-hono install' },
   { slug: 'build', label: 'Build backend', command: 'cd backend-hono && npx tsc' },
   { slug: 'typecheck', label: 'Typecheck backend', command: 'cd backend-hono && npx tsc --noEmit' },
 ];
+
+function resolveSlashCommand(input: string): string | null {
+  if (!input.startsWith('/')) return null;
+  const slug = input.slice(1).trim().toLowerCase().replace(/\s+/g, '-');
+  const match = CLI_SLASH_COMMANDS.find(
+    (c) => c.slug === slug || c.slug.replace(/-/g, '') === slug.replace(/-/g, '')
+  );
+  return match?.command ?? null;
+}
 
 interface FooterToolbarProps {
   topStepXEnabled?: boolean;
@@ -42,13 +52,15 @@ export function FooterToolbar({
   const [activeTab, setActiveTab] = useState<PanelTab>('terminal');
   const [cliInput, setCliInput] = useState('');
   const [cliHistory, setCliHistory] = useState<Array<{ type: 'input' | 'output'; text: string }>>([
-    { type: 'output', text: 'Pulse CLI v7.0.1 — type "help" or "/" for script suggestions' },
+    { type: 'output', text: 'Pulse CLI — type / for commands or "help" for built-ins.' },
+    { type: 'output', text: 'Slash commands: /start-backend, /backend, /frontend, /install, /build, /typecheck' },
   ]);
   const [slashSuggestionsOpen, setSlashSuggestionsOpen] = useState(false);
   const [slashSuggestionsIndex, setSlashSuggestionsIndex] = useState(0);
   const terminalEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const cliContainerRef = useRef<HTMLDivElement>(null);
+  const prevPanelOpenRef = useRef(false);
 
   const isElectron = typeof window !== 'undefined' && window.electron?.runShellCommand != null;
   const slashFilter = cliInput.startsWith('/') ? cliInput.slice(1).toLowerCase().trim() : '';
@@ -89,11 +101,17 @@ export function FooterToolbar({
     terminalEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [cliHistory]);
 
-  // Focus input when terminal tab opens
+  // When panel first opens on terminal tab: focus input and show commands list (popup)
   useEffect(() => {
     if (panelOpen && activeTab === 'terminal') {
       inputRef.current?.focus();
+      const justOpened = !prevPanelOpenRef.current;
+      if (justOpened) {
+        setCliInput('/');
+        setSlashSuggestionsOpen(true);
+      }
     }
+    prevPanelOpenRef.current = panelOpen;
   }, [panelOpen, activeTab]);
 
   // Click outside to close slash suggestions
@@ -149,35 +167,58 @@ export function FooterToolbar({
 
       if (e.key !== 'Enter') return;
       if (!cmd) return;
-      setCliInput('');
       setSlashSuggestionsOpen(false);
 
-      const newHistory = [...cliHistory, { type: 'input' as const, text: cmd }];
+      // Resolve /start-backend, /backend, etc. to the actual shell command
+      const resolved = resolveSlashCommand(cmd);
+      const commandToRun = resolved ?? cmd;
+      const displayCmd = resolved ? cmd : commandToRun;
+      setCliInput('');
 
-      const lower = cmd.toLowerCase();
+      const newHistory = [...cliHistory, { type: 'input' as const, text: displayCmd }];
+
+      const lower = cmd.toLowerCase().trim();
       if (lower === 'help') {
         newHistory.push({
           type: 'output',
-          text: 'Commands: help, changelog, clear, status, version. Type "/" for script suggestions. In Electron, any other input runs as a shell command.',
+          text: 'Built-in: help, changelog, clear, status, version. Slash: /start-backend, /backend, /frontend, /install, /build, /typecheck',
         });
-      } else if (lower === 'clear') {
-        setCliHistory([{ type: 'output', text: 'Cleared.' }]);
+        newHistory.push({
+          type: 'output',
+          text: isElectron ? 'In Electron, any line runs as a shell command.' : 'Run Pulse in Electron (npm run desktop) to run slash commands.',
+        });
+        setCliHistory(newHistory);
         return;
-      } else if (lower === 'changelog') {
+      }
+      if (lower === 'clear') {
+        setCliHistory([{ type: 'output', text: 'Pulse CLI — type / for commands.' }, { type: 'output', text: 'Slash: /start-backend, /backend, /frontend, /install, /build, /typecheck' }]);
+        return;
+      }
+      if (lower === 'changelog') {
         setActiveTab('changelog');
         newHistory.push({ type: 'output', text: 'Switched to changelog tab.' });
-      } else if (lower === 'status') {
-        newHistory.push({ type: 'output', text: `System: online | Backend: localhost:8080 | Agents: standby` });
-      } else if (lower === 'version') {
-        newHistory.push({ type: 'output', text: 'Pulse v7.0.1 | Build 2026-03-07' });
-      } else if (isElectron) {
         setCliHistory(newHistory);
-        runShellCommand(cmd);
         return;
-      } else {
-        newHistory.push({ type: 'output', text: `Unknown command: ${cmd} (run Pulse in Electron to execute shell commands)` });
       }
-
+      if (lower === 'status') {
+        newHistory.push({ type: 'output', text: `System: online | Backend: localhost:8080 | Agents: standby` });
+        setCliHistory(newHistory);
+        return;
+      }
+      if (lower === 'version') {
+        newHistory.push({ type: 'output', text: 'Pulse v7.0.1 | Build 2026-03-07' });
+        setCliHistory(newHistory);
+        return;
+      }
+      if (isElectron) {
+        setCliHistory(newHistory);
+        runShellCommand(commandToRun);
+        return;
+      }
+      newHistory.push({
+        type: 'output',
+        text: `Run Pulse in Electron (npm run desktop) to execute: ${displayCmd}`,
+      });
       setCliHistory(newHistory);
     },
     [cliInput, cliHistory, isElectron, runShellCommand, showSlashSuggestions, slashSuggestions, slashSuggestionsIndex]

@@ -790,71 +790,9 @@ export function SettingsPage() {
                   </div>
                 </section>
 
-                <section className="pt-6">
-                  <h3 className="text-sm font-semibold text-[var(--pulse-accent)] mb-4">X (Twitter) API</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm text-gray-300 mb-2">Bearer Token</label>
-                      <input
-                        type="password"
-                        value={apiKeys.xBearerToken || ''}
-                        onChange={(e) => setAPIKeys({ ...apiKeys, xBearerToken: e.target.value })}
-                        placeholder="Enter your X API bearer token"
-                        className="w-full bg-[var(--pulse-surface)] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--pulse-accent)]/30"
-                      />
-                    </div>
-                    <button
-                      onClick={() => window.open('https://developer.x.com/en/portal/projects-and-apps', '_blank')}
-                      className="text-[13px] font-medium text-[var(--pulse-accent)] border border-[var(--pulse-accent)]/30 rounded-md px-3 py-1.5 hover:bg-[var(--pulse-accent)]/10 transition-colors"
-                    >
-                      Get Bearer Token
-                    </button>
-                  </div>
-                </section>
-
-                <section className="pt-6">
-                  <h3 className="text-sm font-semibold text-[var(--pulse-accent)] mb-4">Anthropic</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm text-gray-300 mb-2">API Key</label>
-                      <input
-                        type="password"
-                        value={apiKeys.anthropicApiKey || ''}
-                        onChange={(e) => setAPIKeys({ ...apiKeys, anthropicApiKey: e.target.value })}
-                        placeholder="Enter your Anthropic API key"
-                        className="w-full bg-[var(--pulse-surface)] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--pulse-accent)]/30"
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => window.open('https://console.anthropic.com/settings/keys', '_blank')}
-                        className="text-[13px] font-medium text-[var(--pulse-accent)] border border-[var(--pulse-accent)]/30 rounded-md px-3 py-1.5 hover:bg-[var(--pulse-accent)]/10 transition-colors"
-                      >
-                        Get API Key
-                      </button>
-                      <button
-                        onClick={async () => {
-                          if (!apiKeys.anthropicApiKey) return;
-                          try {
-                            const res = await fetch('/api/test-anthropic-key', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ apiKey: apiKeys.anthropicApiKey }),
-                            });
-                            const data = await res.json();
-                            alert(data.success ? 'API key is valid!' : `Invalid key: ${data.error || 'unknown error'}`);
-                          } catch {
-                            alert('Could not reach backend to test key');
-                          }
-                        }}
-                        disabled={!apiKeys.anthropicApiKey}
-                        className="text-[13px] font-medium text-gray-400 border border-zinc-700 rounded-md px-3 py-1.5 hover:bg-zinc-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                      >
-                        Test Key
-                      </button>
-                    </div>
-                  </div>
-                </section>
+                <p className="text-xs text-gray-500 mt-4">
+                  Agent inference uses OpenRouter (set OPENROUTER_API_KEY in backend <code className="bg-zinc-800 px-1 rounded">backend-hono/.env</code>). Voice Engine uses OpenAI (set OPENAI_API_KEY in backend). See SETUP.md for details.
+                </p>
               </div>
             )}
 

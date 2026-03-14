@@ -9,8 +9,8 @@
  *   1. OpenRouter Nous Hermes 4 (reasoning enabled) — when thinkHarder + OPENROUTER_API_KEY
  *   2. Hermes/OpenRouter (Opus 4.6, Nous subscription) — default for all chat
  *   3. Claude SDK Bridge (Opus, free via Max) — for thinkHarder or explicit claude-local model
- *   4. 21st API (deep thinking fallback) — when Claude SDK unavailable + thinkHarder
- *   5. OpenRouter (paid) — last resort
+ *   4. OpenRouter (Opus 4.6) — default when no Claude SDK
+ * No 21st, Exa, or other agent API keys required beyond OpenRouter.
  */
 
 import type { Context } from 'hono'
@@ -22,12 +22,10 @@ import type { ChatRequest } from '../../../types/ai-chat.js'
 import type { HermesAgentRole } from '../../../services/hermes-service.js'
 import { handleHermesChat, detectAgent, type ContentPart } from '../../../services/hermes-handler.js'
 import { getAgentSystemPrompt, extractSkillTag } from '../../../services/ai/agent-instructions.js'
-import { exaSearch, formatExaContext, isExaAvailable } from '../../../services/exa-service.js'
 import { extractSkillFromMessage, isSkillEnabled, getSkillDisabledReason } from '../../../config/feature-flags.js'
 import { createRequestCognition } from '../../../services/cognition-emitter.js'
 import { enqueue, completeJob } from '../../../services/chat-queue.js'
 import { isBridgeAvailable, bridgeChat, type BridgeStreamEvent } from '../../../services/claude-sdk/bridge.js'
-import { deepThink, is21stAvailable } from '../../../services/twenty-first/deep-think.js'
 import { resolveModelKey } from '../../../config/ai-config.js'
 import { takeScreenshot, isPlaywrightReady } from '../../../services/screenshot-service.js'
 
@@ -274,14 +272,7 @@ export async function handleChat(c: Context) {
       console.log(`[Hermes][${requestId}] Using OpenRouter Nous Hermes 4 (reasoning enabled)`)
       cognition.step('agent-route', 'Nous Hermes 4', 'Deep reasoning via OpenRouter')
 
-      let researchContext = ''
-      if (isExaAvailable()) {
-        cognition.step('tool-dispatch', 'Exa deep research', 'ThinkHarder — searching live sources')
-        const results = await exaSearch(message, { numResults: 5 })
-        researchContext = formatExaContext(results)
-        if (researchContext) cognition.step('tool-dispatch', `Exa: ${results.length} sources found`)
-      }
-      const augmentedMessage = researchContext ? `${researchContext}\n\n${message}` : message
+      const augmentedMessage = message
 
       const skillTag = extractSkillTag(message)
       const systemPrompt = getAgentSystemPrompt(agentInfo.agent, { skillTag, thinkHarder: true })
@@ -412,25 +403,7 @@ export async function handleChat(c: Context) {
     if (USE_LOCAL_HERMES && !useGitHubModel && !preferClaudeSDK) {
       console.log(`[Hermes][${requestId}] Using LOCAL processing via P.I.C. agents`)
 
-      // Deep research via Exa when thinkHarder is enabled
-      let researchContext = ''
-      let researchSourceCount = 0
-      if (thinkHarder && isExaAvailable()) {
-        console.log(`[Hermes][${requestId}] ThinkHarder enabled — running Exa research`)
-        cognition.step('tool-dispatch', 'Exa deep research', 'ThinkHarder enabled — searching live sources')
-        const results = await exaSearch(message, { numResults: 5 })
-        researchSourceCount = results.length
-        researchContext = formatExaContext(results)
-        if (researchContext) {
-          console.log(`[Hermes][${requestId}] Exa returned ${results.length} sources`)
-          cognition.step('tool-dispatch', `Exa: ${results.length} sources found`, results.map(r => (r as any).url ?? '').filter(Boolean).slice(0, 2).join(', '))
-        }
-      }
-
-      // Augment message with research context if available
-      const augmentedMessage = researchContext
-        ? `${researchContext}\n\n${message}`
-        : message
+      const augmentedMessage = message
 
       // Generate response locally through Hermes
       cognition.step('gateway-call', 'Calling OpenRouter (Opus 4.6)', `agent: ${agentInfo.agent}`)
@@ -460,9 +433,6 @@ export async function handleChat(c: Context) {
       // Set conversation ID header
       c.header('X-Conversation-Id', conversation.id)
       c.header('X-Hermes-Agent', hermesResponse.agent)
-      if (researchSourceCount > 0) {
-        c.header('X-Research-Sources', String(researchSourceCount))
-      }
 
       // Stream using AI SDK UI message event stream (SSE with JSON payloads).
       // This matches `DefaultChatTransport` on the frontend, which expects SSE JSON events.
@@ -542,23 +512,12 @@ export async function handleChat(c: Context) {
       console.log(`[ClaudeSDK][${requestId}] Routing through Claude SDK bridge (thinkHarder: ${thinkHarder}, model: ${model ?? 'auto'})`)
       cognition.step('agent-route', 'Claude SDK Bridge', 'Opus via Max subscription ($0 API cost)')
 
-      // Deep research via Exa when thinkHarder is enabled
-      let researchContext = ''
-      if (thinkHarder && isExaAvailable()) {
-        cognition.step('tool-dispatch', 'Exa deep research', 'ThinkHarder — searching live sources')
-        const results = await exaSearch(message, { numResults: 5 })
-        researchContext = formatExaContext(results)
-        if (researchContext) {
-          cognition.step('tool-dispatch', `Exa: ${results.length} sources found`)
-        }
-      }
-
       const bridgeResult = bridgeChat({
         message,
         conversationId: conversation.id,
         history: history.map(h => ({ role: h.role as 'user' | 'assistant', content: h.content })),
         thinkHarder,
-        researchContext: researchContext || undefined,
+        researchContext: undefined,
       })
 
       cognition.step('gateway-call', 'Streaming from Claude Opus', 'Local CLI bridge, MCP tools available')
@@ -624,98 +583,7 @@ export async function handleChat(c: Context) {
       })
     }
 
-    // ── PATH 2B: 21st API deep thinking fallback ──────────────────────────
-    // When Claude SDK is unavailable AND thinkHarder is requested
-    if (thinkHarder && !useGitHubModel && is21stAvailable()) {
-      console.log(`[21stAPI][${requestId}] Claude SDK unavailable, falling back to 21st API deep thinking`)
-      cognition.step('agent-route', '21st API Deep Thinking', 'Claude SDK unavailable, using 21st fallback')
-
-      try {
-        // Run Exa research if available
-        let researchContext = ''
-        if (isExaAvailable()) {
-          const results = await exaSearch(message, { numResults: 3 })
-          researchContext = formatExaContext(results)
-        }
-
-        const deepResult = await deepThink(
-          { message, context: researchContext || undefined },
-          userId,
-        )
-
-        cognition.step('response-ready', '21st API response', `${deepResult.content.length} chars in ${deepResult.durationMs}ms`)
-
-        // Store assistant message
-        await conversationStore.addMessage(conversation.id, {
-          conversationId: conversation.id,
-          role: 'assistant',
-          content: deepResult.content,
-          model: '21st-deep-think',
-        })
-
-        // Stream the response
-        const uiMessageId = `assistant-${Date.now()}`
-        const uiReasoningId = `reasoning-${Date.now()}`
-        const content = deepResult.content
-
-        let streamCancelled = false
-        const stream = new ReadableStream({
-          start(controller) {
-            ;(async () => {
-              controller.enqueue({ type: 'reasoning-start', id: uiReasoningId })
-              controller.enqueue({
-                type: 'reasoning-delta',
-                id: uiReasoningId,
-                delta: `Deep thinking via 21st API (Claude SDK unavailable).\nProcessed in ${deepResult.durationMs}ms.\n`,
-              })
-              controller.enqueue({ type: 'reasoning-end', id: uiReasoningId })
-
-              controller.enqueue({ type: 'text-start', id: uiMessageId })
-              for (let i = 0; i < content.length; i += LOCAL_STREAM_CHUNK_SIZE) {
-                if (streamCancelled) return
-                controller.enqueue({
-                  type: 'text-delta',
-                  id: uiMessageId,
-                  delta: content.slice(i, i + LOCAL_STREAM_CHUNK_SIZE),
-                })
-                await new Promise((resolve) => setTimeout(resolve, LOCAL_STREAM_CHUNK_DELAY_MS))
-              }
-
-              if (!streamCancelled) {
-                controller.enqueue({ type: 'text-end', id: uiMessageId })
-                cognition.done()
-                controller.close()
-              }
-            })().catch((error) => {
-              cognition.step('error', '21st stream error', error instanceof Error ? error.message : String(error))
-              cognition.done()
-              if (!streamCancelled) controller.error(error)
-            })
-          },
-          cancel() { streamCancelled = true },
-        })
-
-        c.header('X-Conversation-Id', conversation.id)
-        c.header('X-Hermes-Agent', '21st-deep-think')
-
-        return createUIMessageStreamResponse({
-          stream,
-          headers: {
-            'X-Conversation-Id': conversation.id,
-            'X-Hermes-Agent': '21st-deep-think',
-            'Access-Control-Allow-Origin': c.req.header('Origin') || '*',
-            'Access-Control-Allow-Credentials': 'true',
-            'Access-Control-Expose-Headers': 'X-Conversation-Id, X-Hermes-Agent, X-Research-Sources',
-          },
-        })
-      } catch (err) {
-        console.warn(`[21stAPI][${requestId}] Deep think failed, falling through to external API:`, err)
-        cognition.step('error', '21st API failed', err instanceof Error ? err.message : String(err))
-        // Fall through to external API path
-      }
-    }
-
-    // ── PATH 3: External API — GitHub Models (GPT-4o) / OpenRouter (paid) ──
+    // ── PATH 3: External API — GitHub Models (optional) / OpenRouter (Opus 4.6) ──
     const preferredModel = useGitHubModel ? 'github-deepseek' : model
     console.log(`[Hermes][${requestId}] Using external API (preferred: ${preferredModel ?? 'auto'})`)
 
