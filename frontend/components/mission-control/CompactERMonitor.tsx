@@ -1,7 +1,9 @@
+// [claude-code 2026-03-14] Refactored to use useERSafe() from ERContext (shared state), local fallback retained
 import { useState, useEffect, useRef } from 'react';
 import { Mic, MicOff, AlertTriangle } from 'lucide-react';
 import { WaveformCanvas } from './WaveformCanvas';
 import { useBackend } from '../../lib/backend';
+import { useERSafe } from '../../contexts/ERContext';
 
 interface CompactERMonitorProps {
   onERScoreChange?: (score: number) => void;
@@ -10,20 +12,29 @@ interface CompactERMonitorProps {
 /**
  * Compact landscape-oriented Emotional Resonance Monitor
  * Designed for the tickers-only floating widget
+ * Uses shared ERContext when available, falls back to local monitoring
  */
 export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
   const backend = useBackend();
-  const [isMonitoring, setIsMonitoring] = useState(false);
-  const [erScore, setErScore] = useState(0);
-  const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
-  const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
+  const erContext = useERSafe();
+
+  // Local state (fallback when not in ERProvider)
+  const [localIsMonitoring, setLocalIsMonitoring] = useState(false);
+  const [localErScore, setLocalErScore] = useState(0);
+  const [localAudioContext, setLocalAudioContext] = useState<AudioContext | null>(null);
+  const [localAnalyser, setLocalAnalyser] = useState<AnalyserNode | null>(null);
   const [overtradingPenalty, setOvertradingPenalty] = useState<number>(0.5);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const recognitionRef = useRef<any>(null);
-  
+
   // Session tracking (simplified for compact version)
   const sessionStartTimeRef = useRef<number | null>(null);
   const infractionCountRef = useRef<number>(0);
+
+  // Use shared context if available, otherwise local state
+  const isMonitoring = erContext?.isMonitoring ?? localIsMonitoring;
+  const erScore = erContext?.erScore ?? localErScore;
+  const analyser = erContext?.analyser ?? localAnalyser;
 
   const resonanceState = erScore > 0.5 ? 'Stable' : erScore < -0.5 ? 'Tilt' : 'Neutral';
   const stateColor = {
@@ -38,25 +49,34 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
   };
 
   const startMonitoring = async () => {
+    // Delegate to shared context if available
+    if (erContext) {
+      await erContext.startMonitoring();
+      return;
+    }
+
+    // Fallback local monitoring
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaStreamRef.current = stream;
 
       const ctx = new AudioContext();
+      // [claude-code 2026-03-14] Chromium/Electron starts AudioContext SUSPENDED — must resume
+      if (ctx.state === 'suspended') await ctx.resume();
       const analyserNode = ctx.createAnalyser();
       analyserNode.fftSize = 256;
-      
+
       const source = ctx.createMediaStreamSource(stream);
       source.connect(analyserNode);
-      
-      setAudioContext(ctx);
-      setAnalyser(analyserNode);
-      setIsMonitoring(true);
-      
+
+      setLocalAudioContext(ctx);
+      setLocalAnalyser(analyserNode);
+      setLocalIsMonitoring(true);
+
       // Reset tracking
       sessionStartTimeRef.current = Date.now();
       infractionCountRef.current = 0;
-      setErScore(0);
+      setLocalErScore(0);
 
       if ('webkitSpeechRecognition' in window) {
         const SpeechRecognition = (window as any).webkitSpeechRecognition;
@@ -68,15 +88,15 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
           const transcript = Array.from(event.results)
             .map((result: any) => result[0].transcript)
             .join('');
-          
+
           const aggressiveWords = ['fuck', 'shit', 'damn', 'stupid', 'idiot', 'hate'];
-          const hasAggression = aggressiveWords.some(word => 
+          const hasAggression = aggressiveWords.some(word =>
             transcript.toLowerCase().includes(word)
           );
 
           if (hasAggression) {
             infractionCountRef.current += 1;
-            setErScore(prev => {
+            setLocalErScore(prev => {
               const newScore = Math.max(-10, prev - 1.0);
               if (typeof window !== 'undefined') {
                 window.dispatchEvent(
@@ -105,26 +125,33 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
   };
 
   const stopMonitoring = async () => {
+    // Delegate to shared context if available
+    if (erContext) {
+      await erContext.stopMonitoring();
+      return;
+    }
+
     if (mediaStreamRef.current) {
       mediaStreamRef.current.getTracks().forEach(track => track.stop());
     }
-    if (audioContext) {
-      audioContext.close();
+    if (localAudioContext) {
+      localAudioContext.close();
     }
     if (recognitionRef.current) {
       recognitionRef.current.stop();
     }
-    
-    setAudioContext(null);
-    setAnalyser(null);
-    setIsMonitoring(false);
+
+    setLocalAudioContext(null);
+    setLocalAnalyser(null);
+    setLocalIsMonitoring(false);
   };
 
-  // Natural drift effect
+  // Natural drift effect (only for local fallback)
   useEffect(() => {
+    if (erContext) return; // shared context handles drift
     if (isMonitoring) {
       const interval = setInterval(() => {
-        setErScore(prev => {
+        setLocalErScore(prev => {
           const drift = (Math.random() - 0.5) * 0.3;
           const newScore = Math.max(-10, Math.min(10, prev + drift));
           if (onERScoreChange) {
@@ -135,9 +162,11 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
       }, 1000);
       return () => clearInterval(interval);
     }
-  }, [isMonitoring, onERScoreChange]);
+  }, [isMonitoring, onERScoreChange, erContext]);
 
+  // Overtrading check (only for local fallback)
   useEffect(() => {
+    if (erContext) return; // shared context handles overtrading
     if (!isMonitoring) return;
 
     const checkOvertrading = async () => {
@@ -147,7 +176,7 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
         setOvertradingPenalty(penalty);
 
         if (status.isOvertrading) {
-          setErScore((prev) => {
+          setLocalErScore((prev) => {
             const next = Math.max(-10, prev - penalty);
             if (onERScoreChange) {
               onERScoreChange(next);
@@ -163,7 +192,12 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
     void checkOvertrading();
     const interval = setInterval(checkOvertrading, 30000);
     return () => clearInterval(interval);
-  }, [backend, isMonitoring, onERScoreChange]);
+  }, [backend, isMonitoring, onERScoreChange, erContext]);
+
+  // Propagate score changes to callback
+  useEffect(() => {
+    onERScoreChange?.(erScore);
+  }, [erScore, onERScoreChange]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -196,7 +230,7 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
       <div className="flex items-center gap-1.5">
         {/* Status indicator dot */}
         <div className={`w-2 h-2 rounded-full ${stateBgColor[resonanceState]} ${isMonitoring ? 'animate-pulse' : ''}`} />
-        
+
         {/* Score */}
         <div className="text-right">
           <div className={`text-xs font-bold ${stateColor[resonanceState]}`}>
@@ -217,8 +251,8 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
       <button
         onClick={isMonitoring ? stopMonitoring : startMonitoring}
         className={`p-1.5 rounded-lg transition-all flex-shrink-0 ${
-          isMonitoring 
-            ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30' 
+          isMonitoring
+            ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
             : 'bg-zinc-800/50 text-gray-400 hover:bg-zinc-700/50 hover:text-gray-300'
         }`}
         title={isMonitoring ? 'Stop PsychAssist' : 'Start PsychAssist'}

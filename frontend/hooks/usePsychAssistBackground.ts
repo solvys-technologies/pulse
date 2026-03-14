@@ -76,6 +76,8 @@ export function usePsychAssistBackground() {
       mediaStreamRef.current = stream;
 
       const ctx = new AudioContext();
+      // [claude-code 2026-03-14] Chromium/Electron starts AudioContext SUSPENDED — must resume
+      if (ctx.state === 'suspended') await ctx.resume();
       const analyserNode = ctx.createAnalyser();
       analyserNode.fftSize = 256;
 

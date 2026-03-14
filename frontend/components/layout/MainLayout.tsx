@@ -40,7 +40,7 @@ import { EconCalendarProvider } from '../../contexts/EconCalendarContext';
 import { EconCalendar } from '../econ/EconCalendar';
 import { NarrativeProvider } from '../../contexts/NarrativeContext';
 import { NarrativeFlow } from '../narrative/NarrativeFlow';
-import { TeamDashboard } from '../team/TeamDashboard';
+// TeamDashboard replaced by Discord iframe — see 'team' tab below
 import { TradingJournal } from '../journal/TradingJournal';
 import { FirstTimeTour } from '../onboarding/FirstTimeTour';
 import { SessionCountdownWidget } from '../mission-control/SessionCountdownWidget';
@@ -702,7 +702,13 @@ export function MainLayout() {
               )}
               {activeTab === 'team' && (
                 <div key="team" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
-                  <TeamDashboard />
+                  <iframe
+                    src="https://discord.com/channels/@me"
+                    className="w-full h-full border-0"
+                    title="PIC Boardroom — Discord"
+                    allow="microphone; camera; clipboard-write; encrypted-media"
+                    sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
+                  />
                 </div>
               )}
               {activeTab === 'settings' && (

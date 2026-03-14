@@ -9,6 +9,51 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-14T23:30:00',
+    agent: 'claude-code',
+    summary: 'Quick wins: Team section replaced with Discord iframe, sidebar reordered (Performance + Team above Settings), voice orb made clickable (removed separate mic button), chat input rearranged (Think + Mic + Send right-justified), VIX/IV widget sizing matched, responsive toolbar overflow',
+    files: [
+      'frontend/components/layout/MainLayout.tsx',
+      'frontend/components/layout/NavSidebar.tsx',
+      'frontend/components/layout/TopHeader.tsx',
+      'frontend/components/voice/HeaderVoiceControl.tsx',
+      'frontend/components/chat/PulseChatInput.tsx',
+      'frontend/contexts/VoiceContext.tsx',
+    ],
+  },
+  {
+    date: '2026-03-14T22:00:00',
+    agent: 'claude-code',
+    summary: 'RiskFlow cleanup: removed MarketWatch RSS poller (RiskFlowFeedPoller class, XML parsing, singleton). Feed now Notion + backend only. XCLI visibility fix: minMacroLevel 2→0 so all backend items show. Notion brief sort fix: created_time instead of last_edited_time, removed as-any cast.',
+    files: [
+      'frontend/lib/riskflow-feed.ts',
+      'frontend/contexts/RiskFlowContext.tsx',
+      'backend-hono/src/services/notion-service.ts',
+    ],
+  },
+  {
+    date: '2026-03-14T21:00:00',
+    agent: 'claude-code',
+    summary: 'Model routing fix: default chat model switched from Opus to Sonnet 4.6 (cheaper/faster). thinkHarder deep-thought model switched from Nous Hermes 4 to Claude Opus 4.6 (better quality). Removed reasoning:{enabled:true} param from Opus request body. Updated all logs/headers/comments to reflect new model names.',
+    files: [
+      'backend-hono/src/routes/ai/handlers/chat.ts',
+      'backend-hono/src/services/hermes-handler.ts',
+      'backend-hono/src/services/ai/model-selector.ts',
+    ],
+  },
+  {
+    date: '2026-03-14T20:00:00',
+    agent: 'claude-code',
+    summary: 'PsychAssist voice engine fix: AudioContext.resume() added in all 4 locations (ERContext, EmotionalResonanceMonitor, CompactERMonitor, usePsychAssistBackground) so waveform renders in Chromium/Electron. CompactERMonitor refactored to use useERSafe() shared context with local fallback. useVoiceAssistant setErrorWithRecovery no longer fires when speechRecognition is absent (expected in Electron).',
+    files: [
+      'frontend/contexts/ERContext.tsx',
+      'frontend/components/mission-control/EmotionalResonanceMonitor.tsx',
+      'frontend/components/mission-control/CompactERMonitor.tsx',
+      'frontend/hooks/usePsychAssistBackground.ts',
+      'frontend/hooks/useVoiceAssistant.ts',
+    ],
+  },
+  {
     date: '2026-03-14T17:30:00',
     agent: 'claude-code',
     summary: 'Font theme switcher (Default/Solvys/Classic) in Appearance settings. Self-hosted WOFF2 fonts replace Google Fonts CDN. Compact TraderNametag sized to match VIX ticker. Nametag ER emotional pulse (green=stable, red=tilt) with settings toggle.',

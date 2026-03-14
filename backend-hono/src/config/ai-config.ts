@@ -16,7 +16,6 @@ export type AiModelKey =
   // OpenRouter alternative routes
   | 'openrouter-sonnet'  // Claude Sonnet 4.5 via OpenRouter
   | 'openrouter-opus'    // Claude Opus 4.5 via OpenRouter
-  | 'openrouter-llama'   // Llama 3.3 70B via OpenRouter
   | 'openrouter-grok'    // Grok 4.1 via OpenRouter
   // Hermes P.I.C. agent keys (routed to OpenRouter Opus 4.6 via Nous subscription)
   | 'hermes-cao'         // CAO/Harper reasoning
@@ -128,15 +127,14 @@ const modelAliases: Record<string, AiModelKey> = {
   'grok-4.1': 'grok',
   general: 'grok',
   groq: 'openrouter-opus',
-  'llama-3.3-70b': 'openrouter-opus',
+  'llama-3.3-70b': 'openrouter-sonnet',
   haiku: 'openrouter-opus',
   tech: 'openrouter-opus',
   // OpenRouter alternative routes
   'openrouter-sonnet': 'openrouter-sonnet',
   'openrouter-claude': 'openrouter-sonnet',
   'openrouter-opus': 'openrouter-opus',
-  'openrouter-llama': 'openrouter-llama',
-  'llama-70b': 'openrouter-llama',
+  'llama-70b': 'openrouter-sonnet',
   'openrouter-grok': 'openrouter-grok',
   'grok-openrouter': 'openrouter-grok',
   // Hermes P.I.C. agent routes
@@ -184,9 +182,9 @@ const getPrimaryProvider = (): AiProviderType => {
 
 const enableProviderFallback = getEnv('AI_ENABLE_PROVIDER_FALLBACK') !== 'false'
 
-// Default: Opus 4.6 via OpenRouter (Nous subscription)
+// Default: Sonnet 4.6 via OpenRouter (Nous subscription)
 const defaultModel = resolveModelKey(getEnv('AI_DEFAULT_MODEL'))
-  ?? (getEnv('OPENROUTER_API_KEY') ? 'openrouter-opus' as AiModelKey : 'openrouter-llama')
+  ?? (getEnv('OPENROUTER_API_KEY') ? 'openrouter-sonnet' as AiModelKey : 'openrouter-opus')
 
 export const defaultAiConfig: AiConfig = {
   models: {
@@ -239,22 +237,6 @@ export const defaultAiConfig: AiConfig = {
       contextWindow: 200_000,
       supportsStreaming: true,
       supportsVision: true
-    },
-    'openrouter-llama': {
-      id: 'meta-llama/llama-3.3-70b-instruct',
-      displayName: 'Llama 3.3 70B (OpenRouter)',
-      provider: 'openai-compatible',
-      providerType: 'openrouter',
-      apiKeyEnv: 'OPENROUTER_API_KEY',
-      baseUrl: openRouterBaseUrl,
-      temperature: 0.25,
-      maxTokens: 2048,
-      timeoutMs: 30_000,
-      costPer1kInputUsd: 0.00012,
-      costPer1kOutputUsd: 0.0003,
-      contextWindow: 128_000,
-      supportsStreaming: true,
-      supportsVision: false
     },
     'openrouter-grok': {
       id: 'x-ai/grok-4',
@@ -419,23 +401,22 @@ export const defaultAiConfig: AiConfig = {
       'earnings-analysis': 'openrouter-opus',
       'tech-mega-cap': 'openrouter-opus'
     },
-    // OpenRouter + Hermes fallback chain
+    // OpenRouter + Hermes fallback chain (Claude only, no llama)
     fallbackMap: {
       sonnet: 'openrouter-sonnet',
       grok: 'openrouter-grok',
-      'openrouter-sonnet': 'openrouter-llama',
-      'openrouter-llama': 'openrouter-grok',
-      'openrouter-grok': 'openrouter-opus',
+      'openrouter-sonnet': 'openrouter-opus',
       'openrouter-opus': 'openrouter-sonnet',
+      'openrouter-grok': 'openrouter-sonnet',
       // Hermes fallbacks (fall back to OpenRouter equivalents)
       'hermes-cao': 'openrouter-opus',
       'hermes-research': 'openrouter-sonnet',
-      'hermes-fast': 'openrouter-llama',
+      'hermes-fast': 'openrouter-sonnet',
       'hermes-realtime': 'openrouter-grok',
       // Claude Local SDK fallback to OpenRouter Opus
       'claude-local': 'openrouter-opus',
       // GitHub Models fallback to OpenRouter
-      'github-deepseek': 'openrouter-llama'
+      'github-deepseek': 'openrouter-sonnet'
     },
     // Cross-provider fallbacks (all within OpenRouter now)
     crossProviderFallbacks: []

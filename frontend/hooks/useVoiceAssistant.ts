@@ -145,7 +145,9 @@ export function useVoiceAssistant() {
     []
   );
 
+  // [claude-code 2026-03-14] Guard: don't fire error when speechRecognition is simply absent (expected in Electron)
   const setErrorWithRecovery = useCallback(() => {
+    if (!speechRecognitionSupported) return; // not an error — expected in Electron
     setRuntimeState('error');
     // Clear any existing recovery timer
     if (errorRecoveryRef.current) clearTimeout(errorRecoveryRef.current);
@@ -153,7 +155,7 @@ export function useVoiceAssistant() {
       errorRecoveryRef.current = null;
       setRuntimeState(enabledRef.current ? 'listening' : 'idle');
     }, ERROR_AUTO_RECOVERY_MS);
-  }, []);
+  }, [speechRecognitionSupported]);
 
   const stopPlayback = useCallback(() => {
     if (audioRef.current) {

@@ -1,13 +1,14 @@
 // [claude-code 2026-03-13] Hermes migration — replaced OpenClaw with Hermes/Groq direct
-// [claude-code 2026-03-14] thinkHarder maps to OpenRouter Nous Hermes 4 deep reasoning (reasoning.enabled)
+// [claude-code 2026-03-14] thinkHarder maps to Claude Opus deep thought via OpenRouter (no reasoning param)
+// [claude-code 2026-03-14] Model routing fix: default→Sonnet, thinkHarder→Opus
 /**
  * AI Chat Handler
  * Handle chat messages and AI responses - Hermes Local Processing
  * Routes through P.I.C. agent network for local single-user mode
  *
  * Inference priority chain:
- *   1. OpenRouter Nous Hermes 4 (reasoning enabled) — when thinkHarder + OPENROUTER_API_KEY
- *   2. Hermes/OpenRouter (Opus 4.6, Nous subscription) — default for all chat
+ *   1. OpenRouter Claude Opus 4.6 (deep thought) — when thinkHarder + OPENROUTER_API_KEY
+ *   2. Hermes/OpenRouter (Sonnet 4.6, Nous subscription) — default for all chat
  *   3. Claude SDK Bridge (Opus, free via Max) — for thinkHarder or explicit claude-local model
  *   4. OpenRouter (Opus 4.6) — default when no Claude SDK
  * No 21st, Exa, or other agent API keys required beyond OpenRouter.
@@ -29,7 +30,7 @@ import { isBridgeAvailable, bridgeChat, type BridgeStreamEvent } from '../../../
 import { resolveModelKey } from '../../../config/ai-config.js'
 import { takeScreenshot, isPlaywrightReady } from '../../../services/screenshot-service.js'
 
-const OPENROUTER_HERMES_4_MODEL = 'nousresearch/hermes-4-70b'
+const OPENROUTER_HERMES_4_MODEL = 'anthropic/claude-opus-4.6'
 
 // File attachment content part types
 type FileContentPart =
@@ -267,10 +268,10 @@ export async function handleChat(c: Context) {
     const openRouterKey = process.env.OPENROUTER_API_KEY
     const useNousHermesReasoning = thinkHarder && Boolean(openRouterKey?.trim())
 
-    // PATH 1: OpenRouter Nous Hermes 4 with deep reasoning (thinking toggle → Hermes reasoning.enabled)
+    // PATH 1: OpenRouter Claude Opus deep thought (thinking toggle)
     if (useNousHermesReasoning && !useGitHubModel) {
-      console.log(`[Hermes][${requestId}] Using OpenRouter Nous Hermes 4 (reasoning enabled)`)
-      cognition.step('agent-route', 'Nous Hermes 4', 'Deep reasoning via OpenRouter')
+      console.log(`[Hermes][${requestId}] Using OpenRouter Claude Opus 4.6 (deep thought)`)
+      cognition.step('agent-route', 'Claude Opus Deep', 'Deep thought via OpenRouter')
 
       const augmentedMessage = message
 
@@ -299,14 +300,13 @@ export async function handleChat(c: Context) {
             model: OPENROUTER_HERMES_4_MODEL,
             messages: openRouterMessages,
             stream: true,
-            reasoning: { enabled: true },
             max_tokens: 8192,
           }),
         })
 
         if (!res.ok || !res.body) {
           const errText = await res.text()
-          console.warn(`[Hermes][${requestId}] OpenRouter Hermes 4 failed ${res.status}, falling through: ${errText.slice(0, 200)}`)
+          console.warn(`[Hermes][${requestId}] OpenRouter Opus deep failed ${res.status}, falling through: ${errText.slice(0, 200)}`)
         } else {
           const uiMessageId = `assistant-${Date.now()}`
           const uiReasoningId = `reasoning-${Date.now()}`
@@ -365,10 +365,10 @@ export async function handleChat(c: Context) {
                     conversationId: conversation.id,
                     role: 'assistant',
                     content: fullText,
-                    model: 'nous-hermes-4-70b',
+                    model: 'claude-opus-deep',
                   })
                 }
-                cognition.step('response-ready', 'Nous Hermes 4 complete', `${fullText.length} chars`)
+                cognition.step('response-ready', 'Claude Opus deep complete', `${fullText.length} chars`)
                 cognition.done()
                 controller.close()
               } catch (err) {
@@ -381,12 +381,12 @@ export async function handleChat(c: Context) {
           })
 
           c.header('X-Conversation-Id', conversation.id)
-          c.header('X-Hermes-Agent', 'nous-hermes-4')
+          c.header('X-Hermes-Agent', 'claude-opus-deep')
           return createUIMessageStreamResponse({
             stream,
             headers: {
               'X-Conversation-Id': conversation.id,
-              'X-Hermes-Agent': 'nous-hermes-4',
+              'X-Hermes-Agent': 'claude-opus-deep',
               'Access-Control-Allow-Origin': c.req.header('Origin') || '*',
               'Access-Control-Allow-Credentials': 'true',
               'Access-Control-Expose-Headers': 'X-Conversation-Id, X-Hermes-Agent, X-Research-Sources',
@@ -394,7 +394,7 @@ export async function handleChat(c: Context) {
           })
         }
       } catch (err) {
-        console.warn(`[Hermes][${requestId}] OpenRouter Hermes 4 error, falling through:`, err)
+        console.warn(`[Hermes][${requestId}] OpenRouter Opus deep error, falling through:`, err)
       }
     }
 
@@ -406,7 +406,7 @@ export async function handleChat(c: Context) {
       const augmentedMessage = message
 
       // Generate response locally through Hermes
-      cognition.step('gateway-call', 'Calling OpenRouter (Opus 4.6)', `agent: ${agentInfo.agent}`)
+      cognition.step('gateway-call', 'Calling OpenRouter (Sonnet 4.6)', `agent: ${agentInfo.agent}`)
       const hermesResponse = await handleHermesChat({
         message: augmentedMessage,
         multimodalContent,

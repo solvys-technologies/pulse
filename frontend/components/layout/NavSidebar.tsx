@@ -107,7 +107,7 @@ export function NavSidebar({
   }, []);
 
   const orderedItems = order
-    .filter((id): id is NavTabId => id in NAV_ITEMS_MAP && id !== 'chatroom')
+    .filter((id): id is NavTabId => id in NAV_ITEMS_MAP && id !== 'chatroom' && id !== 'team' && id !== 'earnings')
     .map((tabId) => ({
       tabId,
       icon: NAV_ITEMS_MAP[tabId].icon,
@@ -201,6 +201,54 @@ export function NavSidebar({
       </div>
 
       <div className="space-y-1 px-1.5">
+        {/* Performance */}
+        <button
+          onClick={() => onTabChange('earnings')}
+          className={`w-full flex items-center gap-2.5 rounded-md transition-colors ${
+            expanded ? 'px-2 py-1.5' : 'justify-center py-1.5'
+          } ${
+            activeTab === 'earnings'
+              ? 'pulse-nav-active'
+              : 'pulse-nav-inactive'
+          }`}
+          title={expanded ? undefined : 'Performance'}
+        >
+          <BookOpenCheck className="w-4 h-4 shrink-0" />
+          {expanded && (
+            <div className="min-w-0 text-left">
+              <div className={`text-[11px] font-semibold truncate ${activeTab === 'earnings' ? 'text-black' : ''}`}>
+                Performance
+              </div>
+              <div className={`text-[9px] truncate ${activeTab === 'earnings' ? 'text-black/60' : 'text-gray-500'}`}>
+                ER history & KPIs
+              </div>
+            </div>
+          )}
+        </button>
+        {/* Team (Discord) */}
+        <button
+          onClick={() => onTabChange('team')}
+          className={`w-full flex items-center gap-2.5 rounded-md transition-colors ${
+            expanded ? 'px-2 py-1.5' : 'justify-center py-1.5'
+          } ${
+            activeTab === 'team'
+              ? 'pulse-nav-active'
+              : 'pulse-nav-inactive'
+          }`}
+          title={expanded ? undefined : 'Team'}
+        >
+          <Users className="w-4 h-4 shrink-0" />
+          {expanded && (
+            <div className="min-w-0 text-left">
+              <div className={`text-[11px] font-semibold truncate ${activeTab === 'team' ? 'text-black' : ''}`}>
+                Team
+              </div>
+              <div className={`text-[9px] truncate ${activeTab === 'team' ? 'text-black/60' : 'text-gray-500'}`}>
+                PIC Discord
+              </div>
+            </div>
+          )}
+        </button>
         <button
           onClick={() => onTabChange('settings')}
           className={`w-full flex items-center gap-2.5 rounded-md transition-colors ${

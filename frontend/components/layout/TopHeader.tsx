@@ -230,7 +230,7 @@ export function TopHeader({
 
           <button
             onClick={() => setShowUpgrade(true)}
-            className="relative bg-[var(--pulse-bg)] border border-[var(--pulse-accent)]/20 rounded-lg px-3 h-8 hover:bg-[var(--pulse-accent)]/10 hover:border-[var(--pulse-accent)]/40 transition-colors cursor-pointer flex items-center"
+            className="relative bg-[var(--pulse-bg)] border border-[var(--pulse-accent)]/20 rounded-lg px-3 h-8 hover:bg-[var(--pulse-accent)]/10 hover:border-[var(--pulse-accent)]/40 transition-colors cursor-pointer flex items-center hidden xl:flex"
           >
             <span className="text-[13px] text-gray-300">{getTierDisplayName()}</span>
           </button>
@@ -238,11 +238,11 @@ export function TopHeader({
         </div>
       </div>
       
-      <div className="flex items-center gap-6">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4 min-w-0 overflow-x-auto overflow-y-hidden flex-shrink">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <WhatsNewButton />
           {psychAssistHeadingWidget}
-          <div className="bg-[var(--pulse-bg)] border border-zinc-800 rounded-lg px-2.5 h-8 flex items-center">
+          <div className="bg-[var(--pulse-bg)] border border-zinc-800 rounded-lg px-3 h-8 flex items-center flex-shrink-0">
             <div className="flex items-center gap-1.5">
               <span className="text-[9px] text-gray-500">VIX</span>
               <span className="text-xs font-mono text-gray-300">

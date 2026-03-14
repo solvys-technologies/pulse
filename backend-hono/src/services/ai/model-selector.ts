@@ -1,7 +1,8 @@
-// [claude-code 2026-03-14] Default: OpenRouter (Nous) + Claude Opus 4.6; Groq removed
+// [claude-code 2026-03-14] Default: OpenRouter (Nous) + Claude Sonnet 4.6; Groq removed
+// [claude-code 2026-03-14] Model routing fix: default chat→Sonnet 4.6, thinkHarder→Opus (in chat.ts)
 /**
  * AI Model Selector
- * OpenRouter (Nous subscription) + Claude Opus 4.6 as default inference
+ * OpenRouter (Nous subscription) + Claude Sonnet 4.6 as default inference
  */
 
 import { createOpenAI } from '@ai-sdk/openai'
@@ -31,30 +32,30 @@ const HEALTH_CHECK_TTL_MS = 60_000
 
 /**
  * Task type to model routing
- * All tasks through OpenRouter (Nous subscription) — Claude Opus 4.6
+ * All tasks through OpenRouter (Nous subscription) — Claude Sonnet 4.6 default
  */
 const TASK_MODEL_PREFERENCES: Record<string, AiModelKey[]> = {
-  news: ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
-  sentiment: ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
-  chat: ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
-  general: ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
-  technical: ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
-  quickpulse: ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
-  research: ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
-  reasoning: ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
-  'harper-cao': ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
-  'cao-approval': ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
-  'cao-consolidation': ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
-  'pma-1': ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
-  'pma-2': ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
-  'prediction-market': ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
-  'futures-desk': ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
-  'fa-rippers': ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
-  'economic-analysis': ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
-  'fundamentals-desk': ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
-  'earnings-analysis': ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
-  'tech-mega-cap': ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
-  default: ['openrouter-opus', 'openrouter-sonnet', 'openrouter-llama'],
+  news: ['openrouter-sonnet', 'openrouter-opus'],
+  sentiment: ['openrouter-sonnet', 'openrouter-opus'],
+  chat: ['openrouter-sonnet', 'openrouter-opus'],
+  general: ['openrouter-sonnet', 'openrouter-opus'],
+  technical: ['openrouter-sonnet', 'openrouter-opus'],
+  quickpulse: ['openrouter-sonnet', 'openrouter-opus'],
+  research: ['openrouter-sonnet', 'openrouter-opus'],
+  reasoning: ['openrouter-sonnet', 'openrouter-opus'],
+  'harper-cao': ['openrouter-sonnet', 'openrouter-opus'],
+  'cao-approval': ['openrouter-sonnet', 'openrouter-opus'],
+  'cao-consolidation': ['openrouter-sonnet', 'openrouter-opus'],
+  'pma-1': ['openrouter-sonnet', 'openrouter-opus'],
+  'pma-2': ['openrouter-sonnet', 'openrouter-opus'],
+  'prediction-market': ['openrouter-sonnet', 'openrouter-opus'],
+  'futures-desk': ['openrouter-sonnet', 'openrouter-opus'],
+  'fa-rippers': ['openrouter-sonnet', 'openrouter-opus'],
+  'economic-analysis': ['openrouter-sonnet', 'openrouter-opus'],
+  'fundamentals-desk': ['openrouter-sonnet', 'openrouter-opus'],
+  'earnings-analysis': ['openrouter-sonnet', 'openrouter-opus'],
+  'tech-mega-cap': ['openrouter-sonnet', 'openrouter-opus'],
+  default: ['openrouter-sonnet', 'openrouter-opus'],
 }
 
 // Runtime token store for user-provided tokens (e.g. GitHub OAuth)
@@ -262,7 +263,7 @@ export function createModelClient(modelKey: AiModelKey) {
     return client(config.id)
   }
 
-  // Hermes P.I.C. agent keys — OpenRouter (Nous) + Opus 4.6
+  // Hermes P.I.C. agent keys — OpenRouter (Nous) + Sonnet 4.6
   if (isHermesModel(modelKey)) {
     const client = createOpenAI({
       apiKey,

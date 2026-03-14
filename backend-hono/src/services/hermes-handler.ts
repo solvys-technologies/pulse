@@ -1,10 +1,11 @@
-// [claude-code 2026-03-14] Hermes routes to OpenRouter (Nous subscription) + Claude Opus 4.6
+// [claude-code 2026-03-14] Hermes routes to OpenRouter (Nous subscription) + Claude Sonnet 4.6
+// [claude-code 2026-03-14] Model routing fix: default→Sonnet 4.6, thinkHarder→Opus via chat.ts
 /**
  * Hermes Handler
  * LOCAL orchestration layer for P.I.C. (Priced In Capital)
- * Processes messages through agent logic, routes to OpenRouter (Opus 4.6)
+ * Processes messages through agent logic, routes to OpenRouter (Sonnet 4.6)
  *
- * Architecture: User Message → Hermes → P.I.C. Agent → OpenRouter (Opus 4.6) → Response
+ * Architecture: User Message → Hermes → P.I.C. Agent → OpenRouter (Sonnet 4.6) → Response
  */
 
 import { execFile, spawn as spawnProcess } from 'node:child_process'
@@ -386,10 +387,10 @@ ${agent === 'fundamentals-desk' ? '- Mega-cap tech analysis\n- Earnings deep-div
 *Hermes local processing is active.*`
 }
 
-const OPENROUTER_OPUS_MODEL = 'anthropic/claude-opus-4.6'
+const OPENROUTER_OPUS_MODEL = 'anthropic/claude-sonnet-4-6'
 
 /**
- * Main handler — routes through OpenRouter (Nous subscription) + Claude Opus 4.6
+ * Main handler — routes through OpenRouter (Nous subscription) + Claude Sonnet 4.6
  */
 export async function handleHermesChat(request: HermesChatRequest): Promise<HermesChatResponse> {
   const agentInfo = request.agentOverride
@@ -420,7 +421,7 @@ export async function handleHermesChat(request: HermesChatRequest): Promise<Herm
     return generateLocalResponse(request, agentInfo)
   }
 
-  console.log(`[Hermes] Calling OpenRouter (Opus 4.6) for agent ${agentInfo.agent} (${messages.length} messages)`)
+  console.log(`[Hermes] Calling OpenRouter (Sonnet 4.6) for agent ${agentInfo.agent} (${messages.length} messages)`)
 
   try {
     const response = await fetch(`${baseUrl}/chat/completions`, {
@@ -454,7 +455,7 @@ export async function handleHermesChat(request: HermesChatRequest): Promise<Herm
       return generateLocalResponse(request, agentInfo)
     }
 
-    console.log(`[Hermes] OpenRouter (Opus 4.6) response received: ${content.substring(0, 50)}...`)
+    console.log(`[Hermes] OpenRouter (Sonnet 4.6) response received: ${content.substring(0, 50)}...`)
 
     return {
       content,
@@ -477,7 +478,7 @@ export const handleOpenClawChat = handleHermesChat
 /**
  * Initialize Hermes agent on startup:
  * 1. Optionally launch Hermes gateway process if configured
- * 2. Warm up OpenRouter (Opus 4.6) connection with a Harper (CAO) ping
+ * 2. Warm up OpenRouter (Sonnet 4.6) connection with a Harper (CAO) ping
  */
 export async function initHermesAgent(): Promise<void> {
   const hermesBin = process.env.HERMES_BINARY_PATH ?? 'hermes'
@@ -530,7 +531,7 @@ export async function initHermesAgent(): Promise<void> {
     })
     clearTimeout(timeout)
     if (response.ok) {
-      console.log('[Hermes] OpenRouter (Opus 4.6) warm-up complete (harper-cao ready)')
+      console.log('[Hermes] OpenRouter (Sonnet 4.6) warm-up complete (harper-cao ready)')
     } else {
       console.warn(`[Hermes] OpenRouter warm-up failed (non-fatal): HTTP ${response.status}`)
     }

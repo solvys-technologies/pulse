@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, type KeyboardEvent, type ChangeEvent, type ClipboardEvent } from 'react';
-import { ArrowUp, Square, Plus, Wrench, Brain, X, GitBranch, Plug2 } from 'lucide-react';
+import { ArrowUp, Square, Plus, Wrench, Brain, Mic, X, GitBranch, Plug2 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
 /*  Props                                                              */
@@ -234,7 +234,7 @@ export function PulseChatInput({
 
         {/* Bottom bar */}
         <div className="flex items-center justify-between" style={{ padding: '8px 10px 10px' }}>
-          {/* Left: Attach + Skills + Think Harder */}
+          {/* Left: Attach + Connectors + Skills */}
           <div className="flex items-center gap-1">
             <button
               onClick={onOpenAttach}
@@ -266,6 +266,10 @@ export function PulseChatInput({
             >
               <Wrench size={14} />
             </button>
+          </div>
+
+          {/* Right: Think + Mic + Send — justified right */}
+          <div className="flex items-center gap-1">
             <button
               onClick={() => setThinkHarder(!thinkHarder)}
               title={thinkHarder ? 'Extended thinking ON' : 'Extended thinking OFF'}
@@ -278,26 +282,36 @@ export function PulseChatInput({
             >
               <Brain size={14} />
             </button>
+            <button
+              type="button"
+              className="flex items-center justify-center rounded-lg text-zinc-500 hover:text-[var(--pulse-accent)] hover:bg-[var(--pulse-accent)]/10 transition-colors"
+              style={{ width: '32px', height: '32px' }}
+              title="Voice input"
+              onClick={() => {
+                // Dispatch a click on the header voice orb to toggle voice
+                window.dispatchEvent(new CustomEvent('pulse:voice-toggle'));
+              }}
+            >
+              <Mic size={14} />
+            </button>
+            <button
+              onClick={isProcessing && onStop ? onStop : handleSend}
+              disabled={!text.trim() && images.length === 0 && !isProcessing}
+              className={`flex items-center justify-center rounded-full transition-all ${
+                isProcessing
+                  ? 'bg-[var(--pulse-accent)] hover:bg-[#C5A030] text-black'
+                  : 'bg-[var(--pulse-accent)] hover:bg-[#C5A030] text-black disabled:opacity-30 disabled:hover:bg-[var(--pulse-accent)] shadow-[0_8px_20px_rgba(212,175,55,0.25)]'
+              }`}
+              style={{ width: '34px', height: '34px' }}
+              title={isProcessing ? 'Stop' : 'Send'}
+            >
+              {isProcessing ? (
+                <Square size={12} fill="currentColor" />
+              ) : (
+                <ArrowUp size={16} strokeWidth={2.5} />
+              )}
+            </button>
           </div>
-
-          {/* Right: Send / Stop */}
-          <button
-            onClick={isProcessing && onStop ? onStop : handleSend}
-            disabled={!text.trim() && images.length === 0 && !isProcessing}
-            className={`flex items-center justify-center rounded-full transition-all ${
-              isProcessing
-                ? 'bg-[var(--pulse-accent)] hover:bg-[#C5A030] text-black'
-                : 'bg-[var(--pulse-accent)] hover:bg-[#C5A030] text-black disabled:opacity-30 disabled:hover:bg-[var(--pulse-accent)] shadow-[0_8px_20px_rgba(212,175,55,0.25)]'
-            }`}
-            style={{ width: '34px', height: '34px' }}
-            title={isProcessing ? 'Stop' : 'Send'}
-          >
-            {isProcessing ? (
-              <Square size={12} fill="currentColor" />
-            ) : (
-              <ArrowUp size={16} strokeWidth={2.5} />
-            )}
-          </button>
         </div>
       </div>
     </div>
