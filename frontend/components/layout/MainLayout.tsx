@@ -551,12 +551,34 @@ export function MainLayout() {
     // When TopStepX is disabled: right stack = Mission Control + collapsible RiskFlow
     const hideRightPanel = activeTab === 'notion' || activeTab === 'chatroom' || activeTab === 'econ' || activeTab === 'narrative' || activeTab === 'earnings' || activeTab === 'team' || activeTab === 'settings';
     if (!hideRightPanel) {
-      if (riskFlowCollapsed) {
+      if (missionControlCollapsed) {
+        // Mission Control collapsed — just show a thin expand strip + full RiskFlow
+        rightPanels.push(
+          <div key="right-stack" className="w-[380px] flex-shrink-0 h-full min-w-0 flex flex-col border-l border-[var(--pulse-accent)]/15">
+            <div className="h-10 shrink-0 flex items-center justify-between px-3 border-b border-[var(--pulse-accent)]/20">
+              <span className="text-[11px] font-semibold text-[var(--pulse-accent)] tracking-[0.2em] uppercase">Mission Control</span>
+              <button
+                onClick={() => setMissionControlCollapsed(false)}
+                className="p-1 hover:bg-[var(--pulse-accent)]/10 rounded transition-colors"
+                title="Expand Mission Control"
+              >
+                <ChevronDown className="w-3.5 h-3.5 text-[var(--pulse-accent)]/60" />
+              </button>
+            </div>
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <RiskFlowPanel
+                collapsed={riskFlowCollapsed}
+                onToggleCollapsed={() => setRiskFlowCollapsed((v) => !v)}
+              />
+            </div>
+          </div>
+        );
+      } else if (riskFlowCollapsed) {
         rightPanels.push(
           <div key="right-stack" className="w-[380px] flex-shrink-0 h-full min-w-0 flex flex-col border-l border-[var(--pulse-accent)]/15">
             <div className="flex-1 min-h-0 overflow-y-auto border-b border-[var(--pulse-accent)]/20">
               <div className="p-3 h-full">
-                {missionControlContent()}
+                {missionControlContent(() => setMissionControlCollapsed(true))}
               </div>
             </div>
             <div className="h-[168px] shrink-0 border-t border-[var(--pulse-accent)]/20">
@@ -573,7 +595,7 @@ export function MainLayout() {
             <div className="h-1/2 flex flex-col border-b border-[var(--pulse-accent)]/20">
               <div className="flex-1 min-h-0 overflow-y-auto">
                 <div className="p-3 h-full">
-                  {missionControlContent()}
+                  {missionControlContent(() => setMissionControlCollapsed(true))}
                 </div>
               </div>
             </div>
