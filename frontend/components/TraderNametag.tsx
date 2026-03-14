@@ -11,10 +11,10 @@ export function TraderNametag({ name, disablePulse }: TraderNametagProps) {
 
   const er = useERSafe();
   const resonance = er?.resonanceState ?? 'neutral';
-  const showPulse = !disablePulse && resonance !== 'neutral';
+  const showPulse = !disablePulse && resonance !== 'poised';
 
   const pulseClass = showPulse
-    ? resonance === 'stable'
+    ? resonance === 'steadfast'
       ? 'nametag-pulse-stable'
       : 'nametag-pulse-tilt'
     : '';
