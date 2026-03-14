@@ -73,7 +73,7 @@ export function SetupGuideCard({ onDismiss }: { onDismiss?: () => void }) {
     { id: 'backend', label: 'Backend API', description: 'Hono server on port 8080', icon: Server, status: backendStatus },
     { id: 'gateway', label: 'Hermes Agent', description: 'AI agent router', icon: Globe, status: gwStatus },
     { id: 'notion', label: 'Notion Integration', description: 'Trade ideas & briefs', icon: FileText, status: notionStatus },
-    { id: 'market', label: 'Market Data (VIX)', description: 'FMP API for IV scoring', icon: TrendingUp, status: marketDataStatus },
+    { id: 'market', label: 'Market Data (VIX)', description: 'Yahoo Finance for IV scoring', icon: TrendingUp, status: marketDataStatus },
   ];
 
   const allConnected = services.every(s => s.status === 'connected');

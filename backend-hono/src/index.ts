@@ -85,7 +85,7 @@ startFeedPoller();
 // Start Notion polling (trade ideas + daily P&L)
 startNotionPoller();
 
-// Start econ calendar enricher (writes FMP actuals to Notion)
+// Start econ calendar enricher (Notion calendar → RiskFlow feed)
 startEconEnricher();
 
 // Start econ-triggered twitter-cli poller (cookie-based, FJ emoji filtered)

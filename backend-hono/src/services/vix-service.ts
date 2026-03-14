@@ -47,7 +47,7 @@ export function startVIXPolling(): void {
 }
 
 /**
- * Fetch VIX from Yahoo Finance (primary) or FMP (fallback).
+ * Fetch VIX from Yahoo Finance — no API key required.
  * Extracts price from Yahoo's v8 chart API — no API key required.
  */
 async function fetchFromYahoo(): Promise<number | null> {

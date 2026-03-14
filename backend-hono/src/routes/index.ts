@@ -49,7 +49,7 @@ export function registerRoutes(app: Hono): void {
   app.route('/api/notion', createNotionRoutes());
   // Regime tracker — public, returns active trading regimes
   app.route('/api/regimes', createRegimeRoutes());
-  // Market data — FMP quotes/VIX + Unusual Whales GEX/walls/flow (public, agents consume directly)
+  // Market data — Yahoo Finance quotes/VIX + Unusual Whales GEX/walls/flow (public)
   app.route('/api/market-data', createMarketDataRoutes());
   // Narrative scoring — LLM-scored catalyst candidates
   app.route('/api/narrative', createNarrativeRoutes());

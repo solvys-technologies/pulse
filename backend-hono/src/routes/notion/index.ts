@@ -55,7 +55,7 @@ export function createNotionRoutes(): Hono {
 
       const items = notionItems.status === 'fulfilled' ? notionItems.value : [];
 
-      // Merge RiskFlow economic prints as schedule items (actual data from FMP)
+      // Merge RiskFlow economic prints as schedule items
       if (econPrints.status === 'fulfilled' && econPrints.value.length > 0) {
         const existingTitles = new Set(items.map(i => i.title.toLowerCase()));
         for (const print of econPrints.value) {
