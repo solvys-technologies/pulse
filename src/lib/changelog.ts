@@ -9,6 +9,23 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-14T17:30:00',
+    agent: 'claude-code',
+    summary: 'Font theme switcher (Default/Solvys/Classic) in Appearance settings. Self-hosted WOFF2 fonts replace Google Fonts CDN. Compact TraderNametag sized to match VIX ticker. Nametag ER emotional pulse (green=stable, red=tilt) with settings toggle.',
+    files: [
+      'frontend/fonts.css',
+      'frontend/lib/font-theme.ts',
+      'frontend/index.css',
+      'frontend/App.tsx',
+      'frontend/contexts/ThemeContext.tsx',
+      'frontend/components/settings/ThemeSettings.tsx',
+      'frontend/components/TraderNametag.tsx',
+      'frontend/contexts/SettingsContext.tsx',
+      'frontend/components/SettingsPanel.tsx',
+      'frontend/components/layout/TopHeader.tsx',
+    ],
+  },
+  {
     date: '2026-03-14T09:00:00',
     agent: 'claude-code',
     summary: 'Default inference: Claude Opus 4.6 via OpenRouter (Nous subscription). Replaced all Groq usage with OpenRouter Opus 4.6. ai-config defaultModel and taskModelMap, model-selector preferences, hermes-handler and hermes-service, conversation-store, notion-poller, health-service. Updated SETUP.md, SETUP-HANDOFF.md, .env.example, and codebase docs/comments.',

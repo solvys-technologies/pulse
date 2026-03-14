@@ -75,7 +75,7 @@ export function TopHeader({
 }: TopHeaderProps) {
   const { tier } = useAuth();
   const backend = useBackend();
-  const { selectedSymbol, traderName } = useSettings();
+  const { selectedSymbol, traderName, alertConfig } = useSettings();
   const instanceName = import.meta.env.VITE_PULSE_INSTANCE_NAME || 'Pulse';
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [ivData, setIvData] = useState<IVScoreResponse | null>(null);
@@ -234,7 +234,7 @@ export function TopHeader({
           >
             <span className="text-[13px] text-gray-300">{getTierDisplayName()}</span>
           </button>
-          {traderName && <TraderNametag name={traderName} />}
+          {traderName && <TraderNametag name={traderName} disablePulse={!(alertConfig.nametagPulse ?? true)} />}
         </div>
       </div>
       

@@ -1,8 +1,9 @@
-// [claude-code 2026-03-06] Theme settings panel — preset grid + custom HEX inputs
+// [claude-code 2026-03-14] Theme settings — color presets + custom HEX + font style selector
 import { useState } from 'react';
 import { Check } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { type ThemeConfig, DEFAULT_THEME } from '../../lib/theme';
+import { DEFAULT_FONT_THEME } from '../../lib/font-theme';
 
 const COLOR_FIELDS: { key: keyof ThemeConfig; label: string }[] = [
   { key: 'accent', label: 'Accent' },
@@ -17,11 +18,10 @@ function isValidHex(v: string): boolean {
 }
 
 export function ThemeSettings() {
-  const { theme, setTheme, presets } = useTheme();
+  const { theme, setTheme, presets, fontTheme, setFontTheme, fontThemes } = useTheme();
   const [customDraft, setCustomDraft] = useState<Record<string, string>>({});
 
   const presetList = Object.values(presets);
-  const isPreset = presetList.some((p) => p.name === theme.name);
 
   const handleCustomChange = (key: keyof ThemeConfig, value: string) => {
     setCustomDraft((d) => ({ ...d, [key]: value }));
@@ -36,6 +36,47 @@ export function ThemeSettings() {
 
   return (
     <div className="space-y-6">
+      {/* Font Style */}
+      <section>
+        <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--pulse-accent)' }}>
+          Font Style
+        </h3>
+        <div className="grid grid-cols-3 gap-3">
+          {Object.values(fontThemes).map((ft) => {
+            const active = fontTheme.id === ft.id;
+            return (
+              <button
+                key={ft.id}
+                onClick={() => setFontTheme(ft)}
+                className="relative text-left p-3 rounded-lg border transition-all hover:scale-[1.01]"
+                style={{
+                  borderColor: active ? 'var(--pulse-accent)' : 'rgba(255,255,255,0.08)',
+                  backgroundColor: active ? 'color-mix(in srgb, var(--pulse-accent) 10%, transparent)' : 'rgba(10,10,0,0.4)',
+                }}
+              >
+                {active && (
+                  <div
+                    className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: 'var(--pulse-accent)' }}
+                  >
+                    <Check size={12} className="text-black" />
+                  </div>
+                )}
+                <div className="text-[12px] font-medium text-white">{ft.label}</div>
+                <div className="text-[10px] text-zinc-500 mt-0.5">{ft.description}</div>
+                <div
+                  className="text-[11px] text-zinc-400 mt-1.5"
+                  style={{ fontFamily: ft.fontHeading }}
+                >
+                  Aa Bb Cc 123
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Color Presets */}
       <section>
         <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--pulse-accent)' }}>
           Theme Presets
@@ -65,7 +106,6 @@ export function ThemeSettings() {
                   </div>
                 )}
                 <div className="flex items-center gap-2 mb-2">
-                  {/* Color swatches */}
                   <div className="flex -space-x-1">
                     {[preset.accent, preset.bg, preset.bullish, preset.bearish].map((c, i) => (
                       <div
@@ -83,6 +123,7 @@ export function ThemeSettings() {
         </div>
       </section>
 
+      {/* Custom Colors */}
       <section>
         <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--pulse-accent)' }}>
           Custom Colors
@@ -122,6 +163,7 @@ export function ThemeSettings() {
         <button
           onClick={() => {
             setTheme(DEFAULT_THEME);
+            setFontTheme(DEFAULT_FONT_THEME);
             setCustomDraft({});
           }}
           className="px-4 py-2 rounded-md text-xs font-medium transition-colors border"

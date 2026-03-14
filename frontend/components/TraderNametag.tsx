@@ -1,13 +1,30 @@
-// [claude-code 2026-03-13] Track 1: Trader nametag with gold gloss shimmer effect
-export function TraderNametag({ name }: { name: string }) {
+// [claude-code 2026-03-14] Compact nametag with ER emotional pulse (green=stable, red=tilt)
+import { useERSafe } from '../contexts/ERContext';
+
+interface TraderNametagProps {
+  name: string;
+  disablePulse?: boolean;
+}
+
+export function TraderNametag({ name, disablePulse }: TraderNametagProps) {
   if (!name) return null;
+
+  const er = useERSafe();
+  const resonance = er?.resonanceState ?? 'neutral';
+  const showPulse = !disablePulse && resonance !== 'neutral';
+
+  const pulseClass = showPulse
+    ? resonance === 'stable'
+      ? 'nametag-pulse-stable'
+      : 'nametag-pulse-tilt'
+    : '';
 
   return (
     <div
-      className="relative bg-[var(--pulse-bg)] border border-[var(--pulse-accent)]/20 rounded-lg px-3 h-8 flex items-center overflow-hidden"
+      className={`relative bg-[var(--pulse-bg)] border border-[var(--pulse-accent)]/20 rounded-md px-2 h-7 flex items-center overflow-hidden ${pulseClass}`}
       style={{ boxShadow: 'inset 0 1px 0 rgba(199,159,74,0.25)' }}
     >
-      <span className="relative z-10 text-[13px] font-semibold tracking-[0.18em] text-[var(--pulse-accent)] uppercase select-none">
+      <span className="relative z-10 text-[10px] font-semibold tracking-[0.14em] text-[var(--pulse-accent)] uppercase select-none">
         {name}
       </span>
       <div
@@ -24,6 +41,20 @@ export function TraderNametag({ name }: { name: string }) {
         }
         .nametag-shimmer {
           animation: nametag-shimmer 3s ease-in-out infinite;
+        }
+        @keyframes nametag-er-stable {
+          0%, 100% { background-color: transparent; }
+          50% { background-color: rgba(34, 197, 94, 0.12); }
+        }
+        @keyframes nametag-er-tilt {
+          0%, 100% { background-color: transparent; }
+          50% { background-color: rgba(239, 68, 68, 0.12); }
+        }
+        .nametag-pulse-stable {
+          animation: nametag-er-stable 2.5s ease-in-out infinite;
+        }
+        .nametag-pulse-tilt {
+          animation: nametag-er-tilt 1.8s ease-in-out infinite;
         }
       `}</style>
     </div>

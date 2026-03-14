@@ -1,4 +1,4 @@
-// [claude-code 2026-03-06] Theme context — applies CSS variables to :root, provides useTheme()
+// [claude-code 2026-03-14] Theme context — color + font theme, applies CSS variables to :root
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import {
   type ThemeConfig,
@@ -7,11 +7,21 @@ import {
   loadStoredTheme,
   saveTheme,
 } from '../lib/theme';
+import {
+  type FontTheme,
+  FONT_THEMES,
+  DEFAULT_FONT_THEME,
+  loadStoredFontTheme,
+  saveFontTheme,
+} from '../lib/font-theme';
 
 interface ThemeContextValue {
   theme: ThemeConfig;
   setTheme: (theme: ThemeConfig) => void;
   presets: Record<string, ThemeConfig>;
+  fontTheme: FontTheme;
+  setFontTheme: (theme: FontTheme) => void;
+  fontThemes: Record<string, FontTheme>;
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
@@ -28,10 +38,22 @@ function applyThemeToDOM(theme: ThemeConfig) {
   root.style.setProperty('--pulse-muted', theme.muted);
 }
 
+function applyFontThemeToDOM(fontTheme: FontTheme) {
+  const root = document.documentElement;
+  root.style.setProperty('--font-body', fontTheme.fontBody);
+  root.style.setProperty('--font-heading', fontTheme.fontHeading);
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<ThemeConfig>(() => {
     const stored = loadStoredTheme();
     applyThemeToDOM(stored);
+    return stored;
+  });
+
+  const [fontTheme, setFontThemeState] = useState<FontTheme>(() => {
+    const stored = loadStoredFontTheme();
+    applyFontThemeToDOM(stored);
     return stored;
   });
 
@@ -41,13 +63,20 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     saveTheme(next);
   }, []);
 
+  const setFontTheme = useCallback((next: FontTheme) => {
+    setFontThemeState(next);
+    applyFontThemeToDOM(next);
+    saveFontTheme(next);
+  }, []);
+
   // Apply on mount (SSR safety)
   useEffect(() => {
     applyThemeToDOM(theme);
+    applyFontThemeToDOM(fontTheme);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, presets: THEME_PRESETS }}>
+    <ThemeContext.Provider value={{ theme, setTheme, presets: THEME_PRESETS, fontTheme, setFontTheme, fontThemes: FONT_THEMES }}>
       {children}
     </ThemeContext.Provider>
   );

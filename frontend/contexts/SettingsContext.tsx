@@ -26,6 +26,7 @@ interface AlertConfig {
   newsAlerts: boolean;
   soundEnabled: boolean;
   healingBowlSound: HealingBowlSound;
+  nametagPulse: boolean;
 }
 
 interface RiskSettings {
@@ -149,6 +150,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       newsAlerts: false,
       soundEnabled: true,
       healingBowlSound: 'calm-1' as HealingBowlSound,
+      nametagPulse: true,
     })
   );
   const [mockDataEnabled, setMockDataEnabled] = useState(() =>
