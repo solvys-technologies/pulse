@@ -23,8 +23,8 @@ export function ConfluenceNodeSVG({ node, position, selected, onClick }: Conflue
         width={size * 2}
         height={size * 2}
         transform={`rotate(45 ${position.x} ${position.y})`}
-        fill="var(--pulse-surface)"
-        stroke="var(--pulse-accent)"
+        fill="var(--fintheon-surface)"
+        stroke="var(--fintheon-accent)"
         strokeOpacity={selected ? 0.8 : 0.4}
         strokeWidth={selected ? 1.5 : 1}
         rx={2}
@@ -36,7 +36,7 @@ export function ConfluenceNodeSVG({ node, position, selected, onClick }: Conflue
         width={(size - 2) * 2}
         height={(size - 2) * 2}
         transform={`rotate(45 ${position.x} ${position.y})`}
-        fill="var(--pulse-accent)"
+        fill="var(--fintheon-accent)"
         fillOpacity={selected ? 0.15 : 0.05}
         rx={1}
       />
@@ -46,7 +46,7 @@ export function ConfluenceNodeSVG({ node, position, selected, onClick }: Conflue
           x={position.x}
           y={position.y + 3.5}
           textAnchor="middle"
-          fill="var(--pulse-accent)"
+          fill="var(--fintheon-accent)"
           fontSize={9}
           fontWeight={600}
           style={{ pointerEvents: 'none' }}

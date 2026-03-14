@@ -179,7 +179,7 @@ export function HeaderVoiceControl({ compact = false }: HeaderVoiceControlProps)
         /* Dormant state: MicOff icon inside the orb shell */
         <div
           className="rounded-full bg-[#070704] flex items-center justify-center"
-          style={{ width: compact ? '24px' : '28px', height: compact ? '24px' : '28px', border: '1.5px solid var(--pulse-accent)' }}
+          style={{ width: compact ? '24px' : '28px', height: compact ? '24px' : '28px', border: '1.5px solid var(--fintheon-accent)' }}
         >
           <MicOff className="w-3 h-3 text-zinc-500" />
         </div>

@@ -31,14 +31,14 @@ export function FeedItem({ item }: FeedItemProps) {
   const displayText = decodeHtmlEntities(item.text);
 
   return (
-    <div className="bg-[var(--pulse-surface)] border-l-2 border-l-[var(--pulse-accent)]/30 p-3 rounded hover:bg-[var(--pulse-surface)]/80 transition-colors">
+    <div className="bg-[var(--fintheon-surface)] border-l-2 border-l-[var(--fintheon-accent)]/30 p-3 rounded hover:bg-[var(--fintheon-surface)]/80 transition-colors">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs text-gray-500">
               {item.time.toLocaleTimeString()}
             </span>
-            <span className="text-xs text-[var(--pulse-accent)]">{item.source}</span>
+            <span className="text-xs text-[var(--fintheon-accent)]">{item.source}</span>
             {item.type === 'alert' && (
               <span className="text-xs text-red-400">
                 ALERT

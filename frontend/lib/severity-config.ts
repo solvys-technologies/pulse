@@ -19,9 +19,9 @@ export const SEVERITY_CONFIG: Record<AlertSeverity, { label: string; bg: string;
   },
   medium: {
     label: 'MED',
-    bg: 'bg-[var(--pulse-accent)]/20',
-    text: 'text-[var(--pulse-accent)]',
-    border: 'border-[var(--pulse-accent)]/40',
+    bg: 'bg-[var(--fintheon-accent)]/20',
+    text: 'text-[var(--fintheon-accent)]',
+    border: 'border-[var(--fintheon-accent)]/40',
   },
   low: {
     label: 'LOW',

@@ -56,7 +56,7 @@ export function GitHubOAuthCallback() {
             onClick={() => { window.history.replaceState({}, '', '/'); window.location.reload(); }}
             className="px-4 py-2 bg-zinc-800 text-zinc-300 rounded text-sm hover:bg-zinc-700"
           >
-            Return to Pulse
+            Return to Fintheon
           </button>
         </div>
       </div>

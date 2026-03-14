@@ -61,7 +61,7 @@ export function TextPartRenderer({ text, isStreaming, onRenderWidget }: TextPart
         </ReactMarkdown>
       </div>
       {isStreaming && (
-        <span className="inline-block w-2 h-4 bg-[var(--pulse-accent)] animate-pulse ml-0.5" />
+        <span className="inline-block w-2 h-4 bg-[var(--fintheon-accent)] animate-pulse ml-0.5" />
       )}
     </div>
   );

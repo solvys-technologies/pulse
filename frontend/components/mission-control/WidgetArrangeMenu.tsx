@@ -49,15 +49,15 @@ export function WidgetArrangeMenu({ widgets, visibility, onReorder, onToggleVisi
     <div ref={menuRef} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="p-1 hover:bg-[var(--pulse-accent)]/10 rounded transition-colors"
+        className="p-1 hover:bg-[var(--fintheon-accent)]/10 rounded transition-colors"
         title="Arrange widgets"
       >
-        <Settings className="w-3.5 h-3.5 text-[var(--pulse-accent)]/60 hover:text-[var(--pulse-accent)]" />
+        <Settings className="w-3.5 h-3.5 text-[var(--fintheon-accent)]/60 hover:text-[var(--fintheon-accent)]" />
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 z-50 w-56 bg-[#0c0a06] border border-[var(--pulse-accent)]/20 rounded-lg shadow-xl py-1">
-          <div className="px-3 py-1.5 text-[9px] tracking-[0.18em] uppercase text-zinc-500 border-b border-[var(--pulse-accent)]/10">
+        <div className="absolute right-0 top-full mt-1 z-50 w-56 bg-[#0c0a06] border border-[var(--fintheon-accent)]/20 rounded-lg shadow-xl py-1">
+          <div className="px-3 py-1.5 text-[9px] tracking-[0.18em] uppercase text-zinc-500 border-b border-[var(--fintheon-accent)]/10">
             Widget Layout
           </div>
           {widgets.map((w, idx) => {
@@ -65,13 +65,13 @@ export function WidgetArrangeMenu({ widgets, visibility, onReorder, onToggleVisi
             return (
               <div
                 key={w.id}
-                className="flex items-center gap-1 px-2 py-1.5 hover:bg-[var(--pulse-accent)]/5 transition-colors"
+                className="flex items-center gap-1 px-2 py-1.5 hover:bg-[var(--fintheon-accent)]/5 transition-colors"
               >
                 {/* Up / Down */}
                 <button
                   onClick={() => moveUp(idx)}
                   disabled={idx === 0}
-                  className="p-0.5 rounded hover:bg-[var(--pulse-accent)]/10 disabled:opacity-20 disabled:cursor-default"
+                  className="p-0.5 rounded hover:bg-[var(--fintheon-accent)]/10 disabled:opacity-20 disabled:cursor-default"
                   title="Move up"
                 >
                   <ChevronUp className="w-3 h-3 text-zinc-400" />
@@ -79,7 +79,7 @@ export function WidgetArrangeMenu({ widgets, visibility, onReorder, onToggleVisi
                 <button
                   onClick={() => moveDown(idx)}
                   disabled={idx === widgets.length - 1}
-                  className="p-0.5 rounded hover:bg-[var(--pulse-accent)]/10 disabled:opacity-20 disabled:cursor-default"
+                  className="p-0.5 rounded hover:bg-[var(--fintheon-accent)]/10 disabled:opacity-20 disabled:cursor-default"
                   title="Move down"
                 >
                   <ChevronDown className="w-3 h-3 text-zinc-400" />
@@ -93,11 +93,11 @@ export function WidgetArrangeMenu({ widgets, visibility, onReorder, onToggleVisi
                 {/* Visibility toggle */}
                 <button
                   onClick={() => onToggleVisibility(w.id)}
-                  className="p-0.5 rounded hover:bg-[var(--pulse-accent)]/10"
+                  className="p-0.5 rounded hover:bg-[var(--fintheon-accent)]/10"
                   title={visible ? 'Hide widget' : 'Show widget'}
                 >
                   {visible ? (
-                    <Eye className="w-3.5 h-3.5 text-[var(--pulse-accent)]/60" />
+                    <Eye className="w-3.5 h-3.5 text-[var(--fintheon-accent)]/60" />
                   ) : (
                     <EyeOff className="w-3.5 h-3.5 text-zinc-600" />
                   )}

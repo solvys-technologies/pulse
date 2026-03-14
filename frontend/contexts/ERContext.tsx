@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useRef, useCallback, useEffect } from 'react';
 import { useBackend } from '../lib/backend';
 
-export type ERState = 'stable' | 'neutral' | 'tilt';
+export type ERState = 'steadfast' | 'poised' | 'tilted';
 
 // Escalating intervention levels
 export type InterventionLevel = 'none' | 'visual' | 'voice' | 'lockout';
@@ -156,7 +156,7 @@ export function ERProvider({ children }: ERProviderProps) {
   const regressionTargetTimeRef = useRef<number | null>(null);
 
   // Computed state
-  const resonanceState: ERState = erScore > 0.5 ? 'stable' : erScore < -0.5 ? 'tilt' : 'neutral';
+  const resonanceState: ERState = erScore > 0.5 ? 'steadfast' : erScore < -0.5 ? 'tilted' : 'poised';
 
   // Keep erScoreRef in sync
   useEffect(() => {
@@ -686,7 +686,7 @@ export function ERProvider({ children }: ERProviderProps) {
     if (!isMonitoring || !sessionId) return;
 
     snapshotIntervalRef.current = setInterval(async () => {
-      const currentState: ERState = erScore > 0.5 ? 'stable' : erScore < -0.5 ? 'tilt' : 'neutral';
+      const currentState: ERState = erScore > 0.5 ? 'steadfast' : erScore < -0.5 ? 'tilted' : 'poised';
 
       let audioLevelsJson: string | undefined;
       if (analyser) {

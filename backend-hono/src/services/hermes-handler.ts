@@ -1,5 +1,6 @@
 // [claude-code 2026-03-14] Hermes routes to OpenRouter (Nous subscription) + Claude Sonnet 4.6
 // [claude-code 2026-03-14] Model routing fix: default→Sonnet 4.6, thinkHarder→Opus via chat.ts
+// [claude-code 2026-03-14] Fintheon rebrand: Weekly Tribune intent, updated agent display names (Consul/Censori/Herald)
 /**
  * Hermes Handler
  * LOCAL orchestration layer for P.I.C. (Priced In Capital)
@@ -59,7 +60,7 @@ const INTENT_PATTERNS: { pattern: RegExp; agent: HermesAgentRole; intent: string
   { pattern: /\b(trade.?approval|approve|reject|consolidat)/i, agent: 'harper-cao', intent: 'approval' },
   { pattern: /\b(commandment|rule|13|trading.?rules)/i, agent: 'harper-cao', intent: 'rules' },
   { pattern: /\b(psych|tilt|emotion|mental|eval)/i, agent: 'harper-cao', intent: 'psych-eval' },
-  { pattern: /\b(tale.?of.?the.?tape|weekly|recap)/i, agent: 'harper-cao', intent: 'weekly-recap' },
+  { pattern: /\b(weekly.?tribune|tale.?of.?the.?tape|weekly|recap)/i, agent: 'harper-cao', intent: 'weekly-recap' },
 
   // PMA-1 triggers (S&P/Crypto)
   { pattern: /\b(spy|spx|s&?p|es|nasdaq|qqq|nq)\b/i, agent: 'pma-1', intent: 'sp-analysis' },
@@ -212,7 +213,7 @@ function generateMDBReport(): string {
 }
 
 function generateWeeklyRecap(): string {
-  return `## Tale of the Tape - Weekly Summary
+  return `## The Weekly Tribune
 
 ### Performance Overview
 *Connecting to trading journal...*
@@ -365,10 +366,10 @@ function generateMacroAnalysis(intent: string, _message: string): string {
 function generateGeneralResponse(agent: HermesAgentRole, _message: string): string {
   const agentName = {
     'harper-cao': 'Harper (CAO)',
-    'pma-1': 'PMA-1',
-    'pma-2': 'PMA-2',
+    'pma-1': 'Oracle (Consul)',
+    'pma-2': 'Sentinel (Censori)',
     'futures-desk': 'Futures Desk',
-    'fundamentals-desk': 'Fundamentals Desk'
+    'fundamentals-desk': 'Horace (Herald)'
   }[agent]
 
   return `## ${agentName} Response

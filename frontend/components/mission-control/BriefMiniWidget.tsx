@@ -20,7 +20,7 @@ function BriefContent({ text }: { text: string }) {
           const body = rest.join(':**').replace(/\*\*/g, '');
           return (
             <div key={i}>
-              <span className="text-[10px] font-bold text-[var(--pulse-accent)]">{headerText}:</span>
+              <span className="text-[10px] font-bold text-[var(--fintheon-accent)]">{headerText}:</span>
               {body && <span className="text-[10px] text-zinc-400 ml-1">{body}</span>}
             </div>
           );
@@ -30,7 +30,7 @@ function BriefContent({ text }: { text: string }) {
         if (trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
           return (
             <div key={i} className="flex gap-1.5 pl-1">
-              <span className="text-[10px] text-[var(--pulse-accent)]/60 shrink-0">-</span>
+              <span className="text-[10px] text-[var(--fintheon-accent)]/60 shrink-0">-</span>
               <span className="text-[10px] leading-relaxed text-zinc-400">{renderInlineBold(trimmed.slice(2))}</span>
             </div>
           );
@@ -156,15 +156,15 @@ export function BriefMiniWidget() {
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between gap-2 mb-2">
         <div className="flex items-center gap-2">
-          <FileText className="w-3.5 h-3.5 text-[var(--pulse-accent)]" />
-          <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[var(--pulse-accent)]">{label}</span>
+          <FileText className="w-3.5 h-3.5 text-[var(--fintheon-accent)]" />
+          <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[var(--fintheon-accent)]">{label}</span>
         </div>
         <div className="flex items-center gap-1">
           <button
             type="button"
             onClick={handleGenerate}
             disabled={generating}
-            className="p-0.5 rounded hover:bg-[var(--pulse-accent)]/10 text-zinc-600 hover:text-[var(--pulse-accent)] transition-colors disabled:opacity-40"
+            className="p-0.5 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-600 hover:text-[var(--fintheon-accent)] transition-colors disabled:opacity-40"
             title="AI Generate brief"
           >
             <Sparkles className={`w-2.5 h-2.5 ${generating ? 'animate-pulse' : ''}`} />
@@ -173,7 +173,7 @@ export function BriefMiniWidget() {
             type="button"
             onClick={handleRefresh}
             disabled={refreshing}
-            className="p-0.5 rounded hover:bg-[var(--pulse-accent)]/10 text-zinc-600 hover:text-[var(--pulse-accent)] transition-colors disabled:opacity-40"
+            className="p-0.5 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-600 hover:text-[var(--fintheon-accent)] transition-colors disabled:opacity-40"
             title="Refresh brief"
           >
             <RefreshCw className={`w-2.5 h-2.5 ${refreshing ? 'animate-spin' : ''}`} />
@@ -186,7 +186,7 @@ export function BriefMiniWidget() {
         {!loaded ? (
           <div className="text-[10px] text-zinc-600 py-2">Loading brief...</div>
         ) : briefText ? (
-          <div className="border-l-2 border-[var(--pulse-accent)]/30 pl-2">
+          <div className="border-l-2 border-[var(--fintheon-accent)]/30 pl-2">
             <BriefContent text={briefText} />
           </div>
         ) : (
@@ -194,7 +194,7 @@ export function BriefMiniWidget() {
             <div className="text-[10px] text-zinc-600">No brief available</div>
             <button
               onClick={handleGenerate}
-              className="flex items-center gap-1 px-2 py-1 text-[9px] font-semibold text-[var(--pulse-accent)] border border-[var(--pulse-accent)]/30 hover:bg-[var(--pulse-accent)]/10 transition-colors"
+              className="flex items-center gap-1 px-2 py-1 text-[9px] font-semibold text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30 hover:bg-[var(--fintheon-accent)]/10 transition-colors"
             >
               <Sparkles className="w-3 h-3" /> Generate {label}
             </button>

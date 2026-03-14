@@ -56,9 +56,9 @@ function InterventionBanner({ level, score, onDismissLockout }: {
       {level === 'lockout' && (
         <button
           onClick={onDismissLockout}
-          className="mt-1.5 text-[9px] text-[var(--pulse-muted)] underline hover:text-[var(--pulse-text)] transition-colors"
+          className="mt-1.5 text-[9px] text-[var(--fintheon-muted)] underline hover:text-[var(--fintheon-text)] transition-colors"
         >
-          I acknowledge the risk — dismiss
+          Override the Censor
         </button>
       )}
     </div>
@@ -100,16 +100,16 @@ export function EmotionalResonanceMonitor({ onERScoreChange }: EmotionalResonanc
   const vadActive = erContext?.vadActive ?? false;
   const lastSentiment = erContext?.lastSentiment ?? null;
 
-  const resonanceState = erScore > 0.5 ? 'Stable' : erScore < -0.5 ? 'Tilt' : 'Neutral';
+  const resonanceState = erScore > 0.5 ? 'Steadfast' : erScore < -0.5 ? 'Tilted' : 'Poised';
   const stateColor = {
-    Stable: 'text-emerald-400',
-    Tilt: 'text-red-500',
-    Neutral: 'text-gray-400',
+    Steadfast: 'text-emerald-400',
+    Tilted: 'text-red-500',
+    Poised: 'text-gray-400',
   };
 
   // Border glow based on intervention level
   const borderClass = {
-    none: 'border-[var(--pulse-accent)]/10',
+    none: 'border-[var(--fintheon-accent)]/10',
     visual: 'border-orange-500/40',
     voice: 'border-red-500/50',
     lockout: 'border-red-600/70',
@@ -224,10 +224,10 @@ export function EmotionalResonanceMonitor({ onERScoreChange }: EmotionalResonanc
   }, [erScore]);
 
   return (
-    <div className={`bg-[var(--pulse-bg)] p-2.5 border ${borderClass} rounded transition-colors duration-300`}>
+    <div className={`bg-[var(--fintheon-bg)] p-2.5 border ${borderClass} rounded transition-colors duration-300`}>
       <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-1.5">
-          <h3 className="text-xs font-semibold text-[var(--pulse-accent)]">PsychAssist</h3>
+          <h3 className="text-xs font-semibold text-[var(--fintheon-accent)]">PsychAssist</h3>
           {vadActive && (
             <span className="flex items-center gap-0.5 text-[8px] text-emerald-400 bg-emerald-400/10 rounded px-1 py-0.5">
               <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
@@ -251,10 +251,10 @@ export function EmotionalResonanceMonitor({ onERScoreChange }: EmotionalResonanc
       </div>
 
       <div className="space-y-1.5">
-        <div className="relative h-16 bg-black/50 rounded border border-[var(--pulse-accent)]/10 overflow-hidden">
+        <div className="relative h-16 bg-black/50 rounded border border-[var(--fintheon-accent)]/10 overflow-hidden">
           <div className="absolute inset-0 scanline-overlay" />
           {isMonitoring && analyser ? (
-            <WaveformCanvas analyser={analyser} tiltMode={resonanceState === 'Tilt'} />
+            <WaveformCanvas analyser={analyser} tiltMode={resonanceState === 'Tilted'} />
           ) : (
             <div className="h-full flex items-center justify-center text-[10px] text-gray-500">
               Monitoring Inactive
@@ -288,15 +288,15 @@ export function EmotionalResonanceMonitor({ onERScoreChange }: EmotionalResonanc
               onClick={handleDismissLockout}
               className="mt-2 text-[9px] px-3 py-1 bg-red-600/20 border border-red-600/30 rounded text-red-400 hover:bg-red-600/30 transition-colors"
             >
-              Override Lockout
+              Invoke Imperium
             </button>
           </div>
         )}
 
         {/* Last sentiment (from Haiku) */}
         {lastSentiment && lastSentiment.tiltIndicators.length > 0 && (
-          <div className="text-[9px] text-[var(--pulse-muted)] bg-black/20 rounded p-1.5">
-            <span className="text-[var(--pulse-accent)]">Haiku:</span> {lastSentiment.summary}
+          <div className="text-[9px] text-[var(--fintheon-muted)] bg-black/20 rounded p-1.5">
+            <span className="text-[var(--fintheon-accent)]">Haiku:</span> {lastSentiment.summary}
           </div>
         )}
 
@@ -314,7 +314,7 @@ export function EmotionalResonanceMonitor({ onERScoreChange }: EmotionalResonanc
               onClick={startMonitoring}
               className="flex-1 text-[11px] py-1"
             >
-              Begin Session
+              Initialize
             </Button>
           ) : (
             <Button
@@ -322,7 +322,7 @@ export function EmotionalResonanceMonitor({ onERScoreChange }: EmotionalResonanc
               onClick={handleStopClick}
               className="flex-1 text-[11px] py-1"
             >
-              Stop Session
+              Conclude
             </Button>
           )}
         </div>

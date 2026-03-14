@@ -49,13 +49,13 @@ export function EconCalendar() {
   }, [importanceFilter]);
 
   return (
-    <div className="h-full flex flex-col bg-[var(--pulse-bg)]">
+    <div className="h-full flex flex-col bg-[var(--fintheon-bg)]">
       {/* Header */}
       <div className="flex-shrink-0 px-4 py-3 border-b border-zinc-800/60">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <CalendarDays className="w-4 h-4 text-[var(--pulse-accent)]" />
-            <h2 className="text-sm font-semibold text-[var(--pulse-accent)]">Economic Calendar</h2>
+            <CalendarDays className="w-4 h-4 text-[var(--fintheon-accent)]" />
+            <h2 className="text-sm font-semibold text-[var(--fintheon-accent)]">Economic Calendar</h2>
             <span className="text-[9px] text-zinc-500 uppercase tracking-wider">TradingView</span>
           </div>
           <div className="flex items-center gap-1 bg-zinc-900/50 rounded px-1 py-0.5">
@@ -66,7 +66,7 @@ export function EconCalendar() {
                 onClick={() => setImportanceFilter(f)}
                 className={`text-[9px] px-1.5 py-0.5 rounded uppercase tracking-wider transition-colors ${
                   importanceFilter === f
-                    ? 'bg-[var(--pulse-accent)]/20 text-[var(--pulse-accent)]'
+                    ? 'bg-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)]'
                     : 'text-zinc-500 hover:text-zinc-300'
                 }`}
               >

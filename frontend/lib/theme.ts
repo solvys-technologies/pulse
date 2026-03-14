@@ -88,8 +88,8 @@ export const THEME_PRESETS: Record<string, ThemeConfig> = {
   },
 };
 
-const STORAGE_KEY = 'pulse:theme';
-const CUSTOM_STORAGE_KEY = 'pulse:theme-custom';
+const STORAGE_KEY = 'fintheon:theme';
+const CUSTOM_STORAGE_KEY = 'fintheon:theme-custom';
 
 export const DEFAULT_THEME = THEME_PRESETS['solvys-gold'];
 

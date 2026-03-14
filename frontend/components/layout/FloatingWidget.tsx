@@ -163,7 +163,7 @@ export function FloatingWidget({ ivData, ivLoading, layoutOption = 'combined', o
       {/* Only show VIX ticker when NOT in tickers-only layout */}
       {layoutOption !== 'tickers-only' && (
         <div 
-          className="flex items-center gap-2 backdrop-blur-3xl bg-gradient-to-br from-[var(--pulse-surface)]/50 via-[var(--pulse-surface)]/40 to-[var(--pulse-surface)]/30 border border-[var(--pulse-accent)]/30 rounded-2xl p-2.5 shadow-2xl shadow-black/50"
+          className="flex items-center gap-2 backdrop-blur-3xl bg-gradient-to-br from-[var(--fintheon-surface)]/50 via-[var(--fintheon-surface)]/40 to-[var(--fintheon-surface)]/30 border border-[var(--fintheon-accent)]/30 rounded-2xl p-2.5 shadow-2xl shadow-black/50"
           style={{
             backdropFilter: 'blur(40px) saturate(180%)',
             WebkitBackdropFilter: 'blur(40px) saturate(180%)',
@@ -171,7 +171,7 @@ export function FloatingWidget({ ivData, ivLoading, layoutOption = 'combined', o
           }}
         >
           <div 
-            className="backdrop-blur-2xl bg-gradient-to-br from-[var(--pulse-bg)]/60 to-[var(--pulse-bg)]/40 border border-zinc-800/60 rounded-xl px-2.5 py-1"
+            className="backdrop-blur-2xl bg-gradient-to-br from-[var(--fintheon-bg)]/60 to-[var(--fintheon-bg)]/40 border border-zinc-800/60 rounded-xl px-2.5 py-1"
             style={{
               backdropFilter: 'blur(20px) saturate(150%)',
               WebkitBackdropFilter: 'blur(20px) saturate(150%)',
@@ -188,7 +188,7 @@ export function FloatingWidget({ ivData, ivLoading, layoutOption = 'combined', o
           {onClose && (
             <button
               onClick={onClose}
-              className="p-1.5 hover:bg-[var(--pulse-accent)]/20 rounded-xl text-[var(--pulse-accent)]/80 hover:text-[var(--pulse-accent)] backdrop-blur-sm transition-all"
+              className="p-1.5 hover:bg-[var(--fintheon-accent)]/20 rounded-xl text-[var(--fintheon-accent)]/80 hover:text-[var(--fintheon-accent)] backdrop-blur-sm transition-all"
               title="Close Widget"
               style={{
                 backdropFilter: 'blur(10px)',
@@ -204,7 +204,7 @@ export function FloatingWidget({ ivData, ivLoading, layoutOption = 'combined', o
       {/* ER Monitor Card - Landscape oriented, drops down with frosted glass */}
       {layoutOption !== 'tickers-only' && showERCard && (
         <div
-          className="backdrop-blur-3xl bg-gradient-to-br from-[var(--pulse-surface)]/50 via-[var(--pulse-surface)]/40 to-[var(--pulse-surface)]/30 border border-[var(--pulse-accent)]/30 rounded-2xl p-4 w-96 transition-all duration-300 opacity-100 translate-y-0 animate-slide-down shadow-2xl"
+          className="backdrop-blur-3xl bg-gradient-to-br from-[var(--fintheon-surface)]/50 via-[var(--fintheon-surface)]/40 to-[var(--fintheon-surface)]/30 border border-[var(--fintheon-accent)]/30 rounded-2xl p-4 w-96 transition-all duration-300 opacity-100 translate-y-0 animate-slide-down shadow-2xl"
           style={{
             backdropFilter: 'blur(40px) saturate(180%)',
             WebkitBackdropFilter: 'blur(40px) saturate(180%)',
@@ -212,10 +212,10 @@ export function FloatingWidget({ ivData, ivLoading, layoutOption = 'combined', o
           }}
         >
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold text-[var(--pulse-accent)] drop-shadow-sm">Emotional Resonance</h3>
+            <h3 className="text-sm font-semibold text-[var(--fintheon-accent)] drop-shadow-sm">Emotional Resonance</h3>
             <button
               onClick={() => setShowERCard(false)}
-              className="p-1.5 hover:bg-[var(--pulse-accent)]/20 rounded-xl text-[var(--pulse-accent)]/70 hover:text-[var(--pulse-accent)] backdrop-blur-sm transition-all"
+              className="p-1.5 hover:bg-[var(--fintheon-accent)]/20 rounded-xl text-[var(--fintheon-accent)]/70 hover:text-[var(--fintheon-accent)] backdrop-blur-sm transition-all"
             >
               <X className="w-4 h-4" />
             </button>
@@ -236,7 +236,7 @@ export function FloatingWidget({ ivData, ivLoading, layoutOption = 'combined', o
           {/* Clear All Header */}
           {notifications.length > 1 && (
             <div
-              className="backdrop-blur-3xl bg-gradient-to-br from-[var(--pulse-surface)]/60 via-[var(--pulse-surface)]/50 to-[var(--pulse-surface)]/40 border border-[var(--pulse-accent)]/30 rounded-xl px-3 py-1 flex items-center justify-between shadow-lg"
+              className="backdrop-blur-3xl bg-gradient-to-br from-[var(--fintheon-surface)]/60 via-[var(--fintheon-surface)]/50 to-[var(--fintheon-surface)]/40 border border-[var(--fintheon-accent)]/30 rounded-xl px-3 py-1 flex items-center justify-between shadow-lg"
               style={{
                 backdropFilter: 'blur(40px) saturate(180%)',
                 WebkitBackdropFilter: 'blur(40px) saturate(180%)',
@@ -257,7 +257,7 @@ export function FloatingWidget({ ivData, ivLoading, layoutOption = 'combined', o
           {notifications.slice(0, 2).map((newsItem) => (
             <div
               key={newsItem.notificationId}
-              className="backdrop-blur-3xl bg-gradient-to-br from-[var(--pulse-surface)]/50 via-[var(--pulse-surface)]/40 to-[var(--pulse-surface)]/30 border border-[var(--pulse-accent)]/30 rounded-2xl p-3 w-80 transition-all duration-500 opacity-100 animate-slide-up shadow-2xl"
+              className="backdrop-blur-3xl bg-gradient-to-br from-[var(--fintheon-surface)]/50 via-[var(--fintheon-surface)]/40 to-[var(--fintheon-surface)]/30 border border-[var(--fintheon-accent)]/30 rounded-2xl p-3 w-80 transition-all duration-500 opacity-100 animate-slide-up shadow-2xl"
               style={{
                 backdropFilter: 'blur(40px) saturate(180%)',
                 WebkitBackdropFilter: 'blur(40px) saturate(180%)',
@@ -274,8 +274,8 @@ export function FloatingWidget({ ivData, ivLoading, layoutOption = 'combined', o
                   <div className="flex items-center gap-2 mt-1">
                     {newsItem.ivScore != null && typeof newsItem.ivScore === 'number' && newsItem.ivScore > 0 && (
                       <div className="flex items-center gap-1 text-[10px]">
-                        <TrendingUp className="w-2.5 h-2.5 text-[var(--pulse-accent)]" />
-                        <span className="text-[var(--pulse-accent)] font-medium drop-shadow-sm">
+                        <TrendingUp className="w-2.5 h-2.5 text-[var(--fintheon-accent)]" />
+                        <span className="text-[var(--fintheon-accent)] font-medium drop-shadow-sm">
                           ±{newsItem.ivScore.toFixed(0)} pts
                         </span>
                       </div>
@@ -291,7 +291,7 @@ export function FloatingWidget({ ivData, ivLoading, layoutOption = 'combined', o
                 </div>
                 <button
                   onClick={() => dismissNotification(newsItem.notificationId)}
-                  className="p-1 hover:bg-[var(--pulse-accent)]/20 rounded-lg text-[var(--pulse-accent)]/70 hover:text-[var(--pulse-accent)] flex-shrink-0 backdrop-blur-sm transition-all"
+                  className="p-1 hover:bg-[var(--fintheon-accent)]/20 rounded-lg text-[var(--fintheon-accent)]/70 hover:text-[var(--fintheon-accent)] flex-shrink-0 backdrop-blur-sm transition-all"
                 >
                   <X className="w-3 h-3" />
                 </button>

@@ -38,13 +38,13 @@ const DOT_RADIUS = 5;
 function readThemeColors(): ThemeColors {
   const styles = getComputedStyle(document.documentElement);
   return {
-    bg: styles.getPropertyValue('--pulse-bg').trim() || 'var(--pulse-bg)',
-    accent: styles.getPropertyValue('--pulse-accent').trim() || 'var(--pulse-accent)',
-    bullish: styles.getPropertyValue('--pulse-bullish').trim() || '#34D399',
-    bearish: styles.getPropertyValue('--pulse-bearish').trim() || '#EF4444',
-    surface: styles.getPropertyValue('--pulse-surface').trim() || 'var(--pulse-surface)',
-    text: styles.getPropertyValue('--pulse-text').trim() || 'var(--pulse-text)',
-    muted: styles.getPropertyValue('--pulse-muted').trim() || '#6B7280',
+    bg: styles.getPropertyValue('--fintheon-bg').trim() || 'var(--fintheon-bg)',
+    accent: styles.getPropertyValue('--fintheon-accent').trim() || 'var(--fintheon-accent)',
+    bullish: styles.getPropertyValue('--fintheon-bullish').trim() || '#34D399',
+    bearish: styles.getPropertyValue('--fintheon-bearish').trim() || '#EF4444',
+    surface: styles.getPropertyValue('--fintheon-surface').trim() || 'var(--fintheon-surface)',
+    text: styles.getPropertyValue('--fintheon-text').trim() || 'var(--fintheon-text)',
+    muted: styles.getPropertyValue('--fintheon-muted').trim() || '#6B7280',
   };
 }
 

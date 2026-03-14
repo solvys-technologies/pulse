@@ -64,7 +64,7 @@ console.log(`[API] Environment: ${config.NODE_ENV}`);
 startFeedPoller();
 // Start Notion polling (trade ideas + daily P&L)
 startNotionPoller();
-// Start econ calendar enricher (writes FMP actuals to Notion)
+// Start econ calendar enricher (Notion calendar → RiskFlow feed)
 startEconEnricher();
 // Start econ-triggered twitter-cli poller (cookie-based, FJ emoji filtered)
 startEconTwitterPoller();
@@ -72,7 +72,7 @@ startEconTwitterPoller();
 startAutopilotScheduler();
 // Start Context Bank ticker (120s — unified snapshot for all agents)
 startContextBankTicker();
-// Initialize Hermes/Groq connection (health check — non-blocking)
+// Initialize Hermes/OpenRouter connection (health check — non-blocking)
 initHermesAgent().catch((err) => console.warn('[API] Hermes init failed (non-fatal):', err));
 // Initialize Claude SDK bridge (health check — non-blocking)
 initClaudeSDK().catch((err) => console.warn('[API] Claude SDK init failed (non-fatal):', err));

@@ -16,15 +16,14 @@ import { TraderNametag } from '../TraderNametag';
 import type { IVScoreResponse } from '../../types/market-data';
 import type { TradingPlatform } from '../TopStepXBrowser';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'team' | 'settings';
+type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'team' | 'settings';
 
 const TAB_LABELS: Record<NavTab, string> = {
   executive: 'Dashboard',
   feed: 'Dashboard', // feed section removed; fallback for history
   analysis: 'Chat',
   news: 'RiskFlow',
-  chatroom: 'Board Room',
-  notion: 'Research Department',
+  notion: 'Scriptorium',
   econ: 'Economic Calendar',
   narrative: 'NarrativeFlow',
   earnings: 'Performance',
@@ -76,7 +75,7 @@ export function TopHeader({
   const { tier } = useAuth();
   const backend = useBackend();
   const { selectedSymbol, traderName, alertConfig } = useSettings();
-  const instanceName = import.meta.env.VITE_PULSE_INSTANCE_NAME || 'Pulse';
+  const instanceName = import.meta.env.VITE_PULSE_INSTANCE_NAME || 'Fintheon';
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [ivData, setIvData] = useState<IVScoreResponse | null>(null);
   const [ivLoading, setIvLoading] = useState(true);
@@ -147,13 +146,13 @@ export function TopHeader({
   const layoutOptions: Array<{ value: LayoutOption; label: string; description: string; icon: React.ReactNode }> = [
     {
       value: 'combined',
-      label: 'Combined Panels',
+      label: 'Castra',
       description: 'Mission Control and Tape stacked on the right',
       icon: <Layers className="w-4 h-4" />
     },
     {
       value: 'tickers-only',
-      label: 'Zen Mode',
+      label: 'Zen',
       description: 'Supports split-frame browser view',
       icon: <GripVertical className="w-4 h-4" />
     }
@@ -179,27 +178,30 @@ export function TopHeader({
 
   const getTierDisplayName = () => {
     switch (tier) {
-      case 'free': return 'Free';
-      case 'pulse': return 'Pulse';
-      case 'pulse_plus': return 'Pulse+';
-      case 'pulse_pro': return 'Pulse Pro';
-      default: return 'Free';
+      case 'free': return 'Pleb';
+      case 'pulse': return 'Equestrian';
+      case 'pulse_plus': return 'Equestrian+';
+      case 'pulse_pro': return 'Consul';
+      default: return 'Pleb';
     }
   };
 
   return (
     <div
       id="pulse-heading-toolbar"
-      className={`relative bg-[var(--pulse-surface)] flex items-center justify-between pl-6 pr-6 ${topStepXEnabled && layoutOption === 'tickers-only' ? 'h-[52px]' : 'h-[56px]'}`}
+      className={`relative bg-[var(--fintheon-surface)] flex items-center justify-between pl-6 pr-6 ${topStepXEnabled && layoutOption === 'tickers-only' ? 'h-[52px]' : 'h-[56px]'}`}
     >
       <div className="flex items-center gap-6">
         <div className={`flex items-center gap-3 transition-opacity duration-150 ${hideBranding ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
           <div className="flex flex-col leading-tight">
-            <span className="text-[12px] font-semibold tracking-[0.22em] text-[var(--pulse-accent)] uppercase">
+            <span className="text-[12px] font-semibold tracking-[0.22em] text-[var(--fintheon-accent)] uppercase">
               {instanceName}
             </span>
             <span className="text-[10px] tracking-[0.18em] text-gray-500 uppercase">
               Priced In Capital
+            </span>
+            <span className="text-[9px] text-gray-600 italic">
+              {(() => { const h = new Date().getHours(); if (h < 12) return 'Ave. The markets stir.'; if (h < 17) return 'The Forum is active.'; return "The day's battles are done."; })()}
             </span>
           </div>
 
@@ -209,7 +211,7 @@ export function TopHeader({
               <button
                 onClick={onBack}
                 disabled={historyIndex <= 0}
-                className="p-1 rounded text-gray-500 hover:text-[var(--pulse-accent)] disabled:text-gray-700 disabled:cursor-default transition-colors"
+                className="p-1 rounded text-gray-500 hover:text-[var(--fintheon-accent)] disabled:text-gray-700 disabled:cursor-default transition-colors"
                 title="Back"
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
@@ -217,7 +219,7 @@ export function TopHeader({
               <button
                 onClick={onForward}
                 disabled={historyIndex >= tabHistory.length - 1}
-                className="p-1 rounded text-gray-500 hover:text-[var(--pulse-accent)] disabled:text-gray-700 disabled:cursor-default transition-colors"
+                className="p-1 rounded text-gray-500 hover:text-[var(--fintheon-accent)] disabled:text-gray-700 disabled:cursor-default transition-colors"
                 title="Forward"
               >
                 <ChevronRight className="w-3.5 h-3.5" />
@@ -230,7 +232,7 @@ export function TopHeader({
 
           <button
             onClick={() => setShowUpgrade(true)}
-            className="relative bg-[var(--pulse-bg)] border border-[var(--pulse-accent)]/20 rounded-lg px-3 h-8 hover:bg-[var(--pulse-accent)]/10 hover:border-[var(--pulse-accent)]/40 transition-colors cursor-pointer flex items-center hidden xl:flex"
+            className="relative bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 rounded-lg px-3 h-8 hover:bg-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/40 transition-colors cursor-pointer flex items-center hidden xl:flex"
           >
             <span className="text-[13px] text-gray-300">{getTierDisplayName()}</span>
           </button>
@@ -242,7 +244,7 @@ export function TopHeader({
         <div className="flex items-center gap-2 flex-shrink-0">
           <WhatsNewButton />
           {psychAssistHeadingWidget}
-          <div className="bg-[var(--pulse-bg)] border border-zinc-800 rounded-lg px-3 h-8 flex items-center flex-shrink-0">
+          <div className="bg-[var(--fintheon-bg)] border border-zinc-800 rounded-lg px-3 h-8 flex items-center flex-shrink-0">
             <div className="flex items-center gap-1.5">
               <span className="text-[9px] text-gray-500">VIX</span>
               <span className="text-xs font-mono text-gray-300">
@@ -262,7 +264,7 @@ export function TopHeader({
               >
                 {toolbarEditMode && (
                   <div
-                    className="cursor-grab active:cursor-grabbing touch-none shrink-0 p-0.5 text-gray-600 hover:text-[var(--pulse-accent)]"
+                    className="cursor-grab active:cursor-grabbing touch-none shrink-0 p-0.5 text-gray-600 hover:text-[var(--fintheon-accent)]"
                     title="Drag to reorder"
                   >
                     <GripVertical className="w-3 h-3" />
@@ -278,8 +280,8 @@ export function TopHeader({
                     onClick={() => setShowPlatformDropdown(!showPlatformDropdown)}
                     className={`px-3 h-8 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${
                       topStepXEnabled
-                        ? 'bg-[var(--pulse-accent)] text-black hover:bg-[var(--pulse-accent)]/90'
-                        : 'bg-[var(--pulse-bg)] border border-[var(--pulse-accent)]/20 text-[var(--pulse-accent)] hover:bg-[var(--pulse-accent)]/10 hover:border-[var(--pulse-accent)]/40'
+                        ? 'bg-[var(--fintheon-accent)] text-black hover:bg-[var(--fintheon-accent)]/90'
+                        : 'bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/40'
                     }`}
                     title="Select trading platform"
                   >
@@ -288,7 +290,7 @@ export function TopHeader({
                     <ChevronDown className={`w-3 h-3 transition-transform ${showPlatformDropdown ? 'rotate-180' : ''}`} />
                   </button>
                   {showPlatformDropdown && (
-                    <div className="absolute right-0 top-full mt-2 w-72 bg-[var(--pulse-surface)] border border-[var(--pulse-accent)]/20 rounded-lg shadow-xl z-50 overflow-hidden py-1">
+                    <div className="absolute right-0 top-full mt-2 w-72 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-lg shadow-xl z-50 overflow-hidden py-1">
                       {platformOptions.map((option) => (
                         <button
                           key={option.value}
@@ -299,17 +301,17 @@ export function TopHeader({
                           }}
                           className={`w-full px-4 py-3 text-left transition-colors ${
                             selectedPlatform === option.value
-                              ? 'bg-[var(--pulse-accent)]/15'
-                              : 'hover:bg-[var(--pulse-accent)]/8'
+                              ? 'bg-[var(--fintheon-accent)]/15'
+                              : 'hover:bg-[var(--fintheon-accent)]/8'
                           }`}
                         >
                           <div className={`text-xs font-semibold tracking-[0.14em] uppercase ${
-                            selectedPlatform === option.value ? 'text-[var(--pulse-accent)]' : 'text-gray-200'
+                            selectedPlatform === option.value ? 'text-[var(--fintheon-accent)]' : 'text-gray-200'
                           }`}>
                             {option.label}
                           </div>
                           <div className={`text-[10px] mt-0.5 ${
-                            selectedPlatform === option.value ? 'text-[var(--pulse-accent)]/60' : 'text-gray-500'
+                            selectedPlatform === option.value ? 'text-[var(--fintheon-accent)]/60' : 'text-gray-500'
                           }`}>
                             {option.description}
                           </div>
@@ -324,7 +326,7 @@ export function TopHeader({
               return wrapper(
                 <button
                   onClick={onTopStepXDisable}
-                  className={`px-2.5 h-8 rounded-lg text-xs font-medium bg-[var(--pulse-bg)] border transition-colors flex items-center gap-1.5 ${
+                  className={`px-2.5 h-8 rounded-lg text-xs font-medium bg-[var(--fintheon-bg)] border transition-colors flex items-center gap-1.5 ${
                     topStepXEnabled
                       ? 'text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10'
                       : 'text-zinc-500 border-zinc-700/50 hover:text-zinc-300 hover:bg-zinc-800/50'
@@ -340,7 +342,7 @@ export function TopHeader({
                 <div className="relative" ref={dropdownRef}>
                   <button
                     onClick={() => setShowLayoutDropdown(!showLayoutDropdown)}
-                    className="px-3 h-8 rounded-lg text-xs font-medium bg-[var(--pulse-bg)] border border-[var(--pulse-accent)]/20 text-[var(--pulse-accent)] hover:bg-[var(--pulse-accent)]/10 hover:border-[var(--pulse-accent)]/40 transition-colors flex items-center gap-1.5"
+                    className="px-3 h-8 rounded-lg text-xs font-medium bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 hover:border-[var(--fintheon-accent)]/40 transition-colors flex items-center gap-1.5"
                     title="Layout Options"
                   >
                     {layoutOptions.find(opt => opt.value === layoutOption)?.icon}
@@ -348,7 +350,7 @@ export function TopHeader({
                     <ChevronDown className={`w-3 h-3 transition-transform ${showLayoutDropdown ? 'rotate-180' : ''}`} />
                   </button>
                   {showLayoutDropdown && (
-                    <div className="absolute right-0 top-full mt-2 w-72 bg-[var(--pulse-surface)] border border-[var(--pulse-accent)]/20 rounded-lg shadow-xl z-50 overflow-hidden">
+                    <div className="absolute right-0 top-full mt-2 w-72 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-lg shadow-xl z-50 overflow-hidden">
                       {layoutOptions.map((option) => (
                         <button
                           key={option.value}
@@ -356,15 +358,15 @@ export function TopHeader({
                             onLayoutOptionChange(option.value);
                             setShowLayoutDropdown(false);
                           }}
-                          className={`w-full px-4 py-3 text-left hover:bg-[var(--pulse-accent)]/10 transition-colors flex items-start gap-3 ${
-                            layoutOption === option.value ? 'bg-[var(--pulse-accent)]/20' : ''
+                          className={`w-full px-4 py-3 text-left hover:bg-[var(--fintheon-accent)]/10 transition-colors flex items-start gap-3 ${
+                            layoutOption === option.value ? 'bg-[var(--fintheon-accent)]/20' : ''
                           }`}
                         >
-                          <div className="mt-0.5 text-[var(--pulse-accent)]">
+                          <div className="mt-0.5 text-[var(--fintheon-accent)]">
                             {option.icon}
                           </div>
                           <div className="flex-1">
-                            <div className="text-sm font-medium text-[var(--pulse-accent)] mb-1">
+                            <div className="text-sm font-medium text-[var(--fintheon-accent)] mb-1">
                               {option.label}
                             </div>
                             <div className="text-xs text-gray-400">
@@ -385,9 +387,9 @@ export function TopHeader({
                   className={`p-2 rounded-lg text-xs font-medium transition-colors ${
                     askHarpOpen
                       ? 'bg-[#6366f1] text-white hover:bg-[#6366f1]/90'
-                      : 'bg-[var(--pulse-bg)] border border-[#6366f1]/30 text-[#6366f1] hover:bg-[#6366f1]/10 hover:border-[#6366f1]/50'
+                      : 'bg-[var(--fintheon-bg)] border border-[#6366f1]/30 text-[#6366f1] hover:bg-[#6366f1]/10 hover:border-[#6366f1]/50'
                   }`}
-                  title="Chat"
+                  title="Convene"
                 >
                   <MessageCircle className="w-3.5 h-3.5" />
                 </button>

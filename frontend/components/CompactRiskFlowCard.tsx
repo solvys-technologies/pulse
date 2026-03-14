@@ -80,7 +80,7 @@ function MiniCard({ alert, onDismiss, seen }: CompactRiskFlowCardProps) {
 
   return (
     <div
-      className={`flex items-center gap-1.5 px-2 py-1 border-b border-zinc-800/30 hover:bg-[var(--pulse-accent)]/5 transition-colors ${
+      className={`flex items-center gap-1.5 px-2 py-1 border-b border-zinc-800/30 hover:bg-[var(--fintheon-accent)]/5 transition-colors ${
         seen ? 'opacity-60' : ''
       }`}
     >
@@ -91,7 +91,7 @@ function MiniCard({ alert, onDismiss, seen }: CompactRiskFlowCardProps) {
       {isProposal && alert.tradeIdea && (
         <span className="flex-shrink-0">
           {alert.tradeIdea.direction === 'long'
-            ? <TrendingUp className="w-2.5 h-2.5 text-[var(--pulse-accent)]" />
+            ? <TrendingUp className="w-2.5 h-2.5 text-[var(--fintheon-accent)]" />
             : alert.tradeIdea.direction === 'short'
               ? <TrendingDown className="w-2.5 h-2.5 text-zinc-400" />
               : null
@@ -115,7 +115,7 @@ function MiniCard({ alert, onDismiss, seen }: CompactRiskFlowCardProps) {
       </span>
       {alert.cyclical && alert.cyclical !== 'Neutral' && (
         <span className={`text-[7px] font-bold tracking-wider flex-shrink-0 ${
-          alert.cyclical === 'Cyclical' ? 'text-[var(--pulse-accent)]/60' : 'text-violet-400/60'
+          alert.cyclical === 'Cyclical' ? 'text-[var(--fintheon-accent)]/60' : 'text-violet-400/60'
         }`}>
           {alert.cyclical === 'Cyclical' ? 'CYC' : 'CTR'}
         </span>
@@ -158,8 +158,8 @@ function MinimalCard({
 
   return (
     <div
-      className={`group relative px-2.5 py-2 border-b border-zinc-800/40 hover:bg-[var(--pulse-accent)]/5 transition-colors ${
-        isProposal ? 'border-l-2 border-l-[var(--pulse-accent)]/40 cursor-pointer' : ''
+      className={`group relative px-2.5 py-2 border-b border-zinc-800/40 hover:bg-[var(--fintheon-accent)]/5 transition-colors ${
+        isProposal ? 'border-l-2 border-l-[var(--fintheon-accent)]/40 cursor-pointer' : ''
       } ${isHigh ? 'riskflow-pulse-row' : ''} ${seen ? 'opacity-60' : ''}`}
       onClick={handleClick}
     >
@@ -172,7 +172,7 @@ function MinimalCard({
         {isProposal && alert.tradeIdea && (
           <span className="flex-shrink-0 mt-0.5">
             {alert.tradeIdea.direction === 'long'
-              ? <TrendingUp className="w-3 h-3 text-[var(--pulse-accent)]" />
+              ? <TrendingUp className="w-3 h-3 text-[var(--fintheon-accent)]" />
               : alert.tradeIdea.direction === 'short'
                 ? <TrendingDown className="w-3 h-3 text-zinc-400" />
                 : null
@@ -180,7 +180,7 @@ function MinimalCard({
           </span>
         )}
         <p className={`flex-1 min-w-0 text-[11px] leading-snug font-medium line-clamp-2 ${
-          isProposal ? 'text-[var(--pulse-text)]' :
+          isProposal ? 'text-[var(--fintheon-text)]' :
           alert.severity === 'critical' ? 'text-orange-300' :
           isHigh ? 'text-red-300' : 'text-zinc-300'
         } group-hover:text-white transition-colors`}>
@@ -195,7 +195,7 @@ function MinimalCard({
         {alert.cyclical && alert.cyclical !== 'Neutral' && (
           <span className={`flex-shrink-0 text-[7px] font-bold tracking-[0.12em] uppercase px-1 py-px border ${
             alert.cyclical === 'Cyclical'
-              ? 'border-[var(--pulse-accent)]/30 text-[var(--pulse-accent)]/70'
+              ? 'border-[var(--fintheon-accent)]/30 text-[var(--fintheon-accent)]/70'
               : 'border-violet-500/30 text-violet-400/70'
           }`}>
             {alert.cyclical === 'Cyclical' ? 'CYC' : 'CTR'}
@@ -254,7 +254,7 @@ function MinimalCard({
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); onChat(alert); }}
-                  className="p-0.5 text-zinc-600 hover:text-[var(--pulse-accent)] transition-colors"
+                  className="p-0.5 text-zinc-600 hover:text-[var(--fintheon-accent)] transition-colors"
                   title="Chat"
                 >
                   <MessageSquare className="w-3 h-3" />

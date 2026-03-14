@@ -70,7 +70,7 @@ export function ResearchDepartment() {
           <div className="shrink-0 absolute top-2 right-3 z-10">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="backdrop-blur-md bg-black/20 rounded-lg p-1.5 text-gray-400 hover:text-[var(--pulse-accent)] transition-colors"
+              className="backdrop-blur-md bg-black/20 rounded-lg p-1.5 text-gray-400 hover:text-[var(--fintheon-accent)] transition-colors"
               title="Open Research Assistance"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -90,15 +90,15 @@ export function ResearchDepartment() {
 
       {/* Research Assistance sidebar — collapsible */}
       {sidebarOpen && (
-        <div className="w-[340px] shrink-0 border-l border-[var(--pulse-accent)]/15 bg-[#070704] flex flex-col">
+        <div className="w-[340px] shrink-0 border-l border-[var(--fintheon-accent)]/15 bg-[#070704] flex flex-col">
           {/* Sidebar header */}
           <div className="shrink-0 flex items-center justify-between px-5 py-4">
-            <h2 className="text-sm font-semibold text-[var(--pulse-accent)] tracking-[0.18em] uppercase">
+            <h2 className="text-sm font-semibold text-[var(--fintheon-accent)] tracking-[0.18em] uppercase">
               Research Assistance
             </h2>
             <button
               onClick={() => setSidebarOpen(false)}
-              className="p-1 text-gray-400 hover:text-[var(--pulse-accent)] transition-colors"
+              className="p-1 text-gray-400 hover:text-[var(--fintheon-accent)] transition-colors"
               title="Collapse sidebar"
             >
               <ChevronRight className="w-4 h-4" />

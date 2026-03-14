@@ -63,8 +63,8 @@ export default function GhostCard({
         opacity: 0.5,
         backdropFilter: 'blur(24px)',
         WebkitBackdropFilter: 'blur(24px)',
-        backgroundColor: 'color-mix(in srgb, var(--pulse-surface) 60%, transparent)',
-        border: `1px dashed color-mix(in srgb, var(--pulse-border) 40%, transparent)`,
+        backgroundColor: 'color-mix(in srgb, var(--fintheon-surface) 60%, transparent)',
+        border: `1px dashed color-mix(in srgb, var(--fintheon-border) 40%, transparent)`,
         boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
         minHeight: compact ? 'auto' : '80px',
         filter: 'saturate(0.7)',
@@ -79,8 +79,8 @@ export default function GhostCard({
         className="absolute top-1 right-1.5 rounded-full px-1.5 py-0.5 font-medium uppercase"
         style={{
           fontSize: '7px',
-          color: 'var(--pulse-muted)',
-          backgroundColor: 'color-mix(in srgb, var(--pulse-muted) 15%, transparent)',
+          color: 'var(--fintheon-muted)',
+          backgroundColor: 'color-mix(in srgb, var(--fintheon-muted) 15%, transparent)',
         }}
       >
         Scheduled
@@ -91,7 +91,7 @@ export default function GhostCard({
         className="font-semibold leading-tight truncate pr-10"
         style={{
           fontSize: compact ? '10px' : '11px',
-          color: 'var(--pulse-text)',
+          color: 'var(--fintheon-text)',
         }}
       >
         {catalyst.title}
@@ -100,7 +100,7 @@ export default function GhostCard({
       {!compact && (
         <p
           className="mt-1 truncate"
-          style={{ fontSize: '9px', color: 'var(--pulse-muted)' }}
+          style={{ fontSize: '9px', color: 'var(--fintheon-muted)' }}
         >
           {new Date(catalyst.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
         </p>

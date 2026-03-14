@@ -99,7 +99,7 @@ export function ClawnalystDesk() {
         <button
           onClick={saveAll}
           title="Save all analysts"
-          className="flex items-center justify-center rounded-[8px] border border-[var(--pulse-accent)] text-[var(--pulse-accent)] hover:bg-[var(--pulse-accent)] hover:text-black transition-all duration-200 active:scale-[0.93]"
+          className="flex items-center justify-center rounded-[8px] border border-[var(--fintheon-accent)] text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)] hover:text-black transition-all duration-200 active:scale-[0.93]"
           style={{ width: '34px', height: '34px', flexShrink: 0 }}
         >
           <Save size={15} />
@@ -107,7 +107,7 @@ export function ClawnalystDesk() {
         <button
           onClick={() => { setNewName(''); setNewSector(''); setNewAgentPopup(true); }}
           title="Add new analyst"
-          className="flex items-center justify-center rounded-[8px] border border-[var(--pulse-accent)] text-[var(--pulse-accent)] hover:bg-[var(--pulse-accent)] hover:text-black transition-all duration-200 active:scale-[0.93]"
+          className="flex items-center justify-center rounded-[8px] border border-[var(--fintheon-accent)] text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)] hover:text-black transition-all duration-200 active:scale-[0.93]"
           style={{ width: '34px', height: '34px', flexShrink: 0 }}
         >
           <Plus size={16} />
@@ -122,14 +122,14 @@ export function ClawnalystDesk() {
           return (
             <div
               key={agent.id}
-              className="border border-[var(--pulse-accent)]/15 hover:border-[var(--pulse-accent)]/35 bg-[#0b0b08] rounded-lg transition-all duration-200"
+              className="border border-[var(--fintheon-accent)]/15 hover:border-[var(--fintheon-accent)]/35 bg-[#0b0b08] rounded-lg transition-all duration-200"
               style={{ padding: '20px 22px' }}
             >
               {/* Card header: avatar + name/nickname + sector pill */}
               <div className="flex items-start gap-3.5 mb-4">
                 {/* 48px rounded-full avatar */}
                 <div
-                  className="flex items-center justify-center rounded-full bg-[var(--pulse-accent)]/10 text-xl shrink-0"
+                  className="flex items-center justify-center rounded-full bg-[var(--fintheon-accent)]/10 text-xl shrink-0"
                   style={{ width: '48px', height: '48px' }}
                 >
                   {agent.icon}
@@ -152,7 +152,7 @@ export function ClawnalystDesk() {
                 {/* Sector pill + delete */}
                 <div className="flex items-center gap-2 shrink-0">
                   {draft.sector && (
-                    <span className="text-[10px] font-medium tracking-wide uppercase px-2 py-0.5 rounded-full border border-[var(--pulse-accent)]/20 text-[var(--pulse-accent)]/70 bg-[var(--pulse-accent)]/5">
+                    <span className="text-[10px] font-medium tracking-wide uppercase px-2 py-0.5 rounded-full border border-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)]/70 bg-[var(--fintheon-accent)]/5">
                       {draft.sector}
                     </span>
                   )}
@@ -180,7 +180,7 @@ export function ClawnalystDesk() {
                   <textarea
                     value={draft.description}
                     onChange={(e) => setField(agent.id, 'description', e.target.value)}
-                    className="w-full rounded-md border border-[var(--pulse-accent)]/15 bg-[#070704] text-[13px] text-white placeholder:text-gray-600 focus:outline-none focus:border-[var(--pulse-accent)]/40 px-3 py-2 transition-colors resize-none"
+                    className="w-full rounded-md border border-[var(--fintheon-accent)]/15 bg-[#070704] text-[13px] text-white placeholder:text-gray-600 focus:outline-none focus:border-[var(--fintheon-accent)]/40 px-3 py-2 transition-colors resize-none"
                     placeholder="Short description of this analyst's role"
                     rows={2}
                   />
@@ -210,7 +210,7 @@ export function ClawnalystDesk() {
 
       {/* Footer CTA */}
       <div
-        className="border border-dashed border-[var(--pulse-accent)]/20 rounded-lg flex flex-col items-center justify-center mt-4"
+        className="border border-dashed border-[var(--fintheon-accent)]/20 rounded-lg flex flex-col items-center justify-center mt-4"
         style={{ padding: '24px' }}
       >
         <p className="text-[13px] text-gray-500 mb-2.5">
@@ -218,7 +218,7 @@ export function ClawnalystDesk() {
         </p>
         <button
           onClick={() => { setNewName(''); setNewSector(''); setNewAgentPopup(true); }}
-          className="flex items-center gap-1.5 text-[13px] font-medium text-[var(--pulse-accent)] border border-[var(--pulse-accent)]/30 rounded-md px-3 py-1.5 hover:bg-[var(--pulse-accent)]/10 transition-colors"
+          className="flex items-center gap-1.5 text-[13px] font-medium text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/30 rounded-md px-3 py-1.5 hover:bg-[var(--fintheon-accent)]/10 transition-colors"
         >
           <Plus size={14} /> New Analyst
         </button>
@@ -229,7 +229,7 @@ export function ClawnalystDesk() {
         <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ padding: '24px' }}>
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setNewAgentPopup(false)} />
           <div
-            className="relative w-full max-w-[380px] rounded-lg bg-[var(--pulse-surface)] border border-[var(--pulse-accent)]/30 overflow-hidden"
+            className="relative w-full max-w-[380px] rounded-lg bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/30 overflow-hidden"
             style={{ boxShadow: '0 4px 30px rgba(0,0,0,0.5)' }}
           >
             <div style={{ padding: '20px 20px 0' }}>
@@ -238,7 +238,7 @@ export function ClawnalystDesk() {
                   className="flex items-center justify-center rounded-lg flex-shrink-0"
                   style={{ width: '36px', height: '36px', backgroundColor: 'rgba(212,175,55,0.1)' }}
                 >
-                  <Users size={18} style={{ color: 'var(--pulse-accent)' }} />
+                  <Users size={18} style={{ color: 'var(--fintheon-accent)' }} />
                 </div>
                 <h3 className="text-[14px] font-semibold text-white">New Analyst</h3>
               </div>
@@ -252,7 +252,7 @@ export function ClawnalystDesk() {
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') handleCreate(); if (e.key === 'Escape') setNewAgentPopup(false); }}
-                  className="w-full rounded-md border border-[var(--pulse-accent)]/20 bg-[#0b0b08] text-[13px] text-white placeholder:text-gray-600 focus:outline-none focus:border-[var(--pulse-accent)]/50 px-3 py-2"
+                  className="w-full rounded-md border border-[var(--fintheon-accent)]/20 bg-[#0b0b08] text-[13px] text-white placeholder:text-gray-600 focus:outline-none focus:border-[var(--fintheon-accent)]/50 px-3 py-2"
                   placeholder="Enter analyst name..."
                 />
               </div>
@@ -263,22 +263,22 @@ export function ClawnalystDesk() {
                   value={newSector}
                   onChange={(e) => setNewSector(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') handleCreate(); if (e.key === 'Escape') setNewAgentPopup(false); }}
-                  className="w-full rounded-md border border-[var(--pulse-accent)]/20 bg-[#0b0b08] text-[13px] text-white placeholder:text-gray-600 focus:outline-none focus:border-[var(--pulse-accent)]/50 px-3 py-2"
+                  className="w-full rounded-md border border-[var(--fintheon-accent)]/20 bg-[#0b0b08] text-[13px] text-white placeholder:text-gray-600 focus:outline-none focus:border-[var(--fintheon-accent)]/50 px-3 py-2"
                   placeholder="e.g. Macro Intelligence, Execution"
                 />
               </div>
             </div>
-            <div className="flex items-center justify-end border-t border-[var(--pulse-accent)]/15 px-4 py-3 gap-2">
+            <div className="flex items-center justify-end border-t border-[var(--fintheon-accent)]/15 px-4 py-3 gap-2">
               <button
                 onClick={() => setNewAgentPopup(false)}
-                className="text-[13px] font-medium rounded-md text-gray-400 hover:bg-[var(--pulse-accent)]/10 px-4 py-2 transition-colors"
+                className="text-[13px] font-medium rounded-md text-gray-400 hover:bg-[var(--fintheon-accent)]/10 px-4 py-2 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreate}
                 disabled={!newName.trim()}
-                className="text-[13px] font-medium rounded-md text-black bg-[var(--pulse-accent)] px-4 py-2 transition-colors focus:outline-none disabled:opacity-40 hover:bg-[#C5A030]"
+                className="text-[13px] font-medium rounded-md text-black bg-[var(--fintheon-accent)] px-4 py-2 transition-colors focus:outline-none disabled:opacity-40 hover:bg-[#C5A030]"
               >
                 Create
               </button>
@@ -302,7 +302,7 @@ function Field({ label, value, onChange, placeholder }: { label: string; value: 
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-md border border-[var(--pulse-accent)]/15 bg-[#070704] text-[13px] text-white placeholder:text-gray-600 focus:outline-none focus:border-[var(--pulse-accent)]/40 px-3 py-2 transition-colors"
+        className="w-full rounded-md border border-[var(--fintheon-accent)]/15 bg-[#070704] text-[13px] text-white placeholder:text-gray-600 focus:outline-none focus:border-[var(--fintheon-accent)]/40 px-3 py-2 transition-colors"
         placeholder={placeholder}
       />
     </div>

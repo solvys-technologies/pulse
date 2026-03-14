@@ -33,7 +33,7 @@ export function ImpactRipple({ position, active, onAnimationEnd }: ImpactRippleP
             width: 40,
             height: 40,
             borderRadius: '50%',
-            border: '1.5px solid var(--pulse-accent)',
+            border: '1.5px solid var(--fintheon-accent)',
             opacity: 0.2,
             animation: `ripple-expand 800ms cubic-bezier(0.4, 0, 0.2, 1) ${RING_DELAYS[i]}ms forwards`,
           }}

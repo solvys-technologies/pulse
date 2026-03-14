@@ -73,7 +73,7 @@ export function ExpandableTapeItem({ alert, isVivid, opacity, borderOpacity, see
     <div
       className={`border-l-2 ${
         isTradeIdea
-          ? 'border-l-[var(--pulse-accent)]/50 bg-[#0b0b08]'
+          ? 'border-l-[var(--fintheon-accent)]/50 bg-[#0b0b08]'
           : isVivid
             ? 'bg-[#0b0b08] border-emerald-500/40'
             : 'bg-[#080806]'
@@ -89,9 +89,9 @@ export function ExpandableTapeItem({ alert, isVivid, opacity, borderOpacity, see
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             {isTradeIdea ? (
-              <span className="inline-flex items-center justify-center w-4 h-4 border border-[var(--pulse-accent)]/40 bg-[var(--pulse-accent)]/10 flex-shrink-0">
+              <span className="inline-flex items-center justify-center w-4 h-4 border border-[var(--fintheon-accent)]/40 bg-[var(--fintheon-accent)]/10 flex-shrink-0">
                 {alert.tradeIdea!.direction === 'long'
-                  ? <TrendingUp className="w-2.5 h-2.5 text-[var(--pulse-accent)]" />
+                  ? <TrendingUp className="w-2.5 h-2.5 text-[var(--fintheon-accent)]" />
                   : <TrendingDown className="w-2.5 h-2.5 text-zinc-400" />}
               </span>
             ) : (
@@ -173,7 +173,7 @@ export function ExpandableTapeItem({ alert, isVivid, opacity, borderOpacity, see
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onOpenIdea(alert.tradeIdea!); }}
-                className="mt-1 text-[10px] text-[var(--pulse-accent)] hover:text-[#dbb85c] transition-colors uppercase tracking-wider"
+                className="mt-1 text-[10px] text-[var(--fintheon-accent)] hover:text-[#dbb85c] transition-colors uppercase tracking-wider"
               >
                 View Full Proposal →
               </button>

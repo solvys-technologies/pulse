@@ -150,7 +150,7 @@ ${briefType === 'MDB'
 **Best Intraday Approach:** Specific strategy recommendation (Ripper, AWV, Snipe, etc.)
 
 Be direct, use financial shorthand. Anchor ONLY to key macro events. No scattergun anchoring. 400-600 words.`
-  : `Write a comprehensive Tale of the Tape covering:
+  : `Write a comprehensive Weekly Tribune covering:
 
 **Past Week Recap:**
 - Market Overview (S&P, Nasdaq, equal-weight, sector rotation)

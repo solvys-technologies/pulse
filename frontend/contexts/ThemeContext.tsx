@@ -22,28 +22,33 @@ interface ThemeContextValue {
   fontTheme: FontTheme;
   setFontTheme: (theme: FontTheme) => void;
   fontThemes: Record<string, FontTheme>;
+  pompaEnabled: boolean;
+  setPompaEnabled: (v: boolean) => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 function applyThemeToDOM(theme: ThemeConfig) {
   const root = document.documentElement;
-  root.style.setProperty('--pulse-accent', theme.accent);
-  root.style.setProperty('--pulse-bg', theme.bg);
-  root.style.setProperty('--pulse-text', theme.text);
-  root.style.setProperty('--pulse-bullish', theme.bullish);
-  root.style.setProperty('--pulse-bearish', theme.bearish);
-  root.style.setProperty('--pulse-surface', theme.surface);
-  root.style.setProperty('--pulse-border', theme.border);
-  root.style.setProperty('--pulse-muted', theme.muted);
+  root.style.setProperty('--fintheon-accent', theme.accent);
+  root.style.setProperty('--fintheon-bg', theme.bg);
+  root.style.setProperty('--fintheon-text', theme.text);
+  root.style.setProperty('--fintheon-bullish', theme.bullish);
+  root.style.setProperty('--fintheon-bearish', theme.bearish);
+  root.style.setProperty('--fintheon-surface', theme.surface);
+  root.style.setProperty('--fintheon-border', theme.border);
+  root.style.setProperty('--fintheon-muted', theme.muted);
 }
 
 function applyFontThemeToDOM(fontTheme: FontTheme) {
   const root = document.documentElement;
-  root.style.setProperty('--font-body', fontTheme.fontBody);
-  root.style.setProperty('--font-heading', fontTheme.fontHeading);
+  // Prepend 'Readable Digits' so digits/numbers always render in Inter
+  const bodyStack = `'Readable Digits', ${fontTheme.fontBody}`;
+  const headingStack = `'Readable Digits', ${fontTheme.fontHeading}`;
+  root.style.setProperty('--font-body', bodyStack);
+  root.style.setProperty('--font-heading', headingStack);
   // Apply directly to body to bypass Tailwind v4 preflight specificity
-  document.body.style.fontFamily = fontTheme.fontBody;
+  document.body.style.fontFamily = bodyStack;
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
@@ -58,6 +63,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     applyFontThemeToDOM(stored);
     return stored;
   });
+
+  const [pompaEnabled, setPompaEnabled] = useState<boolean>(() => {
+    const stored = localStorage.getItem('fintheon:pompa-mode');
+    return stored !== null ? stored === 'true' : true;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('fintheon:pompa-mode', String(pompaEnabled));
+  }, [pompaEnabled]);
 
   const setTheme = useCallback((next: ThemeConfig) => {
     setThemeState(next);
@@ -78,7 +92,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, presets: THEME_PRESETS, fontTheme, setFontTheme, fontThemes: FONT_THEMES }}>
+    <ThemeContext.Provider value={{ theme, setTheme, presets: THEME_PRESETS, fontTheme, setFontTheme, fontThemes: FONT_THEMES, pompaEnabled, setPompaEnabled }}>
       {children}
     </ThemeContext.Provider>
   );

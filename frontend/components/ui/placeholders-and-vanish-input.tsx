@@ -48,7 +48,7 @@ export function VanishInput({
     // Render text to canvas
     const computed = getComputedStyle(input);
     ctx.font = computed.font;
-    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--pulse-text').trim() || '#f0ead6';
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--fintheon-text').trim() || '#f0ead6';
     ctx.textBaseline = 'middle';
     ctx.fillText(value, 8, canvas.height / 2);
 
@@ -79,7 +79,7 @@ export function VanishInput({
       frame++;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      const accent = getComputedStyle(document.documentElement).getPropertyValue('--pulse-accent').trim() || '#D4AF37';
+      const accent = getComputedStyle(document.documentElement).getPropertyValue('--fintheon-accent').trim() || '#D4AF37';
 
       for (const p of particles) {
         p.x += p.vx;
@@ -130,13 +130,13 @@ export function VanishInput({
         placeholder={placeholders[placeholderIdx]}
         className={cn(
           'w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors',
-          'placeholder:text-[var(--pulse-muted)]',
+          'placeholder:text-[var(--fintheon-muted)]',
           vanishing && 'text-transparent',
         )}
         style={{
-          background: 'var(--pulse-surface)',
-          borderColor: value ? 'var(--pulse-accent)' : 'rgba(212,175,55,0.15)',
-          color: 'var(--pulse-text)',
+          background: 'var(--fintheon-surface)',
+          borderColor: value ? 'var(--fintheon-accent)' : 'rgba(212,175,55,0.15)',
+          color: 'var(--fintheon-text)',
         }}
       />
       <canvas

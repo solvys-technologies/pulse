@@ -36,8 +36,8 @@ export function RopeSuggestModal({
         className="rounded-lg border px-3 py-2"
         style={{
           width: 160,
-          backgroundColor: 'var(--pulse-surface)',
-          borderColor: 'color-mix(in srgb, var(--pulse-accent) 30%, transparent)',
+          backgroundColor: 'var(--fintheon-surface)',
+          borderColor: 'color-mix(in srgb, var(--fintheon-accent) 30%, transparent)',
           boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4)',
         }}
       >
@@ -47,8 +47,8 @@ export function RopeSuggestModal({
           style={{
             color:
               polarity === 'contradicting'
-                ? 'var(--pulse-bearish)'
-                : 'var(--pulse-accent)',
+                ? 'var(--fintheon-bearish)'
+                : 'var(--fintheon-accent)',
           }}
         >
           {label}
@@ -58,7 +58,7 @@ export function RopeSuggestModal({
         {agentVerdict && (
           <p
             className="text-xs mb-2 leading-tight"
-            style={{ color: 'var(--pulse-muted)' }}
+            style={{ color: 'var(--fintheon-muted)' }}
           >
             {agentVerdict.reasoning}
           </p>
@@ -70,8 +70,8 @@ export function RopeSuggestModal({
             onClick={onApprove}
             className="flex items-center justify-center w-8 h-8 rounded-md transition-colors cursor-pointer"
             style={{
-              backgroundColor: 'color-mix(in srgb, var(--pulse-accent) 15%, transparent)',
-              color: 'var(--pulse-accent)',
+              backgroundColor: 'color-mix(in srgb, var(--fintheon-accent) 15%, transparent)',
+              color: 'var(--fintheon-accent)',
             }}
             title="Approve connection"
           >
@@ -81,8 +81,8 @@ export function RopeSuggestModal({
             onClick={onDeny}
             className="flex items-center justify-center w-8 h-8 rounded-md transition-colors cursor-pointer"
             style={{
-              backgroundColor: 'color-mix(in srgb, var(--pulse-muted) 15%, transparent)',
-              color: 'var(--pulse-muted)',
+              backgroundColor: 'color-mix(in srgb, var(--fintheon-muted) 15%, transparent)',
+              color: 'var(--fintheon-muted)',
             }}
             title="Deny connection"
           >
@@ -95,9 +95,9 @@ export function RopeSuggestModal({
           onClick={onClose}
           className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center text-xs cursor-pointer"
           style={{
-            backgroundColor: 'var(--pulse-surface)',
-            border: '1px solid color-mix(in srgb, var(--pulse-muted) 40%, transparent)',
-            color: 'var(--pulse-muted)',
+            backgroundColor: 'var(--fintheon-surface)',
+            border: '1px solid color-mix(in srgb, var(--fintheon-muted) 40%, transparent)',
+            color: 'var(--fintheon-muted)',
           }}
         >
           <X size={8} />

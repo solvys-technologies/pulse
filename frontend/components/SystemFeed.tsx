@@ -58,7 +58,7 @@ export default function SystemFeed() {
       case "error":
         return <XCircle className="w-4 h-4 text-[#FF4040]" />;
       case "warning":
-        return <AlertCircle className="w-4 h-4 text-[var(--pulse-accent)]" />;
+        return <AlertCircle className="w-4 h-4 text-[var(--fintheon-accent)]" />;
       default:
         return <Info className="w-4 h-4 text-zinc-500" />;
     }
@@ -69,7 +69,7 @@ export default function SystemFeed() {
       case "trade":
         return "text-[#00FF85]";
       case "alert":
-        return "text-[var(--pulse-accent)]";
+        return "text-[var(--fintheon-accent)]";
       case "error":
         return "text-[#FF4040]";
       default:
@@ -98,7 +98,7 @@ export default function SystemFeed() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowMDBModal(true)}
-              className="px-4 py-2 bg-[var(--pulse-accent)]/10 border border-[var(--pulse-accent)]/30 hover:bg-[var(--pulse-accent)]/20 text-[var(--pulse-accent)] rounded-full text-xs font-medium transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-[var(--fintheon-accent)]/10 border border-[var(--fintheon-accent)]/30 hover:bg-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] rounded-full text-xs font-medium transition-colors flex items-center gap-2"
             >
               <FileText className="w-3.5 h-3.5" />
               Run MDB Report
@@ -119,7 +119,7 @@ export default function SystemFeed() {
             {events.map((event) => (
               <div
                 key={event.id}
-                className="bg-[var(--pulse-surface)] border border-zinc-900 rounded-lg p-4 hover:border-zinc-800 transition-colors"
+                className="bg-[var(--fintheon-surface)] border border-zinc-900 rounded-lg p-4 hover:border-zinc-800 transition-colors"
               >
                 <div className="flex items-start gap-3">
                   {getIcon(event.severity)}

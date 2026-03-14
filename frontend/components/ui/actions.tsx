@@ -37,7 +37,7 @@ export const ActionButton = forwardRef<HTMLButtonElement, ActionButtonProps>(
         'disabled:opacity-50 disabled:cursor-not-allowed',
         className,
       )}
-      style={{ color: 'var(--pulse-muted)' }}
+      style={{ color: 'var(--fintheon-muted)' }}
       aria-label={label}
       {...props}
     >

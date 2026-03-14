@@ -9,6 +9,46 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: '2026-03-15T01:30:00',
+    agent: 'claude-code',
+    summary: 'Track 4: New Components & Effects — pompa.ts utility, SplashScreen temple doors, ShortcutsPopup modal, PompaToast, SPQRStamp, TriumphusOverlay, NotFoundPage 404, easter-eggs.ts (Konami/SPQR/Ides/triple-click), sound placeholders. Global font fix: Readable Digits unicode-range @font-face ensures digits stay in Inter across all font themes; CSS inheritance rule forces all UI elements to respect --font-body/--font-heading.',
+    files: [
+      'frontend/lib/pompa.ts',
+      'frontend/components/SplashScreen.tsx',
+      'frontend/components/layout/ShortcutsPopup.tsx',
+      'frontend/components/ui/PompaToast.tsx',
+      'frontend/components/ui/SPQRStamp.tsx',
+      'frontend/components/ui/TriumphusOverlay.tsx',
+      'frontend/components/NotFoundPage.tsx',
+      'frontend/lib/easter-eggs.ts',
+      'frontend/public/sounds/*',
+      'frontend/fonts.css',
+      'frontend/index.css',
+      'frontend/contexts/ThemeContext.tsx',
+    ],
+  },
+  {
+    date: '2026-03-14T23:55:00',
+    agent: 'claude-code',
+    summary: 'Fintheon rebrand Track 2: Chat/Agents — Dawn Dispatch chip, Weekly Tribune, Roman greetings (Ave/Forum/conquest), agent titles (Consul/Censori/Herald/Oracle), Deep Counsel toggle, Consilium thinking phrases, boardroom files deleted, hermes agent display names updated',
+    files: [
+      'frontend/components/chat/ChatGreeting.tsx',
+      'frontend/components/chat/PulseChatInput.tsx',
+      'frontend/components/chat/ChatHeader.tsx',
+      'frontend/components/chat/PulseThinkingIndicator.tsx',
+      'backend-hono/src/services/hermes-handler.ts',
+      'backend-hono/src/routes/notion/index.ts',
+      'frontend/components/BoardroomView.tsx (deleted)',
+      'frontend/components/boardroom/* (deleted)',
+    ],
+  },
+  {
+    date: '2026-03-14T12:00:00',
+    agent: 'claude-code',
+    summary: 'Fintheon rebrand: Pulse → Fintheon, Roman terminology throughout, new tiers, IV labels, ER states, brief names',
+    files: ['index.html','package.json','frontend/components/layout/*','frontend/components/executive/ExecutiveDashboard.tsx','frontend/components/IVScoreCard.tsx','frontend/components/mission-control/*','frontend/contexts/ERContext.tsx'],
+  },
+  {
     date: '2026-03-14T23:30:00',
     agent: 'claude-code',
     summary: 'Quick wins: Team section replaced with Discord iframe, sidebar reordered (Performance + Team above Settings), voice orb made clickable (removed separate mic button), chat input rearranged (Think + Mic + Send right-justified), VIX/IV widget sizing matched, responsive toolbar overflow',

@@ -22,10 +22,10 @@ export function StopMonitoringModal({ onConfirm, onCancel }: StopMonitoringModal
 
   return (
     <div className={`fixed inset-0 bg-black/80 flex items-center justify-center z-50 ${isClosing ? 'animate-fade-out-backdrop' : 'animate-fade-in-backdrop'}`}>
-      <div className={`bg-[var(--pulse-surface)] border border-[var(--pulse-accent)]/30 rounded-lg p-6 max-w-md mx-4 ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`}>
+      <div className={`bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/30 rounded-lg p-6 max-w-md mx-4 ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`}>
         <div className="flex items-center gap-3 mb-4">
-          <AlertTriangle className="w-6 h-6 text-[var(--pulse-accent)]" />
-          <h3 className="text-lg font-semibold text-[var(--pulse-accent)]">Stop Monitoring?</h3>
+          <AlertTriangle className="w-6 h-6 text-[var(--fintheon-accent)]" />
+          <h3 className="text-lg font-semibold text-[var(--fintheon-accent)]">Stop Monitoring?</h3>
         </div>
         
         <p className="text-sm text-gray-300 mb-6">

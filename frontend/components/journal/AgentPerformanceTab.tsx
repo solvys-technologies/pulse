@@ -11,19 +11,19 @@ interface AgentPerformanceTabProps {
 
 function StatCard({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
   return (
-    <div className="bg-black/30 border border-[var(--pulse-accent)]/10 rounded p-2.5">
-      <div className="text-[10px] text-[var(--pulse-muted)]">{label}</div>
-      <div className="text-base font-mono mt-0.5" style={{ color: color || 'var(--pulse-text)' }}>
+    <div className="bg-black/30 border border-[var(--fintheon-accent)]/10 rounded p-2.5">
+      <div className="text-[10px] text-[var(--fintheon-muted)]">{label}</div>
+      <div className="text-base font-mono mt-0.5" style={{ color: color || 'var(--fintheon-text)' }}>
         {value}
       </div>
-      {sub && <div className="text-[9px] text-[var(--pulse-muted)] mt-0.5">{sub}</div>}
+      {sub && <div className="text-[9px] text-[var(--fintheon-muted)] mt-0.5">{sub}</div>}
     </div>
   );
 }
 
 function ProposalRow({ proposal }: { proposal: NonNullable<JournalEntryItem['proposals']>[number] }) {
   const statusColor = {
-    proposed: 'text-[var(--pulse-accent)]',
+    proposed: 'text-[var(--fintheon-accent)]',
     accepted: 'text-emerald-400',
     rejected: 'text-red-400',
     expired: 'text-gray-500',
@@ -34,12 +34,12 @@ function ProposalRow({ proposal }: { proposal: NonNullable<JournalEntryItem['pro
     loss: 'text-red-400',
     breakeven: 'text-gray-400',
   };
-  const outcomeColor = (proposal.outcome && outcomeColors[proposal.outcome]) ?? 'text-[var(--pulse-muted)]';
+  const outcomeColor = (proposal.outcome && outcomeColors[proposal.outcome]) ?? 'text-[var(--fintheon-muted)]';
 
   return (
-    <div className="flex items-center justify-between py-1.5 border-b border-[var(--pulse-accent)]/5 last:border-0">
+    <div className="flex items-center justify-between py-1.5 border-b border-[var(--fintheon-accent)]/5 last:border-0">
       <div className="flex items-center gap-2">
-        <span className="text-[10px] font-mono text-[var(--pulse-accent)]">{proposal.ticker}</span>
+        <span className="text-[10px] font-mono text-[var(--fintheon-accent)]">{proposal.ticker}</span>
         <span className={`text-[9px] uppercase ${proposal.direction === 'long' ? 'text-emerald-400' : 'text-red-400'}`}>
           {proposal.direction}
         </span>
@@ -47,7 +47,7 @@ function ProposalRow({ proposal }: { proposal: NonNullable<JournalEntryItem['pro
       </div>
       <div className="flex items-center gap-3 text-[10px]">
         {proposal.entry && (
-          <span className="text-[var(--pulse-muted)] font-mono">{proposal.entry.toFixed(2)}</span>
+          <span className="text-[var(--fintheon-muted)] font-mono">{proposal.entry.toFixed(2)}</span>
         )}
         {proposal.outcome && (
           <span className={`font-mono ${outcomeColor}`}>{proposal.outcome}</span>
@@ -111,7 +111,7 @@ export function AgentPerformanceTab({ entries, summary }: AgentPerformanceTabPro
           label="Avg R:R"
           value={avgRR.toFixed(2)}
           sub="Risk/Reward"
-          color={avgRR >= 1.5 ? '#34D399' : avgRR >= 1 ? 'var(--pulse-accent)' : '#EF4444'}
+          color={avgRR >= 1.5 ? '#34D399' : avgRR >= 1 ? 'var(--fintheon-accent)' : '#EF4444'}
         />
         <StatCard
           label="Decisions"
@@ -128,17 +128,17 @@ export function AgentPerformanceTab({ entries, summary }: AgentPerformanceTabPro
 
       {/* Per-Agent Breakdown (from performance endpoint) */}
       {futuresAgents.length > 0 && (
-        <div className="bg-[var(--pulse-surface)] border border-[var(--pulse-accent)]/10 rounded-lg p-3">
+        <div className="bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/10 rounded-lg p-3">
           <div className="flex items-center gap-2 mb-2">
-            <Target className="w-3.5 h-3.5 text-[var(--pulse-accent)]" />
-            <span className="text-xs font-semibold text-[var(--pulse-text)]">Per-Agent Stats</span>
+            <Target className="w-3.5 h-3.5 text-[var(--fintheon-accent)]" />
+            <span className="text-xs font-semibold text-[var(--fintheon-text)]">Per-Agent Stats</span>
           </div>
           <div className="space-y-2">
             {futuresAgents.map(agent => (
-              <div key={agent.agentName} className="flex items-center justify-between text-[10px] py-1 border-b border-[var(--pulse-accent)]/5 last:border-0">
-                <span className="text-[var(--pulse-accent)] font-medium">{agent.agentName}</span>
+              <div key={agent.agentName} className="flex items-center justify-between text-[10px] py-1 border-b border-[var(--fintheon-accent)]/5 last:border-0">
+                <span className="text-[var(--fintheon-accent)] font-medium">{agent.agentName}</span>
                 <div className="flex items-center gap-3">
-                  <span className="text-[var(--pulse-muted)]">{agent.wins}W/{agent.losses}L</span>
+                  <span className="text-[var(--fintheon-muted)]">{agent.wins}W/{agent.losses}L</span>
                   <span className={`font-mono ${agent.winRate >= 50 ? 'text-emerald-400' : 'text-red-400'}`}>
                     {agent.winRate.toFixed(0)}%
                   </span>
@@ -154,43 +154,43 @@ export function AgentPerformanceTab({ entries, summary }: AgentPerformanceTabPro
 
       {/* Prediction Markets Stats */}
       {predictions && predictions.total > 0 && (
-        <div className="bg-[var(--pulse-surface)] border border-[var(--pulse-accent)]/10 rounded-lg p-3">
+        <div className="bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/10 rounded-lg p-3">
           <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className="w-3.5 h-3.5 text-[var(--pulse-accent)]" />
-            <span className="text-xs font-semibold text-[var(--pulse-text)]">Prediction Markets</span>
+            <TrendingUp className="w-3.5 h-3.5 text-[var(--fintheon-accent)]" />
+            <span className="text-xs font-semibold text-[var(--fintheon-text)]">Prediction Markets</span>
           </div>
           <div className="grid grid-cols-4 gap-2 text-[10px]">
             <div>
-              <div className="text-[var(--pulse-muted)]">Total</div>
-              <div className="text-[var(--pulse-text)] font-mono">{predictions.total}</div>
+              <div className="text-[var(--fintheon-muted)]">Total</div>
+              <div className="text-[var(--fintheon-text)] font-mono">{predictions.total}</div>
             </div>
             <div>
-              <div className="text-[var(--pulse-muted)]">Resolved</div>
-              <div className="text-[var(--pulse-text)] font-mono">{predictions.resolved}</div>
+              <div className="text-[var(--fintheon-muted)]">Resolved</div>
+              <div className="text-[var(--fintheon-text)] font-mono">{predictions.resolved}</div>
             </div>
             <div>
-              <div className="text-[var(--pulse-muted)]">Win Rate</div>
+              <div className="text-[var(--fintheon-muted)]">Win Rate</div>
               <div className={`font-mono ${predictions.winRate >= 50 ? 'text-emerald-400' : 'text-red-400'}`}>
                 {predictions.winRate.toFixed(0)}%
               </div>
             </div>
             <div>
-              <div className="text-[var(--pulse-muted)]">W/L</div>
-              <div className="text-[var(--pulse-text)] font-mono">{predictions.wins}/{predictions.losses}</div>
+              <div className="text-[var(--fintheon-muted)]">W/L</div>
+              <div className="text-[var(--fintheon-text)] font-mono">{predictions.wins}/{predictions.losses}</div>
             </div>
           </div>
         </div>
       )}
 
       {/* Proposal Tracker (daily journal entries) */}
-      <div className="bg-[var(--pulse-surface)] border border-[var(--pulse-accent)]/10 rounded-lg p-3">
+      <div className="bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/10 rounded-lg p-3">
         <div className="flex items-center gap-2 mb-2">
-          <Bot className="w-3.5 h-3.5 text-[var(--pulse-accent)]" />
-          <span className="text-xs font-semibold text-[var(--pulse-text)]">Proposal Tracker</span>
+          <Bot className="w-3.5 h-3.5 text-[var(--fintheon-accent)]" />
+          <span className="text-xs font-semibold text-[var(--fintheon-text)]">Proposal Tracker</span>
         </div>
 
         {agentEntries.length === 0 ? (
-          <div className="text-[10px] text-[var(--pulse-muted)] py-4 text-center">
+          <div className="text-[10px] text-[var(--fintheon-muted)] py-4 text-center">
             No agent proposals recorded yet
           </div>
         ) : (
@@ -201,16 +201,16 @@ export function AgentPerformanceTab({ entries, summary }: AgentPerformanceTabPro
                 <div key={entry.id} className="bg-black/20 rounded">
                   <button
                     onClick={() => setExpandedDate(isExpanded ? null : entry.date)}
-                    className="w-full flex items-center justify-between px-2.5 py-2 text-[11px] hover:bg-[var(--pulse-accent)]/5 transition-colors"
+                    className="w-full flex items-center justify-between px-2.5 py-2 text-[11px] hover:bg-[var(--fintheon-accent)]/5 transition-colors"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="text-[var(--pulse-muted)] font-mono">{entry.date}</span>
+                      <span className="text-[var(--fintheon-muted)] font-mono">{entry.date}</span>
                       {entry.agentName && (
-                        <span className="text-[var(--pulse-accent)]">{entry.agentName}</span>
+                        <span className="text-[var(--fintheon-accent)]">{entry.agentName}</span>
                       )}
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-[var(--pulse-muted)]">
+                      <span className="text-[var(--fintheon-muted)]">
                         {entry.acceptedCount ?? 0}/{entry.proposalCount ?? 0}
                       </span>
                       {typeof entry.winRate === 'number' && (
@@ -224,9 +224,9 @@ export function AgentPerformanceTab({ entries, summary }: AgentPerformanceTabPro
                         </span>
                       )}
                       {isExpanded ? (
-                        <ChevronUp className="w-3 h-3 text-[var(--pulse-muted)]" />
+                        <ChevronUp className="w-3 h-3 text-[var(--fintheon-muted)]" />
                       ) : (
-                        <ChevronDown className="w-3 h-3 text-[var(--pulse-muted)]" />
+                        <ChevronDown className="w-3 h-3 text-[var(--fintheon-muted)]" />
                       )}
                     </div>
                   </button>
@@ -245,15 +245,15 @@ export function AgentPerformanceTab({ entries, summary }: AgentPerformanceTabPro
       </div>
 
       {/* Past Proposals */}
-      <div className="bg-[var(--pulse-surface)] border border-[var(--pulse-accent)]/10 rounded-lg p-3">
+      <div className="bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/10 rounded-lg p-3">
         <div className="flex items-center gap-2 mb-2">
-          <History className="w-3.5 h-3.5 text-[var(--pulse-accent)]" />
-          <span className="text-xs font-semibold text-[var(--pulse-text)]">Past Proposals</span>
-          <span className="text-[9px] text-[var(--pulse-muted)] ml-auto">{pastProposals.length} recent</span>
+          <History className="w-3.5 h-3.5 text-[var(--fintheon-accent)]" />
+          <span className="text-xs font-semibold text-[var(--fintheon-text)]">Past Proposals</span>
+          <span className="text-[9px] text-[var(--fintheon-muted)] ml-auto">{pastProposals.length} recent</span>
         </div>
 
         {pastProposals.length === 0 ? (
-          <div className="text-[10px] text-[var(--pulse-muted)] py-4 text-center">
+          <div className="text-[10px] text-[var(--fintheon-muted)] py-4 text-center">
             No proposals in history
           </div>
         ) : (
@@ -270,18 +270,18 @@ export function AgentPerformanceTab({ entries, summary }: AgentPerformanceTabPro
               })();
 
               return (
-                <div key={p.id} className="flex items-center justify-between py-1.5 border-b border-[var(--pulse-accent)]/5 last:border-0">
+                <div key={p.id} className="flex items-center justify-between py-1.5 border-b border-[var(--fintheon-accent)]/5 last:border-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-mono text-[var(--pulse-accent)]">{p.instrument}</span>
+                    <span className="text-[10px] font-mono text-[var(--fintheon-accent)]">{p.instrument}</span>
                     <span className={`text-[9px] ${p.direction === 'long' ? 'text-emerald-400' : p.direction === 'short' ? 'text-red-400' : 'text-gray-400'}`}>
                       {p.direction === 'long' ? '\u2191' : p.direction === 'short' ? '\u2193' : '-'}
                     </span>
-                    <span className="text-[9px] text-[var(--pulse-muted)]">{p.strategyName}</span>
-                    <span className="text-[9px] text-[var(--pulse-muted)] font-mono">{p.createdAt?.slice(0, 10)}</span>
+                    <span className="text-[9px] text-[var(--fintheon-muted)]">{p.strategyName}</span>
+                    <span className="text-[9px] text-[var(--fintheon-muted)] font-mono">{p.createdAt?.slice(0, 10)}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     {p.entryPrice && (
-                      <span className="text-[10px] text-[var(--pulse-muted)] font-mono">{Number(p.entryPrice).toFixed(2)}</span>
+                      <span className="text-[10px] text-[var(--fintheon-muted)] font-mono">{Number(p.entryPrice).toFixed(2)}</span>
                     )}
                     {outcome === 'win' && (
                       <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full px-2 py-0.5 text-[9px] uppercase font-medium">WIN</span>
@@ -305,23 +305,23 @@ export function AgentPerformanceTab({ entries, summary }: AgentPerformanceTabPro
 
       {/* Performance Summary */}
       {summary && (
-        <div className="bg-[var(--pulse-surface)] border border-[var(--pulse-accent)]/10 rounded-lg p-3">
+        <div className="bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/10 rounded-lg p-3">
           <div className="flex items-center gap-2 mb-2">
-            <BarChart3 className="w-3.5 h-3.5 text-[var(--pulse-accent)]" />
-            <span className="text-xs font-semibold text-[var(--pulse-text)]">30-Day Summary</span>
+            <BarChart3 className="w-3.5 h-3.5 text-[var(--fintheon-accent)]" />
+            <span className="text-xs font-semibold text-[var(--fintheon-text)]">30-Day Summary</span>
           </div>
           <div className="grid grid-cols-3 gap-2 text-[10px]">
             <div>
-              <div className="text-[var(--pulse-muted)]">Entries</div>
-              <div className="text-[var(--pulse-text)] font-mono">{summary.totalEntries}</div>
+              <div className="text-[var(--fintheon-muted)]">Entries</div>
+              <div className="text-[var(--fintheon-text)] font-mono">{summary.totalEntries}</div>
             </div>
             <div>
-              <div className="text-[var(--pulse-muted)]">Discipline</div>
-              <div className="text-[var(--pulse-text)] font-mono">{summary.avgDisciplineScore}%</div>
+              <div className="text-[var(--fintheon-muted)]">Discipline</div>
+              <div className="text-[var(--fintheon-text)] font-mono">{summary.avgDisciplineScore}%</div>
             </div>
             <div>
-              <div className="text-[var(--pulse-muted)]">Streak</div>
-              <div className="text-[var(--pulse-accent)] font-mono">{summary.streakDays}d</div>
+              <div className="text-[var(--fintheon-muted)]">Streak</div>
+              <div className="text-[var(--fintheon-accent)] font-mono">{summary.streakDays}d</div>
             </div>
           </div>
         </div>

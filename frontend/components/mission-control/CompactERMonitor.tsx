@@ -36,16 +36,16 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
   const erScore = erContext?.erScore ?? localErScore;
   const analyser = erContext?.analyser ?? localAnalyser;
 
-  const resonanceState = erScore > 0.5 ? 'Stable' : erScore < -0.5 ? 'Tilt' : 'Neutral';
+  const resonanceState = erScore > 0.5 ? 'Steadfast' : erScore < -0.5 ? 'Tilted' : 'Poised';
   const stateColor = {
-    Stable: 'text-emerald-400',
-    Tilt: 'text-red-500',
-    Neutral: 'text-gray-400',
+    Steadfast: 'text-emerald-400',
+    Tilted: 'text-red-500',
+    Poised: 'text-gray-400',
   };
   const stateBgColor = {
-    Stable: 'bg-emerald-400',
-    Tilt: 'bg-red-500',
-    Neutral: 'bg-gray-400',
+    Steadfast: 'bg-emerald-400',
+    Tilted: 'bg-red-500',
+    Poised: 'bg-gray-400',
   };
 
   const startMonitoring = async () => {
@@ -215,10 +215,10 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
   return (
     <div className="flex items-center gap-2 w-full">
       {/* Waveform - Landscape oriented */}
-      <div className="relative h-8 flex-1 bg-black/50 rounded border border-[var(--pulse-accent)]/10 overflow-hidden min-w-[100px]">
+      <div className="relative h-8 flex-1 bg-black/50 rounded border border-[var(--fintheon-accent)]/10 overflow-hidden min-w-[100px]">
         <div className="absolute inset-0 scanline-overlay opacity-50" />
         {isMonitoring && analyser ? (
-          <WaveformCanvas analyser={analyser} tiltMode={resonanceState === 'Tilt'} />
+          <WaveformCanvas analyser={analyser} tiltMode={resonanceState === 'Tilted'} />
         ) : (
           <div className="h-full flex items-center justify-center text-[8px] text-gray-500">
             Inactive
@@ -243,7 +243,7 @@ export function CompactERMonitor({ onERScoreChange }: CompactERMonitorProps) {
       </div>
 
       {/* Tilt warning */}
-      {resonanceState === 'Tilt' && (
+      {resonanceState === 'Tilted' && (
         <AlertTriangle className="w-3 h-3 text-red-500 animate-pulse flex-shrink-0" />
       )}
 

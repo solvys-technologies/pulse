@@ -49,9 +49,9 @@ export default function MissionControl({ onClose }: MissionControlProps) {
   };
   
   return (
-    <div className="w-[280px] bg-[var(--pulse-surface)] border-r border-zinc-900 flex flex-col">
+    <div className="w-[280px] bg-[var(--fintheon-surface)] border-r border-zinc-900 flex flex-col">
       <div className="h-14 border-b border-zinc-900 flex items-center justify-between px-4">
-        <h2 className="text-sm font-medium text-[var(--pulse-accent)] tracking-wider uppercase">Mission Control</h2>
+        <h2 className="text-sm font-medium text-[var(--fintheon-accent)] tracking-wider uppercase">Mission Control</h2>
         <button
           onClick={onClose}
           className="p-1 rounded hover:bg-zinc-900/50 transition-colors"

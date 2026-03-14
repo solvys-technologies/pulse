@@ -1,6 +1,6 @@
 // [claude-code 2026-03-14] Font theme system — types, presets, and localStorage persistence
 
-export type FontThemeId = 'default' | 'solvys' | 'classic';
+export type FontThemeId = 'default' | 'solvys' | 'classic' | 'imperial';
 
 export interface FontTheme {
   id: FontThemeId;
@@ -30,13 +30,20 @@ export const FONT_THEMES: Record<FontThemeId, FontTheme> = {
   classic: {
     id: 'classic',
     label: 'Classic',
-    description: 'Roboto — the original Pulse font',
+    description: 'Roboto — classic clean sans',
     fontBody: `'Roboto', ${FALLBACK}`,
     fontHeading: `'Roboto', ${FALLBACK}`,
   },
+  imperial: {
+    id: 'imperial',
+    label: 'Imperial',
+    description: 'Cinzel + Cormorant Garamond — Roman inscription aesthetic',
+    fontBody: `'Cormorant Garamond', 'Georgia', serif`,
+    fontHeading: `'Cinzel', 'Georgia', serif`,
+  },
 };
 
-const STORAGE_KEY = 'pulse:font-theme';
+const STORAGE_KEY = 'fintheon:font-theme';
 
 export const DEFAULT_FONT_THEME = FONT_THEMES.default;
 

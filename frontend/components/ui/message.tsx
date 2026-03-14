@@ -44,8 +44,8 @@ export function MessageAvatar({ src, alt = 'Avatar', fallback, className }: Mess
         className,
       )}
       style={{
-        background: src ? undefined : 'var(--pulse-accent)',
-        color: src ? undefined : 'var(--pulse-bg)',
+        background: src ? undefined : 'var(--fintheon-accent)',
+        color: src ? undefined : 'var(--fintheon-bg)',
       }}
     >
       {src ? (
@@ -70,7 +70,7 @@ export const MessageContent = forwardRef<HTMLDivElement, MessageContentProps>(
         'flex-1 min-w-0 rounded-lg px-3 py-2 text-sm',
         className,
       )}
-      style={{ color: 'var(--pulse-text)' }}
+      style={{ color: 'var(--fintheon-text)' }}
       {...props}
     >
       {children}

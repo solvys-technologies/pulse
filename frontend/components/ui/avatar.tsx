@@ -24,7 +24,7 @@ export function Avatar({ src, alt = '', fallback, size = 'md', className }: Avat
     <div
       className={cn(
         'relative flex shrink-0 items-center justify-center overflow-hidden rounded-full',
-        'bg-[var(--pulse-accent)]/15 text-[var(--pulse-accent)] font-medium',
+        'bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)] font-medium',
         sizeStyles[size],
         className
       )}
@@ -45,7 +45,7 @@ export function Avatar({ src, alt = '', fallback, size = 'md', className }: Avat
 
 export function AvatarFallback({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <span className={cn('flex h-full w-full items-center justify-center text-[var(--pulse-accent)]', className)}>
+    <span className={cn('flex h-full w-full items-center justify-center text-[var(--fintheon-accent)]', className)}>
       {children}
     </span>
   );

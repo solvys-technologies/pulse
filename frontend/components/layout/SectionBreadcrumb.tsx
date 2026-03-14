@@ -41,7 +41,7 @@ export function SectionBreadcrumb({
       <button
         onClick={onBack}
         disabled={!canGoBack}
-        className="p-1 rounded text-gray-500 hover:text-[var(--pulse-accent)] disabled:text-gray-700 disabled:cursor-default transition-colors"
+        className="p-1 rounded text-gray-500 hover:text-[var(--fintheon-accent)] disabled:text-gray-700 disabled:cursor-default transition-colors"
         title="Back"
       >
         <ChevronLeft className="w-3.5 h-3.5" />
@@ -49,7 +49,7 @@ export function SectionBreadcrumb({
       <button
         onClick={onForward}
         disabled={!canGoForward}
-        className="p-1 rounded text-gray-500 hover:text-[var(--pulse-accent)] disabled:text-gray-700 disabled:cursor-default transition-colors"
+        className="p-1 rounded text-gray-500 hover:text-[var(--fintheon-accent)] disabled:text-gray-700 disabled:cursor-default transition-colors"
         title="Forward"
       >
         <ChevronRight className="w-3.5 h-3.5" />
@@ -57,7 +57,7 @@ export function SectionBreadcrumb({
 
       {/* Breadcrumb */}
       <div className="flex items-center gap-1 ml-2">
-        <span className="text-[10px] tracking-[0.18em] uppercase text-gray-500">Pulse</span>
+        <span className="text-[10px] tracking-[0.18em] uppercase text-gray-500">Fintheon</span>
         <Separator className="w-3 h-3 text-gray-600" />
         <span className="text-[10px] tracking-[0.18em] uppercase text-gray-300">{meta.label}</span>
       </div>

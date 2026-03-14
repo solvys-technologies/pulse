@@ -24,7 +24,7 @@ export function ConflictBadge({ conflict, position, onClick }: ConflictBadgeProp
       }}
       title={conflict.description}
     >
-      <AlertTriangle size={12} color="var(--pulse-bearish)" />
+      <AlertTriangle size={12} color="var(--fintheon-bearish)" />
     </button>
   );
 }

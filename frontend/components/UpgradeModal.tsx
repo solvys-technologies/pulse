@@ -21,7 +21,7 @@ interface TierInfo {
 
 const tierData: Record<Tier, TierInfo> = {
   free: {
-    name: 'Free',
+    name: 'Pleb',
     price: '$0',
     priceSubtext: 'forever',
     features: [
@@ -34,7 +34,7 @@ const tierData: Record<Tier, TierInfo> = {
     buttonText: 'Current Plan',
   },
   pulse: {
-    name: 'Pulse',
+    name: 'Equestrian',
     price: '$49',
     priceSubtext: 'per month',
     features: [
@@ -43,30 +43,30 @@ const tierData: Record<Tier, TierInfo> = {
       'Basic RiskFlow with implied volatility scoring',
       'Trading Psych Agent for ER Analysis',
     ],
-    color: 'text-[var(--pulse-accent)]',
-    borderColor: 'border-[var(--pulse-accent)]',
-    buttonText: 'Upgrade to Pulse',
+    color: 'text-[var(--fintheon-accent)]',
+    borderColor: 'border-[var(--fintheon-accent)]',
+    buttonText: 'Upgrade to Equestrian',
   },
   pulse_plus: {
-    name: 'Pulse+',
+    name: 'Equestrian+',
     price: '$149',
     priceSubtext: 'per month',
     features: [
-      'Everything in Pulse',
+      'Everything in Equestrian',
       'Risk management tools',
       'Autonomous Trading Algo',
       'Full RiskFlow for commentary and macroeconomic data releases with implied volatility scoring',
     ],
-    color: 'text-[color-mix(in_srgb,var(--pulse-accent)_80%,white)]',
-    borderColor: 'border-[color-mix(in_srgb,var(--pulse-accent)_80%,white)]',
-    buttonText: 'Upgrade to Pulse+',
+    color: 'text-[color-mix(in_srgb,var(--fintheon-accent)_80%,white)]',
+    borderColor: 'border-[color-mix(in_srgb,var(--fintheon-accent)_80%,white)]',
+    buttonText: 'Upgrade to Equestrian+',
   },
   pulse_pro: {
-    name: 'Pulse Pro',
+    name: 'Consul',
     price: '$299',
     priceSubtext: 'per month',
     features: [
-      'Everything in Pulse+',
+      'Everything in Equestrian+',
       'Priority support',
       'Custom AI Agent & Trading model training',
       'Multi-account management',
@@ -95,10 +95,10 @@ export function UpgradeModal({ onClose }: UpgradeModalProps) {
 
   return (
     <div className={`fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 ${isClosing ? 'animate-fade-out-backdrop' : 'animate-fade-in-backdrop'}`}>
-      <div className={`bg-[var(--pulse-surface)] border border-[var(--pulse-accent)]/30 rounded-lg w-full max-w-6xl max-h-[90vh] overflow-y-auto ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`}>
-        <div className="sticky top-0 bg-[var(--pulse-surface)] border-b border-[var(--pulse-accent)]/20 p-6 flex items-center justify-between">
+      <div className={`bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/30 rounded-lg w-full max-w-6xl max-h-[90vh] overflow-y-auto ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`}>
+        <div className="sticky top-0 bg-[var(--fintheon-surface)] border-b border-[var(--fintheon-accent)]/20 p-6 flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-[var(--pulse-accent)] flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-[var(--fintheon-accent)] flex items-center gap-2">
               <Cpu className="w-6 h-6" />
               Upgrade Your Plan
             </h2>
@@ -106,9 +106,9 @@ export function UpgradeModal({ onClose }: UpgradeModalProps) {
           </div>
           <button
             onClick={handleClose}
-            className="p-2 hover:bg-[var(--pulse-accent)]/10 rounded transition-lush"
+            className="p-2 hover:bg-[var(--fintheon-accent)]/10 rounded transition-lush"
           >
-            <X className="w-5 h-5 text-[var(--pulse-accent)]" />
+            <X className="w-5 h-5 text-[var(--fintheon-accent)]" />
           </button>
         </div>
 
@@ -121,10 +121,10 @@ export function UpgradeModal({ onClose }: UpgradeModalProps) {
               return (
                 <div
                   key={t}
-                  className={`bg-[var(--pulse-bg)] border-2 rounded-lg p-6 transition-all ${
+                  className={`bg-[var(--fintheon-bg)] border-2 rounded-lg p-6 transition-all ${
                     isCurrent
                       ? `${info.borderColor} shadow-lg`
-                      : 'border-[var(--pulse-accent)]/20 hover:border-[var(--pulse-accent)]/40'
+                      : 'border-[var(--fintheon-accent)]/20 hover:border-[var(--fintheon-accent)]/40'
                   }`}
                 >
                   <div className="text-center mb-6">
@@ -157,8 +157,8 @@ export function UpgradeModal({ onClose }: UpgradeModalProps) {
             })}
           </div>
 
-          <div className="mt-8 p-6 bg-[var(--pulse-bg)] border border-[var(--pulse-accent)]/20 rounded-lg">
-            <h3 className="text-lg font-semibold text-[var(--pulse-accent)] mb-3">Need Help Choosing?</h3>
+          <div className="mt-8 p-6 bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 rounded-lg">
+            <h3 className="text-lg font-semibold text-[var(--fintheon-accent)] mb-3">Need Help Choosing?</h3>
             <p className="text-sm text-gray-400 mb-4">
               Not sure which plan is right for you? Our team can help you find the perfect fit for your trading strategy.
             </p>

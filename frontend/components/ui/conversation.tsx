@@ -43,7 +43,7 @@ export function Conversation({ children, className, autoScroll = true }: Convers
       <div
         ref={containerRef}
         className="flex-1 overflow-y-auto space-y-4 px-4 py-3"
-        style={{ scrollbarWidth: 'thin', scrollbarColor: 'var(--pulse-accent) transparent' }}
+        style={{ scrollbarWidth: 'thin', scrollbarColor: 'var(--fintheon-accent) transparent' }}
       >
         {children}
         <div ref={bottomRef} aria-hidden="true" />
@@ -56,9 +56,9 @@ export function Conversation({ children, className, autoScroll = true }: Convers
           onClick={scrollToBottom}
           className="absolute bottom-4 right-4 rounded-full p-2 border transition-all hover:brightness-110 active:scale-90"
           style={{
-            background: 'var(--pulse-surface)',
-            borderColor: 'var(--pulse-accent)',
-            color: 'var(--pulse-accent)',
+            background: 'var(--fintheon-surface)',
+            borderColor: 'var(--fintheon-accent)',
+            color: 'var(--fintheon-accent)',
           }}
           aria-label="Scroll to bottom"
         >

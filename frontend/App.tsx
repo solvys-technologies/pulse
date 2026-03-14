@@ -49,7 +49,7 @@ function VoiceBorderPulse() {
 }
 
 /**
- * Pulse - Local Single-User Trading Platform
+ * Fintheon - Local Single-User Trading Platform
  * No authentication required - company internal use only
  */
 export default function App() {
@@ -70,7 +70,7 @@ export default function App() {
                   <style>{`
                     * {
                       scrollbar-width: thin;
-                      scrollbar-color: var(--pulse-accent) var(--pulse-surface);
+                      scrollbar-color: var(--fintheon-accent) var(--fintheon-surface);
                     }
 
                     *::-webkit-scrollbar {
@@ -79,23 +79,23 @@ export default function App() {
                     }
 
                     *::-webkit-scrollbar-track {
-                      background: var(--pulse-surface);
+                      background: var(--fintheon-surface);
                     }
 
                     *::-webkit-scrollbar-thumb {
-                      background: var(--pulse-accent);
+                      background: var(--fintheon-accent);
                       border-radius: 4px;
                     }
 
                     *::-webkit-scrollbar-thumb:hover {
-                      background: color-mix(in srgb, var(--pulse-accent) 70%, white);
+                      background: color-mix(in srgb, var(--fintheon-accent) 70%, white);
                     }
 
                     .scanline-overlay {
                       background: repeating-linear-gradient(
                         0deg,
-                        color-mix(in srgb, var(--pulse-accent) 3%, transparent) 0px,
-                        color-mix(in srgb, var(--pulse-accent) 3%, transparent) 1px,
+                        color-mix(in srgb, var(--fintheon-accent) 3%, transparent) 0px,
+                        color-mix(in srgb, var(--fintheon-accent) 3%, transparent) 1px,
                         transparent 1px,
                         transparent 2px
                       );

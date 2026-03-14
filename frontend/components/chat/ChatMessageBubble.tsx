@@ -70,7 +70,7 @@ export const ChatMessageBubble = forwardRef<HTMLDivElement, ChatMessageBubblePro
           {message.role === 'assistant' && !message.cancelled && onCheckpoint && (
             <button
               onClick={() => onCheckpoint(message.id, textContent)}
-              className="text-zinc-600 hover:text-[color:var(--pulse-accent)] transition-colors"
+              className="text-zinc-600 hover:text-[color:var(--fintheon-accent)] transition-colors"
               title="Create checkpoint"
             >
               <CalendarCheck className="w-3 h-3" />

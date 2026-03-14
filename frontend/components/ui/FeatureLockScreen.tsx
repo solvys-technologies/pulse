@@ -10,9 +10,9 @@ interface FeatureLockScreenProps {
 
 const tierNames: Record<string, string> = {
   free: 'Free',
-  pulse: 'Pulse',
-  pulse_plus: 'Pulse Plus',
-  pulse_pro: 'Pulse Pro',
+  pulse: 'Equestrian',
+  pulse_plus: 'Equestrian+',
+  pulse_pro: 'Consul',
 };
 
 const tierDescriptions: Record<string, string> = {
@@ -40,14 +40,14 @@ export function FeatureLockScreen({
   const needsUpgrade = currentLevel < requiredLevel;
 
   return (
-    <div className="flex flex-col items-center justify-center p-12 bg-[var(--pulse-bg)] border border-[var(--pulse-accent)]/20 rounded-lg">
+    <div className="flex flex-col items-center justify-center p-12 bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 rounded-lg">
       <div className="mb-6">
-        <Lock className="w-16 h-16 text-[var(--pulse-accent)]/50 mx-auto mb-4" />
+        <Lock className="w-16 h-16 text-[var(--fintheon-accent)]/50 mx-auto mb-4" />
         <h3 className="text-xl font-bold text-white mb-2 text-center">
           Feature Locked
         </h3>
         <p className="text-sm text-gray-400 text-center max-w-md">
-          {featureName} requires <span className="text-[var(--pulse-accent)] font-semibold">{tierNames[requiredTier]}</span> tier
+          {featureName} requires <span className="text-[var(--fintheon-accent)] font-semibold">{tierNames[requiredTier]}</span> tier
         </p>
       </div>
 
@@ -67,9 +67,9 @@ export function FeatureLockScreen({
         </div>
       )}
 
-      <div className="mb-6 p-4 bg-[var(--pulse-accent)]/10 rounded-lg border border-[var(--pulse-accent)]/30">
+      <div className="mb-6 p-4 bg-[var(--fintheon-accent)]/10 rounded-lg border border-[var(--fintheon-accent)]/30">
         <p className="text-xs text-gray-500 mb-2">Required Tier</p>
-        <p className="text-sm font-semibold text-[var(--pulse-accent)]">{tierNames[requiredTier]}</p>
+        <p className="text-sm font-semibold text-[var(--fintheon-accent)]">{tierNames[requiredTier]}</p>
         <p className="text-xs text-gray-400 mt-1">{tierDescriptions[requiredTier]}</p>
       </div>
 

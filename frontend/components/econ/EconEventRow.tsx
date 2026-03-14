@@ -8,7 +8,7 @@ import type { EconEventItem, EconPrintItem } from '../../lib/services';
 /** Volume bar heights mapped to importance 1/2/3 */
 const VOLUME_BAR: Record<number, { height: string; color: string }> = {
   1: { height: 'h-2.5', color: 'bg-zinc-600' },
-  2: { height: 'h-4', color: 'bg-[var(--pulse-accent)]' },
+  2: { height: 'h-4', color: 'bg-[var(--fintheon-accent)]' },
   3: { height: 'h-6', color: 'bg-red-400' },
 };
 
@@ -74,11 +74,11 @@ export function EconEventRow({ event }: EconEventRowProps) {
       {/* Main row — increased vertical padding */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center gap-2.5 px-4 py-3.5 text-left hover:bg-[var(--pulse-accent)]/5 transition-colors"
+        className="w-full flex items-center gap-2.5 px-4 py-3.5 text-left hover:bg-[var(--fintheon-accent)]/5 transition-colors"
       >
         {/* Expand icon */}
         {expanded
-          ? <ChevronDown className="w-3 h-3 text-[var(--pulse-accent)]/60 shrink-0" />
+          ? <ChevronDown className="w-3 h-3 text-[var(--fintheon-accent)]/60 shrink-0" />
           : <ChevronRight className="w-3 h-3 text-zinc-600 shrink-0" />
         }
 
@@ -109,7 +109,7 @@ export function EconEventRow({ event }: EconEventRowProps) {
           <div className="w-14 text-right text-zinc-500" title="Previous">
             {event.previous ?? '-'}
           </div>
-          <div className={`w-14 text-right font-semibold ${hasActual ? 'text-[var(--pulse-accent)]' : 'text-zinc-600'}`} title="Actual">
+          <div className={`w-14 text-right font-semibold ${hasActual ? 'text-[var(--fintheon-accent)]' : 'text-zinc-600'}`} title="Actual">
             {event.actual ?? '-'}
           </div>
           <div className="w-14 text-right text-zinc-400" title="Forecast">
@@ -133,7 +133,7 @@ export function EconEventRow({ event }: EconEventRowProps) {
 
       {/* Expanded detail */}
       {expanded && (
-        <div className="px-4 pb-4 pt-1 ml-6 border-l border-[var(--pulse-accent)]/15 space-y-2">
+        <div className="px-4 pb-4 pt-1 ml-6 border-l border-[var(--fintheon-accent)]/15 space-y-2">
           {/* Definition */}
           {event.definition && (
             <p className="text-[10px] text-zinc-400 leading-relaxed">

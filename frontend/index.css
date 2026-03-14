@@ -17,17 +17,17 @@
 
 :root {
   /* Pulse theme variables — set by ThemeProvider, defaults to Solvys Gold */
-  --pulse-accent: #D4AF37;
-  --pulse-bg: #050402;
-  --pulse-text: #f0ead6;
-  --pulse-bullish: #34D399;
-  --pulse-bearish: #EF4444;
-  --pulse-surface: #0a0a00;
-  --pulse-border: #D4AF37;
-  --pulse-muted: #6B7280;
+  --fintheon-accent: #D4AF37;
+  --fintheon-bg: #050402;
+  --fintheon-text: #f0ead6;
+  --fintheon-bullish: #34D399;
+  --fintheon-bearish: #EF4444;
+  --fintheon-surface: #0a0a00;
+  --fintheon-border: #D4AF37;
+  --fintheon-muted: #6B7280;
 
-  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-heading: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-body: 'Readable Digits', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-heading: 'Readable Digits', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
   --radius: 0.625rem;
   --background: oklch(1 0 0);
@@ -144,6 +144,10 @@
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+  /* Ensure ALL interactive/UI elements inherit the theme font */
+  button, input, select, textarea, label, a, span, p, div, li, td, th, nav {
+    font-family: inherit;
   }
   h1, h2, h3, h4, h5, h6, .font-heading {
     font-family: var(--font-heading);
@@ -330,73 +334,73 @@
 
 /* Pulse theme utility classes */
 .pulse-accent-hover:hover {
-  color: var(--pulse-accent);
-  background-color: color-mix(in srgb, var(--pulse-accent) 10%, transparent);
+  color: var(--fintheon-accent);
+  background-color: color-mix(in srgb, var(--fintheon-accent) 10%, transparent);
 }
 
 .pulse-accent-border {
-  border-color: color-mix(in srgb, var(--pulse-accent) 20%, transparent);
+  border-color: color-mix(in srgb, var(--fintheon-accent) 20%, transparent);
 }
 
 .pulse-accent-border-hover:hover {
-  border-color: color-mix(in srgb, var(--pulse-accent) 40%, transparent);
-  background-color: color-mix(in srgb, var(--pulse-accent) 5%, transparent);
+  border-color: color-mix(in srgb, var(--fintheon-accent) 40%, transparent);
+  background-color: color-mix(in srgb, var(--fintheon-accent) 5%, transparent);
 }
 
 .group:hover .pulse-group-accent {
-  color: var(--pulse-accent);
+  color: var(--fintheon-accent);
 }
 
 .pulse-thinking-container {
-  border: 1px solid color-mix(in srgb, var(--pulse-accent) 25%, transparent);
-  background-color: var(--pulse-surface);
+  border: 1px solid color-mix(in srgb, var(--fintheon-accent) 25%, transparent);
+  background-color: var(--fintheon-surface);
 }
 
 .pulse-thinking-ring {
-  border: 1px solid color-mix(in srgb, var(--pulse-accent) 60%, transparent);
+  border: 1px solid color-mix(in srgb, var(--fintheon-accent) 60%, transparent);
 }
 
 .pulse-thinking-ring-inner {
-  border: 1px solid color-mix(in srgb, var(--pulse-accent) 40%, transparent);
+  border: 1px solid color-mix(in srgb, var(--fintheon-accent) 40%, transparent);
 }
 
 .pulse-thinking-dot {
-  background-color: color-mix(in srgb, var(--pulse-accent) 70%, transparent);
+  background-color: color-mix(in srgb, var(--fintheon-accent) 70%, transparent);
 }
 
 .pulse-settings-icon {
-  background-color: color-mix(in srgb, var(--pulse-accent) 10%, transparent);
-  color: var(--pulse-accent);
+  background-color: color-mix(in srgb, var(--fintheon-accent) 10%, transparent);
+  color: var(--fintheon-accent);
 }
 
 .group:hover .pulse-settings-icon {
-  background-color: color-mix(in srgb, var(--pulse-accent) 20%, transparent);
+  background-color: color-mix(in srgb, var(--fintheon-accent) 20%, transparent);
 }
 
 .pulse-nav-active {
-  background-color: var(--pulse-accent);
+  background-color: var(--fintheon-accent);
   color: black;
 }
 
 .pulse-nav-inactive {
-  color: color-mix(in srgb, var(--pulse-accent) 60%, transparent);
+  color: color-mix(in srgb, var(--fintheon-accent) 60%, transparent);
 }
 
 .pulse-nav-inactive:hover {
-  color: var(--pulse-accent);
-  background-color: color-mix(in srgb, var(--pulse-accent) 10%, transparent);
+  color: var(--fintheon-accent);
+  background-color: color-mix(in srgb, var(--fintheon-accent) 10%, transparent);
 }
 
 .pulse-nav-active-light {
-  border-color: color-mix(in srgb, var(--pulse-accent) 50%, transparent);
-  color: var(--pulse-accent);
-  background-color: color-mix(in srgb, var(--pulse-accent) 10%, transparent);
+  border-color: color-mix(in srgb, var(--fintheon-accent) 50%, transparent);
+  color: var(--fintheon-accent);
+  background-color: color-mix(in srgb, var(--fintheon-accent) 10%, transparent);
 }
 
 .pulse-user-bubble {
-  background-color: color-mix(in srgb, var(--pulse-accent) 12%, transparent);
-  border-color: color-mix(in srgb, var(--pulse-accent) 35%, transparent);
-  box-shadow: 0 12px 26px color-mix(in srgb, var(--pulse-accent) 8%, transparent);
+  background-color: color-mix(in srgb, var(--fintheon-accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--fintheon-accent) 35%, transparent);
+  box-shadow: 0 12px 26px color-mix(in srgb, var(--fintheon-accent) 8%, transparent);
 }
 
 /* NarrativeFlow — rope swing pendulum on creation */
@@ -421,8 +425,8 @@
 /* Subtle gold background glow on bottom corners — applied as box-shadow to avoid extra height */
 .section-fade-corners {
   box-shadow:
-    inset 80px -60px 80px -60px color-mix(in srgb, var(--pulse-accent) 3%, transparent),
-    inset -80px -60px 80px -60px color-mix(in srgb, var(--pulse-accent) 3%, transparent);
+    inset 80px -60px 80px -60px color-mix(in srgb, var(--fintheon-accent) 3%, transparent),
+    inset -80px -60px 80px -60px color-mix(in srgb, var(--fintheon-accent) 3%, transparent);
 }
 
 /* NarrativeFlow — catalyst card border pulse on selection */
@@ -449,8 +453,8 @@
 
 /* NarrativeFlow — pulsing border glow for selected items */
 @keyframes pulse-border {
-  0%, 100% { box-shadow: 0 0 0 0 var(--pulse-glow-color); }
-  50% { box-shadow: 0 0 12px 4px var(--pulse-glow-color); }
+  0%, 100% { box-shadow: 0 0 0 0 var(--fintheon-glow-color); }
+  50% { box-shadow: 0 0 12px 4px var(--fintheon-glow-color); }
 }
 
 /* NarrativeFlow — SVG rope draw-in animation */
@@ -492,8 +496,8 @@
 
 /* Think Harder toggle — accent glow pulse */
 @keyframes thinkGlow {
-  0%, 100% { box-shadow: 0 0 4px 0px var(--pulse-accent); }
-  50% { box-shadow: 0 0 10px 2px var(--pulse-accent); }
+  0%, 100% { box-shadow: 0 0 4px 0px var(--fintheon-accent); }
+  50% { box-shadow: 0 0 10px 2px var(--fintheon-accent); }
 }
 
 .think-harder-active {

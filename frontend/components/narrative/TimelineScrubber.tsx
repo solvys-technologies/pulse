@@ -168,20 +168,20 @@ export function TimelineScrubber({ state, catalysts, dispatch }: TimelineScrubbe
   }, [weeks, totalWeeks]);
 
   return (
-    <div className="h-10 flex items-center gap-2 px-2 bg-[var(--pulse-surface)] border-t border-[var(--pulse-border)]/20">
+    <div className="h-10 flex items-center gap-2 px-2 bg-[var(--fintheon-surface)] border-t border-[var(--fintheon-border)]/20">
       {/* Play/Pause/Stop */}
       <div className="flex items-center gap-1 shrink-0">
         <button
           onClick={() =>
             dispatch({ type: 'SET_REPLAY_MODE', enabled: !state.replayMode })
           }
-          className="p-1 hover:bg-[var(--pulse-accent)]/10 rounded transition-colors"
+          className="p-1 hover:bg-[var(--fintheon-accent)]/10 rounded transition-colors"
           title={state.replayMode ? 'Pause' : 'Play'}
         >
           {state.replayMode ? (
-            <Pause className="w-3.5 h-3.5 text-[var(--pulse-accent)]" />
+            <Pause className="w-3.5 h-3.5 text-[var(--fintheon-accent)]" />
           ) : (
-            <Play className="w-3.5 h-3.5 text-[var(--pulse-muted)]" />
+            <Play className="w-3.5 h-3.5 text-[var(--fintheon-muted)]" />
           )}
         </button>
         {state.replayMode && (
@@ -190,10 +190,10 @@ export function TimelineScrubber({ state, catalysts, dispatch }: TimelineScrubbe
               dispatch({ type: 'SET_REPLAY_MODE', enabled: false });
               dispatch({ type: 'SET_REPLAY_POSITION', position: 0 });
             }}
-            className="p-1 hover:bg-[var(--pulse-accent)]/10 rounded transition-colors"
+            className="p-1 hover:bg-[var(--fintheon-accent)]/10 rounded transition-colors"
             title="Stop"
           >
-            <Square className="w-3 h-3 text-[var(--pulse-muted)]" />
+            <Square className="w-3 h-3 text-[var(--fintheon-muted)]" />
           </button>
         )}
       </div>
@@ -210,9 +210,9 @@ export function TimelineScrubber({ state, catalysts, dispatch }: TimelineScrubbe
         <div className="absolute inset-0 flex">
           {weeks.map((w, i) => {
             let bg: string;
-            if (w.bullish > w.bearish) bg = 'var(--pulse-bullish)';
-            else if (w.bearish > w.bullish) bg = 'var(--pulse-bearish)';
-            else bg = 'var(--pulse-muted)';
+            if (w.bullish > w.bearish) bg = 'var(--fintheon-bullish)';
+            else if (w.bearish > w.bullish) bg = 'var(--fintheon-bearish)';
+            else bg = 'var(--fintheon-muted)';
             const opacity = w.bullish > w.bearish || w.bearish > w.bullish ? 0.3 : 0.15;
             return (
               <div
@@ -232,7 +232,7 @@ export function TimelineScrubber({ state, catalysts, dispatch }: TimelineScrubbe
         {monthLabels.map((m, i) => (
           <span
             key={i}
-            className="absolute bottom-0 text-[8px] text-[var(--pulse-muted)] pointer-events-none"
+            className="absolute bottom-0 text-[8px] text-[var(--fintheon-muted)] pointer-events-none"
             style={{ left: `${m.pct}%` }}
           >
             {m.label}
@@ -241,7 +241,7 @@ export function TimelineScrubber({ state, catalysts, dispatch }: TimelineScrubbe
 
         {/* Playhead */}
         <div
-          className="absolute top-0 bottom-0 w-0.5 bg-[var(--pulse-accent)] pointer-events-none"
+          className="absolute top-0 bottom-0 w-0.5 bg-[var(--fintheon-accent)] pointer-events-none"
           style={{
             left: `${playheadPct}%`,
             transition: dragging ? 'none' : 'left 300ms ease',
@@ -251,7 +251,7 @@ export function TimelineScrubber({ state, catalysts, dispatch }: TimelineScrubbe
         {/* Hover tooltip */}
         {hoveredWeek && (
           <div
-            className="absolute -top-7 px-1.5 py-0.5 rounded text-[9px] bg-[var(--pulse-surface)] border border-[var(--pulse-border)]/30 text-[var(--pulse-text)] whitespace-nowrap pointer-events-none z-10"
+            className="absolute -top-7 px-1.5 py-0.5 rounded text-[9px] bg-[var(--fintheon-surface)] border border-[var(--fintheon-border)]/30 text-[var(--fintheon-text)] whitespace-nowrap pointer-events-none z-10"
             style={{ left: hoverX, transform: 'translateX(-50%)' }}
           >
             Week of {hoveredWeek}
@@ -260,7 +260,7 @@ export function TimelineScrubber({ state, catalysts, dispatch }: TimelineScrubbe
       </div>
 
       {/* Date range label */}
-      <span className="text-[9px] text-[var(--pulse-muted)] shrink-0 font-mono">
+      <span className="text-[9px] text-[var(--fintheon-muted)] shrink-0 font-mono">
         {minDate} — {maxDate}
       </span>
     </div>

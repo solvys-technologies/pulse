@@ -40,13 +40,13 @@ export function RegimeMini({ onOpenFullTracker }: RegimeMiniProps) {
   const upcoming = getUpcomingRegimes(regimes, 120, now);
 
   return (
-    <div className="bg-[var(--pulse-bg)] p-3">
+    <div className="bg-[var(--fintheon-bg)] p-3">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
-          <Clock className="w-3.5 h-3.5 text-[var(--pulse-accent)]" />
-          <h3 className="text-[11px] font-semibold text-[var(--pulse-accent)] tracking-wide uppercase">Regimes</h3>
+          <Clock className="w-3.5 h-3.5 text-[var(--fintheon-accent)]" />
+          <h3 className="text-[11px] font-semibold text-[var(--fintheon-accent)] tracking-wide uppercase">Regimes</h3>
           {active.length > 0 && (
-            <span className="inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full bg-[var(--pulse-accent)]/20 text-[var(--pulse-accent)] text-[9px] font-bold">
+            <span className="inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full bg-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] text-[9px] font-bold">
               {active.length}
             </span>
           )}
@@ -54,7 +54,7 @@ export function RegimeMini({ onOpenFullTracker }: RegimeMiniProps) {
         {onOpenFullTracker && (
           <button
             onClick={onOpenFullTracker}
-            className="text-[9px] text-[var(--pulse-accent)]/60 hover:text-[var(--pulse-accent)] transition-colors tracking-wider uppercase"
+            className="text-[9px] text-[var(--fintheon-accent)]/60 hover:text-[var(--fintheon-accent)] transition-colors tracking-wider uppercase"
           >
             View All
           </button>
@@ -69,14 +69,14 @@ export function RegimeMini({ onOpenFullTracker }: RegimeMiniProps) {
       {active.map((r) => (
         <div
           key={r.id}
-          className="mb-1.5 px-2 py-1.5 border border-[var(--pulse-accent)]/30 bg-[var(--pulse-accent)]/5"
+          className="mb-1.5 px-2 py-1.5 border border-[var(--fintheon-accent)]/30 bg-[var(--fintheon-accent)]/5"
         >
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-semibold text-[var(--pulse-text)] truncate">{r.name}</span>
+            <span className="text-[10px] font-semibold text-[var(--fintheon-text)] truncate">{r.name}</span>
             <BiasBadge bias={r.bias} />
           </div>
           <div className="flex items-center justify-between mt-1">
-            <span className="text-[9px] text-[var(--pulse-accent)]/70">{getTimeRemaining(r, now)}</span>
+            <span className="text-[9px] text-[var(--fintheon-accent)]/70">{getTimeRemaining(r, now)}</span>
             <div className="flex items-center gap-2">
               <span className="flex items-center gap-1 text-[9px]">
                 <span className="text-[7px] text-zinc-600 uppercase">ORB</span>

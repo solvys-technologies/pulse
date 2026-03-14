@@ -37,11 +37,11 @@ export function BlindspotsWidget() {
   }, [backend]);
 
   const content = (
-    <div className="bg-[var(--pulse-bg)] p-4">
+    <div className="bg-[var(--fintheon-bg)] p-4">
       <div className="flex items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-2">
-          <Eye className="w-4 h-4 text-[var(--pulse-accent)]" />
-          <h3 className="text-sm font-semibold text-[var(--pulse-accent)]">Blindspots</h3>
+          <Eye className="w-4 h-4 text-[var(--fintheon-accent)]" />
+          <h3 className="text-sm font-semibold text-[var(--fintheon-accent)]">Blindspots</h3>
         </div>
       </div>
       {blindspots.length === 0 ? (

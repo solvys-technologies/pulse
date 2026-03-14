@@ -26,7 +26,7 @@ export function MaintenanceStatusBar({ status, message, onDismiss }: Maintenance
   if (status === 'idle') return null;
 
   const statusConfig: Record<Exclude<MaintenanceStatus, 'idle'>, { icon: typeof Loader2 | typeof Check; iconColor: string; spin: boolean; label: string }> = {
-    updating: { icon: Loader2, iconColor: 'var(--pulse-accent)', spin: true, label: message || 'Updating...' },
+    updating: { icon: Loader2, iconColor: 'var(--fintheon-accent)', spin: true, label: message || 'Updating...' },
     applied: { icon: Check, iconColor: '#22C55E', spin: false, label: 'Changes applied' },
     changelog: { icon: Check, iconColor: '#22C55E', spin: false, label: 'Changelog updated' },
     done: { icon: Check, iconColor: '#22C55E', spin: false, label: 'Maintenance complete' },
@@ -36,7 +36,7 @@ export function MaintenanceStatusBar({ status, message, onDismiss }: Maintenance
   const StatusIcon = config.icon;
 
   return (
-    <div className="border-2 border-[var(--pulse-accent)] rounded-lg px-4 py-2 bg-[var(--pulse-surface)] flex items-center gap-3">
+    <div className="border-2 border-[var(--fintheon-accent)] rounded-lg px-4 py-2 bg-[var(--fintheon-surface)] flex items-center gap-3">
       <StatusIcon
         size={16}
         className={config.spin ? 'animate-spin' : ''}
