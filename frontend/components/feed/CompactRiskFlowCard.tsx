@@ -67,7 +67,7 @@ export function CompactRiskFlowCard({ alert, seen = false, onDismiss }: CompactR
 
   return (
     <div
-      className={`group flex items-start gap-2 px-2.5 py-2 rounded-md hover:bg-[var(--pulse-accent)]/5 transition-colors ${isHigh ? 'bg-red-500/5' : ''} ${seen ? 'opacity-60' : ''}`}
+      className={`group flex items-start gap-2 px-2.5 py-2 rounded-md hover:bg-[var(--fintheon-accent)]/5 transition-colors ${isHigh ? 'bg-red-500/5' : ''} ${seen ? 'opacity-60' : ''}`}
     >
       {/* Severity dot */}
       <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5"

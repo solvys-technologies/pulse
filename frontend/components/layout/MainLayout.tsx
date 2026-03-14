@@ -23,7 +23,6 @@ import { AlgoStatusWidget } from '../mission-control/AlgoStatusWidget';
 import { PanelNotificationWidget } from './PanelNotificationWidget';
 import { MinimalERMeter } from '../MinimalERMeter';
 import { ExecutiveDashboard } from '../executive/ExecutiveDashboard';
-import { BoardroomView } from '../BoardroomView';
 import { ResearchDepartment } from '../executive/ResearchDepartment';
 import { SectionBreadcrumb } from './SectionBreadcrumb';
 import RiskFlowPanel from '../RiskFlowPanel';
@@ -40,7 +39,7 @@ import { EconCalendarProvider } from '../../contexts/EconCalendarContext';
 import { EconCalendar } from '../econ/EconCalendar';
 import { NarrativeProvider } from '../../contexts/NarrativeContext';
 import { NarrativeFlow } from '../narrative/NarrativeFlow';
-import { TeamDashboard } from '../team/TeamDashboard';
+// TeamDashboard replaced by Discord iframe — see 'team' tab below
 import { TradingJournal } from '../journal/TradingJournal';
 import { FirstTimeTour } from '../onboarding/FirstTimeTour';
 import { SessionCountdownWidget } from '../mission-control/SessionCountdownWidget';
@@ -56,7 +55,7 @@ import {
   type MissionWidgetId,
 } from '../../lib/layoutOrderStorage';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'team' | 'settings';
+type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'team' | 'settings';
 type LayoutOption = 'tickers-only' | 'combined';
 
 const MISSION_WIDGETS_PER_PAGE = 2;
@@ -161,8 +160,7 @@ export function MainLayout() {
       '1': 'executive',
       '2': 'analysis',
       '3': 'news',
-      '4': 'chatroom',
-      '5': 'econ',
+      '4': 'econ',
       '6': 'notion',
       '7': 'narrative',
     };
@@ -391,7 +389,7 @@ export function MainLayout() {
   const missionControlContent = (collapseFn?: () => void) => (
     <div className="h-full flex flex-col">
       <KanbanTitle
-        title="Mission Control"
+        title="Strategium"
         tone="gold"
         headerRight={
           <div className="flex items-center gap-0.5">
@@ -404,10 +402,10 @@ export function MainLayout() {
             {collapseFn && (
               <button
                 onClick={collapseFn}
-                className="p-1 hover:bg-[var(--pulse-accent)]/10 rounded transition-colors"
+                className="p-1 hover:bg-[var(--fintheon-accent)]/10 rounded transition-colors"
                 title="Collapse panel"
               >
-                <ChevronRight className="w-3.5 h-3.5 text-[var(--pulse-accent)]/60" />
+                <ChevronRight className="w-3.5 h-3.5 text-[var(--fintheon-accent)]/60" />
               </button>
             )}
           </div>
@@ -418,13 +416,13 @@ export function MainLayout() {
         <div
           ref={missionDeckRef}
           onScroll={handleMissionDeckScroll}
-          className="h-full overflow-y-auto snap-y snap-mandatory border-y border-[var(--pulse-accent)]/15"
+          className="h-full overflow-y-auto snap-y snap-mandatory border-y border-[var(--fintheon-accent)]/15"
         >
           {missionWidgetPages.map((page, pageIdx) => (
             <section
               key={`mission-page-${pageIdx}`}
               data-mission-page={pageIdx}
-              className="min-h-full snap-start grid grid-rows-2 divide-y divide-[var(--pulse-accent)]/15"
+              className="min-h-full snap-start grid grid-rows-2 divide-y divide-[var(--fintheon-accent)]/15"
             >
               {[0, 1].map((slotIdx) => {
                 const widget = page[slotIdx];
@@ -453,7 +451,7 @@ export function MainLayout() {
                 <div
                   className={`transition-all duration-300 rounded-full ${
                     missionDeckPage === idx
-                      ? 'w-[3px] h-8 bg-[var(--pulse-accent)]'
+                      ? 'w-[3px] h-8 bg-[var(--fintheon-accent)]'
                       : 'w-[2px] h-5 bg-gray-700 hover:bg-gray-500'
                   }`}
                 />
@@ -470,40 +468,40 @@ export function MainLayout() {
     if (layoutOption === 'combined') {
       // Combined panel: Mission Control + The Tape in one scroll (split, no overlap)
       rightPanels.push(
-        <div key="combined" className={`bg-[var(--pulse-surface)] border-l border-[var(--pulse-accent)]/20 transition-all duration-200 ${combinedPanelCollapsed ? 'w-16' : 'w-[380px]'}`}>
+        <div key="combined" className={`bg-[var(--fintheon-surface)] border-l border-[var(--fintheon-accent)]/20 transition-all duration-200 ${combinedPanelCollapsed ? 'w-16' : 'w-[380px]'}`}>
           <div className="h-full flex flex-col">
             {combinedPanelCollapsed && (
-              <div className="h-12 flex-shrink-0 flex items-center justify-center border-b border-[var(--pulse-accent)]/20">
+              <div className="h-12 flex-shrink-0 flex items-center justify-center border-b border-[var(--fintheon-accent)]/20">
                 <button
                   onClick={() => setCombinedPanelCollapsed(false)}
-                  className="p-1.5 hover:bg-[var(--pulse-accent)]/10 rounded transition-colors"
+                  className="p-1.5 hover:bg-[var(--fintheon-accent)]/10 rounded transition-colors"
                 >
-                  <ChevronLeft className="w-4 h-4 text-[var(--pulse-accent)]" />
+                  <ChevronLeft className="w-4 h-4 text-[var(--fintheon-accent)]" />
                 </button>
               </div>
             )}
             {!combinedPanelCollapsed && (
               <div className="flex-1 min-h-0 flex flex-col">
                 {/* Mission Control: 50% height, no overflow into tape */}
-                <section className={`${combinedTapeCollapsed ? 'flex-1' : 'h-1/2'} min-h-0 overflow-y-auto border-b border-[var(--pulse-accent)]/20`}>
+                <section className={`${combinedTapeCollapsed ? 'flex-1' : 'h-1/2'} min-h-0 overflow-y-auto border-b border-[var(--fintheon-accent)]/20`}>
                   <div className="p-3 h-full">
                     {missionControlContent(() => setCombinedPanelCollapsed(true))}
                   </div>
                 </section>
                 {/* The Tape: 50% when expanded, collapsed header when hidden */}
-                <section className={`${combinedTapeCollapsed ? 'flex-shrink-0' : 'h-1/2'} min-h-0 flex flex-col border-t border-[var(--pulse-accent)]/20`}>
+                <section className={`${combinedTapeCollapsed ? 'flex-shrink-0' : 'h-1/2'} min-h-0 flex flex-col border-t border-[var(--fintheon-accent)]/20`}>
                   <button
                     type="button"
                     onClick={() => setCombinedTapeCollapsed(!combinedTapeCollapsed)}
-                    className="h-10 flex-shrink-0 flex items-center justify-between px-3 border-b border-[var(--pulse-accent)]/20 hover:bg-[var(--pulse-accent)]/5 transition-colors w-full text-left"
+                    className="h-10 flex-shrink-0 flex items-center justify-between px-3 border-b border-[var(--fintheon-accent)]/20 hover:bg-[var(--fintheon-accent)]/5 transition-colors w-full text-left"
                   >
-                    <span className="text-[11px] font-semibold text-[var(--pulse-accent)] tracking-[0.2em] uppercase">The Tape</span>
+                    <span className="text-[11px] font-semibold text-[var(--fintheon-accent)] tracking-[0.2em] uppercase">The Tape</span>
                     {combinedTapeCollapsed && riskFlowAlerts.length > 0 && (
                       <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500/30 text-red-400 text-[10px] font-bold">
                         {riskFlowAlerts.length}
                       </span>
                     )}
-                    <span className="text-[var(--pulse-accent)]/60">
+                    <span className="text-[var(--fintheon-accent)]/60">
                       {combinedTapeCollapsed ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
                     </span>
                   </button>
@@ -529,7 +527,7 @@ export function MainLayout() {
               </div>
             )}
             {combinedPanelCollapsed && (
-              <div className="flex-1 flex flex-col items-center justify-center gap-3 p-2 bg-[var(--pulse-surface)]">
+              <div className="flex-1 flex flex-col items-center justify-center gap-3 p-2 bg-[var(--fintheon-surface)]">
                 <div className="w-full max-w-[120px]">
                   <MinimalERMeter
                     resonance={normalizedCombinedPanelResonance}
@@ -549,17 +547,39 @@ export function MainLayout() {
     // For 'tickers-only', no panels are shown (only floating widget)
   } else {
     // When TopStepX is disabled: right stack = Mission Control + collapsible RiskFlow
-    const hideRightPanel = activeTab === 'notion' || activeTab === 'chatroom' || activeTab === 'econ' || activeTab === 'narrative' || activeTab === 'earnings' || activeTab === 'team' || activeTab === 'settings';
+    const hideRightPanel = activeTab === 'notion' || activeTab === 'econ' || activeTab === 'narrative' || activeTab === 'earnings' || activeTab === 'team' || activeTab === 'settings';
     if (!hideRightPanel) {
-      if (riskFlowCollapsed) {
+      if (missionControlCollapsed) {
+        // Mission Control collapsed — just show a thin expand strip + full RiskFlow
         rightPanels.push(
-          <div key="right-stack" className="w-[380px] flex-shrink-0 h-full min-w-0 flex flex-col border-l border-[var(--pulse-accent)]/15">
-            <div className="flex-1 min-h-0 overflow-y-auto border-b border-[var(--pulse-accent)]/20">
+          <div key="right-stack" className="w-[380px] flex-shrink-0 h-full min-w-0 flex flex-col border-l border-[var(--fintheon-accent)]/15">
+            <div className="h-10 shrink-0 flex items-center justify-between px-3 border-b border-[var(--fintheon-accent)]/20">
+              <span className="text-[11px] font-semibold text-[var(--fintheon-accent)] tracking-[0.2em] uppercase">Mission Control</span>
+              <button
+                onClick={() => setMissionControlCollapsed(false)}
+                className="p-1 hover:bg-[var(--fintheon-accent)]/10 rounded transition-colors"
+                title="Expand Mission Control"
+              >
+                <ChevronDown className="w-3.5 h-3.5 text-[var(--fintheon-accent)]/60" />
+              </button>
+            </div>
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <RiskFlowPanel
+                collapsed={riskFlowCollapsed}
+                onToggleCollapsed={() => setRiskFlowCollapsed((v) => !v)}
+              />
+            </div>
+          </div>
+        );
+      } else if (riskFlowCollapsed) {
+        rightPanels.push(
+          <div key="right-stack" className="w-[380px] flex-shrink-0 h-full min-w-0 flex flex-col border-l border-[var(--fintheon-accent)]/15">
+            <div className="flex-1 min-h-0 overflow-y-auto border-b border-[var(--fintheon-accent)]/20">
               <div className="p-3 h-full">
-                {missionControlContent()}
+                {missionControlContent(() => setMissionControlCollapsed(true))}
               </div>
             </div>
-            <div className="h-[168px] shrink-0 border-t border-[var(--pulse-accent)]/20">
+            <div className="h-[168px] shrink-0 border-t border-[var(--fintheon-accent)]/20">
               <RiskFlowPanel
                 collapsed={riskFlowCollapsed}
                 onToggleCollapsed={() => setRiskFlowCollapsed((v) => !v)}
@@ -569,11 +589,11 @@ export function MainLayout() {
         );
       } else {
         rightPanels.push(
-          <div key="right-stack" className="w-[380px] flex-shrink-0 h-full min-w-0 flex flex-col border-l border-[var(--pulse-accent)]/15">
-            <div className="h-1/2 flex flex-col border-b border-[var(--pulse-accent)]/20">
+          <div key="right-stack" className="w-[380px] flex-shrink-0 h-full min-w-0 flex flex-col border-l border-[var(--fintheon-accent)]/15">
+            <div className="h-1/2 flex flex-col border-b border-[var(--fintheon-accent)]/20">
               <div className="flex-1 min-h-0 overflow-y-auto">
                 <div className="p-3 h-full">
-                  {missionControlContent()}
+                  {missionControlContent(() => setMissionControlCollapsed(true))}
                 </div>
               </div>
             </div>
@@ -593,7 +613,7 @@ export function MainLayout() {
 
   return (
     <ScheduleProvider>
-    <div className="h-screen flex flex-col bg-[var(--pulse-bg)] text-white">
+    <div className="h-screen flex flex-col bg-[var(--fintheon-bg)] text-white">
       <TopHeader
         topStepXEnabled={topStepXEnabled}
         onTopStepXToggle={() => { /* T3d: removed auto-enable — power is controlled via dedicated power button only */ }}
@@ -671,11 +691,6 @@ export function MainLayout() {
                   <NewsSection />
                 </div>
               )}
-              {activeTab === 'chatroom' && (
-                <div key="chatroom" className={`h-full w-full section-fade-corners ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
-                  <BoardroomView />
-                </div>
-              )}
               {activeTab === 'econ' && (
                 <div key="econ" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
                   <EconCalendarProvider>
@@ -702,7 +717,13 @@ export function MainLayout() {
               )}
               {activeTab === 'team' && (
                 <div key="team" className={`h-full w-full ${tabTransitioning && prevTab ? 'animate-fade-out-tab' : 'animate-fade-in-tab'}`}>
-                  <TeamDashboard />
+                  <iframe
+                    src="https://discord.com/channels/@me"
+                    className="w-full h-full border-0"
+                    title="PIC Boardroom — Discord"
+                    allow="microphone; camera; clipboard-write; encrypted-media"
+                    sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
+                  />
                 </div>
               )}
               {activeTab === 'settings' && (
@@ -764,12 +785,12 @@ export function MainLayout() {
         )}
 
         {/* Global chat panel (hidden on boardroom tab where it's already embedded) */}
-        {showAskHarp && activeTab !== 'chatroom' && (
-          <div className="absolute right-0 top-0 bottom-0 w-[360px] z-40 flex flex-col bg-[var(--pulse-surface)] border-l border-[var(--pulse-accent)]/20 shadow-2xl animate-fade-in-tab">
+        {showAskHarp && (
+          <div className="absolute right-0 top-0 bottom-0 w-[360px] z-40 flex flex-col bg-[var(--fintheon-surface)] border-l border-[var(--fintheon-accent)]/20 shadow-2xl animate-fade-in-tab">
             <div className="flex items-center justify-end px-4 py-2 flex-shrink-0">
               <button
                 onClick={() => setShowAskHarp(false)}
-                className="p-1 rounded hover:bg-[var(--pulse-accent)]/10 text-gray-400 hover:text-[var(--pulse-accent)] transition-colors"
+                className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-gray-400 hover:text-[var(--fintheon-accent)] transition-colors"
                 title="Close"
               >
                 <X className="w-4 h-4" />

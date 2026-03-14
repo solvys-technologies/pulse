@@ -175,12 +175,12 @@ export function RopeRenderer({
   }, [confluenceNodes, containerRef]);
 
   const getRopeColor = (rope: Rope): string => {
-    if (rope.polarity === 'contradicting') return 'var(--pulse-bearish)';
+    if (rope.polarity === 'contradicting') return 'var(--fintheon-bearish)';
     // Reinforcing — check target sentiment
     const toCatalyst = catalysts.find(c => c.id === rope.toId);
-    if (toCatalyst?.sentiment === 'bullish') return 'var(--pulse-bullish)';
-    if (toCatalyst?.sentiment === 'bearish') return 'var(--pulse-bearish)';
-    return 'var(--pulse-accent)';
+    if (toCatalyst?.sentiment === 'bullish') return 'var(--fintheon-bullish)';
+    if (toCatalyst?.sentiment === 'bearish') return 'var(--fintheon-bearish)';
+    return 'var(--fintheon-accent)';
   };
 
   return (
@@ -264,15 +264,15 @@ export function RopeRenderer({
                 width={76}
                 height={20}
                 rx={4}
-                fill="var(--pulse-surface)"
-                stroke="var(--pulse-border)"
+                fill="var(--fintheon-surface)"
+                stroke="var(--fintheon-border)"
                 strokeOpacity={0.3}
               />
               <text
                 x={path.midpoint.x}
                 y={path.midpoint.y - 9}
                 textAnchor="middle"
-                fill="var(--pulse-text)"
+                fill="var(--fintheon-text)"
                 fontSize={10}
                 fontFamily="monospace"
               >

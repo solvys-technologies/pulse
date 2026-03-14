@@ -1,5 +1,6 @@
-// [claude-code 2026-03-11] Track 7B: Claude Haiku sentiment analysis for voice ER monitoring
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+// [claude-code 2026-03-14] Voice sentiment via OpenRouter (Opus 4.6); no ANTHROPIC_API_KEY
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const SENTIMENT_MODEL = 'anthropic/claude-opus-4.6';
 
 export interface SentimentAnalysisInput {
   transcript: string;
@@ -12,7 +13,7 @@ export interface SentimentAnalysisResult {
   keywords: string[];
   tiltIndicators: string[];
   summary: string;
-  provider: 'claude-haiku' | 'fallback';
+  provider: 'openrouter' | 'fallback';
 }
 
 const TILT_KEYWORDS = [
@@ -52,8 +53,8 @@ export async function analyzeSentiment(input: SentimentAnalysisInput): Promise<S
     };
   }
 
-  if (!ANTHROPIC_API_KEY) {
-    console.warn('[VoiceSentiment] No ANTHROPIC_API_KEY, using fallback keyword detection');
+  if (!OPENROUTER_API_KEY) {
+    console.warn('[VoiceSentiment] No OPENROUTER_API_KEY, using fallback keyword detection');
     return fallbackSentiment(input.transcript);
   }
 
@@ -81,32 +82,35 @@ Tilt indicators to watch for:
       ? `Context: ${input.context}\n\nTrader speech: "${input.transcript}"`
       : `Trader speech: "${input.transcript}"`;
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': process.env.OPENROUTER_APP_URL ?? 'https://pulse-solvys.vercel.app',
+        'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Pulse-AI-Gateway',
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
+        model: SENTIMENT_MODEL,
         max_tokens: 300,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: userMessage }],
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userMessage },
+        ],
       }),
     });
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error(`[VoiceSentiment] Haiku API error (${response.status}):`, errText);
+      console.error(`[VoiceSentiment] OpenRouter error (${response.status}):`, errText);
       return fallbackSentiment(input.transcript);
     }
 
     const data = await response.json() as {
-      content: Array<{ type: string; text?: string }>;
+      choices?: { message?: { content?: string } }[];
     };
 
-    const text = data.content?.find(c => c.type === 'text')?.text ?? '';
+    const text = data.choices?.[0]?.message?.content?.trim() ?? '';
     const parsed = JSON.parse(text) as {
       sentiment: number;
       confidence: number;
@@ -121,7 +125,7 @@ Tilt indicators to watch for:
       keywords: Array.isArray(parsed.keywords) ? parsed.keywords : [],
       tiltIndicators: Array.isArray(parsed.tiltIndicators) ? parsed.tiltIndicators : [],
       summary: parsed.summary || 'Analysis complete',
-      provider: 'claude-haiku',
+      provider: 'openrouter',
     };
   } catch (err) {
     console.error('[VoiceSentiment] Analysis failed, using fallback:', err);

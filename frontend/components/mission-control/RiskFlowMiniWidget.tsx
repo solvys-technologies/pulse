@@ -37,8 +37,8 @@ export function RiskFlowMiniWidget() {
       <div className="h-full flex flex-col">
         {/* Header */}
         <div className="flex items-center gap-2 mb-2">
-          <Zap className="w-3.5 h-3.5 text-[var(--pulse-accent)]" />
-          <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[var(--pulse-accent)]">RiskFlow</span>
+          <Zap className="w-3.5 h-3.5 text-[var(--fintheon-accent)]" />
+          <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[var(--fintheon-accent)]">RiskFlow</span>
           {unseenCount > 0 && (
             <span className="inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-red-500/30 text-red-400 text-[9px] font-bold">
               {unseenCount}
@@ -60,7 +60,7 @@ export function RiskFlowMiniWidget() {
               return (
                 <div
                   key={alert.id}
-                  className={`rounded ${isTradeIdea ? 'border-l-2 border-l-[var(--pulse-accent)]/40' : ''} ${seen ? 'opacity-60' : ''}`}
+                  className={`rounded ${isTradeIdea ? 'border-l-2 border-l-[var(--fintheon-accent)]/40' : ''} ${seen ? 'opacity-60' : ''}`}
                 >
                   <button
                     type="button"
@@ -73,13 +73,13 @@ export function RiskFlowMiniWidget() {
                     {/* Severity dot or direction icon */}
                     {isTradeIdea ? (
                       alert.tradeIdea!.direction === 'long'
-                        ? <TrendingUp className="w-2.5 h-2.5 text-[var(--pulse-accent)] shrink-0" />
+                        ? <TrendingUp className="w-2.5 h-2.5 text-[var(--fintheon-accent)] shrink-0" />
                         : <TrendingDown className="w-2.5 h-2.5 text-zinc-400 shrink-0" />
                     ) : (
                       <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                         alert.severity === 'critical' ? 'bg-orange-400' :
                         alert.severity === 'high' ? 'bg-red-400' :
-                        alert.severity === 'medium' ? 'bg-[var(--pulse-accent)]' : 'bg-zinc-600'
+                        alert.severity === 'medium' ? 'bg-[var(--fintheon-accent)]' : 'bg-zinc-600'
                       }`} />
                     )}
                     <span className="flex-1 min-w-0 text-[11px] text-zinc-300 truncate">
@@ -100,7 +100,7 @@ export function RiskFlowMiniWidget() {
                         <button
                           type="button"
                           onClick={() => setSelectedIdea(alert.tradeIdea!)}
-                          className="mt-1 text-[9px] text-[var(--pulse-accent)] hover:text-[#dbb85c] transition-colors uppercase tracking-wider"
+                          className="mt-1 text-[9px] text-[var(--fintheon-accent)] hover:text-[#dbb85c] transition-colors uppercase tracking-wider"
                         >
                           View Proposal →
                         </button>

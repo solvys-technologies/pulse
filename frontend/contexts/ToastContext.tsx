@@ -4,7 +4,7 @@ import { createContext, useContext, useState, useCallback, type ReactNode } from
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
 
-export type ToastVariant = 'success' | 'error' | 'updating' | 'info';
+export type ToastVariant = 'success' | 'error' | 'updating' | 'info' | 'reminder';
 
 export interface Toast {
   id: string;
@@ -47,9 +47,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       const toast: Toast = { id, message, variant };
       setToasts((prev) => [...prev, toast]);
 
-      // Auto-dismiss after 4s (except 'updating' which stays until manually dismissed)
+      // Auto-dismiss (except 'updating' which stays until manually dismissed)
       if (variant !== 'updating') {
-        setTimeout(() => dismissToast(id), 4000);
+        setTimeout(() => dismissToast(id), variant === 'reminder' ? 8000 : 4000);
       }
 
       return id;

@@ -54,7 +54,7 @@ export function MissionControlPanel({
 
   return (
     <div
-      className={`relative bg-[var(--pulse-bg)] transition-all duration-200 ease-out ${panelWidth}`}
+      className={`relative bg-[var(--fintheon-bg)] transition-all duration-200 ease-out ${panelWidth}`}
       onMouseEnter={handleCollapsedEnter}
       onMouseLeave={handleCollapsedLeave}
       style={{ minWidth: collapsed && !peekOpen ? '12px' : undefined }}
@@ -62,7 +62,7 @@ export function MissionControlPanel({
       {/* Collapsed thin hover-trigger strip */}
       {collapsed && !peekOpen && (
         <div className="absolute inset-0 flex items-center justify-center cursor-pointer">
-          <div className="w-[2px] h-12 rounded-full bg-[var(--pulse-accent)]/20" />
+          <div className="w-[2px] h-12 rounded-full bg-[var(--fintheon-accent)]/20" />
         </div>
       )}
 
@@ -74,7 +74,7 @@ export function MissionControlPanel({
           onMouseEnter={() => setHeaderHovered(true)}
           onMouseLeave={() => setHeaderHovered(false)}
         >
-          <h2 className="text-sm font-semibold text-[var(--pulse-accent)]">Mission Control</h2>
+          <h2 className="text-sm font-semibold text-[var(--fintheon-accent)]">Mission Control</h2>
 
           <div className="flex items-center gap-1">
             {/* TopStepX controls */}
@@ -83,7 +83,7 @@ export function MissionControlPanel({
                 {position === 'right' && (
                   <button
                     onClick={() => onPositionChange('left')}
-                    className="p-1 hover:bg-[var(--pulse-accent)]/10 rounded text-[var(--pulse-accent)]/60 hover:text-[var(--pulse-accent)]"
+                    className="p-1 hover:bg-[var(--fintheon-accent)]/10 rounded text-[var(--fintheon-accent)]/60 hover:text-[var(--fintheon-accent)]"
                     title="Move Left"
                   >
                     <MoveLeft className="w-3.5 h-3.5" />
@@ -92,7 +92,7 @@ export function MissionControlPanel({
                 {position === 'left' && (
                   <button
                     onClick={() => onPositionChange('right')}
-                    className="p-1 hover:bg-[var(--pulse-accent)]/10 rounded text-[var(--pulse-accent)]/60 hover:text-[var(--pulse-accent)]"
+                    className="p-1 hover:bg-[var(--fintheon-accent)]/10 rounded text-[var(--fintheon-accent)]/60 hover:text-[var(--fintheon-accent)]"
                     title="Move Right"
                   >
                     <MoveRight className="w-3.5 h-3.5" />
@@ -100,7 +100,7 @@ export function MissionControlPanel({
                 )}
                 <button
                   onClick={() => onPositionChange('floating')}
-                  className="p-1 hover:bg-[var(--pulse-accent)]/10 rounded text-[var(--pulse-accent)]/60 hover:text-[var(--pulse-accent)]"
+                  className="p-1 hover:bg-[var(--fintheon-accent)]/10 rounded text-[var(--fintheon-accent)]/60 hover:text-[var(--fintheon-accent)]"
                   title="Float"
                 >
                   <GripVertical className="w-3.5 h-3.5" />
@@ -110,7 +110,7 @@ export function MissionControlPanel({
             {topStepXEnabled && onHide && (
               <button
                 onClick={onHide}
-                className="p-1 hover:bg-[var(--pulse-accent)]/10 rounded text-[var(--pulse-accent)]/60 hover:text-[var(--pulse-accent)]"
+                className="p-1 hover:bg-[var(--fintheon-accent)]/10 rounded text-[var(--fintheon-accent)]/60 hover:text-[var(--fintheon-accent)]"
                 title="Hide"
               >
                 <X className="w-3.5 h-3.5" />
@@ -121,19 +121,19 @@ export function MissionControlPanel({
             {headerHovered && !collapsed && (
               <button
                 onClick={onToggleCollapse}
-                className="p-1.5 hover:bg-[var(--pulse-accent)]/10 rounded transition-colors"
+                className="p-1.5 hover:bg-[var(--fintheon-accent)]/10 rounded transition-colors"
                 title="Collapse"
               >
-                <ChevronRight className="w-4 h-4 text-[var(--pulse-accent)]" />
+                <ChevronRight className="w-4 h-4 text-[var(--fintheon-accent)]" />
               </button>
             )}
             {peekOpen && collapsed && (
               <button
                 onClick={handleKeepExpanded}
-                className="p-1.5 hover:bg-[var(--pulse-accent)]/10 rounded transition-colors"
+                className="p-1.5 hover:bg-[var(--fintheon-accent)]/10 rounded transition-colors"
                 title="Keep expanded"
               >
-                <ChevronLeft className="w-4 h-4 text-[var(--pulse-accent)]" />
+                <ChevronLeft className="w-4 h-4 text-[var(--fintheon-accent)]" />
               </button>
             )}
           </div>

@@ -46,12 +46,7 @@ const TOUR_STEPS: TourStep[] = [
     target: 'notion',
   },
   {
-    title: 'Board Room',
-    description: 'Multi-agent boardroom sessions. All team members see the same meetings.',
-    target: 'chatroom',
-  },
-  {
-    title: 'Mission Control',
+    title: 'Strategium',
     description: 'Compact widgets: ER monitor, blindspots, account tracker, algo status, session calendar. Rearrange with the gear icon.',
     target: 'mission-control',
   },
@@ -114,13 +109,13 @@ export function FirstTimeTour({ onNavigate }: { onNavigate?: (tab: string) => vo
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="w-[420px] bg-[#0c0a06] border border-[var(--pulse-accent)]/30 rounded-xl shadow-2xl overflow-hidden">
+      <div className="w-[420px] bg-[#0c0a06] border border-[var(--fintheon-accent)]/30 rounded-xl shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--pulse-accent)]/15">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--fintheon-accent)]/15">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-[var(--pulse-accent)]" />
-            <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[var(--pulse-accent)]">
-              Welcome to Pulse
+            <Sparkles className="w-4 h-4 text-[var(--fintheon-accent)]" />
+            <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[var(--fintheon-accent)]">
+              Welcome to the Pantheon
             </span>
           </div>
           <button onClick={completeTour} className="text-gray-500 hover:text-white transition-colors">
@@ -135,13 +130,13 @@ export function FirstTimeTour({ onNavigate }: { onNavigate?: (tab: string) => vo
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-5 py-3 border-t border-[var(--pulse-accent)]/10">
+        <div className="flex items-center justify-between px-5 py-3 border-t border-[var(--fintheon-accent)]/10">
           <div className="flex items-center gap-1.5">
             {TOUR_STEPS.map((_, i) => (
               <div
                 key={i}
                 className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                  i === step ? 'bg-[var(--pulse-accent)]' : i < step ? 'bg-[var(--pulse-accent)]/40' : 'bg-white/10'
+                  i === step ? 'bg-[var(--fintheon-accent)]' : i < step ? 'bg-[var(--fintheon-accent)]/40' : 'bg-white/10'
                 }`}
               />
             ))}
@@ -158,7 +153,7 @@ export function FirstTimeTour({ onNavigate }: { onNavigate?: (tab: string) => vo
             )}
             <button
               onClick={goNext}
-              className="flex items-center gap-1 px-4 py-1.5 text-xs font-medium bg-[var(--pulse-accent)] text-black rounded hover:brightness-110 transition-all"
+              className="flex items-center gap-1 px-4 py-1.5 text-xs font-medium bg-[var(--fintheon-accent)] text-black rounded hover:brightness-110 transition-all"
             >
               {isLast ? 'Get Started' : 'Next'}
               {!isLast && <ChevronRight className="w-3 h-3" />}
@@ -201,17 +196,17 @@ export function WhatsNewButton() {
     <div className="relative">
       <button
         onClick={() => setShowPanel(!showPanel)}
-        className="flex items-center gap-1.5 px-3 h-8 rounded-lg text-xs font-medium bg-[var(--pulse-accent)]/15 border border-[var(--pulse-accent)]/30 text-[var(--pulse-accent)] hover:bg-[var(--pulse-accent)]/25 transition-colors animate-pulse"
+        className="flex items-center gap-1.5 px-3 h-8 rounded-lg text-xs font-medium bg-[var(--fintheon-accent)]/15 border border-[var(--fintheon-accent)]/30 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/25 transition-colors animate-pulse"
       >
         <Sparkles className="w-3 h-3" />
-        What's New
+        Welcome to the Pantheon
       </button>
 
       {showPanel && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-[#0c0a06] border border-[var(--pulse-accent)]/20 rounded-lg shadow-xl z-50 overflow-hidden">
-          <div className="px-4 py-3 border-b border-[var(--pulse-accent)]/10">
+        <div className="absolute right-0 top-full mt-2 w-80 bg-[#0c0a06] border border-[var(--fintheon-accent)]/20 rounded-lg shadow-xl z-50 overflow-hidden">
+          <div className="px-4 py-3 border-b border-[var(--fintheon-accent)]/10">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-[var(--pulse-accent)] uppercase tracking-wider">
+              <span className="text-xs font-semibold text-[var(--fintheon-accent)] uppercase tracking-wider">
                 v{CURRENT_VERSION}
               </span>
               <button
@@ -229,7 +224,7 @@ export function WhatsNewButton() {
           <div className="px-4 py-3 space-y-2">
             {WHATS_NEW_ITEMS.map((item, i) => (
               <div key={i} className="flex items-start gap-2">
-                <span className="text-[var(--pulse-accent)] text-xs mt-0.5">-</span>
+                <span className="text-[var(--fintheon-accent)] text-xs mt-0.5">-</span>
                 <span className="text-xs text-gray-400 leading-relaxed">{item}</span>
               </div>
             ))}

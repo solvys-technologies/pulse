@@ -39,13 +39,13 @@ export function NarrativeAgentPanel({
 
   return (
     <div
-      className="fixed z-50 w-60 bg-[var(--pulse-surface)]/95 backdrop-blur-lg border border-[var(--pulse-border)]/30 rounded-lg shadow-xl p-3 animate-fade-in"
+      className="fixed z-50 w-60 bg-[var(--fintheon-surface)]/95 backdrop-blur-lg border border-[var(--fintheon-border)]/30 rounded-lg shadow-xl p-3 animate-fade-in"
       style={{ left: position.x, top: position.y }}
     >
       {/* Evaluating state */}
       {evaluating && !verdict && (
-        <div className="flex items-center gap-2 text-sm text-[var(--pulse-muted)]">
-          <Loader2 className="w-4 h-4 animate-spin text-[var(--pulse-accent)]" />
+        <div className="flex items-center gap-2 text-sm text-[var(--fintheon-muted)]">
+          <Loader2 className="w-4 h-4 animate-spin text-[var(--fintheon-accent)]" />
           <span>Agent reviewing...</span>
         </div>
       )}
@@ -63,11 +63,11 @@ export function NarrativeAgentPanel({
               {verdict.approved ? 'Approved' : 'Denied'}
             </span>
           </div>
-          <p className="text-xs text-[var(--pulse-muted)] leading-relaxed">{verdict.reasoning}</p>
+          <p className="text-xs text-[var(--fintheon-muted)] leading-relaxed">{verdict.reasoning}</p>
           {!verdict.approved && (
             <button
               onClick={() => addToast(verdict.reasoning, 'info')}
-              className="text-[10px] text-[var(--pulse-accent)] hover:underline"
+              className="text-[10px] text-[var(--fintheon-accent)] hover:underline"
             >
               Learn from this
             </button>
@@ -80,13 +80,13 @@ export function NarrativeAgentPanel({
         <div className="flex gap-2">
           <button
             onClick={onManualApprove}
-            className="flex-1 px-3 py-1.5 bg-[var(--pulse-accent)] hover:brightness-110 text-black rounded text-xs font-medium transition-all"
+            className="flex-1 px-3 py-1.5 bg-[var(--fintheon-accent)] hover:brightness-110 text-black rounded text-xs font-medium transition-all"
           >
             Approve
           </button>
           <button
             onClick={onManualDeny}
-            className="flex-1 px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-[var(--pulse-text)] rounded text-xs font-medium transition-all"
+            className="flex-1 px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-[var(--fintheon-text)] rounded text-xs font-medium transition-all"
           >
             Deny
           </button>
@@ -97,7 +97,7 @@ export function NarrativeAgentPanel({
       {verdict && (
         <button
           onClick={onClose}
-          className="mt-2 w-full text-center text-[10px] text-[var(--pulse-muted)] hover:text-[var(--pulse-text)] transition-colors"
+          className="mt-2 w-full text-center text-[10px] text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)] transition-colors"
         >
           Dismiss
         </button>

@@ -24,8 +24,8 @@ export function Tooltip({ content, children, side = 'top', className }: TooltipP
         className={cn(
           'pointer-events-none absolute z-50 scale-95 opacity-0 transition-all duration-150',
           'group-hover:pointer-events-auto group-hover:scale-100 group-hover:opacity-100',
-          'rounded-md bg-[var(--pulse-surface)] border border-[var(--pulse-accent)]/15 px-2.5 py-1.5',
-          'text-xs text-[var(--pulse-text)] shadow-lg whitespace-nowrap',
+          'rounded-md bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/15 px-2.5 py-1.5',
+          'text-xs text-[var(--fintheon-text)] shadow-lg whitespace-nowrap',
           sideStyles[side],
           className
         )}

@@ -1,8 +1,9 @@
-// [claude-code 2026-03-06] Unified chat session hook wrapping useOpenClawChat + persistence + agent routing + part normalization
+// [claude-code 2026-03-13] Hermes migration: OpenClaw -> Hermes imports
+// [claude-code 2026-03-06] Unified chat session hook wrapping useHermesChat + persistence + agent routing + part normalization
 import { useCallback, useMemo, useState } from 'react';
-import { useOpenClawChat } from './useOpenClawChat';
-import { usePersistentOpenClawConversation } from '../../../hooks/usePersistentOpenClawConversation';
-import { toOpenClawAgentOverride } from '../../../lib/openclawAgentRouting';
+import { useHermesChat } from './useHermesChat';
+import { usePersistentHermesConversation } from '../../../hooks/usePersistentHermesConversation';
+import { toHermesAgentOverride } from '../../../lib/hermesAgentRouting';
 import { normalizeToParts } from '../../../lib/chatMessageNormalizer';
 import { SKILL_PREFIXES } from '../../../lib/skillPrefixes';
 import type { ChatMessage } from '../types';
@@ -16,9 +17,9 @@ export interface UseChatSessionOptions {
 // [claude-code 2026-03-09] Added surfaceId for per-surface session isolation
 export function useChatSession({ agentId, activeSkill, surfaceId }: UseChatSessionOptions) {
   const { conversationId, setConversationId, clearConversationId } =
-    usePersistentOpenClawConversation(agentId, surfaceId);
+    usePersistentHermesConversation(agentId, surfaceId);
 
-  const agentOverride = toOpenClawAgentOverride(agentId);
+  const agentOverride = toHermesAgentOverride(agentId);
 
   const {
     messages: useChatMessages,
@@ -31,7 +32,7 @@ export function useChatSession({ agentId, activeSkill, surfaceId }: UseChatSessi
     lastError,
     clearError,
     lastRequestId,
-  } = useOpenClawChat(conversationId, setConversationId, agentOverride);
+  } = useHermesChat(conversationId, setConversationId, agentOverride);
 
   const [lastSentMessage, setLastSentMessage] = useState('');
 

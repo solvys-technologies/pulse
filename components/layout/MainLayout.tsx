@@ -35,6 +35,7 @@ interface MainLayoutProps {
 
 // Inner component that doesn't use Clerk hooks directly
 function MainLayoutInner({ onSettingsClick, signOut }: MainLayoutProps & { signOut?: () => Promise<void> }) {
+  const { selectedSymbol } = useSettings();
   const [activeTab, setActiveTab] = useState<NavTab>('feed');
   const [missionControlCollapsed, setMissionControlCollapsed] = useState(false);
   const [tapeCollapsed, setTapeCollapsed] = useState(false);
@@ -107,7 +108,7 @@ function MainLayoutInner({ onSettingsClick, signOut }: MainLayoutProps & { signO
     const fetchIVAggregate = async () => {
       try {
         const data = await backend.riskflow.getIVAggregate({
-          instrument: '/ES', // Default to ES for floating widget
+          instrument: selectedSymbol?.symbol || '/ES',
         });
         
         if (data && typeof data.score === 'number') {

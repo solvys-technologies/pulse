@@ -1,9 +1,10 @@
-// [claude-code 2026-03-10] Migrated to useOpenClawRuntime + AssistantRuntimeProvider + PulseThread + PulseComposer
+// [claude-code 2026-03-13] Hermes migration: useOpenClawRuntime -> useHermesRuntime
+// [claude-code 2026-03-10] Migrated to useHermesRuntime + AssistantRuntimeProvider + PulseThread + PulseComposer
 import { useState, useCallback } from 'react';
 import { MessageSquare, X, Maximize2 } from 'lucide-react';
 import { AssistantRuntimeProvider, useThread, useThreadRuntime } from '@assistant-ui/react';
 import { usePulseAgents } from '../../contexts/PulseAgentContext';
-import { useOpenClawRuntime } from './useOpenClawRuntime';
+import { useHermesRuntime } from './useHermesRuntime';
 import { PulseThread } from './PulseThread';
 import { PulseComposer } from './PulseComposer';
 
@@ -41,14 +42,14 @@ function FloatingInner({
 
   return (
     <div
-      className="fixed z-[90] flex flex-col rounded-xl border border-[var(--pulse-accent)]/20 bg-[var(--pulse-surface)] shadow-2xl overflow-hidden"
+      className="fixed z-[90] flex flex-col rounded-xl border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)] shadow-2xl overflow-hidden"
       style={{ bottom: '24px', right: '24px', width: '380px', height: '560px' }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--pulse-accent)]/10">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--fintheon-accent)]/10">
         <div className="flex items-center gap-2">
           <div
-            className="flex items-center justify-center rounded-md bg-[var(--pulse-accent)]/10 text-[var(--pulse-accent)] font-semibold"
+            className="flex items-center justify-center rounded-md bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)] font-semibold"
             style={{ width: '24px', height: '24px', fontSize: '12px' }}
           >
             {activeAgent?.icon || 'H'}
@@ -61,7 +62,7 @@ function FloatingInner({
         <div className="flex items-center gap-1">
           <button
             onClick={() => { onCollapse(); onExpandToAnalysis(); }}
-            className="flex items-center justify-center rounded-md text-gray-500 hover:text-[var(--pulse-accent)] transition-colors"
+            className="flex items-center justify-center rounded-md text-gray-500 hover:text-[var(--fintheon-accent)] transition-colors"
             style={{ width: '28px', height: '28px' }}
             title="Expand to Analysis"
           >
@@ -104,10 +105,10 @@ function FloatingInner({
 
 export function PulseFloatingChat({ visible, onExpandToAnalysis }: PulseFloatingChatProps) {
   const [expanded, setExpanded] = useState(false);
-  const [thinkHarder, setThinkHarder] = useState(false);
+  const [thinkHarder, setThinkHarder] = useState(true);
   const { activeAgent } = usePulseAgents();
 
-  const { runtime, lastError, lastRequestId } = useOpenClawRuntime(
+  const { runtime, lastError, lastRequestId } = useHermesRuntime(
     activeAgent?.id ?? 'default',
     thinkHarder,
     'floating'
@@ -120,7 +121,7 @@ export function PulseFloatingChat({ visible, onExpandToAnalysis }: PulseFloating
     return (
       <button
         onClick={() => setExpanded(true)}
-        className="fixed z-[90] flex items-center justify-center rounded-full bg-[var(--pulse-accent)] text-black hover:bg-[#C5A030] transition-all shadow-lg hover:shadow-xl"
+        className="fixed z-[90] flex items-center justify-center rounded-full bg-[var(--fintheon-accent)] text-black hover:bg-[#C5A030] transition-all shadow-lg hover:shadow-xl"
         style={{ bottom: '24px', right: '24px', width: '48px', height: '48px' }}
         title="Open chat"
       >

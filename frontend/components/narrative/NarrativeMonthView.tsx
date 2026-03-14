@@ -93,12 +93,12 @@ export default function NarrativeMonthView() {
               <div
                 className="flex-shrink-0 flex items-center px-4 py-2"
                 style={{
-                  borderBottom: '1px solid color-mix(in srgb, var(--pulse-border) 20%, transparent)',
+                  borderBottom: '1px solid color-mix(in srgb, var(--fintheon-border) 20%, transparent)',
                 }}
               >
                 <span
                   className="font-semibold"
-                  style={{ fontSize: '13px', color: 'var(--pulse-text)', width: '180px' }}
+                  style={{ fontSize: '13px', color: 'var(--fintheon-text)', width: '180px' }}
                 >
                   {getMonthLabel(year, month)}
                 </span>
@@ -106,7 +106,7 @@ export default function NarrativeMonthView() {
                   <span
                     key={monday.toISOString()}
                     className="flex-1 text-center font-medium"
-                    style={{ fontSize: '10px', color: 'var(--pulse-muted)' }}
+                    style={{ fontSize: '10px', color: 'var(--fintheon-muted)' }}
                   >
                     {getShortWeekLabel(monday)}
                   </span>
@@ -126,7 +126,7 @@ export default function NarrativeMonthView() {
                       style={{
                         opacity: isDecayed ? 0.35 : 1,
                         paddingLeft: isForked ? '16px' : '0',
-                        borderBottom: '1px solid color-mix(in srgb, var(--pulse-border) 15%, transparent)',
+                        borderBottom: '1px solid color-mix(in srgb, var(--fintheon-border) 15%, transparent)',
                         position: 'relative',
                       }}
                     >
@@ -135,7 +135,7 @@ export default function NarrativeMonthView() {
                           className="absolute left-2 top-0 bottom-0"
                           style={{
                             width: '1px',
-                            backgroundColor: 'color-mix(in srgb, var(--pulse-accent) 30%, transparent)',
+                            backgroundColor: 'color-mix(in srgb, var(--fintheon-accent) 30%, transparent)',
                           }}
                         />
                       )}
@@ -156,7 +156,7 @@ export default function NarrativeMonthView() {
                             key={monday.toISOString()}
                             className="flex-1 flex flex-col gap-1 p-1 min-h-[70px]"
                             style={{
-                              borderLeft: '1px solid color-mix(in srgb, var(--pulse-border) 10%, transparent)',
+                              borderLeft: '1px solid color-mix(in srgb, var(--fintheon-border) 10%, transparent)',
                             }}
                           >
                             {weekCatalysts.map((catalyst) => {
@@ -195,8 +195,8 @@ export default function NarrativeMonthView() {
               width: idx === activePageIdx ? '8px' : '6px',
               height: idx === activePageIdx ? '8px' : '6px',
               backgroundColor: idx === activePageIdx
-                ? 'var(--pulse-accent)'
-                : 'color-mix(in srgb, var(--pulse-muted) 40%, transparent)',
+                ? 'var(--fintheon-accent)'
+                : 'color-mix(in srgb, var(--fintheon-muted) 40%, transparent)',
             }}
           />
         ))}

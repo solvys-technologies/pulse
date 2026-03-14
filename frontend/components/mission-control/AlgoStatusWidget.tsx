@@ -68,11 +68,11 @@ export function AlgoStatusWidget() {
   ];
 
   const content = (
-    <div className="bg-[var(--pulse-bg)] p-4">
+    <div className="bg-[var(--fintheon-bg)] p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Cpu className="w-4 h-4 text-[var(--pulse-accent)]" />
-          <h3 className="text-sm font-semibold text-[var(--pulse-accent)]">Autopilot</h3>
+          <Cpu className="w-4 h-4 text-[var(--fintheon-accent)]" />
+          <h3 className="text-sm font-semibold text-[var(--fintheon-accent)]">Autopilot</h3>
         </div>
         <button
           onClick={handleToggleAlgo}

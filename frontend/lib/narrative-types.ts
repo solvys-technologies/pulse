@@ -1,3 +1,4 @@
+// [claude-code 2026-03-13] Hermes migration: openclaw -> hermes in AgentProviderConfig
 // [claude-code 2026-03-06] NarrativeFlow shared types — all tracks import from here
 export type CatalystSentiment = 'bullish' | 'bearish';
 export type CatalystSource = 'rss' | 'user' | 'agent' | 'riskflow' | 'brief';
@@ -72,7 +73,7 @@ export interface NarrativeConflict {
 }
 
 export interface AgentProviderConfig {
-  provider: 'openclaw' | 'github-models' | 'manual';
+  provider: 'hermes' | 'github-models' | 'manual';
   autoApprove: boolean;
   model?: string;
 }

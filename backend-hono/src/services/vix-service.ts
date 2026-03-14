@@ -1,8 +1,8 @@
-// [claude-code 2026-03-11] Replaced FMP with Yahoo Finance for VIX — 60s polling, no API key needed
+// [claude-code 2026-03-14] VIX via Yahoo Finance — 60s polling, no API key needed
 /**
  * VIX Service
  * Real-time VIX fetching with caching, spike detection, and multiplier logic
- * Primary source: Yahoo Finance (no API key). Fallback: FMP if available.
+ * Source: Yahoo Finance (no API key required)
  */
 
 export interface VIXData {
@@ -47,7 +47,7 @@ export function startVIXPolling(): void {
 }
 
 /**
- * Fetch VIX from Yahoo Finance (primary) or FMP (fallback).
+ * Fetch VIX from Yahoo Finance — no API key required.
  * Extracts price from Yahoo's v8 chart API — no API key required.
  */
 async function fetchFromYahoo(): Promise<number | null> {
@@ -69,29 +69,8 @@ async function fetchFromYahoo(): Promise<number | null> {
   }
 }
 
-async function fetchFromFMP(): Promise<number | null> {
-  const fmpApiKey = process.env.FMP_API_KEY
-  if (!fmpApiKey) return null
-  try {
-    const res = await fetch(
-      `https://financialmodelingprep.com/api/v3/quote/%5EVIX?apikey=${fmpApiKey}`,
-      { signal: AbortSignal.timeout(5000) }
-    )
-    if (!res.ok) throw new Error(`FMP HTTP ${res.status}`)
-    const data = await res.json()
-    if (!Array.isArray(data) || data.length === 0 || typeof data[0]?.price !== 'number') {
-      throw new Error('Invalid FMP response')
-    }
-    return data[0].price
-  } catch (err) {
-    console.warn('[VIX] FMP fetch failed:', err instanceof Error ? err.message : err)
-    return null
-  }
-}
-
 /**
- * Fetch current VIX level
- * Tries Yahoo Finance first, falls back to FMP, then cached/default value
+ * Fetch current VIX level from Yahoo Finance, then cached/default value
  */
 export async function fetchVIX(): Promise<VIXData> {
   const now = new Date()
@@ -101,8 +80,7 @@ export async function fetchVIX(): Promise<VIXData> {
     return buildVIXData(vixCache, now)
   }
 
-  // Try Yahoo first (no API key needed), then FMP
-  const newLevel = await fetchFromYahoo() ?? await fetchFromFMP()
+  const newLevel = await fetchFromYahoo()
 
   if (newLevel !== null) {
     const previousLevel = vixCache?.level ?? newLevel

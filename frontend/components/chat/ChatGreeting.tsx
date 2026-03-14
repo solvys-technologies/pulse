@@ -1,21 +1,21 @@
 // [claude-code 2026-03-06] Extracted AnalysisGreeting from ChatInterface — greeting + suggestion chips
 // [claude-code 2026-03-11] Chips now wired to skill system via onSkillSend
+// [claude-code 2026-03-14] Fintheon rebrand: Dawn Dispatch/Weekly Tribune chips, Roman greetings, new agent titles (Consul/Censori/Herald/Oracle)
 import { BarChart3, CalendarCheck, Brain, Eye } from 'lucide-react';
 import { usePulseAgents } from '../../contexts/PulseAgentContext';
 
 const SUGGESTION_CHIPS: { label: string; skillId: string; prompt: string; icon: typeof BarChart3 }[] = [
-  { label: "Run the MDB Report", skillId: 'mdb_report', prompt: "Run the MDB report for today's session", icon: BarChart3 },
-  { label: "Tale of the Tape", skillId: 'tott', prompt: "Give me the Tale of the Tape weekly summary", icon: CalendarCheck },
+  { label: "Dawn Dispatch", skillId: 'mdb_report', prompt: "Run the MDB report for today's session", icon: BarChart3 },
+  { label: "The Weekly Tribune", skillId: 'tott', prompt: "Give me The Weekly Tribune summary", icon: CalendarCheck },
   { label: "Psych Eval", skillId: 'psych_eval', prompt: "Run a full psych eval on my recent trading", icon: Brain },
   { label: "Update my Blindspots", skillId: 'blindspots', prompt: "Update and review my trading blindspots", icon: Eye },
 ];
 
-function getGreeting(): string {
+function getGreeting(traderName?: string): string {
   const hour = new Date().getHours();
-  if (hour < 6) return "Late session. What needs attention?";
-  if (hour < 12) return "Good morning. What can I help with?";
-  if (hour < 17) return "Good afternoon. What can I help with?";
-  return "Good evening. What can I help with?";
+  if (hour < 12) return `Ave, ${traderName || 'Trader'}. The markets stir.`;
+  if (hour <= 17) return 'The Forum is active. What needs our attention?';
+  return "The day's battles are done. What of the next conquest?";
 }
 
 interface ChatGreetingProps {
@@ -41,11 +41,11 @@ export function ChatGreeting({ onSend, onSkillSend, isLoading }: ChatGreetingPro
   const getSubtitle = () => {
     switch (agent.name) {
       case 'Harper': return "I'm Harper, your Chief Agentic Officer. What needs orchestrating today?";
-      case 'Oracle': return "I'm Oracle, your Market Intelligence Analyst. What data shall we review?";
+      case 'Oracle': return "I'm Oracle, your Consul. What data shall we review?";
       case 'Feucht': return "I'm Feucht, your Risk Management Specialist. What exposure needs attention?";
-      case 'Sentinel': return "I'm Sentinel, your Compliance Monitor. What needs verification?";
-      case 'Charles': return "I'm Charles, your Quantitative Strategist. What patterns should we analyze?";
-      case 'Horace': return "I'm Horace, your Portfolio Architect. What allocations need review?";
+      case 'Sentinel': return "I'm Sentinel, your Censori. What needs verification?";
+      case 'Charles': return "I'm Oracle, the pattern diviner. What signals should we analyze?";
+      case 'Horace': return "I'm Horace, your Herald. What allocations need review?";
       default: return `I'm ${agent.name}. What needs orchestrating today?`;
     }
   };

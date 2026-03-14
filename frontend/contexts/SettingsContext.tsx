@@ -26,6 +26,7 @@ interface AlertConfig {
   newsAlerts: boolean;
   soundEnabled: boolean;
   healingBowlSound: HealingBowlSound;
+  nametagPulse: boolean;
 }
 
 interface RiskSettings {
@@ -58,7 +59,7 @@ export interface IframeUrls {
   research: string;
 }
 
-export type PrimaryBroker = 'rithmic' | 'projectx';
+export type PrimaryBroker = 'rithmic' | 'projectx' | 'hyperliquid';
 
 interface SettingsContextType {
   apiKeys: APIKeys;
@@ -83,6 +84,8 @@ interface SettingsContextType {
   setIframeUrls: (urls: IframeUrls) => void;
   gatewayPort: number;
   setGatewayPort: (port: number) => void;
+  traderName: string;
+  setTraderName: (name: string) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -147,6 +150,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       newsAlerts: false,
       soundEnabled: true,
       healingBowlSound: 'calm-1' as HealingBowlSound,
+      nametagPulse: true,
     })
   );
   const [mockDataEnabled, setMockDataEnabled] = useState(() =>
@@ -189,7 +193,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     })
   );
   const [gatewayPort, setGatewayPort] = useState<number>(() =>
-    loadFromStorage('gatewayPort', 7787)
+    loadFromStorage('gatewayPort', 8080)
+  );
+  const [traderName, setTraderName] = useState<string>(() =>
+    loadFromStorage('traderName', '')
   );
 
   // Track whether initial backend fetch has completed to avoid saving back stale data
@@ -210,6 +217,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         if (remote.primaryBroker) setPrimaryBroker(remote.primaryBroker as PrimaryBroker);
         if (remote.iframeUrls) setIframeUrls(prev => ({ ...prev, ...(remote.iframeUrls as IframeUrls) }));
         if (remote.gatewayPort) setGatewayPort(remote.gatewayPort as number);
+        if (remote.traderName) setTraderName(remote.traderName as string);
       }
       backendSynced.current = true;
     });
@@ -229,6 +237,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       primaryBroker,
       iframeUrls,
       gatewayPort,
+      traderName,
     };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
@@ -239,7 +248,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     if (backendSynced.current) {
       saveBackendSettings(settings);
     }
-  }, [apiKeys, tradingModels, alertConfig, mockDataEnabled, selectedSymbol, riskSettings, developerSettings, autoPilotSettings, primaryBroker, iframeUrls, gatewayPort]);
+  }, [apiKeys, tradingModels, alertConfig, mockDataEnabled, selectedSymbol, riskSettings, developerSettings, autoPilotSettings, primaryBroker, iframeUrls, gatewayPort, traderName]);
 
   return (
     <SettingsContext.Provider
@@ -266,6 +275,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setIframeUrls,
         gatewayPort,
         setGatewayPort,
+        traderName,
+        setTraderName,
       }}
     >
       {children}

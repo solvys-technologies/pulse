@@ -40,7 +40,7 @@ function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (
       onClick={() => onChange(!checked)}
       className={`relative inline-flex h-4 w-7 flex-shrink-0 items-center rounded-full transition-colors ${
         disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
-      } ${checked ? 'bg-[var(--pulse-accent)]' : 'bg-white/10'}`}
+      } ${checked ? 'bg-[var(--fintheon-accent)]' : 'bg-white/10'}`}
     >
       <span
         className={`absolute h-3 w-3 rounded-full bg-white shadow transition-transform ${
@@ -64,7 +64,7 @@ export function McpConnectorPopup({ open, servers, activeIds, onToggle, onClose 
 
   return (
     <div
-      className="w-full overflow-hidden rounded-xl border border-[var(--pulse-accent)]/20 transition-all duration-200"
+      className="w-full overflow-hidden rounded-xl border border-[var(--fintheon-accent)]/20 transition-all duration-200"
       style={{
         maxHeight: open ? '440px' : '0px',
         opacity: open ? 1 : 0,
@@ -73,9 +73,9 @@ export function McpConnectorPopup({ open, servers, activeIds, onToggle, onClose 
       }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--pulse-accent)]/10">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--fintheon-accent)]/10">
         <div className="flex items-center gap-1.5">
-          <Plug2 size={12} className="text-[var(--pulse-accent)]/70" />
+          <Plug2 size={12} className="text-[var(--fintheon-accent)]/70" />
           <span className="text-[12px] font-semibold text-gray-400 uppercase tracking-wider">Connectors</span>
         </div>
         <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
@@ -95,7 +95,7 @@ export function McpConnectorPopup({ open, servers, activeIds, onToggle, onClose 
             <div key={category}>
               {/* Category header */}
               <div className="px-3 pt-2.5 pb-1">
-                <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--pulse-accent)]/40">
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--fintheon-accent)]/40">
                   {CATEGORY_LABELS[category as McpServerConfig['category']]}
                 </span>
               </div>
@@ -118,7 +118,7 @@ export function McpConnectorPopup({ open, servers, activeIds, onToggle, onClose 
                     {/* Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 mb-0.5">
-                        <span className="text-[12px] font-semibold text-[var(--pulse-text)] truncate">{server.name}</span>
+                        <span className="text-[12px] font-semibold text-[var(--fintheon-text)] truncate">{server.name}</span>
                         {server.toolCount !== undefined && (
                           <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-gray-500 font-medium flex-shrink-0">
                             {server.toolCount} tools
@@ -152,7 +152,7 @@ export function McpConnectorPopup({ open, servers, activeIds, onToggle, onClose 
 
       {/* Footer */}
       {servers.length > 0 && (
-        <div className="px-3 py-2 border-t border-[var(--pulse-accent)]/10 flex items-center justify-between">
+        <div className="px-3 py-2 border-t border-[var(--fintheon-accent)]/10 flex items-center justify-between">
           <span className="text-[10px] text-gray-600">
             {activeCount} of {totalCount} active
           </span>

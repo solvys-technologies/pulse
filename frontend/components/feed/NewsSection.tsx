@@ -102,7 +102,7 @@ function CyclicalBadge({ cycle }: { cycle: FlowCycle }) {
     <span
       className={`text-[9px] font-bold tracking-[0.12em] uppercase px-1.5 py-0.5 border ${
         isCyclical
-          ? 'border-[var(--pulse-accent)]/30 text-[var(--pulse-accent)]/80 bg-[var(--pulse-accent)]/5'
+          ? 'border-[var(--fintheon-accent)]/30 text-[var(--fintheon-accent)]/80 bg-[var(--fintheon-accent)]/5'
           : 'border-violet-500/30 text-violet-400/80 bg-violet-500/5'
       }`}
     >
@@ -175,7 +175,7 @@ export function NewsSection() {
         </div>
         <button
           onClick={requestNotifications}
-          className="flex items-center gap-2 text-xs text-gray-400 hover:text-[var(--pulse-accent)] transition-colors px-2 py-1"
+          className="flex items-center gap-2 text-xs text-gray-400 hover:text-[var(--fintheon-accent)] transition-colors px-2 py-1"
         >
           {notificationsEnabled ? (
             <Bell className="w-3.5 h-3.5" />
@@ -191,7 +191,7 @@ export function NewsSection() {
         <select
           value={showProposals ? 'all' : priorityFilter}
           onChange={(e) => { setShowProposals(false); setPriorityFilter(e.target.value as PriorityFilter); }}
-          className="text-[10px] px-2 py-1 rounded bg-[var(--pulse-bg)] border border-zinc-800 text-zinc-400 focus:outline-none focus:border-[var(--pulse-accent)]/40 cursor-pointer"
+          className="text-[10px] px-2 py-1 rounded bg-[var(--fintheon-bg)] border border-zinc-800 text-zinc-400 focus:outline-none focus:border-[var(--fintheon-accent)]/40 cursor-pointer"
         >
           <option value="all">Priority: All ({alerts.length})</option>
           <option value="high">High ({highCount})</option>
@@ -200,7 +200,7 @@ export function NewsSection() {
         <select
           value={showProposals ? 'all' : sourceFilter}
           onChange={(e) => { setShowProposals(false); setSourceFilter(e.target.value as SourceFilter); }}
-          className="text-[10px] px-2 py-1 rounded bg-[var(--pulse-bg)] border border-zinc-800 text-zinc-400 focus:outline-none focus:border-[var(--pulse-accent)]/40 cursor-pointer"
+          className="text-[10px] px-2 py-1 rounded bg-[var(--fintheon-bg)] border border-zinc-800 text-zinc-400 focus:outline-none focus:border-[var(--fintheon-accent)]/40 cursor-pointer"
         >
           <option value="all">Source: All</option>
           <option value="notion">Notion</option>
@@ -210,8 +210,8 @@ export function NewsSection() {
           onClick={() => setShowProposals((v) => !v)}
           className={`text-[10px] px-2.5 py-1 rounded transition-colors border ${
             showProposals
-              ? 'bg-[var(--pulse-accent)]/20 text-[var(--pulse-accent)] border-[var(--pulse-accent)]/40'
-              : 'text-zinc-500 hover:text-[var(--pulse-accent)] border-transparent'
+              ? 'bg-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)] border-[var(--fintheon-accent)]/40'
+              : 'text-zinc-500 hover:text-[var(--fintheon-accent)] border-transparent'
           }`}
         >
           Proposals{proposalCount > 0 ? ` (${proposalCount})` : ''}
@@ -242,7 +242,7 @@ export function NewsSection() {
                 href={item.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={`group block bg-[var(--pulse-bg)] border border-zinc-800/60 px-4 py-3 transition-colors hover:border-[var(--pulse-accent)]/30 ${
+                className={`group block bg-[var(--fintheon-bg)] border border-zinc-800/60 px-4 py-3 transition-colors hover:border-[var(--fintheon-accent)]/30 ${
                   seen ? 'opacity-60' : ''
                 } ${isHigh ? 'riskflow-pulse-row' : ''}`}
               >

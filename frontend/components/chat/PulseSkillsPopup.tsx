@@ -30,7 +30,7 @@ export function PulseSkillsPopup({ open, onClose, activeSkill, onSelectSkill, di
 
   return (
     <div
-      className="w-full overflow-hidden rounded-xl border border-[var(--pulse-accent)]/20 transition-all duration-200"
+      className="w-full overflow-hidden rounded-xl border border-[var(--fintheon-accent)]/20 transition-all duration-200"
       style={{
         maxHeight: open ? '440px' : '0px',
         opacity: open ? 1 : 0,
@@ -39,7 +39,7 @@ export function PulseSkillsPopup({ open, onClose, activeSkill, onSelectSkill, di
       }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--pulse-accent)]/10">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--fintheon-accent)]/10">
         <div className="flex items-center gap-1.5">
           <span className="text-[12px] font-semibold text-gray-400 uppercase tracking-wider">Skills</span>
           <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-gray-500 font-medium">
@@ -86,7 +86,7 @@ export function PulseSkillsPopup({ open, onClose, activeSkill, onSelectSkill, di
                 {/* Info */}
                 <div className="flex-1 min-w-0 text-left">
                   <div className="flex items-center gap-1.5">
-                    <span className={`text-[12px] font-semibold ${active && !disabled ? 'text-white' : disabled ? 'text-gray-600' : 'text-[var(--pulse-text)]'}`}>
+                    <span className={`text-[12px] font-semibold ${active && !disabled ? 'text-white' : disabled ? 'text-gray-600' : 'text-[var(--fintheon-text)]'}`}>
                       {skill.label}
                     </span>
                     {active && !disabled && (
@@ -130,7 +130,7 @@ export function PulseSkillsPopup({ open, onClose, activeSkill, onSelectSkill, di
       </div>
 
       {/* Footer */}
-      <div className="px-3 py-2 border-t border-[var(--pulse-accent)]/10">
+      <div className="px-3 py-2 border-t border-[var(--fintheon-accent)]/10">
         <span className="text-[10px] text-gray-600">
           {activeSkill ? `Active: ${SKILLS.find(s => s.id === activeSkill)?.label ?? activeSkill}` : 'Click to activate a skill'}
         </span>

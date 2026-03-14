@@ -12,7 +12,7 @@ export function isReportHtml(text: string): boolean {
   if (!text) return false;
   const trimmed = text.trim();
   return (
-    trimmed.includes('<!-- PULSE_REPORT -->') ||
+    trimmed.includes('<!-- PULSE_REPORT -->') || trimmed.includes('<!-- FINTHEON_REPORT -->') ||
     trimmed.startsWith('<!DOCTYPE html>') ||
     trimmed.startsWith('<!doctype html>') ||
     trimmed.startsWith('<html')
@@ -42,14 +42,14 @@ export function ReportViewer({ html, onClose, onPopOut, onExpandPanel }: ReportV
   };
 
   return (
-    <div className="rounded-lg border border-[var(--pulse-accent)]/20 overflow-hidden">
+    <div className="rounded-lg border border-[var(--fintheon-accent)]/20 overflow-hidden">
       {/* Toolbar */}
-      <div className="flex items-center gap-2 px-3 py-2 bg-[var(--pulse-surface)] border-b border-[var(--pulse-accent)]/10">
-        <span className="text-xs text-[var(--pulse-accent)] font-semibold">Report</span>
+      <div className="flex items-center gap-2 px-3 py-2 bg-[var(--fintheon-surface)] border-b border-[var(--fintheon-accent)]/10">
+        <span className="text-xs text-[var(--fintheon-accent)] font-semibold">Report</span>
         <span className="flex-1" />
         <button
           onClick={handlePopOut}
-          className="flex items-center gap-1 text-xs text-zinc-400 hover:text-[var(--pulse-accent)] transition-colors"
+          className="flex items-center gap-1 text-xs text-zinc-400 hover:text-[var(--fintheon-accent)] transition-colors"
           title="Pop out"
         >
           <ExternalLink size={12} />
@@ -58,7 +58,7 @@ export function ReportViewer({ html, onClose, onPopOut, onExpandPanel }: ReportV
         {onExpandPanel && (
           <button
             onClick={onExpandPanel}
-            className="flex items-center gap-1 text-xs text-zinc-400 hover:text-[var(--pulse-accent)] transition-colors"
+            className="flex items-center gap-1 text-xs text-zinc-400 hover:text-[var(--fintheon-accent)] transition-colors"
             title="Expand"
           >
             <Maximize2 size={12} />
@@ -67,7 +67,7 @@ export function ReportViewer({ html, onClose, onPopOut, onExpandPanel }: ReportV
         )}
         <button
           onClick={onClose}
-          className="flex items-center justify-center text-zinc-400 hover:text-[var(--pulse-accent)] transition-colors"
+          className="flex items-center justify-center text-zinc-400 hover:text-[var(--fintheon-accent)] transition-colors"
           title="Close"
         >
           <X size={14} />
@@ -80,7 +80,7 @@ export function ReportViewer({ html, onClose, onPopOut, onExpandPanel }: ReportV
         sandbox="allow-scripts"
         className="w-full bg-white rounded-b-lg"
         style={{ minHeight: '400px', border: 'none' }}
-        title="Pulse Report"
+        title="Fintheon Report"
       />
     </div>
   );

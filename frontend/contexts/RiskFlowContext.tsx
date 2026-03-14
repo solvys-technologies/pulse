@@ -1,10 +1,9 @@
-// [claude-code 2026-03-03] Extended: polls Notion trade ideas on 60s interval,
-// injects them as RiskFlowAlerts with source='notion-trade-idea' pinned at top.
-// [claude-code 2026-03-10] Added pollBackendFeed (30s) — wires /api/riskflow/feed into context.
-// Merge order: notionAlerts → backendAlerts → rssAlerts. minMacroLevel=2, limit=30.
+// [claude-code 2026-03-14] Removed MarketWatch RSS polling — feed now Notion + backend only.
+// [claude-code 2026-03-14] XCLI: minMacroLevel=0 so all items show regardless of macro level.
+// [claude-code 2026-03-13] Hermes migration: openclawDescription -> hermesDescription
 // [claude-code 2026-03-12] Instrument persistence: passes selectedSymbol to backend feed poll
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { riskFlowPoller, type RiskFlowAlert } from '../lib/riskflow-feed';
+import type { RiskFlowAlert } from '../lib/riskflow-feed';
 import baseBackend from '../lib/backend';
 import { decodeHtmlEntities } from '../lib/html-entities';
 import { useSettings } from './SettingsContext';
@@ -86,7 +85,6 @@ function persistIds(key: string, ids: Set<string>): void {
 
 export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   const { selectedSymbol } = useSettings();
-  const [rssAlerts, setRssAlerts] = useState<RiskFlowAlert[]>([]);
   const [notionAlerts, setNotionAlerts] = useState<RiskFlowAlert[]>([]);
   const [backendAlerts, setBackendAlerts] = useState<RiskFlowAlert[]>([]);
   const [notionPollStatus, setNotionPollStatus] = useState<NotionPollStatus | null>(null);
@@ -95,16 +93,6 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   const [refreshing, setRefreshing] = useState(false);
   const notionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const backendIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // MarketWatch RSS polling (unchanged)
-  useEffect(() => {
-    riskFlowPoller.start();
-    const unsub = riskFlowPoller.subscribe(setRssAlerts);
-    return () => {
-      unsub();
-      riskFlowPoller.stop();
-    };
-  }, []);
 
   // Notion trade idea polling
   const pollNotion = useCallback(async () => {
@@ -119,7 +107,7 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
         id: `notion-ti-${idea.id}`,
         headline: decodeHtmlEntities(`${idea.direction.toUpperCase()} — ${displayName}${idea.entry ? ` @ ${idea.entry}` : ''}`),
         summary: decodeHtmlEntities(
-          idea.openclawDescription
+          idea.hermesDescription
           ?? `${displayName} — ${idea.direction} trade idea${idea.confidence ? ` (${idea.confidence} confidence)` : ''}`
         ),
         url: idea.notionUrl,
@@ -141,7 +129,7 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
           confidence: idea.confidence,
           timeframe: idea.timeframe,
           sourceAgent: idea.sourceAgent,
-          openclawDescription: idea.openclawDescription,
+          hermesDescription: idea.hermesDescription,
           notionUrl: idea.notionUrl,
         },
       };
@@ -167,7 +155,7 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
   // Backend feed polling (twitter-cli, Polymarket, Economic Calendar)
   const pollBackendFeed = useCallback(async () => {
     try {
-      const response = await baseBackend.riskflow.list({ minMacroLevel: 2, limit: 30, instrument: selectedSymbol.symbol });
+      const response = await baseBackend.riskflow.list({ minMacroLevel: 0, limit: 30, instrument: selectedSymbol.symbol });
       const alerts: RiskFlowAlert[] = response.items.map((item) => ({
         id: `backend-${item.id}`,
         headline: item.title,
@@ -203,7 +191,7 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
     };
   }, [pollBackendFeed]);
 
-  // Merge: Notion (pinned) → Backend feed → RSS
+  // Merge: Notion (pinned) → Backend feed
   // [claude-code 2026-03-11] 24h stalemate rule: drop items older than 24h on init/render
   const STALE_CUTOFF_MS = 24 * 60 * 60 * 1000;
   const now = Date.now();
@@ -214,7 +202,7 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
 
   const seenBackendIds = new Set(notionAlerts.map((a) => a.id));
   const dedupedBackend = backendAlerts.filter((a) => !seenBackendIds.has(a.id));
-  const merged = [...notionAlerts, ...dedupedBackend, ...rssAlerts].filter(isFresh);
+  const merged = [...notionAlerts, ...dedupedBackend].filter(isFresh);
   const visibleAlerts = merged.filter((a) => !dismissedIds.has(a.id));
   const highCount = visibleAlerts.filter((a) => a.severity === 'high' || a.severity === 'critical').length;
   const mediumCount = visibleAlerts.filter((a) => a.severity === 'medium').length;
@@ -270,11 +258,10 @@ export function RiskFlowProvider({ children }: { children: React.ReactNode }) {
     try {
       // Trigger backend to poll sources for fresh items
       await baseBackend.riskflow.refresh().catch(() => {});
-      // Re-fetch all three sources in parallel
+      // Re-fetch both sources in parallel
       await Promise.all([
         pollNotion(),
         pollBackendFeed(),
-        Promise.resolve(riskFlowPoller.forceRefresh()),
       ]);
     } finally {
       setRefreshing(false);

@@ -123,9 +123,13 @@ export async function handleGetFeed(c: Context) {
     const items = (feed.items || []).map((item: any) => {
       if (item.ivScore != null && item.ivScore >= 2) {
         const pts = estimatePoints(item.ivScore, vixLevel, instrument);
+        // Derive sentiment from item.sentiment if priceBrainScore is missing (DB-cached items)
+        const sentimentMap: Record<string, string> = { bullish: 'Bullish', bearish: 'Bearish', neutral: 'Neutral' };
         return {
           ...item,
           priceBrainScore: {
+            sentiment: sentimentMap[item.sentiment] ?? 'Neutral',
+            classification: 'Neutral',
             ...item.priceBrainScore,
             impliedPoints: pts.scaledPoints,
             instrument,

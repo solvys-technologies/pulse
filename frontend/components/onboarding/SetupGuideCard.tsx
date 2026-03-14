@@ -1,3 +1,4 @@
+// [claude-code 2026-03-13] Hermes migration: OpenClaw Gateway -> Hermes Agent
 // [claude-code 2026-03-11] First-time setup guide card with status indicators
 import { useState, useEffect, useCallback } from 'react';
 import { CheckCircle2, AlertCircle, Loader2, RefreshCw, X, Server, Globe, FileText, TrendingUp } from 'lucide-react';
@@ -70,21 +71,21 @@ export function SetupGuideCard({ onDismiss }: { onDismiss?: () => void }) {
 
   const services: ServiceCheck[] = [
     { id: 'backend', label: 'Backend API', description: 'Hono server on port 8080', icon: Server, status: backendStatus },
-    { id: 'gateway', label: 'OpenClaw Gateway', description: 'AI agent router', icon: Globe, status: gwStatus },
+    { id: 'gateway', label: 'Hermes Agent', description: 'AI agent router', icon: Globe, status: gwStatus },
     { id: 'notion', label: 'Notion Integration', description: 'Trade ideas & briefs', icon: FileText, status: notionStatus },
-    { id: 'market', label: 'Market Data (VIX)', description: 'FMP API for IV scoring', icon: TrendingUp, status: marketDataStatus },
+    { id: 'market', label: 'Market Data (VIX)', description: 'Yahoo Finance for IV scoring', icon: TrendingUp, status: marketDataStatus },
   ];
 
   const allConnected = services.every(s => s.status === 'connected');
   const connectedCount = services.filter(s => s.status === 'connected').length;
 
   return (
-    <div className="border border-[var(--pulse-accent)]/30 rounded-xl bg-[#0b0b08] p-4">
+    <div className="border border-[var(--fintheon-accent)]/30 rounded-xl bg-[#0b0b08] p-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <h3 className="text-sm font-semibold text-[var(--pulse-accent)]">Setup Guide</h3>
-          <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--pulse-accent)]/10 text-[var(--pulse-accent)] font-medium">
+          <h3 className="text-sm font-semibold text-[var(--fintheon-accent)]">Setup Guide</h3>
+          <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)] font-medium">
             {connectedCount}/{services.length}
           </span>
         </div>
@@ -92,7 +93,7 @@ export function SetupGuideCard({ onDismiss }: { onDismiss?: () => void }) {
           <button
             onClick={runChecks}
             disabled={checking}
-            className="p-1 rounded hover:bg-[var(--pulse-accent)]/10 text-zinc-500 hover:text-[var(--pulse-accent)] transition-colors disabled:opacity-40"
+            className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors disabled:opacity-40"
             title="Re-check all services"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${checking ? 'animate-spin' : ''}`} />
@@ -130,7 +131,7 @@ export function SetupGuideCard({ onDismiss }: { onDismiss?: () => void }) {
           <p className="text-[11px] text-green-400/80">All services connected. You're ready to trade.</p>
         ) : (
           <p className="text-[11px] text-zinc-500">
-            See <span className="text-[var(--pulse-accent)]">Settings</span> to configure missing services. Refer to SETUP.md for details.
+            See <span className="text-[var(--fintheon-accent)]">Settings</span> to configure missing services. Refer to SETUP.md for details.
           </p>
         )}
       </div>

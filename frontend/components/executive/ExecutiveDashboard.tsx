@@ -16,6 +16,16 @@ import { RefreshCw } from 'lucide-react';
 
 const DASHBOARD_PAGES = ['Briefing', 'RiskFlow'];
 
+function briefTypeToLabel(bt: string): string {
+  switch (bt) {
+    case 'MDB': return 'Dawn Dispatch';
+    case 'ADB': return 'Midday Dispatch';
+    case 'PMDB': return 'Dusk Dispatch';
+    case 'TOTT': return 'The Weekly Tribune';
+    default: return 'Latest Brief';
+  }
+}
+
 export function ExecutiveDashboard() {
   const backend = useBackend();
   const [activePage, setActivePage] = useState(0); // default to Briefing
@@ -42,15 +52,16 @@ export function ExecutiveDashboard() {
   };
   const [briefLabel, setBriefLabel] = useState(getBriefLabel);
 
-  // Daily Brief from Notion — rotates MDB/ADB/PMDB
+  // Daily Brief from Notion — rotates MDB/ADB/PMDB, label from backend
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       try {
-        if (!cancelled) setBriefLabel(getBriefLabel());
-        const items = await backend.notion.getMdbBrief();
+        const res = await backend.notion.getMdbBrief();
         if (cancelled) return;
-        setNtnText(items[0]?.detail ?? '');
+        setNtnText(res.items[0]?.detail ?? '');
+        if (res.briefType) setBriefLabel(briefTypeToLabel(res.briefType));
+        else setBriefLabel(getBriefLabel());
       } catch (error) {
         console.warn('[Dashboard] Brief fetch failed:', error);
       } finally {
@@ -91,9 +102,9 @@ export function ExecutiveDashboard() {
   const refreshBrief = useCallback(async () => {
     setNtnRefreshing(true);
     try {
-      setBriefLabel(getBriefLabel());
-      const items = await backend.notion.getMdbBrief();
-      setNtnText(items[0]?.detail ?? '');
+      const res = await backend.notion.getMdbBrief();
+      setNtnText(res.items[0]?.detail ?? '');
+      if (res.briefType) setBriefLabel(briefTypeToLabel(res.briefType));
     } catch (error) {
       console.warn('[Dashboard] Brief refresh failed:', error);
     } finally {
@@ -183,7 +194,7 @@ export function ExecutiveDashboard() {
                     type="button"
                     onClick={refreshBrief}
                     disabled={ntnRefreshing}
-                    className="p-1 rounded hover:bg-[var(--pulse-accent)]/10 text-zinc-500 hover:text-[var(--pulse-accent)] transition-colors disabled:opacity-40"
+                    className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors disabled:opacity-40"
                     title="Refresh brief"
                   >
                     <RefreshCw className={`w-3 h-3 ${ntnRefreshing ? 'animate-spin' : ''}`} />
@@ -193,7 +204,7 @@ export function ExecutiveDashboard() {
               <textarea
                 value={ntnText}
                 readOnly
-                className="mt-2 flex-1 min-h-0 w-full resize-none bg-[#0b0b08] px-4 py-3 text-sm text-gray-200 border-l-2 border-[var(--pulse-accent)]/40 focus:outline-none focus:border-[var(--pulse-accent)]"
+                className="mt-2 flex-1 min-h-0 w-full resize-none bg-[#0b0b08] px-4 py-3 text-sm text-gray-200 border-l-2 border-[var(--fintheon-accent)]/40 focus:outline-none focus:border-[var(--fintheon-accent)]"
                 placeholder={ntnLoaded ? 'Awaiting AI-generated brief...' : 'Loading brief...'}
               />
               {ntnLoaded && !ntnText.trim() && (
@@ -244,7 +255,7 @@ export function ExecutiveDashboard() {
                 {kpis.map((kpi) => (
                   <div
                     key={kpi.label}
-                    className="bg-[#0b0b08] px-4 py-3 border-l-2 border-[var(--pulse-accent)]/35"
+                    className="bg-[#0b0b08] px-4 py-3 border-l-2 border-[var(--fintheon-accent)]/35"
                   >
                     <div className="text-[10px] tracking-[0.2em] uppercase text-gray-500">{kpi.label}</div>
                     <div className="mt-1.5 text-2xl font-semibold text-white">{kpi.value}</div>
@@ -358,7 +369,7 @@ export function ExecutiveDashboard() {
             <div
               className={`transition-all duration-300 rounded-full ${
                 activePage === idx
-                  ? 'w-[3px] h-8 bg-[var(--pulse-accent)]'
+                  ? 'w-[3px] h-8 bg-[var(--fintheon-accent)]'
                   : 'w-[2px] h-5 bg-gray-700 hover:bg-gray-500'
               }`}
             />

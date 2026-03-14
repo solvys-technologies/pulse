@@ -24,11 +24,11 @@ export function AiLoader({ text = 'Thinking...', size = 40, className }: AiLoade
             cy={size / 2}
             r={r}
             fill="none"
-            stroke="var(--pulse-accent)"
+            stroke="var(--fintheon-accent)"
             strokeWidth={2.5}
             strokeLinecap="round"
             strokeDasharray={`${r * 1.8} ${r * 4.5}`}
-            style={{ filter: 'drop-shadow(0 0 4px var(--pulse-accent))' }}
+            style={{ filter: 'drop-shadow(0 0 4px var(--fintheon-accent))' }}
           />
         </svg>
         {/* Inner dot */}
@@ -41,8 +41,8 @@ export function AiLoader({ text = 'Thinking...', size = 40, className }: AiLoade
             style={{
               width: 6,
               height: 6,
-              background: 'var(--pulse-accent)',
-              boxShadow: '0 0 8px var(--pulse-accent)',
+              background: 'var(--fintheon-accent)',
+              boxShadow: '0 0 8px var(--fintheon-accent)',
             }}
           />
         </span>
@@ -51,7 +51,7 @@ export function AiLoader({ text = 'Thinking...', size = 40, className }: AiLoade
       {text && (
         <span
           className="text-sm font-medium animate-pulse"
-          style={{ color: 'var(--pulse-accent)' }}
+          style={{ color: 'var(--fintheon-accent)' }}
         >
           {text}
         </span>

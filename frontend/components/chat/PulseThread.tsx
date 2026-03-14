@@ -50,14 +50,14 @@ const MARKDOWN_COMPONENTS = {
     <pre className="my-2 overflow-x-auto">{children}</pre>
   ),
   blockquote: ({ children }: { children?: React.ReactNode }) => (
-    <blockquote className="border-l-2 border-[var(--pulse-accent)]/40 pl-3 my-2 text-zinc-400 italic">{children}</blockquote>
+    <blockquote className="border-l-2 border-[var(--fintheon-accent)]/40 pl-3 my-2 text-zinc-400 italic">{children}</blockquote>
   ),
   strong: ({ children }: { children?: React.ReactNode }) => (
     <strong className="font-semibold text-zinc-100">{children}</strong>
   ),
   hr: () => <hr className="border-white/10 my-3" />,
   a: ({ children, href }: { children?: React.ReactNode; href?: string }) => (
-    <a href={href} target="_blank" rel="noreferrer" className="text-[var(--pulse-accent)] hover:text-[#C5A030] underline underline-offset-2">
+    <a href={href} target="_blank" rel="noreferrer" className="text-[var(--fintheon-accent)] hover:text-[#C5A030] underline underline-offset-2">
       {children}
     </a>
   ),
@@ -127,10 +127,10 @@ const ChainOfThoughtDisplay: FC<{ text: string; isStreaming?: boolean }> = ({ te
   if (!text) return null;
 
   return (
-    <div className="mb-3 rounded-lg border border-[var(--pulse-accent)]/30 bg-[var(--pulse-accent)]/5 overflow-hidden">
+    <div className="mb-3 rounded-lg border border-[var(--fintheon-accent)]/30 bg-[var(--fintheon-accent)]/5 overflow-hidden">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center gap-2 px-3 py-2 text-[11px] font-medium text-[var(--pulse-accent)]/80 hover:text-[var(--pulse-accent)] transition-colors"
+        className="w-full flex items-center gap-2 px-3 py-2 text-[11px] font-medium text-[var(--fintheon-accent)]/80 hover:text-[var(--fintheon-accent)] transition-colors"
       >
         <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
           <path d="M8 1v3M8 12v3M1 8h3M12 8h3" />
@@ -139,7 +139,7 @@ const ChainOfThoughtDisplay: FC<{ text: string; isStreaming?: boolean }> = ({ te
         </svg>
         <span>Chain of Thought</span>
         {isStreaming && (
-          <span className="w-1.5 h-1.5 rounded-full bg-[var(--pulse-accent)] animate-pulse ml-1" />
+          <span className="w-1.5 h-1.5 rounded-full bg-[var(--fintheon-accent)] animate-pulse ml-1" />
         )}
         <svg
           width="10" height="10" viewBox="0 0 10 10"
@@ -150,7 +150,7 @@ const ChainOfThoughtDisplay: FC<{ text: string; isStreaming?: boolean }> = ({ te
         </svg>
       </button>
       {isOpen && (
-        <div className="px-3 pb-3 text-[11px] text-zinc-400 leading-relaxed whitespace-pre-wrap border-t border-[var(--pulse-accent)]/10">
+        <div className="px-3 pb-3 text-[11px] text-zinc-400 leading-relaxed whitespace-pre-wrap border-t border-[var(--fintheon-accent)]/10">
           {text}
         </div>
       )}
@@ -183,7 +183,7 @@ const ActionBar: FC<{ textContent: string; messageId?: string; onCheckpoint?: (i
     <div className="flex items-center gap-1 mt-1 ml-1 opacity-0 group-hover/msg:opacity-100 transition-opacity">
       <button
         onClick={handleCopy}
-        className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-zinc-600 hover:text-[var(--pulse-accent)] hover:bg-[var(--pulse-accent)]/10 transition-colors"
+        className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-zinc-600 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
         title="Copy"
       >
         {copied ? <Check size={10} /> : <Copy size={10} />}
@@ -192,7 +192,7 @@ const ActionBar: FC<{ textContent: string; messageId?: string; onCheckpoint?: (i
       {onCheckpoint && messageId && textContent && (
         <button
           onClick={() => onCheckpoint(messageId, textContent)}
-          className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-zinc-600 hover:text-[var(--pulse-accent)] hover:bg-[var(--pulse-accent)]/10 transition-colors"
+          className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-zinc-600 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
           title="Save checkpoint"
         >
           <Bookmark size={10} />
@@ -343,7 +343,7 @@ const ScrollToBottomButton: FC<{ containerRef: RefObject<HTMLElement | null> }> 
       {showButton && (
         <button
           onClick={scrollToBottom}
-          className="scroll-to-bottom-btn fixed z-30 flex items-center justify-center rounded-full border border-[var(--pulse-accent)]/30 bg-[var(--pulse-surface)] text-[var(--pulse-accent)] shadow-lg hover:bg-[var(--pulse-accent)]/10"
+          className="scroll-to-bottom-btn fixed z-30 flex items-center justify-center rounded-full border border-[var(--fintheon-accent)]/30 bg-[var(--fintheon-surface)] text-[var(--fintheon-accent)] shadow-lg hover:bg-[var(--fintheon-accent)]/10"
           style={{
             width: '36px',
             height: '36px',
@@ -367,8 +367,8 @@ const ScrollToBottomButton: FC<{ containerRef: RefObject<HTMLElement | null> }> 
 export const AiLoader: FC = () => (
   <div className="flex flex-col items-center justify-center py-16 gap-3">
     <div className="relative w-8 h-8">
-      <div className="absolute inset-0 rounded-full border-2 border-[var(--pulse-accent)]/20" />
-      <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-[var(--pulse-accent)] animate-spin" />
+      <div className="absolute inset-0 rounded-full border-2 border-[var(--fintheon-accent)]/20" />
+      <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-[var(--fintheon-accent)] animate-spin" />
     </div>
     <span className="text-[11px] text-zinc-500">Loading conversation...</span>
   </div>

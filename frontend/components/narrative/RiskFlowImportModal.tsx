@@ -21,7 +21,7 @@ const TABS = [
 
 const SCORE_COLORS = {
   high: '#22c55e',
-  mid: 'var(--pulse-accent)',
+  mid: 'var(--fintheon-accent)',
   low: '#ef4444',
 } as const;
 
@@ -34,8 +34,8 @@ function scoreColor(score: number) {
 const SEVERITY_LABELS: Record<string, { label: string; color: string }> = {
   critical: { label: 'CRIT', color: '#F97316' },
   high: { label: 'HIGH', color: '#EF4444' },
-  medium: { label: 'MED', color: 'var(--pulse-accent)' },
-  low: { label: 'LOW', color: 'var(--pulse-muted)' },
+  medium: { label: 'MED', color: 'var(--fintheon-accent)' },
+  low: { label: 'LOW', color: 'var(--fintheon-muted)' },
 };
 
 export function RiskFlowImportModal({ open, onClose, onImport, lanes }: RiskFlowImportModalProps) {
@@ -83,8 +83,8 @@ export function RiskFlowImportModal({ open, onClose, onImport, lanes }: RiskFlow
     setLoading(true);
     setError('');
     try {
-      const items = await baseBackend.notion.getMdbBrief();
-      const briefText = items.map(i => `${i.title}: ${i.detail}`).join('\n\n');
+      const res = await baseBackend.notion.getMdbBrief();
+      const briefText = res.items.map(i => `${i.title}: ${i.detail}`).join('\n\n');
       const { scored, provider: p } = await baseBackend.narrative.scoreBrief(briefText);
       const matched = matchCandidatesToLanes(scored, lanes);
       setCandidates(matched);
@@ -154,18 +154,18 @@ export function RiskFlowImportModal({ open, onClose, onImport, lanes }: RiskFlow
       <div
         className="max-w-2xl w-full max-h-[80vh] flex flex-col rounded-xl shadow-[0_0_40px_rgba(199,159,74,0.15)] animate-fade-in"
         style={{
-          backgroundColor: 'color-mix(in srgb, var(--pulse-surface) 95%, transparent)',
+          backgroundColor: 'color-mix(in srgb, var(--fintheon-surface) 95%, transparent)',
           backdropFilter: 'blur(24px)',
           WebkitBackdropFilter: 'blur(24px)',
-          border: '1px solid color-mix(in srgb, var(--pulse-border) 30%, transparent)',
+          border: '1px solid color-mix(in srgb, var(--fintheon-border) 30%, transparent)',
         }}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--pulse-border)]/20">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--fintheon-border)]/20">
           <div className="flex items-center gap-2">
-            <Download className="w-4 h-4 text-[var(--pulse-accent)]" />
-            <h2 className="text-sm font-bold text-[var(--pulse-accent)]">Import Catalysts</h2>
+            <Download className="w-4 h-4 text-[var(--fintheon-accent)]" />
+            <h2 className="text-sm font-bold text-[var(--fintheon-accent)]">Import Catalysts</h2>
           </div>
           <button onClick={handleClose} className="p-1 hover:bg-zinc-900 rounded transition-all">
             <X className="w-4 h-4 text-zinc-500" />
@@ -173,15 +173,15 @@ export function RiskFlowImportModal({ open, onClose, onImport, lanes }: RiskFlow
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-[var(--pulse-border)]/20">
+        <div className="flex border-b border-[var(--fintheon-border)]/20">
           {TABS.map(t => (
             <button
               key={t.key}
               onClick={() => { setTab(t.key); resetState(); }}
               className={`px-4 py-2 text-xs font-medium transition-colors ${
                 tab === t.key
-                  ? 'text-[var(--pulse-accent)] border-b-2 border-[var(--pulse-accent)]'
-                  : 'text-[var(--pulse-muted)] hover:text-[var(--pulse-text)]'
+                  ? 'text-[var(--fintheon-accent)] border-b-2 border-[var(--fintheon-accent)]'
+                  : 'text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)]'
               }`}
             >
               {t.label}
@@ -194,7 +194,7 @@ export function RiskFlowImportModal({ open, onClose, onImport, lanes }: RiskFlow
           {/* Score button */}
           {candidates.length === 0 && !loading && (
             <div className="flex flex-col items-center justify-center py-8 gap-3">
-              <p className="text-xs text-[var(--pulse-muted)]">
+              <p className="text-xs text-[var(--fintheon-muted)]">
                 {tab === 'riskflow'
                   ? `${alerts.length} RiskFlow alerts available to score`
                   : 'Fetch and parse the daily brief from Notion'}
@@ -202,7 +202,7 @@ export function RiskFlowImportModal({ open, onClose, onImport, lanes }: RiskFlow
               <button
                 onClick={tab === 'riskflow' ? handleScoreRiskflow : handleScoreBrief}
                 disabled={tab === 'riskflow' && alerts.length === 0}
-                className="px-4 py-2 rounded-lg text-xs font-medium transition-all bg-[var(--pulse-accent)] hover:brightness-110 text-black disabled:opacity-30"
+                className="px-4 py-2 rounded-lg text-xs font-medium transition-all bg-[var(--fintheon-accent)] hover:brightness-110 text-black disabled:opacity-30"
               >
                 {tab === 'riskflow' ? 'Score Items' : 'Parse Brief'}
               </button>
@@ -212,8 +212,8 @@ export function RiskFlowImportModal({ open, onClose, onImport, lanes }: RiskFlow
           {/* Loading */}
           {loading && (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-5 h-5 text-[var(--pulse-accent)] animate-spin" />
-              <span className="ml-2 text-xs text-[var(--pulse-muted)]">Scoring...</span>
+              <Loader2 className="w-5 h-5 text-[var(--fintheon-accent)] animate-spin" />
+              <span className="ml-2 text-xs text-[var(--fintheon-muted)]">Scoring...</span>
             </div>
           )}
 
@@ -227,13 +227,13 @@ export function RiskFlowImportModal({ open, onClose, onImport, lanes }: RiskFlow
             <>
               {/* Bulk controls */}
               <div className="flex items-center gap-3 mb-2">
-                <button onClick={selectAbove70} className="text-[10px] text-[var(--pulse-accent)] hover:underline">
+                <button onClick={selectAbove70} className="text-[10px] text-[var(--fintheon-accent)] hover:underline">
                   Select All &gt;70
                 </button>
-                <button onClick={selectAll} className="text-[10px] text-[var(--pulse-muted)] hover:text-[var(--pulse-text)]">
+                <button onClick={selectAll} className="text-[10px] text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)]">
                   Select All
                 </button>
-                <button onClick={deselectAll} className="text-[10px] text-[var(--pulse-muted)] hover:text-[var(--pulse-text)]">
+                <button onClick={deselectAll} className="text-[10px] text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)]">
                   Deselect All
                 </button>
               </div>
@@ -250,10 +250,10 @@ export function RiskFlowImportModal({ open, onClose, onImport, lanes }: RiskFlow
                     <div
                       key={c.sourceId}
                       onClick={() => toggleItem(c.sourceId)}
-                      className="flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-colors hover:bg-[var(--pulse-accent)]/5"
+                      className="flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-colors hover:bg-[var(--fintheon-accent)]/5"
                       style={{
                         backgroundColor: selected.has(c.sourceId)
-                          ? 'color-mix(in srgb, var(--pulse-accent) 8%, transparent)'
+                          ? 'color-mix(in srgb, var(--fintheon-accent) 8%, transparent)'
                           : 'transparent',
                       }}
                     >
@@ -261,8 +261,8 @@ export function RiskFlowImportModal({ open, onClose, onImport, lanes }: RiskFlow
                       <div
                         className="w-3.5 h-3.5 rounded border flex-shrink-0 flex items-center justify-center transition-colors"
                         style={{
-                          borderColor: selected.has(c.sourceId) ? 'var(--pulse-accent)' : 'var(--pulse-border)',
-                          backgroundColor: selected.has(c.sourceId) ? 'var(--pulse-accent)' : 'transparent',
+                          borderColor: selected.has(c.sourceId) ? 'var(--fintheon-accent)' : 'var(--fintheon-border)',
+                          backgroundColor: selected.has(c.sourceId) ? 'var(--fintheon-accent)' : 'transparent',
                         }}
                       >
                         {selected.has(c.sourceId) && (
@@ -274,10 +274,10 @@ export function RiskFlowImportModal({ open, onClose, onImport, lanes }: RiskFlow
 
                       {/* Title + description */}
                       <div className="flex-1 min-w-0">
-                        <p className="text-[11px] font-semibold text-[var(--pulse-text)] truncate">
+                        <p className="text-[11px] font-semibold text-[var(--fintheon-text)] truncate">
                           {c.suggestedTitle}
                         </p>
-                        <p className="text-[10px] text-[var(--pulse-muted)] truncate">
+                        <p className="text-[10px] text-[var(--fintheon-muted)] truncate">
                           {c.suggestedDescription}
                         </p>
                       </div>
@@ -297,10 +297,10 @@ export function RiskFlowImportModal({ open, onClose, onImport, lanes }: RiskFlow
                       <span
                         className="flex-shrink-0 rounded-full px-1.5 py-0.5 text-[8px] font-medium uppercase"
                         style={{
-                          color: c.sentiment === 'bullish' ? 'var(--pulse-bullish)' : 'var(--pulse-bearish)',
+                          color: c.sentiment === 'bullish' ? 'var(--fintheon-bullish)' : 'var(--fintheon-bearish)',
                           backgroundColor: c.sentiment === 'bullish'
-                            ? 'color-mix(in srgb, var(--pulse-bullish) 15%, transparent)'
-                            : 'color-mix(in srgb, var(--pulse-bearish) 15%, transparent)',
+                            ? 'color-mix(in srgb, var(--fintheon-bullish) 15%, transparent)'
+                            : 'color-mix(in srgb, var(--fintheon-bearish) 15%, transparent)',
                         }}
                       >
                         {c.sentiment}
@@ -321,15 +321,15 @@ export function RiskFlowImportModal({ open, onClose, onImport, lanes }: RiskFlow
                       {c.tickers.slice(0, 3).map(t => (
                         <span
                           key={t}
-                          className="flex-shrink-0 rounded px-1 py-0.5 text-[8px] font-mono text-[var(--pulse-muted)]"
-                          style={{ backgroundColor: 'color-mix(in srgb, var(--pulse-muted) 10%, transparent)' }}
+                          className="flex-shrink-0 rounded px-1 py-0.5 text-[8px] font-mono text-[var(--fintheon-muted)]"
+                          style={{ backgroundColor: 'color-mix(in srgb, var(--fintheon-muted) 10%, transparent)' }}
                         >
                           {t}
                         </span>
                       ))}
 
                       {/* Lane match */}
-                      <span className="flex-shrink-0 text-[9px] text-[var(--pulse-muted)] max-w-[100px] truncate">
+                      <span className="flex-shrink-0 text-[9px] text-[var(--fintheon-muted)] max-w-[100px] truncate">
                         {laneName}
                       </span>
                     </div>
@@ -341,14 +341,14 @@ export function RiskFlowImportModal({ open, onClose, onImport, lanes }: RiskFlow
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-5 py-3 border-t border-[var(--pulse-border)]/20">
-          <span className="text-[10px] text-[var(--pulse-muted)]">
+        <div className="flex items-center justify-between px-5 py-3 border-t border-[var(--fintheon-border)]/20">
+          <span className="text-[10px] text-[var(--fintheon-muted)]">
             {candidates.length > 0 ? `${candidates.length} items scored via ${provider}` : ''}
           </span>
           <button
             onClick={handleImport}
             disabled={selected.size === 0}
-            className="px-4 py-2 rounded-lg text-xs font-medium transition-all bg-[var(--pulse-accent)] hover:brightness-110 text-black disabled:opacity-30"
+            className="px-4 py-2 rounded-lg text-xs font-medium transition-all bg-[var(--fintheon-accent)] hover:brightness-110 text-black disabled:opacity-30"
           >
             Import {selected.size} Selected
           </button>

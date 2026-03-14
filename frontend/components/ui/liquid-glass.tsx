@@ -91,15 +91,15 @@ export const GlassButton = forwardRef<HTMLButtonElement, GlassButtonProps>(
           'border',
           isAccent
             ? 'text-black hover:brightness-110'
-            : 'text-[var(--pulse-text)] hover:brightness-110',
+            : 'text-[var(--fintheon-text)] hover:brightness-110',
           className,
         )}
         style={{
           background: isAccent
-            ? 'var(--pulse-accent)'
+            ? 'var(--fintheon-accent)'
             : GLASS_BG,
           borderColor: isAccent
-            ? 'var(--pulse-accent)'
+            ? 'var(--fintheon-accent)'
             : GLASS_BORDER,
           backdropFilter: isAccent ? undefined : `blur(${GLASS_BLUR}px)`,
           WebkitBackdropFilter: isAccent ? undefined : `blur(${GLASS_BLUR}px)`,

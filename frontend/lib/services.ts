@@ -561,6 +561,34 @@ export class RithmicService {
   }
 }
 
+// Hyperliquid Service
+export interface HyperliquidStatusResponse {
+  connected: boolean;
+  message: string;
+}
+
+export interface HyperliquidAccountResponse {
+  accountValue: number;
+  totalMarginUsed: number;
+  availableBalance: number;
+}
+
+export class HyperliquidService {
+  constructor(private client: ApiClient) {}
+
+  async getStatus(): Promise<HyperliquidStatusResponse> {
+    return this.client.get<HyperliquidStatusResponse>('/api/hyperliquid/status');
+  }
+
+  async getPositions(): Promise<{ positions: any[] }> {
+    return this.client.get<{ positions: any[] }>('/api/hyperliquid/positions');
+  }
+
+  async getAccountInfo(): Promise<HyperliquidAccountResponse> {
+    return this.client.get<HyperliquidAccountResponse>('/api/hyperliquid/account');
+  }
+}
+
 // Autopilot Service
 export interface AutopilotStatusResponse {
   enabled: boolean;
@@ -846,7 +874,7 @@ export interface NotionTradeIdeaItem {
   confidence?: string;
   timeframe?: string;
   sourceAgent?: string;
-  openclawDescription?: string;
+  hermesDescription?: string;
   notionUrl: string;
   createdAt: string;
   updatedAt: string;
@@ -898,12 +926,12 @@ export class NotionService {
     }
   }
 
-  async getMdbBrief(): Promise<Array<{ title: string; detail: string }>> {
+  async getMdbBrief(): Promise<{ items: Array<{ title: string; detail: string }>; briefType?: string }> {
     try {
-      const res = await this.client.get<{ items: Array<{ title: string; detail: string }> }>('/api/notion/mdb-brief');
-      return res.items ?? [];
+      const res = await this.client.get<{ items: Array<{ title: string; detail: string }>; briefType?: string }>('/api/notion/mdb-brief');
+      return { items: res.items ?? [], briefType: res.briefType };
     } catch {
-      return [];
+      return { items: [] };
     }
   }
 
@@ -1058,6 +1086,17 @@ export class BoardroomService {
   async postTradeIdea(params: TradeIdeaParams): Promise<{ success: boolean; id: string }> {
     return this.client.post('/api/boardroom/trade-idea', params);
   }
+
+  async getMeetingSchedule(): Promise<{ lastMeeting: string; nextMeeting: string; live: boolean }> {
+    const res = await this.client.get<{ lastMeetingIso?: string; nextMeetingIso?: string; live?: boolean }>(
+      '/api/boardroom/meeting-schedule',
+    );
+    return {
+      lastMeeting: res.lastMeetingIso || '',
+      nextMeeting: res.nextMeetingIso || '',
+      live: res.live ?? false,
+    };
+  }
 }
 
 // Journal Service (Track 7A)
@@ -1070,6 +1109,7 @@ export interface JournalEntryItem {
   infractions?: string[];
   disciplineScore?: number;
   notes?: string;
+  emotionalControlRating?: number;
   agentName?: string;
   proposalCount?: number;
   acceptedCount?: number;
@@ -1251,6 +1291,7 @@ export interface BackendClient {
   trading: TradingService;
   projectx: ProjectXService;
   rithmic: RithmicService;
+  hyperliquid: HyperliquidService;
   notifications: NotificationsService;
   er: ERService;
   voice: VoiceService;
@@ -1280,6 +1321,7 @@ export function createBackendClient(client: ApiClient): BackendClient {
     trading: new TradingService(client),
     projectx: new ProjectXService(client),
     rithmic: new RithmicService(client),
+    hyperliquid: new HyperliquidService(client),
     notifications: new NotificationsService(client),
     er: new ERService(client),
     voice: new VoiceService(client),

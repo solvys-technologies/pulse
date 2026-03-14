@@ -41,7 +41,7 @@ function StepIcon({ kind }: { kind: CognitionStepKind }) {
     'error':            '✕',
   }
   return (
-    <span className="text-[var(--pulse-accent)] font-mono text-[10px] w-3 shrink-0 select-none">
+    <span className="text-[var(--fintheon-accent)] font-mono text-[10px] w-3 shrink-0 select-none">
       {glyphs[kind] ?? '·'}
     </span>
   )
@@ -55,13 +55,13 @@ function StepRow({ step, idx }: { step: CognitionStep; idx: number }) {
     >
       <StepIcon kind={step.kind} />
       <div className="min-w-0 flex-1">
-        <span className="text-[11px] text-[var(--pulse-text)]/80 leading-tight">{step.label}</span>
+        <span className="text-[11px] text-[var(--fintheon-text)]/80 leading-tight">{step.label}</span>
         {step.detail && (
-          <span className="text-[10px] text-[var(--pulse-text)]/40 ml-1.5">{step.detail}</span>
+          <span className="text-[10px] text-[var(--fintheon-text)]/40 ml-1.5">{step.detail}</span>
         )}
       </div>
       {step.durationMs !== undefined && (
-        <span className="text-[9px] text-[var(--pulse-text)]/25 tabular-nums shrink-0">
+        <span className="text-[9px] text-[var(--fintheon-text)]/25 tabular-nums shrink-0">
           {step.durationMs}ms
         </span>
       )}
@@ -147,7 +147,7 @@ export function CognitionPanel({ requestId, isStreaming }: Props) {
 
   return (
     <div
-      className="rounded-xl border bg-[var(--pulse-bg)]/90 overflow-hidden transition-all"
+      className="rounded-xl border bg-[var(--fintheon-bg)]/90 overflow-hidden transition-all"
       style={{ borderColor: hasError ? 'rgba(239,68,68,0.25)' : 'rgba(199,159,74,0.15)' }}
     >
       {/* Header */}
@@ -158,21 +158,21 @@ export function CognitionPanel({ requestId, isStreaming }: Props) {
         <div className="flex items-center gap-2">
           {/* Pulse dot while streaming, static when done */}
           {isStreaming && !done ? (
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--pulse-accent)] animate-pulse" />
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--fintheon-accent)] animate-pulse" />
           ) : (
             <span
               className="inline-block w-1.5 h-1.5 rounded-full"
-              style={{ backgroundColor: hasError ? '#ef4444' : 'var(--pulse-accent)', opacity: 0.6 }}
+              style={{ backgroundColor: hasError ? '#ef4444' : 'var(--fintheon-accent)', opacity: 0.6 }}
             />
           )}
-          <span className="text-[10px] font-medium tracking-wider uppercase text-[var(--pulse-accent)]/70">
+          <span className="text-[10px] font-medium tracking-wider uppercase text-[var(--fintheon-accent)]/70">
             Agent Mind
           </span>
-          <span className="text-[9px] text-[var(--pulse-text)]/25">
+          <span className="text-[9px] text-[var(--fintheon-text)]/25">
             {steps.length} step{steps.length !== 1 ? 's' : ''}
           </span>
         </div>
-        <span className="text-[var(--pulse-text)]/25 text-[10px] transition-transform" style={{ display: 'inline-block', transform: collapsed ? 'rotate(-90deg)' : 'rotate(0)' }}>
+        <span className="text-[var(--fintheon-text)]/25 text-[10px] transition-transform" style={{ display: 'inline-block', transform: collapsed ? 'rotate(-90deg)' : 'rotate(0)' }}>
           ▾
         </span>
       </button>
@@ -187,8 +187,8 @@ export function CognitionPanel({ requestId, isStreaming }: Props) {
           {/* Live indicator while streaming and not yet done */}
           {isStreaming && !done && (
             <div className="flex items-center gap-2 pt-0.5">
-              <span className="text-[var(--pulse-accent)] font-mono text-[10px] w-3">·</span>
-              <span className="text-[10px] text-[var(--pulse-text)]/30 animate-pulse">processing…</span>
+              <span className="text-[var(--fintheon-accent)] font-mono text-[10px] w-3">·</span>
+              <span className="text-[10px] text-[var(--fintheon-text)]/30 animate-pulse">processing…</span>
             </div>
           )}
         </div>

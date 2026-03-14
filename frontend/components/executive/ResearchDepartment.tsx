@@ -1,12 +1,13 @@
+// [claude-code 2026-03-13] Hermes migration: OpenClaw -> Hermes imports
 // [claude-code 2026-03-11] T2d: refactored sidebar to rounded bubble style + PulseChatInput
 import { useMemo, useState, useCallback } from 'react';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { useOpenClawChat } from '../chat/hooks/useOpenClawChat';
+import { useHermesChat } from '../chat/hooks/useHermesChat';
 import { usePulseAgents } from '../../contexts/PulseAgentContext';
 import { EmbeddedBrowserFrame } from '../layout/EmbeddedBrowserFrame';
-import { toOpenClawAgentOverride } from '../../lib/openclawAgentRouting';
-import { usePersistentOpenClawConversation } from '../../hooks/usePersistentOpenClawConversation';
+import { toHermesAgentOverride } from '../../lib/hermesAgentRouting';
+import { usePersistentHermesConversation } from '../../hooks/usePersistentHermesConversation';
 import { PulseThinkingIndicator } from '../chat/PulseThinkingIndicator';
 import { normalizeChatMessages } from '../../lib/chatMessageNormalizer';
 import { useSettings } from '../../contexts/SettingsContext';
@@ -14,7 +15,7 @@ import { PulseChatInput } from '../chat/PulseChatInput';
 
 export function ResearchDepartment() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [thinkHarder, setThinkHarder] = useState(false);
+  const [thinkHarder, setThinkHarder] = useState(true);
   const { iframeUrls } = useSettings();
   const notionResearchUrl = iframeUrls.research || import.meta.env.VITE_NOTION_RESEARCH_URL || 'https://www.notion.so';
 
@@ -26,9 +27,9 @@ export function ResearchDepartment() {
     // fallback
   }
   const agent = activeAgent || { name: 'Harper', icon: 'H' };
-  const openclawAgentOverride = toOpenClawAgentOverride((activeAgent as any)?.id);
-  const { conversationId, setConversationId } = usePersistentOpenClawConversation((activeAgent as any)?.id, 'research');
-  const { messages, sendMessage, status, stop } = useOpenClawChat(conversationId, setConversationId as any, openclawAgentOverride);
+  const hermesAgentOverride = toHermesAgentOverride((activeAgent as any)?.id);
+  const { conversationId, setConversationId } = usePersistentHermesConversation((activeAgent as any)?.id, 'research');
+  const { messages, sendMessage, status, stop } = useHermesChat(conversationId, setConversationId as any, hermesAgentOverride);
 
   const uiMessages = useMemo(() => {
     return normalizeChatMessages(messages as any[]).map((m) => ({
@@ -56,9 +57,9 @@ export function ResearchDepartment() {
     if (!msg) return;
     await sendMessage(
       { text: msg },
-      { body: { conversationId, agentOverride: openclawAgentOverride } }
+      { body: { conversationId, agentOverride: hermesAgentOverride } }
     );
-  }, [sendMessage, conversationId, openclawAgentOverride]);
+  }, [sendMessage, conversationId, hermesAgentOverride]);
 
   return (
     <div className="h-full w-full flex overflow-hidden">
@@ -69,7 +70,7 @@ export function ResearchDepartment() {
           <div className="shrink-0 absolute top-2 right-3 z-10">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="backdrop-blur-md bg-black/20 rounded-lg p-1.5 text-gray-400 hover:text-[var(--pulse-accent)] transition-colors"
+              className="backdrop-blur-md bg-black/20 rounded-lg p-1.5 text-gray-400 hover:text-[var(--fintheon-accent)] transition-colors"
               title="Open Research Assistance"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -89,15 +90,15 @@ export function ResearchDepartment() {
 
       {/* Research Assistance sidebar — collapsible */}
       {sidebarOpen && (
-        <div className="w-[340px] shrink-0 border-l border-[var(--pulse-accent)]/15 bg-[#070704] flex flex-col">
+        <div className="w-[340px] shrink-0 border-l border-[var(--fintheon-accent)]/15 bg-[#070704] flex flex-col">
           {/* Sidebar header */}
           <div className="shrink-0 flex items-center justify-between px-5 py-4">
-            <h2 className="text-sm font-semibold text-[var(--pulse-accent)] tracking-[0.18em] uppercase">
+            <h2 className="text-sm font-semibold text-[var(--fintheon-accent)] tracking-[0.18em] uppercase">
               Research Assistance
             </h2>
             <button
               onClick={() => setSidebarOpen(false)}
-              className="p-1 text-gray-400 hover:text-[var(--pulse-accent)] transition-colors"
+              className="p-1 text-gray-400 hover:text-[var(--fintheon-accent)] transition-colors"
               title="Collapse sidebar"
             >
               <ChevronRight className="w-4 h-4" />

@@ -1,6 +1,7 @@
 // [claude-code 2026-03-05] Phase 2A: Added iframe controls + heartbeat status
 // [claude-code 2026-03-07] Slide-up panel with Terminal + Changelog tabs
 // [claude-code 2026-03-10] Notion + X CLI status indicators in toolbar strip.
+// [claude-code 2026-03-14] Pulse CLI: run shell commands via Electron; "/" slash-command suggestions.
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ChevronUp, ChevronDown, Terminal, ExternalLink, SplitSquareVertical, Power, FileText } from 'lucide-react';
 import { PLATFORM_LABELS, PLATFORM_URLS, type TradingPlatform } from '../TopStepXBrowser';
@@ -8,6 +9,24 @@ import { changelog } from '../../../src/lib/changelog';
 import { useSourceStatus } from '../../hooks/useSourceStatus';
 
 type PanelTab = 'terminal' | 'changelog';
+
+/** Slash-command suggestions (like Claude Code skills) for the Pulse CLI */
+const CLI_SLASH_COMMANDS: { slug: string; label: string; command: string }[] = [
+  { slug: 'start-backend', label: 'Start backend', command: 'cd backend-hono && npm run dev' },
+  { slug: 'frontend', label: 'Start frontend dev', command: 'npx vite' },
+  { slug: 'install', label: 'Install all deps', command: 'npm install && npm --prefix frontend install && npm --prefix backend-hono install' },
+  { slug: 'build', label: 'Build frontend', command: 'npx vite build' },
+  { slug: 'typecheck', label: 'Typecheck backend', command: 'cd backend-hono && npx tsc --noEmit' },
+];
+
+function resolveSlashCommand(input: string): string | null {
+  if (!input.startsWith('/')) return null;
+  const slug = input.slice(1).trim().toLowerCase().replace(/\s+/g, '-');
+  const match = CLI_SLASH_COMMANDS.find(
+    (c) => c.slug === slug || c.slug.replace(/-/g, '') === slug.replace(/-/g, '')
+  );
+  return match?.command ?? null;
+}
 
 interface FooterToolbarProps {
   topStepXEnabled?: boolean;
@@ -32,50 +51,187 @@ export function FooterToolbar({
   const [activeTab, setActiveTab] = useState<PanelTab>('terminal');
   const [cliInput, setCliInput] = useState('');
   const [cliHistory, setCliHistory] = useState<Array<{ type: 'input' | 'output'; text: string }>>([
-    { type: 'output', text: 'Pulse CLI v7.0.1 — type "help" for commands' },
+    { type: 'output', text: 'Fintheon CLI — type / for commands or "help" for built-ins.' },
+    { type: 'output', text: 'Slash commands: /start-backend, /backend, /frontend, /install, /build, /typecheck' },
   ]);
+  const [slashSuggestionsOpen, setSlashSuggestionsOpen] = useState(false);
+  const [slashSuggestionsIndex, setSlashSuggestionsIndex] = useState(0);
   const terminalEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const cliContainerRef = useRef<HTMLDivElement>(null);
+  const prevPanelOpenRef = useRef(false);
+
+  const isElectron = typeof window !== 'undefined' && window.electron?.runShellCommand != null;
+  const slashFilter = cliInput.startsWith('/') ? cliInput.slice(1).toLowerCase().trim() : '';
+  const slashSuggestions = slashFilter
+    ? CLI_SLASH_COMMANDS.filter(
+        (c) =>
+          c.slug.toLowerCase().includes(slashFilter) || c.label.toLowerCase().includes(slashFilter)
+      )
+    : CLI_SLASH_COMMANDS;
+  const showSlashSuggestions = slashSuggestionsOpen && (cliInput === '/' || slashSuggestions.length > 0);
+
+  useEffect(() => {
+    setSlashSuggestionsIndex(0);
+  }, [slashFilter, slashSuggestions.length]);
+
+  // Subscribe to CLI output from Electron
+  useEffect(() => {
+    if (!window.electron?.setCliOutputCallback) return;
+    const append = (event: { type: string; data?: string; code?: number | null; signal?: string | null }) => {
+      setCliHistory((prev) => {
+        if (event.type === 'stdout' || event.type === 'stderr') {
+          const lines = String(event.data ?? '').split('\n').filter(Boolean);
+          return [...prev, ...lines.map((text) => ({ type: 'output' as const, text }))];
+        }
+        if (event.type === 'exit') {
+          const code = event.code ?? event.signal ?? '?';
+          return [...prev, { type: 'output', text: `[exit ${code}]` }];
+        }
+        return prev;
+      });
+    };
+    window.electron.setCliOutputCallback(append);
+    return () => window.electron?.setCliOutputCallback(null);
+  }, []);
 
   // Auto-scroll terminal
   useEffect(() => {
     terminalEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [cliHistory]);
 
-  // Focus input when terminal tab opens
+  // When panel first opens on terminal tab: focus input and show commands list (popup)
   useEffect(() => {
     if (panelOpen && activeTab === 'terminal') {
       inputRef.current?.focus();
+      const justOpened = !prevPanelOpenRef.current;
+      if (justOpened) {
+        setCliInput('/');
+        setSlashSuggestionsOpen(true);
+      }
     }
+    prevPanelOpenRef.current = panelOpen;
   }, [panelOpen, activeTab]);
 
-  const handleCli = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key !== 'Enter') return;
-    const cmd = cliInput.trim();
-    if (!cmd) return;
-    setCliInput('');
+  // Click outside to close slash suggestions
+  useEffect(() => {
+    if (!showSlashSuggestions) return;
+    const onMouseDown = (e: MouseEvent) => {
+      if (cliContainerRef.current?.contains(e.target as Node)) return;
+      setSlashSuggestionsOpen(false);
+    };
+    document.addEventListener('mousedown', onMouseDown);
+    return () => document.removeEventListener('mousedown', onMouseDown);
+  }, [showSlashSuggestions]);
 
-    const newHistory = [...cliHistory, { type: 'input' as const, text: cmd }];
+  const runShellCommand = useCallback((cmd: string) => {
+    if (!window.electron?.runShellCommand) return;
+    setCliHistory((prev) => [...prev, { type: 'input', text: cmd }, { type: 'output', text: 'Running...' }]);
+    window.electron.runShellCommand(cmd).then((r) => {
+      if (!r.ok) {
+        setCliHistory((prev) => [...prev, { type: 'output', text: r.error ?? 'Failed to run command' }]);
+      }
+    });
+  }, []);
 
-    const lower = cmd.toLowerCase();
-    if (lower === 'help') {
-      newHistory.push({ type: 'output', text: 'Commands: help, changelog, clear, status, version' });
-    } else if (lower === 'clear') {
-      setCliHistory([{ type: 'output', text: 'Cleared.' }]);
-      return;
-    } else if (lower === 'changelog') {
-      setActiveTab('changelog');
-      newHistory.push({ type: 'output', text: 'Switched to changelog tab.' });
-    } else if (lower === 'status') {
-      newHistory.push({ type: 'output', text: `System: online | Backend: localhost:8080 | Agents: standby` });
-    } else if (lower === 'version') {
-      newHistory.push({ type: 'output', text: 'Pulse v7.0.1 | Build 2026-03-07' });
+  const handleCli = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      const cmd = cliInput.trim();
+
+      if (showSlashSuggestions && slashSuggestions.length > 0) {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setSlashSuggestionsIndex((i) => (i + 1) % slashSuggestions.length);
+          return;
+        }
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setSlashSuggestionsIndex((i) => (i - 1 + slashSuggestions.length) % slashSuggestions.length);
+          return;
+        }
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const selected = slashSuggestions[slashSuggestionsIndex];
+          setCliInput(selected.command);
+          setSlashSuggestionsOpen(false);
+          inputRef.current?.focus();
+          return;
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          setSlashSuggestionsOpen(false);
+          return;
+        }
+      }
+
+      if (e.key !== 'Enter') return;
+      if (!cmd) return;
+      setSlashSuggestionsOpen(false);
+
+      // Resolve /start-backend, /backend, etc. to the actual shell command
+      const resolved = resolveSlashCommand(cmd);
+      const commandToRun = resolved ?? cmd;
+      const displayCmd = resolved ? cmd : commandToRun;
+      setCliInput('');
+
+      const newHistory = [...cliHistory, { type: 'input' as const, text: displayCmd }];
+
+      const lower = cmd.toLowerCase().trim();
+      if (lower === 'help') {
+        newHistory.push({
+          type: 'output',
+          text: 'Built-in: help, changelog, clear, status, version. Slash: /start-backend, /backend, /frontend, /install, /build, /typecheck',
+        });
+        newHistory.push({
+          type: 'output',
+          text: isElectron ? 'In Electron, any line runs as a shell command.' : 'Run Fintheon in Electron (npm run desktop) to run slash commands.',
+        });
+        setCliHistory(newHistory);
+        return;
+      }
+      if (lower === 'clear') {
+        setCliHistory([{ type: 'output', text: 'Fintheon CLI — type / for commands.' }, { type: 'output', text: 'Slash: /start-backend, /backend, /frontend, /install, /build, /typecheck' }]);
+        return;
+      }
+      if (lower === 'changelog') {
+        setActiveTab('changelog');
+        newHistory.push({ type: 'output', text: 'Switched to changelog tab.' });
+        setCliHistory(newHistory);
+        return;
+      }
+      if (lower === 'status') {
+        newHistory.push({ type: 'output', text: `System: online | Backend: localhost:8080 | Agents: standby` });
+        setCliHistory(newHistory);
+        return;
+      }
+      if (lower === 'version') {
+        newHistory.push({ type: 'output', text: 'Fintheon Epoch 7.7.7 | Build 2026-03-14' });
+        setCliHistory(newHistory);
+        return;
+      }
+      if (isElectron) {
+        setCliHistory(newHistory);
+        runShellCommand(commandToRun);
+        return;
+      }
+      newHistory.push({
+        type: 'output',
+        text: `Run Fintheon in Electron (npm run desktop) to execute: ${displayCmd}`,
+      });
+      setCliHistory(newHistory);
+    },
+    [cliInput, cliHistory, isElectron, runShellCommand, showSlashSuggestions, slashSuggestions, slashSuggestionsIndex]
+  );
+
+  const onCliInputChange = (value: string) => {
+    setCliInput(value);
+    if (value.startsWith('/')) {
+      setSlashSuggestionsOpen(true);
+      setSlashSuggestionsIndex(0);
     } else {
-      newHistory.push({ type: 'output', text: `Unknown command: ${cmd}` });
+      setSlashSuggestionsOpen(false);
     }
-
-    setCliHistory(newHistory);
-  }, [cliInput, cliHistory]);
+  };
 
   const sourceStatus = useSourceStatus();
   const togglePanel = () => setPanelOpen((v) => !v);
@@ -90,20 +246,20 @@ export function FooterToolbar({
   };
 
   return (
-    <div className="flex-shrink-0 border-t border-[var(--pulse-accent)]/12 bg-[var(--pulse-bg)]">
+    <div className="flex-shrink-0 border-t border-[var(--fintheon-accent)]/12 bg-[var(--fintheon-bg)]">
       {/* Slide-up panel */}
       <div
         className="overflow-hidden transition-all duration-300 ease-in-out"
         style={{ maxHeight: panelOpen ? '280px' : '0px' }}
       >
-        <div className="h-[280px] flex flex-col border-b border-[var(--pulse-accent)]/10">
+        <div className="h-[280px] flex flex-col border-b border-[var(--fintheon-accent)]/10">
           {/* Panel tab bar */}
-          <div className="flex items-center gap-0 border-b border-[var(--pulse-accent)]/10 bg-[#080806] shrink-0">
+          <div className="flex items-center gap-0 border-b border-[var(--fintheon-accent)]/10 bg-[#080806] shrink-0">
             <button
               onClick={() => setActiveTab('terminal')}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-mono tracking-wider uppercase transition-colors border-b-2 ${
                 activeTab === 'terminal'
-                  ? 'border-[var(--pulse-accent)] text-[var(--pulse-accent)] bg-[var(--pulse-accent)]/5'
+                  ? 'border-[var(--fintheon-accent)] text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/5'
                   : 'border-transparent text-zinc-500 hover:text-zinc-300'
               }`}
             >
@@ -114,7 +270,7 @@ export function FooterToolbar({
               onClick={() => setActiveTab('changelog')}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-mono tracking-wider uppercase transition-colors border-b-2 ${
                 activeTab === 'changelog'
-                  ? 'border-[var(--pulse-accent)] text-[var(--pulse-accent)] bg-[var(--pulse-accent)]/5'
+                  ? 'border-[var(--fintheon-accent)] text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/5'
                   : 'border-transparent text-zinc-500 hover:text-zinc-300'
               }`}
             >
@@ -130,24 +286,49 @@ export function FooterToolbar({
                 {/* Terminal output */}
                 <div className="flex-1 overflow-y-auto px-3 py-2 font-mono text-[11px] space-y-0.5">
                   {cliHistory.map((line, i) => (
-                    <div key={i} className={line.type === 'input' ? 'text-[var(--pulse-accent)]' : 'text-zinc-500'}>
+                    <div key={i} className={line.type === 'input' ? 'text-[var(--fintheon-accent)]' : 'text-zinc-500'}>
                       {line.type === 'input' ? `> ${line.text}` : line.text}
                     </div>
                   ))}
                   <div ref={terminalEndRef} />
                 </div>
-                {/* Terminal input */}
-                <div className="flex items-center gap-1.5 px-3 py-2 border-t border-[var(--pulse-accent)]/10 shrink-0">
-                  <span className="text-[var(--pulse-accent)]/50 text-[11px] font-mono">{'>'}</span>
-                  <input
-                    ref={inputRef}
-                    value={cliInput}
-                    onChange={(e) => setCliInput(e.target.value)}
-                    onKeyDown={handleCli}
-                    className="flex-1 bg-transparent text-[11px] text-[var(--pulse-accent)] placeholder-zinc-700 focus:outline-none font-mono"
-                    placeholder="type a command..."
-                    spellCheck={false}
-                  />
+                {/* Terminal input + slash suggestions */}
+                <div className="relative shrink-0">
+                  <div className="flex items-center gap-1.5 px-3 py-2 border-t border-[var(--fintheon-accent)]/10">
+                    <span className="text-[var(--fintheon-accent)]/50 text-[11px] font-mono">{'>'}</span>
+                    <input
+                      ref={inputRef}
+                      value={cliInput}
+                      onChange={(e) => onCliInputChange(e.target.value)}
+                      onKeyDown={handleCli}
+                      className="flex-1 bg-transparent text-[11px] text-[var(--fintheon-accent)] placeholder-zinc-700 focus:outline-none font-mono"
+                      placeholder="type a command or / for scripts..."
+                      spellCheck={false}
+                    />
+                  </div>
+                  {showSlashSuggestions && panelOpen && activeTab === 'terminal' && (
+                    <div className="absolute left-0 right-0 bottom-full mb-0.5 z-50 max-h-48 overflow-y-auto rounded border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-lg">
+                      {slashSuggestions.map((item, i) => (
+                        <button
+                          key={item.slug}
+                          type="button"
+                          onClick={() => {
+                            setCliInput(item.command);
+                            setSlashSuggestionsOpen(false);
+                            inputRef.current?.focus();
+                          }}
+                          className={`w-full text-left px-3 py-1.5 text-[11px] font-mono transition-colors ${
+                            i === slashSuggestionsIndex
+                              ? 'bg-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)]'
+                              : 'text-zinc-400 hover:bg-[var(--fintheon-accent)]/10 hover:text-zinc-300'
+                          }`}
+                        >
+                          <span className="text-[var(--fintheon-accent)]/70">/{item.slug}</span>
+                          <span className="ml-2 text-zinc-500">{item.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -156,7 +337,7 @@ export function FooterToolbar({
               <div className="px-3 py-2 space-y-2">
                 {changelog.slice(0, 20).map((entry, i) => (
                   <div key={i} className="flex gap-3 text-[11px]">
-                    <span className="text-[var(--pulse-accent)]/40 shrink-0 font-mono w-[88px]">
+                    <span className="text-[var(--fintheon-accent)]/40 shrink-0 font-mono w-[88px]">
                       {entry.date.slice(0, 10)}
                     </span>
                     <span className="text-zinc-400 shrink-0 font-mono w-[76px] text-[10px]">
@@ -176,22 +357,22 @@ export function FooterToolbar({
         {/* Panel toggle */}
         <button
           onClick={togglePanel}
-          className="flex items-center gap-1 text-[10px] text-[var(--pulse-accent)]/50 hover:text-[var(--pulse-accent)] transition-colors"
+          className="flex items-center gap-1 text-[10px] text-[var(--fintheon-accent)]/50 hover:text-[var(--fintheon-accent)] transition-colors"
           title={panelOpen ? 'Close panel' : 'Open panel'}
         >
           {panelOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
-          <span className="font-mono tracking-[0.12em]">v7.0.1</span>
+          <span className="font-mono tracking-[0.12em]">Epoch 7.7.7</span>
         </button>
 
-        <div className="w-px h-3.5 bg-[var(--pulse-accent)]/10" />
+        <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
 
         {/* Tab shortcuts */}
         <button
           onClick={() => openTab('terminal')}
           className={`flex items-center gap-1 text-[10px] transition-colors ${
             panelOpen && activeTab === 'terminal'
-              ? 'text-[var(--pulse-accent)]'
-              : 'text-zinc-600 hover:text-[var(--pulse-accent)]'
+              ? 'text-[var(--fintheon-accent)]'
+              : 'text-zinc-600 hover:text-[var(--fintheon-accent)]'
           }`}
           title="Terminal"
         >
@@ -201,22 +382,23 @@ export function FooterToolbar({
           onClick={() => openTab('changelog')}
           className={`flex items-center gap-1 text-[10px] transition-colors ${
             panelOpen && activeTab === 'changelog'
-              ? 'text-[var(--pulse-accent)]'
-              : 'text-zinc-600 hover:text-[var(--pulse-accent)]'
+              ? 'text-[var(--fintheon-accent)]'
+              : 'text-zinc-600 hover:text-[var(--fintheon-accent)]'
           }`}
           title="Changelog"
         >
           <FileText className="w-3 h-3" />
         </button>
 
-        <div className="w-px h-3.5 bg-[var(--pulse-accent)]/10" />
+        <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
 
         {/* Quick CLI — always available in toolbar */}
-        <div className="flex items-center gap-1.5 flex-1 min-w-0">
-          <Terminal className="w-3 h-3 text-[var(--pulse-accent)]/30 shrink-0" />
+        <div ref={cliContainerRef} className="relative flex items-center gap-1.5 flex-1 min-w-0">
+          <Terminal className="w-3 h-3 text-[var(--fintheon-accent)]/30 shrink-0" />
           <input
             value={cliInput}
-            onChange={(e) => setCliInput(e.target.value)}
+            onChange={(e) => onCliInputChange(e.target.value)}
+            onFocus={() => cliInput.startsWith('/') && setSlashSuggestionsOpen(true)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && cliInput.trim()) {
                 setPanelOpen(true);
@@ -225,19 +407,44 @@ export function FooterToolbar({
               }
             }}
             className="flex-1 bg-transparent text-[11px] text-gray-500 placeholder-gray-700 focus:outline-none font-mono"
-            placeholder=">"
+            placeholder="> or / for scripts"
             spellCheck={false}
           />
+          {showSlashSuggestions && !panelOpen && (
+            <div className="absolute left-0 right-0 top-full mt-0.5 z-50 max-h-48 overflow-y-auto rounded border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] shadow-lg">
+              {slashSuggestions.map((item, i) => (
+                <button
+                  key={item.slug}
+                  type="button"
+                  onClick={() => {
+                    setCliInput(item.command);
+                    setSlashSuggestionsOpen(false);
+                    setPanelOpen(true);
+                    setActiveTab('terminal');
+                    inputRef.current?.focus();
+                  }}
+                  className={`w-full text-left px-3 py-1.5 text-[11px] font-mono transition-colors ${
+                    i === slashSuggestionsIndex
+                      ? 'bg-[var(--fintheon-accent)]/20 text-[var(--fintheon-accent)]'
+                      : 'text-zinc-400 hover:bg-[var(--fintheon-accent)]/10 hover:text-zinc-300'
+                  }`}
+                >
+                  <span className="text-[var(--fintheon-accent)]/70">/{item.slug}</span>
+                  <span className="ml-2 text-zinc-500">{item.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Iframe controls (when TopStepX active) */}
         {topStepXEnabled && (
           <>
-            <div className="w-px h-3.5 bg-[var(--pulse-accent)]/10" />
+            <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
             <select
               value={primaryPlatform}
               onChange={(e) => onPrimaryPlatformChange?.(e.target.value as TradingPlatform)}
-              className="px-1.5 py-0.5 bg-[var(--pulse-bg)] border border-[var(--pulse-accent)]/15 rounded text-[10px] text-[var(--pulse-accent)] focus:outline-none"
+              className="px-1.5 py-0.5 bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/15 rounded text-[10px] text-[var(--fintheon-accent)] focus:outline-none"
             >
               {Object.entries(PLATFORM_LABELS).map(([key, label]) => (
                 <option key={key} value={key}>{label}</option>
@@ -249,8 +456,8 @@ export function FooterToolbar({
                 onClick={onSplitViewToggle}
                 className={`p-0.5 rounded transition-colors ${
                   splitViewEnabled
-                    ? 'text-[var(--pulse-accent)] bg-[var(--pulse-accent)]/10'
-                    : 'text-gray-600 hover:text-[var(--pulse-accent)]'
+                    ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/10'
+                    : 'text-gray-600 hover:text-[var(--fintheon-accent)]'
                 }`}
                 title="Toggle split view"
               >
@@ -293,13 +500,13 @@ export function FooterToolbar({
             <span className={sourceStatus.twitterCli ? 'text-emerald-400/60' : 'text-zinc-700'}>X</span>
           </span>
         </div>
-        <div className="w-px h-3.5 bg-[var(--pulse-accent)]/10" />
+        <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
         {/* Heartbeat */}
         <div className="flex items-center gap-1.5 text-[10px] text-gray-700 shrink-0">
           <div className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse" />
           <span>heartbeat</span>
         </div>
-        <div className="w-px h-3.5 bg-[var(--pulse-accent)]/10" />
+        <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
         {/* System status dot */}
         <div className="flex items-center gap-1.5 text-[10px] text-gray-700 shrink-0">
           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50" />

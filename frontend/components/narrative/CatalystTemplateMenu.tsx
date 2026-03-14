@@ -36,7 +36,7 @@ export function CatalystTemplateMenu({ open, onClose, onSelect, anchorPosition }
   return (
     <div
       ref={menuRef}
-      className="fixed z-50 backdrop-blur-lg bg-[var(--pulse-surface)]/90 border border-[var(--pulse-border)]/30 rounded-lg shadow-xl p-2 animate-fade-in"
+      className="fixed z-50 backdrop-blur-lg bg-[var(--fintheon-surface)]/90 border border-[var(--fintheon-border)]/30 rounded-lg shadow-xl p-2 animate-fade-in"
       style={{ left: anchorPosition.x, top: anchorPosition.y }}
     >
       <div className="grid grid-cols-2 gap-1 min-w-[200px]">
@@ -49,12 +49,12 @@ export function CatalystTemplateMenu({ open, onClose, onSelect, anchorPosition }
                 onSelect(template.type);
                 onClose();
               }}
-              className="flex items-center gap-2 px-3 py-2 rounded text-sm text-[var(--pulse-text)] hover:bg-[var(--pulse-accent)]/10 transition-colors text-left"
+              className="flex items-center gap-2 px-3 py-2 rounded text-sm text-[var(--fintheon-text)] hover:bg-[var(--fintheon-accent)]/10 transition-colors text-left"
             >
-              <Icon className="w-4 h-4 text-[var(--pulse-accent)] shrink-0" />
+              <Icon className="w-4 h-4 text-[var(--fintheon-accent)] shrink-0" />
               <div>
                 <div className="font-medium text-xs">{template.label}</div>
-                <div className="text-[10px] text-[var(--pulse-muted)]">{template.description}</div>
+                <div className="text-[10px] text-[var(--fintheon-muted)]">{template.description}</div>
               </div>
             </button>
           );

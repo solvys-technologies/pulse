@@ -33,7 +33,7 @@ export function estimateTokens(messages: { role: string; content: string }[]): n
 }
 
 /**
- * Summarize older messages via OpenClaw gateway when context exceeds threshold
+ * Summarize older messages via OpenRouter (Opus 4.6) when context exceeds threshold
  */
 async function summarizeOlderMessages(
   messages: { role: 'user' | 'assistant'; content: string }[]
@@ -41,20 +41,22 @@ async function summarizeOlderMessages(
   const olderMessages = messages.slice(0, messages.length - VERBATIM_TAIL)
   if (olderMessages.length === 0) return null
 
-  const gatewayUrl = (process.env.OPENCLAW_BASE_URL ?? 'http://localhost:7787').replace(/\/+$/, '')
-  const apiKey = process.env.OPENCLAW_API_KEY ?? ''
+  const apiKey = process.env.OPENROUTER_API_KEY ?? ''
+  if (!apiKey) return null
 
   const summaryPrompt = `Summarize this conversation history concisely, preserving key facts, decisions, and context:\n\n${olderMessages.map(m => `${m.role}: ${m.content}`).join('\n\n')}`
 
   try {
-    const response = await fetch(`${gatewayUrl}/v1/chat/completions`, {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
+        'HTTP-Referer': process.env.OPENROUTER_APP_URL ?? 'https://pulse-solvys.vercel.app',
+        'X-Title': process.env.OPENROUTER_APP_NAME ?? 'Pulse-AI-Gateway',
       },
       body: JSON.stringify({
-        model: 'clawdbot:main',
+        model: 'anthropic/claude-opus-4.6',
         messages: [
           { role: 'system', content: 'You are a concise conversation summarizer. Preserve key facts, trade ideas, decisions, and numbers. Be brief.' },
           { role: 'user', content: summaryPrompt },
@@ -65,7 +67,7 @@ async function summarizeOlderMessages(
     })
 
     if (!response.ok) {
-      console.warn('[ConversationStore] Summarization gateway error:', response.status)
+      console.warn('[ConversationStore] Summarization (OpenRouter) error:', response.status)
       return null
     }
 

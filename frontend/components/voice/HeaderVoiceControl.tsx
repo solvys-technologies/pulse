@@ -1,7 +1,7 @@
 // [claude-code 2026-03-09] Added cancel on click during speaking/thinking, mic denied-state UI
 // [claude-code 2026-03-12] Switched from independent useVoiceAssistant() to shared VoiceContext
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Mic, MicOff } from 'lucide-react';
+import { MicOff } from 'lucide-react';
 import { useVoice } from '../../contexts/VoiceContext';
 import { resolveVoiceOrbState } from '../../types/voice';
 import { VoiceAuroraOrb } from './VoiceAuroraOrb';
@@ -166,24 +166,24 @@ export function HeaderVoiceControl({ compact = false }: HeaderVoiceControlProps)
   };
 
   return (
-    <div className="flex items-center gap-2">
-      <VoiceAuroraOrb state={orbState} compact={compact} />
-
-      <button
-        type="button"
-        onClick={handleClick}
-        disabled={isDisabled}
-        className={`p-1.5 rounded-lg transition-colors ${
-          enabled
-            ? isBusy
-              ? 'bg-[var(--pulse-accent)]/18 text-[var(--pulse-accent)] hover:bg-[var(--pulse-accent)]/24'
-              : 'bg-[#22c55e]/18 text-[#8cf5b0] hover:bg-[#22c55e]/24'
-            : 'bg-[var(--pulse-bg)] text-zinc-300 hover:text-zinc-100'
-        } ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-        title={getTitle()}
-      >
-        {enabled ? <Mic className="w-3.5 h-3.5" /> : <MicOff className="w-3.5 h-3.5" />}
-      </button>
-    </div>
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={isDisabled}
+      className={`relative rounded-full transition-colors ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:opacity-90'}`}
+      title={getTitle()}
+    >
+      {enabled ? (
+        <VoiceAuroraOrb state={orbState} compact={compact} />
+      ) : (
+        /* Dormant state: MicOff icon inside the orb shell */
+        <div
+          className="rounded-full bg-[#070704] flex items-center justify-center"
+          style={{ width: compact ? '24px' : '28px', height: compact ? '24px' : '28px', border: '1.5px solid var(--fintheon-accent)' }}
+        >
+          <MicOff className="w-3 h-3 text-zinc-500" />
+        </div>
+      )}
+    </button>
   );
 }

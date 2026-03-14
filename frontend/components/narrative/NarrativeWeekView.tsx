@@ -104,7 +104,7 @@ export default function NarrativeWeekView() {
         status: 'active',
         dateRange: { start: new Date().toISOString(), end: null },
         healthScore: 100,
-        color: 'var(--pulse-accent)',
+        color: 'var(--fintheon-accent)',
         order: lanesFiltered.length,
         parentId: null,
         forkDate: null,
@@ -148,12 +148,12 @@ export default function NarrativeWeekView() {
               <div
                 className="flex-shrink-0 flex items-center px-4 py-2"
                 style={{
-                  borderBottom: '1px solid color-mix(in srgb, var(--pulse-border) 20%, transparent)',
+                  borderBottom: '1px solid color-mix(in srgb, var(--fintheon-border) 20%, transparent)',
                 }}
               >
                 <span
                   className="font-semibold"
-                  style={{ fontSize: '13px', color: 'var(--pulse-text)', width: '180px' }}
+                  style={{ fontSize: '13px', color: 'var(--fintheon-text)', width: '180px' }}
                 >
                   {formatWeekLabel(monday)}
                 </span>
@@ -161,7 +161,7 @@ export default function NarrativeWeekView() {
                   <span
                     key={date.toISOString()}
                     className="flex-1 text-center font-medium"
-                    style={{ fontSize: '11px', color: 'var(--pulse-muted)' }}
+                    style={{ fontSize: '11px', color: 'var(--fintheon-muted)' }}
                   >
                     {formatDayLabel(date)}
                   </span>
@@ -199,8 +199,8 @@ export default function NarrativeWeekView() {
                     <div
                       className="flex items-center gap-2 rounded-lg px-3 py-2"
                       style={{
-                        backgroundColor: 'color-mix(in srgb, var(--pulse-surface) 80%, transparent)',
-                        border: '1px solid color-mix(in srgb, var(--pulse-border) 30%, transparent)',
+                        backgroundColor: 'color-mix(in srgb, var(--fintheon-surface) 80%, transparent)',
+                        border: '1px solid color-mix(in srgb, var(--fintheon-border) 30%, transparent)',
                       }}
                     >
                       <input
@@ -209,7 +209,7 @@ export default function NarrativeWeekView() {
                         onChange={(e) => setNewLaneTitle(e.target.value)}
                         placeholder="Narrative title..."
                         className="bg-transparent border-none outline-none flex-1"
-                        style={{ fontSize: '11px', color: 'var(--pulse-text)' }}
+                        style={{ fontSize: '11px', color: 'var(--fintheon-text)' }}
                         autoFocus
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') handleAddLane();
@@ -222,13 +222,13 @@ export default function NarrativeWeekView() {
                         onChange={(e) => setNewLaneInstruments(e.target.value)}
                         placeholder="ES, NQ..."
                         className="bg-transparent border-none outline-none"
-                        style={{ fontSize: '11px', color: 'var(--pulse-text)', width: '80px' }}
+                        style={{ fontSize: '11px', color: 'var(--fintheon-text)', width: '80px' }}
                       />
                       <select
                         value={newLaneDirection}
                         onChange={(e) => setNewLaneDirection(e.target.value as 'long' | 'short' | 'neutral')}
                         className="bg-transparent border-none outline-none cursor-pointer"
-                        style={{ fontSize: '11px', color: 'var(--pulse-text)' }}
+                        style={{ fontSize: '11px', color: 'var(--fintheon-text)' }}
                       >
                         <option value="neutral">Neutral</option>
                         <option value="long">Long</option>
@@ -239,8 +239,8 @@ export default function NarrativeWeekView() {
                         className="rounded px-2 py-0.5 font-medium transition-colors"
                         style={{
                           fontSize: '10px',
-                          color: 'var(--pulse-accent)',
-                          backgroundColor: 'color-mix(in srgb, var(--pulse-accent) 15%, transparent)',
+                          color: 'var(--fintheon-accent)',
+                          backgroundColor: 'color-mix(in srgb, var(--fintheon-accent) 15%, transparent)',
                         }}
                       >
                         Add
@@ -248,7 +248,7 @@ export default function NarrativeWeekView() {
                       <button
                         onClick={() => setShowAddLane(false)}
                         className="rounded px-2 py-0.5 transition-colors"
-                        style={{ fontSize: '10px', color: 'var(--pulse-muted)' }}
+                        style={{ fontSize: '10px', color: 'var(--fintheon-muted)' }}
                       >
                         Cancel
                       </button>
@@ -259,9 +259,9 @@ export default function NarrativeWeekView() {
                       className="rounded-lg px-3 py-1.5 font-medium transition-colors hover:opacity-80"
                       style={{
                         fontSize: '11px',
-                        color: 'var(--pulse-accent)',
-                        backgroundColor: 'color-mix(in srgb, var(--pulse-accent) 8%, transparent)',
-                        border: '1px dashed color-mix(in srgb, var(--pulse-accent) 30%, transparent)',
+                        color: 'var(--fintheon-accent)',
+                        backgroundColor: 'color-mix(in srgb, var(--fintheon-accent) 8%, transparent)',
+                        border: '1px dashed color-mix(in srgb, var(--fintheon-accent) 30%, transparent)',
                       }}
                     >
                       + Add Narrative
@@ -285,8 +285,8 @@ export default function NarrativeWeekView() {
               width: idx === activePageIdx ? '8px' : '6px',
               height: idx === activePageIdx ? '8px' : '6px',
               backgroundColor: idx === activePageIdx
-                ? 'var(--pulse-accent)'
-                : 'color-mix(in srgb, var(--pulse-muted) 40%, transparent)',
+                ? 'var(--fintheon-accent)'
+                : 'color-mix(in srgb, var(--fintheon-muted) 40%, transparent)',
             }}
           />
         ))}

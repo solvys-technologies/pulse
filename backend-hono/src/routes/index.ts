@@ -17,6 +17,7 @@ import { createAgentRoutes } from './agents/index.js';
 import { createPolymarketRoutes } from './polymarket/index.js';
 import { createBoardroomRoutes } from './boardroom/index.js';
 import { createRithmicRoutes } from './rithmic/index.js';
+import { createHyperliquidRoutes } from './hyperliquid/index.js';
 import { createNotionRoutes } from './notion/index.js';
 import { createNarrativeRoutes } from './narrative/index.js';
 import { createERRoutes } from './er/index.js';
@@ -48,7 +49,7 @@ export function registerRoutes(app: Hono): void {
   app.route('/api/notion', createNotionRoutes());
   // Regime tracker — public, returns active trading regimes
   app.route('/api/regimes', createRegimeRoutes());
-  // Market data — FMP quotes/VIX + Unusual Whales GEX/walls/flow (public, agents consume directly)
+  // Market data — Yahoo Finance quotes/VIX + Unusual Whales GEX/walls/flow (public)
   app.route('/api/market-data', createMarketDataRoutes());
   // Narrative scoring — LLM-scored catalyst candidates
   app.route('/api/narrative', createNarrativeRoutes());
@@ -78,6 +79,8 @@ export function registerRoutes(app: Hono): void {
   app.use('/api/projectx/*', authMiddleware);
   app.use('/api/rithmic', authMiddleware);
   app.use('/api/rithmic/*', authMiddleware);
+  app.use('/api/hyperliquid', authMiddleware);
+  app.use('/api/hyperliquid/*', authMiddleware);
   // RiskFlow routes - exclude cron endpoint from auth
   const riskflowAuth = async (c: Parameters<typeof authMiddleware>[0], next: Parameters<typeof authMiddleware>[1]) => {
     if (c.req.path.includes('/cron/')) {
@@ -121,6 +124,9 @@ export function registerRoutes(app: Hono): void {
 
   // Rithmic routes (Autopilot primary broker scaffold)
   app.route('/api/rithmic', createRithmicRoutes());
+
+  // Hyperliquid DEX routes (perpetual futures)
+  app.route('/api/hyperliquid', createHyperliquidRoutes());
 
   // Phase 4: RiskFlow routes
   app.route('/api/riskflow', createRiskFlowRoutes());

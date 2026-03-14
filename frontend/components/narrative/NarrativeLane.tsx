@@ -71,7 +71,7 @@ export default function NarrativeLane({
       style={{
         opacity: isDecayed ? 0.35 : 1,
         paddingLeft: isForked ? '16px' : '0',
-        borderBottom: '1px solid color-mix(in srgb, var(--pulse-border) 15%, transparent)',
+        borderBottom: '1px solid color-mix(in srgb, var(--fintheon-border) 15%, transparent)',
         position: 'relative',
       }}
     >
@@ -81,7 +81,7 @@ export default function NarrativeLane({
           className="absolute left-2 top-0 bottom-0"
           style={{
             width: '1px',
-            backgroundColor: 'color-mix(in srgb, var(--pulse-accent) 30%, transparent)',
+            backgroundColor: 'color-mix(in srgb, var(--fintheon-accent) 30%, transparent)',
           }}
         />
       )}
@@ -104,9 +104,9 @@ export default function NarrativeLane({
             key={date.toISOString()}
             className="flex-1 flex flex-col gap-1.5 p-1.5 min-h-[90px] transition-colors duration-150"
             style={{
-              borderLeft: '1px solid color-mix(in srgb, var(--pulse-border) 10%, transparent)',
+              borderLeft: '1px solid color-mix(in srgb, var(--fintheon-border) 10%, transparent)',
               backgroundColor: isDragOver
-                ? 'color-mix(in srgb, var(--pulse-accent) 10%, transparent)'
+                ? 'color-mix(in srgb, var(--fintheon-accent) 10%, transparent)'
                 : 'transparent',
             }}
             onDragOver={(e) => handleDragOver(e, date)}

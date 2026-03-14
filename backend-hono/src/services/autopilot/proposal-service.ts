@@ -8,6 +8,7 @@ import { sql, isDatabaseAvailable } from '../../config/database.js'
 import { runAgentPipeline } from '../agents/pipeline.js'
 import type { AgentPipelineResult, TradingProposal, RiskAssessment } from '../../types/agents.js'
 import * as rithmicService from '../rithmic-service.js'
+import * as hyperliquidService from '../hyperliquid-service.js'
 
 export interface StoredProposal {
   id: string
@@ -259,7 +260,47 @@ export async function executeProposal(
     return { success: false, error: `Proposal must be approved first (current: ${proposal.status})` }
   }
 
-  const primaryBroker = (process.env.PRIMARY_BROKER ?? 'rithmic') as 'rithmic' | 'projectx'
+  const primaryBroker = (process.env.PRIMARY_BROKER ?? 'rithmic') as 'rithmic' | 'projectx' | 'hyperliquid'
+
+  if (primaryBroker === 'hyperliquid') {
+    const result = await hyperliquidService.executeOrder(userId, {
+      symbol: proposal.instrument,
+      direction: proposal.direction as 'long' | 'short',
+      quantity: proposal.positionSize,
+      entryPrice: proposal.entryPrice,
+      stopLoss: proposal.stopLoss,
+      takeProfit: proposal.takeProfit,
+    })
+    if (!result.success) {
+      return { success: false, error: result.error ?? 'Hyperliquid execution failed' }
+    }
+    const now = new Date()
+    const executionResult = {
+      orderId: result.orderId ?? `HL-${Date.now()}`,
+      filledAt: now.toISOString(),
+      fillPrice: proposal.entryPrice,
+      contracts: proposal.positionSize,
+      message: 'Order sent to Hyperliquid',
+    }
+    const orderId = result.orderId ?? executionResult.orderId
+    if (isDatabaseAvailable() && sql) {
+      await sql`
+        UPDATE trading_proposals
+        SET status = 'executed',
+            executed_at = ${now.toISOString()},
+            execution_result = ${JSON.stringify(executionResult)}::jsonb,
+            projectx_order_id = ${orderId}
+        WHERE id = ${proposalId}
+      `
+    } else {
+      proposal.status = 'executed'
+      proposal.executedAt = now.toISOString()
+      proposal.executionResult = executionResult
+      proposal.updatedAt = now.toISOString()
+      proposalCache.set(proposalId, proposal)
+    }
+    return { success: true, orderId }
+  }
 
   if (primaryBroker === 'rithmic') {
     const result = await rithmicService.executeOrder(userId, {

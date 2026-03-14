@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 
 const THINKING_PHRASES = [
-  'Scanning the tape...',
+  'Surveying the arena...',
   'Running risk models...',
-  'Reviewing positions...',
-  'Consulting the board...',
+  'Reviewing the legion\'s positions...',
+  'Consulting the Consilium...',
   'Analyzing macro data...',
   'Checking volatility surface...',
   'Evaluating sentiment...',
@@ -54,7 +54,7 @@ export function PulseThinkingIndicator({ isThinking, thinkingContent, agentName 
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="text-[12px] font-medium" style={{ color: 'var(--pulse-accent)' }}>{phrase}</span>
+            <span className="text-[12px] font-medium" style={{ color: 'var(--fintheon-accent)' }}>{phrase}</span>
             {agentName && <span className="text-[10px] text-zinc-500">({agentName})</span>}
           </div>
 

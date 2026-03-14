@@ -1,11 +1,12 @@
+// [claude-code 2026-03-14] Default: OpenRouter (Nous) + Opus 4.6
 /**
  * Shared AI types for multi-provider architecture
- * Supports OpenRouter primary with Vercel Gateway fallback
- * OpenClaw integration for P.I.C. agentic backend
+ * OpenRouter (Nous subscription) + Claude Opus 4.6 primary
+ * Hermes integration for P.I.C. agentic backend (OpenRouter Opus 4.6)
  */
 
 // Provider type discriminator
-export type AiProviderType = 'openrouter' | 'vercel-gateway' | 'openclaw' | 'github-models' | 'claude-local'
+export type AiProviderType = 'openrouter' | 'vercel-gateway' | 'hermes' | 'github-models' | 'claude-local'
 
 // Circuit breaker states
 export type CircuitState = 'closed' | 'open' | 'half-open'

@@ -1,11 +1,12 @@
+// [claude-code 2026-03-13] Hermes migration: openclawAgentRouting -> hermesAgentRouting
 // [claude-code 2026-03-09] Added: useMicPermission, useMicArbitration, error state with auto-recovery, cancel/interrupt support
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useBackend } from '../lib/backend';
-import { openClawConversationStorageKey } from '../lib/openclawAgentRouting';
+import { hermesConversationStorageKey } from '../lib/hermesAgentRouting';
 import type { VoiceRuntimeState, MicPermissionState } from '../types/voice';
 
 const VOICE_ENABLED_STORAGE_KEY = 'pulse_voice_assistant_enabled:v1';
-const HARPER_CONVERSATION_STORAGE_KEY = openClawConversationStorageKey('harper');
+const HARPER_CONVERSATION_STORAGE_KEY = hermesConversationStorageKey('harper');
 const ERROR_AUTO_RECOVERY_MS = 5000;
 
 interface VoiceSendResult {
@@ -131,6 +132,7 @@ export function useVoiceAssistant() {
   const abortRef = useRef<AbortController | null>(null);
   const micReleaseRef = useRef<(() => void) | null>(null);
   const errorRecoveryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const startRecognitionRef = useRef<() => void>(() => {});
 
   const { permission } = useMicPermission();
   const { requestMic } = useMicArbitration();
@@ -143,7 +145,9 @@ export function useVoiceAssistant() {
     []
   );
 
+  // [claude-code 2026-03-14] Guard: don't fire error when speechRecognition is simply absent (expected in Electron)
   const setErrorWithRecovery = useCallback(() => {
+    if (!speechRecognitionSupported) return; // not an error — expected in Electron
     setRuntimeState('error');
     // Clear any existing recovery timer
     if (errorRecoveryRef.current) clearTimeout(errorRecoveryRef.current);
@@ -151,7 +155,7 @@ export function useVoiceAssistant() {
       errorRecoveryRef.current = null;
       setRuntimeState(enabledRef.current ? 'listening' : 'idle');
     }, ERROR_AUTO_RECOVERY_MS);
-  }, []);
+  }, [speechRecognitionSupported]);
 
   const stopPlayback = useCallback(() => {
     if (audioRef.current) {
@@ -222,6 +226,31 @@ export function useVoiceAssistant() {
     });
   }, []);
 
+  // [claude-code 2026-03-13] Analyze user speech for tilt indicators, dispatch PsychAssist events
+  const analyzeSpeechForTilt = useCallback(async (transcript: string) => {
+    try {
+      const result = await backend.voice.analyzeSentiment({ transcript });
+      if (!result) return;
+
+      // Dispatch score update
+      if (typeof result.sentiment === 'number') {
+        window.dispatchEvent(new CustomEvent('psychassist:score', {
+          detail: { score: result.sentiment, timestamp: Date.now() }
+        }));
+        try { localStorage.setItem('psychassist_current_score', String(result.sentiment)); } catch {}
+      }
+
+      // If tilt indicators found, dispatch infraction
+      if (result.tiltIndicators && result.tiltIndicators.length > 0) {
+        window.dispatchEvent(new CustomEvent('psychassist:infraction', {
+          detail: { timestamp: Date.now(), indicators: result.tiltIndicators }
+        }));
+      }
+    } catch (err) {
+      console.warn('[VoiceAssistant] Sentiment analysis failed (non-critical):', err);
+    }
+  }, [backend]);
+
   const cancel = useCallback(() => {
     // Abort any in-flight request
     if (abortRef.current) {
@@ -284,7 +313,18 @@ export function useVoiceAssistant() {
         }
 
         if (!controller.signal.aborted) {
+          // Analyze user's speech for tilt indicators (non-blocking)
+          if (prompt && mode === 'chat') {
+            analyzeSpeechForTilt(prompt).catch(() => {});
+          }
+
           setRuntimeState(enabledRef.current ? 'listening' : 'idle');
+
+          // Restart recognition after TTS playback completes
+          if (enabledRef.current) {
+            await new Promise(r => setTimeout(r, 300));
+            startRecognitionRef.current();
+          }
         }
         return response;
       } catch (error) {
@@ -299,7 +339,7 @@ export function useVoiceAssistant() {
         }
       }
     },
-    [backend, conversationId, persistConversationId, playAudio, playWithSpeechSynthesis, setErrorWithRecovery]
+    [backend, conversationId, persistConversationId, playAudio, playWithSpeechSynthesis, setErrorWithRecovery, analyzeSpeechForTilt]
   );
 
   const respondToInfraction = useCallback(
@@ -404,6 +444,9 @@ export function useVoiceAssistant() {
     recognitionRef.current = recognition;
     recognition.start();
   }, [sendText, speechRecognitionSupported, stopRecognition, permission, requestMic, setErrorWithRecovery]);
+
+  // Keep ref in sync so sendText can restart recognition without circular deps
+  startRecognitionRef.current = startRecognition;
 
   const setEnabled = useCallback(
     (nextEnabled: boolean) => {

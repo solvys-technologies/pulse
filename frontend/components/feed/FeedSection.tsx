@@ -181,7 +181,7 @@ export function FeedSection() {
         <div className="flex items-center justify-end gap-2 px-5 pt-4 pb-2">
           <button
             onClick={() => setShowMDBModal(true)}
-            className="px-3 py-1 hover:bg-[var(--pulse-accent)]/10 text-[var(--pulse-accent)] rounded text-[10px] font-medium tracking-[0.18em] uppercase transition-colors flex items-center gap-1.5"
+            className="px-3 py-1 hover:bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)] rounded text-[10px] font-medium tracking-[0.18em] uppercase transition-colors flex items-center gap-1.5"
           >
             <FileText className="w-3 h-3" />
             MDB Report

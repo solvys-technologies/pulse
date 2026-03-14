@@ -13,7 +13,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   ];
   
   return (
-    <div className="w-16 bg-[var(--pulse-bg)] border-r border-zinc-900 flex flex-col items-center py-4 gap-2">
+    <div className="w-16 bg-[var(--fintheon-bg)] border-r border-zinc-900 flex flex-col items-center py-4 gap-2">
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const isActive = activeTab === tab.id;
@@ -25,7 +25,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
             className={`
               w-12 h-12 rounded-lg flex items-center justify-center transition-all
               ${isActive 
-                ? "bg-[var(--pulse-accent)]/10 text-[var(--pulse-accent)] shadow-[0_0_12px_rgba(255,192,56,0.2)]" 
+                ? "bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)] shadow-[0_0_12px_rgba(255,192,56,0.2)]" 
                 : "text-zinc-600 hover:text-zinc-400 hover:bg-zinc-900/30"
               }
             `}

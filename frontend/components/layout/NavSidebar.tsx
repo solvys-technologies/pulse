@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { Newspaper, Settings, LogOut, Sparkles, LayoutDashboard, MessagesSquare, NotebookText, CalendarDays, GitBranch, GripVertical, ChevronsRight, ChevronsLeft, BookOpenCheck, Users } from 'lucide-react';
 import { getSidebarOrder, setSidebarOrder, type NavTabId } from '../../lib/layoutOrderStorage';
 
-type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'chatroom' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'team' | 'settings';
+type NavTab = 'feed' | 'analysis' | 'news' | 'executive' | 'notion' | 'econ' | 'narrative' | 'earnings' | 'team' | 'settings';
 
 interface NavSidebarProps {
   activeTab: NavTab;
@@ -13,13 +13,12 @@ interface NavSidebarProps {
   onEditModeChange?: (editing: boolean) => void;
 }
 
-const NAV_ITEMS_MAP: Record<NavTabId, { id: NavTab; icon: typeof LayoutDashboard; label: string; description: string }> = {
+const NAV_ITEMS_MAP: Record<Exclude<NavTabId, 'chatroom'>, { id: NavTab; icon: typeof LayoutDashboard; label: string; description: string }> = {
   executive: { id: 'executive', icon: LayoutDashboard, label: 'Dashboard', description: 'KPIs, calendar, RiskFlow' },
-  analysis: { id: 'analysis', icon: Sparkles, label: 'Chat', description: 'AI-powered trade analysis' },
+  analysis: { id: 'analysis', icon: Sparkles, label: 'Consilium', description: 'AI-powered trade counsel' },
   news: { id: 'news', icon: Newspaper, label: 'RiskFlow', description: 'Market news & events' },
   econ: { id: 'econ', icon: CalendarDays, label: 'Calendar', description: 'Economic calendar' },
-  chatroom: { id: 'chatroom', icon: MessagesSquare, label: 'Board Room', description: 'Multi-agent boardroom' },
-  notion: { id: 'notion', icon: NotebookText, label: 'Research', description: 'Notion research corpus' },
+  notion: { id: 'notion', icon: NotebookText, label: 'Scriptorium', description: 'The knowledge archive' },
   narrative: { id: 'narrative', icon: GitBranch, label: 'Narratives', description: 'Market narrative flow' },
   earnings: { id: 'earnings', icon: BookOpenCheck, label: 'Performance', description: 'PsychAssist ER history & performance KPIs' },
   team: { id: 'team', icon: Users, label: 'Team', description: 'Unified Context Bank & desk reports' },
@@ -107,7 +106,7 @@ export function NavSidebar({
   }, []);
 
   const orderedItems = order
-    .filter((id): id is NavTabId => id in NAV_ITEMS_MAP && id !== 'chatroom')
+    .filter((id): id is Exclude<NavTabId, 'chatroom'> => id in NAV_ITEMS_MAP && id !== 'chatroom' && id !== 'team' && id !== 'earnings')
     .map((tabId) => ({
       tabId,
       icon: NAV_ITEMS_MAP[tabId].icon,
@@ -117,7 +116,7 @@ export function NavSidebar({
 
   const sidebarContent = (
     <div
-      style={{ backgroundColor: 'var(--pulse-surface)' }}
+      style={{ backgroundColor: 'var(--fintheon-surface)' }}
       className={`h-full border-r pulse-accent-border flex flex-col py-3 transition-all duration-200 ease-out ${
         expanded ? 'w-48' : 'w-11'
       }`}
@@ -173,7 +172,7 @@ export function NavSidebar({
                 </div>
               )}
               <button
-                onClick={() => onTabChange(tabId)}
+                onClick={() => onTabChange(tabId as NavTab)}
                 className={`flex-1 w-full flex items-center gap-2.5 rounded-md transition-colors min-w-0 ${
                   expanded ? 'px-2 py-1.5' : 'justify-center py-1.5 px-0'
                 } ${
@@ -201,6 +200,54 @@ export function NavSidebar({
       </div>
 
       <div className="space-y-1 px-1.5">
+        {/* Performance */}
+        <button
+          onClick={() => onTabChange('earnings')}
+          className={`w-full flex items-center gap-2.5 rounded-md transition-colors ${
+            expanded ? 'px-2 py-1.5' : 'justify-center py-1.5'
+          } ${
+            activeTab === 'earnings'
+              ? 'pulse-nav-active'
+              : 'pulse-nav-inactive'
+          }`}
+          title={expanded ? undefined : 'Performance'}
+        >
+          <BookOpenCheck className="w-4 h-4 shrink-0" />
+          {expanded && (
+            <div className="min-w-0 text-left">
+              <div className={`text-[11px] font-semibold truncate ${activeTab === 'earnings' ? 'text-black' : ''}`}>
+                Performance
+              </div>
+              <div className={`text-[9px] truncate ${activeTab === 'earnings' ? 'text-black/60' : 'text-gray-500'}`}>
+                ER history & KPIs
+              </div>
+            </div>
+          )}
+        </button>
+        {/* Team (Discord) */}
+        <button
+          onClick={() => onTabChange('team')}
+          className={`w-full flex items-center gap-2.5 rounded-md transition-colors ${
+            expanded ? 'px-2 py-1.5' : 'justify-center py-1.5'
+          } ${
+            activeTab === 'team'
+              ? 'pulse-nav-active'
+              : 'pulse-nav-inactive'
+          }`}
+          title={expanded ? undefined : 'Team'}
+        >
+          <Users className="w-4 h-4 shrink-0" />
+          {expanded && (
+            <div className="min-w-0 text-left">
+              <div className={`text-[11px] font-semibold truncate ${activeTab === 'team' ? 'text-black' : ''}`}>
+                Team
+              </div>
+              <div className={`text-[9px] truncate ${activeTab === 'team' ? 'text-black/60' : 'text-gray-500'}`}>
+                PIC Discord
+              </div>
+            </div>
+          )}
+        </button>
         <button
           onClick={() => onTabChange('settings')}
           className={`w-full flex items-center gap-2.5 rounded-md transition-colors ${

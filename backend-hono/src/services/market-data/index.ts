@@ -1,5 +1,5 @@
-// [claude-code 2026-03-10] Unified market data interface — consumed by QuickPulse + Morning Brief
-import * as fmpMarket from './fmp-market.js';
+// [claude-code 2026-03-14] Unified market data — Yahoo Finance replaces FMP (no API key needed)
+import * as yahooMarket from './yahoo-market.js';
 import * as unusualWhales from './unusual-whales.js';
 import type { MarketContext } from './types.js';
 
@@ -10,8 +10,8 @@ import type { MarketContext } from './types.js';
  */
 export async function getMarketContext(symbol: string): Promise<MarketContext> {
   const [quoteResult, vixResult, gexResult, wallsResult, flowResult] = await Promise.allSettled([
-    fmpMarket.getQuote(symbol),
-    fmpMarket.getVix(),
+    yahooMarket.getQuote(symbol),
+    yahooMarket.getVix(),
     unusualWhales.isAvailable() ? unusualWhales.getGammaExposure(symbol) : Promise.resolve(null),
     unusualWhales.isAvailable() ? unusualWhales.getOptionsWalls(symbol) : Promise.resolve(null),
     unusualWhales.isAvailable() ? unusualWhales.getOptionsFlow(symbol) : Promise.resolve(null),
@@ -27,5 +27,5 @@ export async function getMarketContext(symbol: string): Promise<MarketContext> {
   };
 }
 
-export { fmpMarket, unusualWhales };
+export { yahooMarket, unusualWhales };
 export * from './types.js';

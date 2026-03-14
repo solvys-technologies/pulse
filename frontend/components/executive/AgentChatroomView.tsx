@@ -198,7 +198,7 @@ export function AgentChatroomView() {
     <div className="h-full w-full p-6">
       <div className="mb-6 flex items-end justify-between gap-4">
         <div>
-          <div className="text-xs tracking-[0.28em] uppercase text-gray-500">Pulse v6</div>
+          <div className="text-xs tracking-[0.28em] uppercase text-gray-500">Fintheon</div>
           <h1 className="mt-2 text-2xl font-semibold text-white">Agent Chatroom</h1>
         </div>
         <div className="flex items-center gap-3">
@@ -206,7 +206,7 @@ export function AgentChatroomView() {
             className={`text-[11px] tracking-[0.22em] uppercase rounded-full px-3 py-1 border ${
               connected
                 ? 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10'
-                : 'text-gray-400 border-[var(--pulse-accent)]/15 bg-[var(--pulse-surface)]'
+                : 'text-gray-400 border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-surface)]'
             }`}
           >
             {connected ? 'Online' : 'Offline'}
@@ -216,14 +216,14 @@ export function AgentChatroomView() {
       </div>
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-12">
-        <div className="xl:col-span-8 rounded-xl border border-[var(--pulse-accent)]/15 bg-[var(--pulse-surface)] overflow-hidden">
-          <div className="border-b border-[var(--pulse-accent)]/20 px-5 py-4 flex flex-wrap gap-3 items-end">
+        <div className="xl:col-span-8 rounded-xl border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-surface)] overflow-hidden">
+          <div className="border-b border-[var(--fintheon-accent)]/20 px-5 py-4 flex flex-wrap gap-3 items-end">
             <div className="flex flex-col gap-1">
               <span className="text-[10px] tracking-[0.22em] uppercase text-gray-500">Channel</span>
               <select
                 value={channel}
                 onChange={(e) => setChannel(e.target.value as any)}
-                className="bg-[var(--pulse-bg)] border border-[var(--pulse-accent)]/15 rounded-lg px-3 py-2 text-sm text-gray-200"
+                className="bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/15 rounded-lg px-3 py-2 text-sm text-gray-200"
               >
                 <option value="general">General</option>
                 <option value="trading">Trading</option>
@@ -238,7 +238,7 @@ export function AgentChatroomView() {
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value as any)}
-                className="bg-[var(--pulse-bg)] border border-[var(--pulse-accent)]/15 rounded-lg px-3 py-2 text-sm text-gray-200"
+                className="bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/15 rounded-lg px-3 py-2 text-sm text-gray-200"
               >
                 <option value="all">All</option>
                 <option value="urgent">Urgent</option>
@@ -254,7 +254,7 @@ export function AgentChatroomView() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Filter messages"
-                className="w-full bg-[var(--pulse-bg)] border border-[var(--pulse-accent)]/15 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder:text-gray-600"
+                className="w-full bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/15 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder:text-gray-600"
               />
             </div>
           </div>
@@ -278,11 +278,11 @@ export function AgentChatroomView() {
                       >
                         {initial}
                       </div>
-                      <div className="flex-1 rounded-lg border border-[var(--pulse-accent)]/10 bg-black/20 px-4 py-3">
+                      <div className="flex-1 rounded-lg border border-[var(--fintheon-accent)]/10 bg-black/20 px-4 py-3">
                         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                           <span className="text-sm font-semibold text-white">{m.agentId}</span>
                           <span className="text-xs text-gray-500">{formatTime(m.timestamp)}</span>
-                          <span className="text-[10px] tracking-[0.22em] uppercase text-gray-400 border border-[var(--pulse-accent)]/15 rounded-full px-2 py-0.5">
+                          <span className="text-[10px] tracking-[0.22em] uppercase text-gray-400 border border-[var(--fintheon-accent)]/15 rounded-full px-2 py-0.5">
                             {p}
                           </span>
                           <span className="text-xs text-gray-500">{m.channel}</span>
@@ -293,7 +293,7 @@ export function AgentChatroomView() {
                             {m.metadata.tags.map((tag) => (
                               <span
                                 key={tag}
-                                className="text-[10px] tracking-[0.22em] uppercase text-gray-400 border border-[var(--pulse-accent)]/10 rounded-full px-2 py-0.5"
+                                className="text-[10px] tracking-[0.22em] uppercase text-gray-400 border border-[var(--fintheon-accent)]/10 rounded-full px-2 py-0.5"
                               >
                                 {tag}
                               </span>
@@ -309,10 +309,10 @@ export function AgentChatroomView() {
           </div>
         </div>
 
-        <div className="xl:col-span-4 rounded-xl border border-[var(--pulse-accent)]/15 bg-[var(--pulse-surface)] overflow-hidden">
-          <div className="flex items-center justify-between border-b border-[var(--pulse-accent)]/20 px-5 py-4">
-            <h2 className="text-sm font-semibold text-[var(--pulse-accent)] tracking-[0.18em] uppercase">Agent Status</h2>
-            <span className="text-[10px] tracking-[0.22em] uppercase text-gray-500 border border-[var(--pulse-accent)]/15 rounded-full px-3 py-1">
+        <div className="xl:col-span-4 rounded-xl border border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-surface)] overflow-hidden">
+          <div className="flex items-center justify-between border-b border-[var(--fintheon-accent)]/20 px-5 py-4">
+            <h2 className="text-sm font-semibold text-[var(--fintheon-accent)] tracking-[0.18em] uppercase">Agent Status</h2>
+            <span className="text-[10px] tracking-[0.22em] uppercase text-gray-500 border border-[var(--fintheon-accent)]/15 rounded-full px-3 py-1">
               Heartbeat
             </span>
           </div>
@@ -326,7 +326,7 @@ export function AgentChatroomView() {
                 .map((s) => (
                   <div
                     key={s.agentId}
-                    className="flex items-center justify-between rounded-lg border border-[var(--pulse-accent)]/10 bg-black/20 px-4 py-3"
+                    className="flex items-center justify-between rounded-lg border border-[var(--fintheon-accent)]/10 bg-black/20 px-4 py-3"
                   >
                     <div>
                       <div className="text-sm font-semibold text-white">{s.agentId}</div>
@@ -336,7 +336,7 @@ export function AgentChatroomView() {
                       className={`text-[10px] tracking-[0.22em] uppercase rounded-full px-2 py-0.5 border ${
                         s.status === 'online'
                           ? 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10'
-                          : 'text-gray-400 border-[var(--pulse-accent)]/15 bg-[var(--pulse-surface)]'
+                          : 'text-gray-400 border-[var(--fintheon-accent)]/15 bg-[var(--fintheon-surface)]'
                       }`}
                     >
                       {s.status}
@@ -345,7 +345,7 @@ export function AgentChatroomView() {
                 ))
             )}
             <div className="pt-3 text-xs text-gray-500">
-              This panel is read-only. Agents write to the chatroom backend; Pulse displays.
+              This panel is read-only. Agents write to the chatroom backend; Fintheon displays.
             </div>
           </div>
         </div>

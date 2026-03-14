@@ -1,8 +1,9 @@
+// [claude-code 2026-03-13] Hermes migration: useOpenClawRuntime -> useHermesRuntime
 // [claude-code 2026-03-10] AskHarpChatPanel — now uses PulseComposer (which wraps PromptBox)
 import { useCallback, useState } from 'react';
 import { AssistantRuntimeProvider, useThread, useThreadRuntime } from '@assistant-ui/react';
 import { usePulseAgents } from '../../contexts/PulseAgentContext';
-import { useOpenClawRuntime } from './useOpenClawRuntime';
+import { useHermesRuntime } from './useHermesRuntime';
 import { PulseThread } from './PulseThread';
 import { PulseComposer } from './PulseComposer';
 
@@ -42,8 +43,8 @@ function AskHarpInner({ lastError, lastRequestId, thinkHarder, setThinkHarder }:
 
 export function AskHarpChatPanel() {
   const { activeAgent } = usePulseAgents();
-  const [thinkHarder, setThinkHarder] = useState(false);
-  const { runtime, lastError, lastRequestId } = useOpenClawRuntime(activeAgent?.id ?? 'default', thinkHarder, 'askharp');
+  const [thinkHarder, setThinkHarder] = useState(true);
+  const { runtime, lastError, lastRequestId } = useHermesRuntime(activeAgent?.id ?? 'default', thinkHarder, 'askharp');
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>

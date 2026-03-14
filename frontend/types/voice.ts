@@ -6,9 +6,9 @@ export type VoiceRuntimeState = 'idle' | 'listening' | 'thinking' | 'speaking' |
 export type MicPermissionState = 'granted' | 'denied' | 'prompt';
 
 export const VOICE_ORB_COLORS = {
-  idle: 'var(--pulse-accent)',
+  idle: 'var(--fintheon-accent)',
   listening: '#22c55e',
-  thinking: 'var(--pulse-accent)',
+  thinking: 'var(--fintheon-accent)',
   speaking: '#d4c9a8',
   infraction: '#ef4444',
   error: '#ef4444',

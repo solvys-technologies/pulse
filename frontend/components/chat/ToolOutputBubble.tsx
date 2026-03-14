@@ -23,7 +23,7 @@ export interface ToolOutputData {
 
 const TOOL_COLORS: Record<string, string> = {
   web_search: '#A78BFA',
-  market_scanner: 'var(--pulse-accent)',
+  market_scanner: 'var(--fintheon-accent)',
   research: '#60A5FA',
   code_exec: '#34D399',
   browser: '#F59E0B',
@@ -48,7 +48,7 @@ export function ToolOutputBubble({ tool }: ToolOutputBubbleProps) {
   const color = getToolColor(tool.toolName);
 
   const StatusIcon = tool.status === 'running' ? Loader2 : tool.status === 'done' ? Check : AlertCircle;
-  const statusColor = tool.status === 'running' ? 'var(--pulse-accent)' : tool.status === 'done' ? '#34D399' : '#EF4444';
+  const statusColor = tool.status === 'running' ? 'var(--fintheon-accent)' : tool.status === 'done' ? '#34D399' : '#EF4444';
 
   const handleCopy = () => {
     navigator.clipboard.writeText(tool.output);

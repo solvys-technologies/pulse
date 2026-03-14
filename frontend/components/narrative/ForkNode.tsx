@@ -20,17 +20,17 @@ export function ForkNode({ lane, forkDate, position }: ForkNodeProps) {
     >
       {/* Diamond shape */}
       <div
-        className="w-4 h-4 rotate-45 border border-[var(--pulse-accent)]/40 bg-[var(--pulse-surface)]"
+        className="w-4 h-4 rotate-45 border border-[var(--fintheon-accent)]/40 bg-[var(--fintheon-surface)]"
         style={{ transition: 'border-color 200ms ease' }}
       />
       {/* Fork lines (two lines branching down from diamond) */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 flex gap-3">
-        <div className="w-px h-6 bg-[var(--pulse-accent)]/30" />
-        <div className="w-px h-6 bg-[var(--pulse-accent)]/30" />
+        <div className="w-px h-6 bg-[var(--fintheon-accent)]/30" />
+        <div className="w-px h-6 bg-[var(--fintheon-accent)]/30" />
       </div>
       {/* Tooltip */}
       {hovered && (
-        <div className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 rounded text-[10px] whitespace-nowrap bg-[var(--pulse-surface)] border border-[var(--pulse-border)]/30 text-[var(--pulse-text)] shadow-lg z-20">
+        <div className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 rounded text-[10px] whitespace-nowrap bg-[var(--fintheon-surface)] border border-[var(--fintheon-border)]/30 text-[var(--fintheon-text)] shadow-lg z-20">
           Forked: {forkDate}
         </div>
       )}

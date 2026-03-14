@@ -70,12 +70,12 @@ export function ProposalModal({ proposal, onClose, onApprove, onReject }: Propos
 
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm ${isClosing ? 'animate-fade-out-backdrop' : 'animate-fade-in-backdrop'}`}>
-      <div className={`bg-[var(--pulse-surface)] border border-[var(--pulse-accent)]/30 rounded-lg shadow-[0_0_24px_rgba(255,192,56,0.2)] w-full max-w-2xl max-h-[85vh] flex flex-col ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`}>
+      <div className={`bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/30 rounded-lg shadow-[0_0_24px_rgba(255,192,56,0.2)] w-full max-w-2xl max-h-[85vh] flex flex-col ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`}>
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-zinc-900">
           <div className="flex items-center gap-3">
-            <Zap className="w-5 h-5 text-[var(--pulse-accent)]" />
-            <h2 className="text-lg font-bold text-[var(--pulse-accent)]">Trading Proposal</h2>
+            <Zap className="w-5 h-5 text-[var(--fintheon-accent)]" />
+            <h2 className="text-lg font-bold text-[var(--fintheon-accent)]">Trading Proposal</h2>
             <span className={`text-xs px-2 py-0.5 rounded border ${directionBg} ${directionColor}`}>
               {proposal.direction.toUpperCase()}
             </span>
@@ -97,7 +97,7 @@ export function ProposalModal({ proposal, onClose, onApprove, onReject }: Propos
             </div>
             <div className="text-right">
               <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Instrument</div>
-              <div className="text-lg font-mono font-bold text-[var(--pulse-accent)]">{proposal.instrument}</div>
+              <div className="text-lg font-mono font-bold text-[var(--fintheon-accent)]">{proposal.instrument}</div>
             </div>
           </div>
 
@@ -131,29 +131,29 @@ export function ProposalModal({ proposal, onClose, onApprove, onReject }: Propos
           {/* Trade Details */}
           {proposal.direction !== 'flat' && (
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-[var(--pulse-bg)] border border-zinc-900 rounded-lg p-3">
+              <div className="bg-[var(--fintheon-bg)] border border-zinc-900 rounded-lg p-3">
                 <div className="text-xs text-zinc-500 mb-1">Entry</div>
                 <div className="text-lg font-mono text-white">{proposal.entryPrice?.toFixed(2) || 'Market'}</div>
               </div>
-              <div className="bg-[var(--pulse-bg)] border border-zinc-900 rounded-lg p-3">
+              <div className="bg-[var(--fintheon-bg)] border border-zinc-900 rounded-lg p-3">
                 <div className="text-xs text-zinc-500 mb-1">Stop Loss</div>
                 <div className="text-lg font-mono text-red-400">{proposal.stopLoss?.toFixed(2) || 'N/A'}</div>
               </div>
-              <div className="bg-[var(--pulse-bg)] border border-zinc-900 rounded-lg p-3">
+              <div className="bg-[var(--fintheon-bg)] border border-zinc-900 rounded-lg p-3">
                 <div className="text-xs text-zinc-500 mb-1">Take Profit</div>
                 <div className="text-lg font-mono text-green-400">
                   {proposal.takeProfit?.length ? proposal.takeProfit[0].toFixed(2) : 'N/A'}
                 </div>
               </div>
-              <div className="bg-[var(--pulse-bg)] border border-zinc-900 rounded-lg p-3">
+              <div className="bg-[var(--fintheon-bg)] border border-zinc-900 rounded-lg p-3">
                 <div className="text-xs text-zinc-500 mb-1">R:R</div>
-                <div className="text-lg font-mono text-[var(--pulse-accent)]">{proposal.riskRewardRatio.toFixed(1)}:1</div>
+                <div className="text-lg font-mono text-[var(--fintheon-accent)]">{proposal.riskRewardRatio.toFixed(1)}:1</div>
               </div>
             </div>
           )}
 
           {/* Rationale */}
-          <div className="bg-[var(--pulse-bg)] border border-zinc-900 rounded-lg p-4">
+          <div className="bg-[var(--fintheon-bg)] border border-zinc-900 rounded-lg p-4">
             <div className="text-xs text-zinc-500 uppercase tracking-wider mb-2">Rationale</div>
             <p className="text-sm text-zinc-300 leading-relaxed">{proposal.rationale}</p>
           </div>
@@ -163,7 +163,7 @@ export function ProposalModal({ proposal, onClose, onApprove, onReject }: Propos
             <div className="text-xs text-zinc-500 uppercase tracking-wider">Agent Analysis</div>
             <div className="grid grid-cols-2 gap-2">
               {Object.entries(proposal.analystInputs).map(([key, value]) => (
-                <div key={key} className="bg-[var(--pulse-bg)] border border-zinc-900/50 rounded p-2">
+                <div key={key} className="bg-[var(--fintheon-bg)] border border-zinc-900/50 rounded p-2">
                   <div className="text-[10px] text-zinc-600 uppercase">{key.replace(/([A-Z])/g, ' $1')}</div>
                   <div className="text-xs text-zinc-400 truncate">{value}</div>
                 </div>
@@ -194,7 +194,7 @@ export function ProposalModal({ proposal, onClose, onApprove, onReject }: Propos
             {proposal.tradeRecommended && (
               <button
                 onClick={handleApprove}
-                className="px-4 py-2 bg-[var(--pulse-accent)] hover:bg-[#FFD060] text-black rounded-lg text-sm font-medium transition-all"
+                className="px-4 py-2 bg-[var(--fintheon-accent)] hover:bg-[#FFD060] text-black rounded-lg text-sm font-medium transition-all"
               >
                 Execute Trade
               </button>

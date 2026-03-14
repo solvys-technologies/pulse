@@ -81,7 +81,7 @@ export function AiActions({ content, onRetry, onFeedback, className }: AiActions
           icon={copied ? <CheckIcon /> : <CopyIcon />}
           label="Copy"
           onClick={handleCopy}
-          style={copied ? { color: 'var(--pulse-bullish)' } : undefined}
+          style={copied ? { color: 'var(--fintheon-bullish)' } : undefined}
         />
       )}
 
@@ -93,13 +93,13 @@ export function AiActions({ content, onRetry, onFeedback, className }: AiActions
         icon={<ThumbUpIcon />}
         label="Like"
         onClick={() => handleFeedback('like')}
-        style={feedback === 'like' ? { color: 'var(--pulse-bullish)' } : undefined}
+        style={feedback === 'like' ? { color: 'var(--fintheon-bullish)' } : undefined}
       />
       <ActionButton
         icon={<ThumbDownIcon />}
         label="Dislike"
         onClick={() => handleFeedback('dislike')}
-        style={feedback === 'dislike' ? { color: 'var(--pulse-bearish)' } : undefined}
+        style={feedback === 'dislike' ? { color: 'var(--fintheon-bearish)' } : undefined}
       />
     </ActionContainer>
   );

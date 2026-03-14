@@ -42,19 +42,19 @@ export function TradingJournal() {
   ];
 
   return (
-    <div className="bg-[var(--pulse-bg)] h-full flex flex-col">
+    <div className="bg-[var(--fintheon-bg)] h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--pulse-accent)]/10">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--fintheon-accent)]/10">
         <div className="flex items-center gap-2">
-          <BookOpen className="w-4 h-4 text-[var(--pulse-accent)]" />
-          <span className="text-sm font-semibold text-[var(--pulse-text)]">Performance</span>
+          <BookOpen className="w-4 h-4 text-[var(--fintheon-accent)]" />
+          <span className="text-sm font-semibold text-[var(--fintheon-text)]">Performance</span>
         </div>
         <button
           onClick={fetchData}
           disabled={loading}
-          className="p-1 rounded hover:bg-[var(--pulse-accent)]/10 transition-colors"
+          className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 transition-colors"
         >
-          <RefreshCw className={`w-3.5 h-3.5 text-[var(--pulse-muted)] ${loading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`w-3.5 h-3.5 text-[var(--fintheon-muted)] ${loading ? 'animate-spin' : ''}`} />
         </button>
       </div>
 
@@ -69,8 +69,8 @@ export function TradingJournal() {
               onClick={() => setActiveTab(tab.key)}
               className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded text-xs font-medium transition-all ${
                 isActive
-                  ? 'bg-[var(--pulse-accent)] text-black'
-                  : 'bg-[var(--pulse-surface)] text-[var(--pulse-muted)] hover:text-[var(--pulse-text)] border border-[var(--pulse-accent)]/10'
+                  ? 'bg-[var(--fintheon-accent)] text-black'
+                  : 'bg-[var(--fintheon-surface)] text-[var(--fintheon-muted)] hover:text-[var(--fintheon-text)] border border-[var(--fintheon-accent)]/10'
               }`}
             >
               <Icon className="w-3 h-3" />
@@ -83,7 +83,7 @@ export function TradingJournal() {
       {/* Tab Content */}
       <div className="flex-1 overflow-y-auto px-3 py-3">
         {loading && entries.length === 0 ? (
-          <div className="flex items-center justify-center h-32 text-[10px] text-[var(--pulse-muted)]">
+          <div className="flex items-center justify-center h-32 text-[10px] text-[var(--fintheon-muted)]">
             Loading journal...
           </div>
         ) : activeTab === 'human' ? (

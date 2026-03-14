@@ -44,8 +44,8 @@ export interface ChatRequest {
   model?: string
   taskType?: string
   /**
-   * Force routing to a specific OpenClaw agent for this chat thread.
-   * This is used by per-agent chat UIs to keep Clawnalyst threads consistent.
+   * Force routing to a specific Hermes agent for this chat thread.
+   * This is used by per-agent chat UIs to keep analyst threads consistent.
    */
   agentOverride?: string
   streamEnabled?: boolean

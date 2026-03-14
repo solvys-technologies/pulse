@@ -13,7 +13,7 @@ export function HealthGauge({ score, size = 28 }: HealthGaugeProps) {
   const circumference = Math.PI * radius;
   const fillLength = (Math.max(0, Math.min(100, score)) / 100) * circumference;
 
-  const color = score >= 70 ? '#34D399' : score >= 40 ? 'var(--pulse-accent)' : '#EF4444';
+  const color = score >= 70 ? '#34D399' : score >= 40 ? 'var(--fintheon-accent)' : '#EF4444';
 
   return (
     <div
@@ -27,7 +27,7 @@ export function HealthGauge({ score, size = 28 }: HealthGaugeProps) {
         <path
           d={describeArc(size / 2, size / 2, radius, 180, 360)}
           fill="none"
-          stroke="var(--pulse-border)"
+          stroke="var(--fintheon-border)"
           strokeWidth={2}
           strokeLinecap="round"
           opacity={0.3}
@@ -52,7 +52,7 @@ export function HealthGauge({ score, size = 28 }: HealthGaugeProps) {
       </span>
       {/* Tooltip */}
       {hovered && (
-        <div className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 rounded text-[10px] whitespace-nowrap bg-[var(--pulse-surface)] border border-[var(--pulse-border)]/30 text-[var(--pulse-text)] shadow-lg z-20">
+        <div className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 rounded text-[10px] whitespace-nowrap bg-[var(--fintheon-surface)] border border-[var(--fintheon-border)]/30 text-[var(--fintheon-text)] shadow-lg z-20">
           Health: {Math.round(score)}/100
         </div>
       )}

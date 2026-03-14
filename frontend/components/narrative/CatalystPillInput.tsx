@@ -42,8 +42,8 @@ export default function CatalystPillInput({
         style={{
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
-          backgroundColor: 'color-mix(in srgb, var(--pulse-surface) 80%, transparent)',
-          border: '1px solid color-mix(in srgb, var(--pulse-border) 30%, transparent)',
+          backgroundColor: 'color-mix(in srgb, var(--fintheon-surface) 80%, transparent)',
+          border: '1px solid color-mix(in srgb, var(--fintheon-border) 30%, transparent)',
           boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
         }}
       >
@@ -58,7 +58,7 @@ export default function CatalystPillInput({
           className="bg-transparent border-none outline-none"
           style={{
             fontSize: '11px',
-            color: 'var(--pulse-text)',
+            color: 'var(--fintheon-text)',
             width: '140px',
           }}
         />

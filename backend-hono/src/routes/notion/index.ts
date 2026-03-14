@@ -55,7 +55,7 @@ export function createNotionRoutes(): Hono {
 
       const items = notionItems.status === 'fulfilled' ? notionItems.value : [];
 
-      // Merge RiskFlow economic prints as schedule items (actual data from FMP)
+      // Merge RiskFlow economic prints as schedule items
       if (econPrints.status === 'fulfilled' && econPrints.value.length > 0) {
         const existingTitles = new Set(items.map(i => i.title.toLowerCase()));
         for (const print of econPrints.value) {
@@ -150,7 +150,7 @@ ${briefType === 'MDB'
 **Best Intraday Approach:** Specific strategy recommendation (Ripper, AWV, Snipe, etc.)
 
 Be direct, use financial shorthand. Anchor ONLY to key macro events. No scattergun anchoring. 400-600 words.`
-  : `Write a comprehensive Tale of the Tape covering:
+  : `Write a comprehensive Weekly Tribune covering:
 
 **Past Week Recap:**
 - Market Overview (S&P, Nasdaq, equal-weight, sector rotation)

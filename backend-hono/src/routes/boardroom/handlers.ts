@@ -214,7 +214,7 @@ export async function handleGetBoardroomStatus(c: Context) {
 
 /**
  * GET /api/boardroom/meeting-schedule
- * Returns schedule derived from the OpenClaw cron that drives boardroom polling.
+ * Returns schedule derived from the Hermes cron that drives boardroom polling.
  */
 export async function handleGetBoardroomMeetingSchedule(c: Context) {
   try {

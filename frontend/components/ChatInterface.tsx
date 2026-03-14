@@ -1,9 +1,10 @@
+// [claude-code 2026-03-13] Hermes migration: useOpenClawRuntime -> useHermesRuntime
 // [claude-code 2026-03-10] Simplified ChatInterface — removed unused state, added AiLoader
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { AlertTriangle, CalendarCheck, X, Bookmark, Trash2 } from 'lucide-react';
 import { AssistantRuntimeProvider, useThread, useThreadRuntime } from '@assistant-ui/react';
 import { usePulseAgents } from '../contexts/PulseAgentContext';
-import { useOpenClawRuntime } from './chat/useOpenClawRuntime';
+import { useHermesRuntime } from './chat/useHermesRuntime';
 import { ChatHeader } from './chat/ChatHeader';
 import { PulseThread, AiLoader } from './chat/PulseThread';
 import { PulseComposer } from './chat/PulseComposer';
@@ -143,15 +144,15 @@ function ChatInterfaceInner({ conversationId, clearConversationId, lastError, th
         </div>
 
         {/* Checkpoints sidebar */}
-        <div className={`flex-shrink-0 overflow-hidden transition-[width] duration-[240ms] ease-in-out ${showCheckpoints ? 'w-80' : 'w-0'} border-l border-[var(--pulse-accent)]/20`}>
-          <div className="w-80 h-full flex flex-col bg-[var(--pulse-surface)]">
-            <div className="h-14 border-b border-[var(--pulse-accent)]/20 flex items-center justify-between px-4">
+        <div className={`flex-shrink-0 overflow-hidden transition-[width] duration-[240ms] ease-in-out ${showCheckpoints ? 'w-80' : 'w-0'} border-l border-[var(--fintheon-accent)]/20`}>
+          <div className="w-80 h-full flex flex-col bg-[var(--fintheon-surface)]">
+            <div className="h-14 border-b border-[var(--fintheon-accent)]/20 flex items-center justify-between px-4">
               <div className="flex items-center gap-2">
-                <Bookmark className="w-4 h-4 text-[var(--pulse-accent)]" />
-                <h2 className="text-base font-semibold text-[var(--pulse-accent)] tracking-wide">Checkpoints</h2>
+                <Bookmark className="w-4 h-4 text-[var(--fintheon-accent)]" />
+                <h2 className="text-base font-semibold text-[var(--fintheon-accent)] tracking-wide">Checkpoints</h2>
               </div>
-              <button onClick={() => setShowCheckpoints(false)} className="p-1.5 hover:bg-[var(--pulse-accent)]/10 rounded transition-colors">
-                <X className="w-4 h-4 text-[var(--pulse-accent)]/70" />
+              <button onClick={() => setShowCheckpoints(false)} className="p-1.5 hover:bg-[var(--fintheon-accent)]/10 rounded transition-colors">
+                <X className="w-4 h-4 text-[var(--fintheon-accent)]/70" />
               </button>
             </div>
             <div className="px-4 py-2.5 border-b border-white/5">
@@ -164,21 +165,21 @@ function ChatInterfaceInner({ conversationId, clearConversationId, lastError, th
                 <div className="flex flex-col items-center text-center py-10 px-4 gap-3">
                   <CalendarCheck className="w-8 h-8 text-zinc-700" />
                   <p className="text-sm text-zinc-500">No checkpoints yet.</p>
-                  <p className="text-[11px] text-zinc-600 leading-relaxed">Hover an assistant message and click the <span className="text-[var(--pulse-accent)]/80">checkpoint</span> icon to save it here.</p>
+                  <p className="text-[11px] text-zinc-600 leading-relaxed">Hover an assistant message and click the <span className="text-[var(--fintheon-accent)]/80">checkpoint</span> icon to save it here.</p>
                 </div>
               ) : (
                 groupCheckpointsByDate(checkpointItems).map((group) => (
                   <div key={group.label} className="mb-4 last:mb-0">
                     <div className="flex items-center gap-2 mb-2 px-1">
-                      <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--pulse-accent)]/50">{group.label}</span>
-                      <div className="flex-1 h-px bg-[var(--pulse-accent)]/10" />
+                      <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--fintheon-accent)]/50">{group.label}</span>
+                      <div className="flex-1 h-px bg-[var(--fintheon-accent)]/10" />
                       <span className="text-[10px] text-zinc-600">{group.items.length}</span>
                     </div>
                     <div className="space-y-1.5">
                       {group.items.map((cp) => (
                         <div
                           key={cp.id}
-                          className="group relative w-full p-2.5 bg-zinc-900/40 border border-zinc-800/80 hover:border-[var(--pulse-accent)]/30 hover:bg-zinc-900/70 rounded-lg transition-all cursor-pointer"
+                          className="group relative w-full p-2.5 bg-zinc-900/40 border border-zinc-800/80 hover:border-[var(--fintheon-accent)]/30 hover:bg-zinc-900/70 rounded-lg transition-all cursor-pointer"
                           onClick={() => jumpToMessage(cp.messageId)}
                         >
                           <div className="flex items-baseline gap-2 mb-0.5">
@@ -187,8 +188,8 @@ function ChatInterfaceInner({ conversationId, clearConversationId, lastError, th
                           </div>
                           <p className="text-[11px] text-zinc-500 line-clamp-2 leading-relaxed pl-[calc(10px+0.5rem)]">{cp.excerpt}</p>
                           <div className="mt-1.5 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity pl-[calc(10px+0.5rem)]">
-                            <button onClick={(e) => { e.stopPropagation(); jumpToMessage(cp.messageId); }} className="px-2 py-0.5 bg-[var(--pulse-accent)]/15 text-[var(--pulse-accent)] rounded text-[11px] font-medium hover:bg-[var(--pulse-accent)]/25 transition-colors">Jump</button>
-                            <button onClick={(e) => { e.stopPropagation(); deleteCheckpoint(cp.id); setCheckpointVersion((v) => v + 1); }} className="ml-auto p-1 hover:bg-[var(--pulse-accent)]/10 rounded transition-colors"><Trash2 className="w-3 h-3 text-zinc-600 hover:text-[var(--pulse-accent)]" /></button>
+                            <button onClick={(e) => { e.stopPropagation(); jumpToMessage(cp.messageId); }} className="px-2 py-0.5 bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)] rounded text-[11px] font-medium hover:bg-[var(--fintheon-accent)]/25 transition-colors">Jump</button>
+                            <button onClick={(e) => { e.stopPropagation(); deleteCheckpoint(cp.id); setCheckpointVersion((v) => v + 1); }} className="ml-auto p-1 hover:bg-[var(--fintheon-accent)]/10 rounded transition-colors"><Trash2 className="w-3 h-3 text-zinc-600 hover:text-[var(--fintheon-accent)]" /></button>
                           </div>
                         </div>
                       ))}
@@ -213,8 +214,8 @@ function ChatInterfaceInner({ conversationId, clearConversationId, lastError, th
 
 export default function ChatInterface() {
   const { activeAgent } = usePulseAgents();
-  const [thinkHarderState, setThinkHarderState] = useState(false);
-  const { runtime, conversationId, clearConversationId, lastError, lastRequestId } = useOpenClawRuntime(activeAgent?.id ?? 'default', thinkHarderState, 'analysis');
+  const [thinkHarderState, setThinkHarderState] = useState(true);
+  const { runtime, conversationId, clearConversationId, lastError, lastRequestId } = useHermesRuntime(activeAgent?.id ?? 'default', thinkHarderState, 'analysis');
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>

@@ -40,7 +40,7 @@ const ThinkHarderIcon: FC<{ active: boolean }> = ({ active }) => (
     height="14"
     viewBox="0 0 16 16"
     fill="none"
-    stroke={active ? 'var(--pulse-accent)' : 'currentColor'}
+    stroke={active ? 'var(--fintheon-accent)' : 'currentColor'}
     strokeWidth="1.4"
     strokeLinecap="round"
     strokeLinejoin="round"
@@ -330,7 +330,7 @@ export function PromptBox({
         {images.length > 0 && (
           <div className="flex gap-2 mb-2 px-2 overflow-x-auto">
             {images.map((src, idx) => (
-              <div key={idx} className="relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-[var(--pulse-accent)]/20 cursor-pointer" onClick={() => setFullSizeImage(src)}>
+              <div key={idx} className="relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-[var(--fintheon-accent)]/20 cursor-pointer" onClick={() => setFullSizeImage(src)}>
                 <img src={src} alt="" className="w-full h-full object-cover" />
                 <button
                   onClick={(e) => { e.stopPropagation(); removeImage(idx); }}
@@ -349,10 +349,10 @@ export function PromptBox({
             {visibleQueueJobs.map((job) => (
               <span
                 key={job.jobId}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-[var(--pulse-accent)]/20 bg-[#0d0c09]/80 text-[11px] text-zinc-400"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-[var(--fintheon-accent)]/20 bg-[#0d0c09]/80 text-[11px] text-zinc-400"
               >
                 {job.status === 'processing' ? (
-                  <Loader2 size={10} className="animate-spin text-[var(--pulse-accent)]" />
+                  <Loader2 size={10} className="animate-spin text-[var(--fintheon-accent)]" />
                 ) : (
                   <Clock size={10} className="text-zinc-600" />
                 )}
@@ -373,7 +373,7 @@ export function PromptBox({
 
         {/* Drag-over indicator */}
         {dragOver && (
-          <div className="mb-2 rounded-xl border-2 border-dashed border-[var(--pulse-accent)]/40 bg-[var(--pulse-accent)]/5 px-4 py-3 text-center text-[12px] text-[var(--pulse-accent)]/70">
+          <div className="mb-2 rounded-xl border-2 border-dashed border-[var(--fintheon-accent)]/40 bg-[var(--fintheon-accent)]/5 px-4 py-3 text-center text-[12px] text-[var(--fintheon-accent)]/70">
             Drop RiskFlow alert here
           </div>
         )}
@@ -384,8 +384,8 @@ export function PromptBox({
             'relative flex flex-col rounded-2xl border transition-all duration-200',
             'backdrop-blur-xl shadow-[0_18px_40px_rgba(0,0,0,0.35)]',
             text
-              ? 'border-[var(--pulse-accent)]/55 ring-1 ring-[var(--pulse-accent)]/25'
-              : 'border-[var(--pulse-accent)]/20 hover:border-[var(--pulse-accent)]/35',
+              ? 'border-[var(--fintheon-accent)]/55 ring-1 ring-[var(--fintheon-accent)]/25'
+              : 'border-[var(--fintheon-accent)]/20 hover:border-[var(--fintheon-accent)]/35',
             disabled ? 'opacity-50 pointer-events-none' : '',
             vanishing ? 'animate-prompt-vanish' : '',
           ].join(' ')}
@@ -424,7 +424,7 @@ export function PromptBox({
               {/* Attach */}
               <button
                 onClick={() => setShowAttach((v) => !v)}
-                className="flex items-center justify-center rounded-lg text-zinc-500 hover:text-[var(--pulse-accent)] hover:bg-[var(--pulse-accent)]/10 transition-colors"
+                className="flex items-center justify-center rounded-lg text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
                 style={{ width: '32px', height: '32px' }}
                 title="Attach"
               >
@@ -436,13 +436,13 @@ export function PromptBox({
                 <button
                   type="button"
                   onClick={() => setShowConnectors((v) => !v)}
-                  className="relative flex items-center justify-center rounded-lg text-zinc-500 hover:text-[var(--pulse-accent)] hover:bg-[var(--pulse-accent)]/10 transition-colors"
+                  className="relative flex items-center justify-center rounded-lg text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
                   style={{ width: '32px', height: '32px' }}
                   title="Connectors"
                 >
                   <Plug2 size={14} />
                   {activeIds.length > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-[var(--pulse-accent)] text-[8px] text-[var(--pulse-bg)] flex items-center justify-center font-bold leading-none">
+                    <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-[var(--fintheon-accent)] text-[8px] text-[var(--fintheon-bg)] flex items-center justify-center font-bold leading-none">
                       {activeIds.length > 9 ? '9+' : activeIds.length}
                     </span>
                   )}
@@ -452,7 +452,7 @@ export function PromptBox({
               {/* Skills */}
               <button
                 onClick={onToggleSkills}
-                className="flex items-center justify-center rounded-lg text-zinc-500 hover:text-[var(--pulse-accent)] hover:bg-[var(--pulse-accent)]/10 transition-colors"
+                className="flex items-center justify-center rounded-lg text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
                 style={{ width: '32px', height: '32px' }}
                 title="Skills"
               >
@@ -466,8 +466,8 @@ export function PromptBox({
                   title={voiceEnabled ? 'Disable voice' : 'Enable voice'}
                   className={`flex items-center justify-center rounded-lg transition-all ${
                     micListening
-                      ? 'text-[var(--pulse-accent)] bg-[var(--pulse-accent)]/15'
-                      : 'text-zinc-500 hover:text-[var(--pulse-accent)] hover:bg-[var(--pulse-accent)]/10'
+                      ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/15'
+                      : 'text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10'
                   }`}
                   style={{ width: '32px', height: '32px' }}
                 >
@@ -482,8 +482,8 @@ export function PromptBox({
                 className={[
                   'flex items-center gap-1.5 px-2 py-1 rounded-full transition-all text-[11px] font-medium',
                   thinkHarder
-                    ? 'text-[var(--pulse-accent)] bg-[var(--pulse-accent)]/15 think-harder-active'
-                    : 'text-zinc-500 hover:text-[var(--pulse-accent)] hover:bg-[var(--pulse-accent)]/10',
+                    ? 'text-[var(--fintheon-accent)] bg-[var(--fintheon-accent)]/15 think-harder-active'
+                    : 'text-zinc-500 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10',
                 ].join(' ')}
               >
                 <ThinkHarderIcon active={thinkHarder} />
@@ -499,8 +499,8 @@ export function PromptBox({
               disabled={!text.trim() && images.length === 0 && !isProcessing}
               className={`flex items-center justify-center rounded-full transition-all ${
                 isProcessing
-                  ? 'bg-[var(--pulse-accent)] hover:bg-[#C5A030] text-black'
-                  : 'bg-[var(--pulse-accent)] hover:bg-[#C5A030] text-black disabled:opacity-30 disabled:hover:bg-[var(--pulse-accent)] shadow-[0_8px_20px_rgba(212,175,55,0.25)]'
+                  ? 'bg-[var(--fintheon-accent)] hover:bg-[#C5A030] text-black'
+                  : 'bg-[var(--fintheon-accent)] hover:bg-[#C5A030] text-black disabled:opacity-30 disabled:hover:bg-[var(--fintheon-accent)] shadow-[0_8px_20px_rgba(212,175,55,0.25)]'
               }`}
               style={{ width: '34px', height: '34px' }}
               title={isProcessing ? 'Stop' : 'Send'}

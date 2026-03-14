@@ -1,6 +1,6 @@
 // [claude-code 2026-03-12] Single shared voice assistant context — fixes dual-instance bug
 // where HeaderVoiceControl and PulseComposer each ran independent SpeechRecognition
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 import { useVoiceAssistant } from '../hooks/useVoiceAssistant';
 import type { VoiceRuntimeState, MicPermissionState } from '../types/voice';
 
@@ -23,6 +23,14 @@ const VoiceContext = createContext<VoiceContextValue | null>(null);
 
 export function VoiceProvider({ children }: { children: React.ReactNode }) {
   const voice = useVoiceAssistant();
+
+  // Listen for voice toggle events from chat input mic buttons
+  useEffect(() => {
+    const handler = () => voice.toggleEnabled();
+    window.addEventListener('pulse:voice-toggle', handler);
+    return () => window.removeEventListener('pulse:voice-toggle', handler);
+  }, [voice.toggleEnabled]);
+
   return <VoiceContext.Provider value={voice}>{children}</VoiceContext.Provider>;
 }
 

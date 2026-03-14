@@ -1,8 +1,7 @@
-// [claude-code 2026-03-10] Market data unified type layer (T5: FMP + Unusual Whales)
+// [claude-code 2026-03-14] Market data unified type layer (Yahoo Finance + Unusual Whales)
 
-export type MarketDataProvider = 'fmp' | 'unusual-whales' | 'yahoo-finance';
+export type MarketDataProvider = 'yahoo-finance' | 'unusual-whales';
 
-// FMP types
 export interface StockQuote {
   symbol: string;
   price: number;

@@ -228,7 +228,7 @@ const initialTasks: Task[] = [
 function getStatusIcon(status: string) {
   switch (status) {
     case "completed":
-      return <CheckCircle2 className="w-4 h-4 text-[var(--pulse-bullish)]" />;
+      return <CheckCircle2 className="w-4 h-4 text-[var(--fintheon-bullish)]" />;
     case "in-progress":
       return <CircleDotDashed className="w-4 h-4 text-blue-400" />;
     case "pending":
@@ -236,7 +236,7 @@ function getStatusIcon(status: string) {
     case "need-help":
       return <CircleAlert className="w-4 h-4 text-yellow-400" />;
     case "failed":
-      return <CircleX className="w-4 h-4 text-[var(--pulse-bearish)]" />;
+      return <CircleX className="w-4 h-4 text-[var(--fintheon-bearish)]" />;
     default:
       return <Circle className="w-4 h-4 text-zinc-500" />;
   }
@@ -248,7 +248,7 @@ function getStatusBadge(status: string) {
     case "completed":
       return (
         <span
-          className={`${base} bg-[var(--pulse-bullish)]/15 text-[var(--pulse-bullish)]`}
+          className={`${base} bg-[var(--fintheon-bullish)]/15 text-[var(--fintheon-bullish)]`}
         >
           {status}
         </span>
@@ -272,7 +272,7 @@ function getStatusBadge(status: string) {
     case "failed":
       return (
         <span
-          className={`${base} bg-[var(--pulse-bearish)]/15 text-[var(--pulse-bearish)]`}
+          className={`${base} bg-[var(--fintheon-bearish)]/15 text-[var(--fintheon-bearish)]`}
         >
           {status}
         </span>
@@ -290,7 +290,7 @@ function getPriorityBadge(priority: string) {
     case "high":
       return (
         <span
-          className={`${base} bg-[var(--pulse-bearish)]/15 text-[var(--pulse-bearish)]`}
+          className={`${base} bg-[var(--fintheon-bearish)]/15 text-[var(--fintheon-bearish)]`}
         >
           {priority}
         </span>
@@ -476,19 +476,19 @@ export default function Plan() {
     totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   return (
-    <div className="bg-[var(--pulse-bg)] text-[var(--pulse-text)] h-full overflow-auto p-2">
+    <div className="bg-[var(--fintheon-bg)] text-[var(--fintheon-text)] h-full overflow-auto p-2">
       <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-lg font-semibold text-[var(--pulse-text)]">
+            <h2 className="text-lg font-semibold text-[var(--fintheon-text)]">
               Agent Plan
             </h2>
             <div className="flex items-center gap-2">
               <span className="text-xs text-zinc-500">
                 {completedCount}/{totalCount} tasks
               </span>
-              <span className="text-xs font-medium text-[var(--pulse-accent)]">
+              <span className="text-xs font-medium text-[var(--fintheon-accent)]">
                 {progressPercent}%
               </span>
             </div>
@@ -496,7 +496,7 @@ export default function Plan() {
           {/* Progress bar */}
           <div className="h-1 w-full bg-zinc-800 rounded-full overflow-hidden">
             <motion.div
-              className="h-full bg-[var(--pulse-accent)] rounded-full"
+              className="h-full bg-[var(--fintheon-accent)] rounded-full"
               initial={{ width: 0 }}
               animate={{ width: `${progressPercent}%` }}
               transition={{ duration: 0.5, ease: "easeOut" }}
@@ -523,7 +523,7 @@ export default function Plan() {
                     initial="hidden"
                     animate="visible"
                     exit="exit"
-                    className="rounded-lg border border-[var(--pulse-accent)]/20 bg-[var(--pulse-surface)] overflow-hidden"
+                    className="rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-surface)] overflow-hidden"
                   >
                     {/* Task header */}
                     <motion.div
@@ -565,13 +565,13 @@ export default function Plan() {
                             className={`text-sm font-medium truncate ${
                               task.status === "completed"
                                 ? "line-through text-zinc-500"
-                                : "text-[var(--pulse-text)]"
+                                : "text-[var(--fintheon-text)]"
                             }`}
                           >
                             {task.title}
                           </span>
                           {task.level > 0 && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--pulse-accent)]/10 text-[var(--pulse-accent)] font-medium">
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)] font-medium">
                               L{task.level}
                             </span>
                           )}
@@ -597,7 +597,7 @@ export default function Plan() {
                         {task.dependencies.map((dep) => (
                           <span
                             key={dep}
-                            className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--pulse-accent)]/10 text-[var(--pulse-accent)]"
+                            className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)]"
                           >
                             #{dep}
                           </span>
@@ -613,10 +613,10 @@ export default function Plan() {
                           initial="hidden"
                           animate="visible"
                           exit="exit"
-                          className="border-t border-[var(--pulse-accent)]/20"
+                          className="border-t border-[var(--fintheon-accent)]/20"
                         >
                           {/* Task description */}
-                          <div className="px-3 py-2 bg-[var(--pulse-accent)]/10">
+                          <div className="px-3 py-2 bg-[var(--fintheon-accent)]/10">
                             <p className="text-xs text-zinc-500">
                               {task.description}
                             </p>
@@ -683,7 +683,7 @@ export default function Plan() {
                                       className={`text-xs flex-1 truncate ${
                                         subtask.status === "completed"
                                           ? "line-through text-zinc-500"
-                                          : "text-[var(--pulse-text)]"
+                                          : "text-[var(--fintheon-text)]"
                                       }`}
                                     >
                                       {subtask.title}
@@ -715,7 +715,7 @@ export default function Plan() {
                                               {subtask.tools.map((tool) => (
                                                 <motion.span
                                                   key={tool}
-                                                  className="text-[9px] px-1.5 py-0.5 rounded-full bg-[var(--pulse-accent)]/10 text-[var(--pulse-accent)] border border-[var(--pulse-accent)]/20"
+                                                  className="text-[9px] px-1.5 py-0.5 rounded-full bg-[var(--fintheon-accent)]/10 text-[var(--fintheon-accent)] border border-[var(--fintheon-accent)]/20"
                                                   whileHover={{
                                                     backgroundColor:
                                                       "rgba(199, 159, 74, 0.15)",

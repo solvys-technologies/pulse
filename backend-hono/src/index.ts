@@ -18,6 +18,7 @@ import { startNotionPoller } from './services/notion-poller.js';
 import { startEconEnricher } from './services/cron/econ-enricher.js';
 import { startEconTwitterPoller } from './services/twitter-cli/index.js';
 import { initClaudeSDK } from './services/claude-sdk/process-manager.js';
+import { initHermesAgent } from './services/hermes-handler.js';
 import { startAutopilotScheduler } from './services/autopilot/autopilot-scheduler.js';
 import { startContextBankTicker } from './services/context-bank/context-bank-service.js';
 
@@ -84,7 +85,7 @@ startFeedPoller();
 // Start Notion polling (trade ideas + daily P&L)
 startNotionPoller();
 
-// Start econ calendar enricher (writes FMP actuals to Notion)
+// Start econ calendar enricher (Notion calendar → RiskFlow feed)
 startEconEnricher();
 
 // Start econ-triggered twitter-cli poller (cookie-based, FJ emoji filtered)
@@ -95,6 +96,9 @@ startAutopilotScheduler();
 
 // Start Context Bank ticker (120s — unified snapshot for all agents)
 startContextBankTicker();
+
+// Initialize Hermes/OpenRouter connection (health check — non-blocking)
+initHermesAgent().catch((err) => console.warn('[API] Hermes init failed (non-fatal):', err));
 
 // Initialize Claude SDK bridge (health check — non-blocking)
 initClaudeSDK().catch((err) => console.warn('[API] Claude SDK init failed (non-fatal):', err));

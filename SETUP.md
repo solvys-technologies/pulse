@@ -27,43 +27,22 @@ cp backend-hono/.env.example backend-hono/.env
 
 ### Required Environment Variables
 
-Only 3 things need to be configured:
-
 | Variable | Where | Description |
 |----------|-------|-------------|
-| `OPENCLAW_BASE_URL` | `backend-hono/.env` | OpenClaw gateway URL (default `http://localhost:7787`) |
-| `OPENCLAW_API_KEY` | `backend-hono/.env` | Gateway auth key (generate via `openclaw keys create`) |
+| `OPENROUTER_API_KEY` | `backend-hono/.env` | OpenRouter API key (Nous subscription — Claude Opus 4.6; also used for voice sentiment) |
+| `OPENAI_API_KEY` | `backend-hono/.env` | **Voice Engine**: Whisper (transcription) + OpenAI TTS (synthesis). Required for voice features. |
 | `NOTION_API_KEY` | `backend-hono/.env` | Notion integration token for trade ideas DB |
 | `FMP_API_KEY` | `backend-hono/.env` | Financial Modeling Prep key (free at financialmodelingprep.com) |
 
-Everything else (database, Claude SDK, Groq, etc.) is pre-configured and deployed on the backend. **Do NOT ask users for PostgreSQL credentials, bearer tokens, or Claude SDK config.**
+Default inference is **Claude Opus 4.6** via OpenRouter. No other agent API keys (Anthropic, 21st, Exa, etc.) are required. **Do NOT ask users for PostgreSQL credentials or database URLs.**
 
-## OpenClaw Gateway
+## Voice Engine (OpenAI)
 
-OpenClaw is the AI gateway that routes Pulse chat to the right agent.
+Voice features (mic input → transcription, TTS responses) use **OpenAI** only. Set `OPENAI_API_KEY` in `backend-hono/.env` (from [OpenAI API keys](https://platform.openai.com/api-keys)). Optional env vars: `OPENAI_TRANSCRIBE_MODEL` (default `whisper-1`), `OPENAI_TTS_MODEL` (default `gpt-4o-mini-tts`), `OPENAI_TTS_VOICE` (default `alloy`). Voice sentiment analysis uses OpenRouter (same `OPENROUTER_API_KEY`), not Anthropic.
 
-```bash
-# Install
-curl -fsSL https://install.openclaw.ai | bash
-# OR: npm install -g @openclaw/cli
+## Hermes / OpenRouter (Opus 4.6)
 
-# Initialize
-openclaw init
-
-# Generate API key
-openclaw keys create --name pulse-local
-
-# Start (default port 7787 — change with --port)
-openclaw start --port 7787
-```
-
-### Port Configuration
-The gateway port is configurable in the app:
-1. Go to **Settings → Gateway**
-2. Enter the port number OpenClaw is running on
-3. The status indicator will turn green when connected
-
-The port is also set in `backend-hono/.env` as `OPENCLAW_BASE_URL`.
+Pulse uses **OpenRouter** with your **Nous subscription** for all analyst chat. Set `OPENROUTER_API_KEY` in `backend-hono/.env` (get it from [OpenRouter](https://openrouter.ai/settings/keys)). The default model is **Claude Opus 4.6** (`anthropic/claude-opus-4.6`). Health checks run periodically; the Hermes status in **Settings → Hermes** shows connection state.
 
 ## Running
 
@@ -74,9 +53,6 @@ cd backend-hono && npm run dev    # Starts on port 8080
 
 # Terminal 2: Frontend
 cd frontend && npm run dev        # Starts on port 5173
-
-# Terminal 3: OpenClaw
-openclaw start --port 7787
 ```
 
 ### Production (Electron)
@@ -94,7 +70,7 @@ Electron App (main.cjs)
   │     ├── VIX polling (Yahoo Finance, 60s)
   │     ├── News feed poller (RSS + X)
   │     ├── Notion poller (trade ideas, 60s)
-  │     └── OpenClaw router → Gateway (port 7787)
+  │     └── Hermes → OpenRouter (Opus 4.6, Nous subscription)
   └── loads: Frontend (React 19 + Vite + Tailwind 4)
         └── connects to Backend at localhost:8080
 ```
@@ -106,7 +82,7 @@ On first launch, Pulse shows a **Setup Guide** card on the Dashboard with status
 | Service | What It Checks |
 |---------|----------------|
 | Backend API | `GET /health` on port 8080 |
-| OpenClaw Gateway | `GET /health` on configured port |
+| Hermes / OpenRouter | OpenRouter API key + models endpoint |
 | Notion Integration | Polls for trade ideas |
 | Market Data (VIX) | Checks FMP API response |
 
@@ -118,8 +94,8 @@ Green = connected, yellow = connecting, red = not configured.
 # Backend running?
 curl http://localhost:8080/health
 
-# OpenClaw running?
-curl http://localhost:7787/health
+# OpenRouter (Hermes) configured?
+# Ensure OPENROUTER_API_KEY is set in backend-hono/.env
 
 # Notion working?
 # Check backend logs for: [Notion] Polling...
@@ -133,9 +109,9 @@ curl http://localhost:7787/health
 When helping a user set up Pulse:
 1. Install Node.js 20+ if not present
 2. Clone and install deps (see Installation above)
-3. **Install OpenClaw** — detect which port to use, configure in `.env`
-4. **Get Notion API key** — user creates integration at notion.so/my-integrations
-5. **Get FMP API key** — free at financialmodelingprep.com
-6. **Do NOT** ask for: PostgreSQL, bearer tokens, Claude SDK, Groq keys, database URLs
-7. Start the app and use the in-app Setup Guide to verify connections
-8. The Gateway port configured in Settings must match the port OpenClaw is running on
+3. **Get OpenRouter API key** — from OpenRouter (Nous subscription) at openrouter.ai/settings/keys; set `OPENROUTER_API_KEY` in `backend-hono/.env`
+4. **Get OpenAI API key (Voice Engine)** — from platform.openai.com/api-keys; set `OPENAI_API_KEY` in `backend-hono/.env` for voice transcription and TTS
+5. **Get Notion API key** — user creates integration at notion.so/my-integrations
+6. **Get FMP API key** — free at financialmodelingprep.com
+7. **Do NOT** ask for: PostgreSQL, database URLs; no Anthropic, 21st, or Exa keys
+8. Start the app and use the in-app Setup Guide to verify connections

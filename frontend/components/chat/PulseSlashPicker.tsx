@@ -59,8 +59,8 @@ export function PulseSlashPicker({ query, onSelect, onDismiss, onStop, disabledS
   if (filtered.length === 0) {
     return (
       <div
-        className="absolute bottom-full mb-1 left-0 w-72 rounded-lg border border-[var(--pulse-accent)]/20 shadow-xl z-50 overflow-hidden"
-        style={{ backgroundColor: 'var(--pulse-surface)' }}
+        className="absolute bottom-full mb-1 left-0 w-72 rounded-lg border border-[var(--fintheon-accent)]/20 shadow-xl z-50 overflow-hidden"
+        style={{ backgroundColor: 'var(--fintheon-surface)' }}
       >
         <div className="px-3 py-3 text-[12px] text-gray-500 text-center">
           No matching skills for "/{query}"
@@ -71,10 +71,10 @@ export function PulseSlashPicker({ query, onSelect, onDismiss, onStop, disabledS
 
   return (
     <div
-      className="absolute bottom-full mb-1 left-0 w-72 rounded-lg border border-[var(--pulse-accent)]/20 shadow-xl z-50 overflow-hidden"
-      style={{ backgroundColor: 'var(--pulse-surface)' }}
+      className="absolute bottom-full mb-1 left-0 w-72 rounded-lg border border-[var(--fintheon-accent)]/20 shadow-xl z-50 overflow-hidden"
+      style={{ backgroundColor: 'var(--fintheon-surface)' }}
     >
-      <div className="px-3 py-1.5 border-b border-[var(--pulse-accent)]/10">
+      <div className="px-3 py-1.5 border-b border-[var(--fintheon-accent)]/10">
         <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Skills</span>
       </div>
       <div ref={listRef} className="py-1 max-h-52 overflow-y-auto">

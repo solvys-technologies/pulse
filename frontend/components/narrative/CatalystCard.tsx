@@ -3,19 +3,19 @@ import { useState, useCallback } from 'react';
 import type { CatalystCard as CatalystCardType } from '../../lib/narrative-types';
 
 const SENTIMENT_COLORS: Record<string, string> = {
-  bullish: 'var(--pulse-bullish)',
-  bearish: 'var(--pulse-bearish)',
+  bullish: 'var(--fintheon-bullish)',
+  bearish: 'var(--fintheon-bearish)',
 };
 
 const SENTIMENT_BG: Record<string, string> = {
-  bullish: 'color-mix(in srgb, var(--pulse-bullish) 15%, transparent)',
-  bearish: 'color-mix(in srgb, var(--pulse-bearish) 15%, transparent)',
+  bullish: 'color-mix(in srgb, var(--fintheon-bullish) 15%, transparent)',
+  bearish: 'color-mix(in srgb, var(--fintheon-bearish) 15%, transparent)',
 };
 
 const SEVERITY_LABELS: Record<string, { label: string; color: string }> = {
   high: { label: 'HIGH', color: '#EF4444' },
-  medium: { label: 'MED', color: 'var(--pulse-accent)' },
-  low: { label: 'LOW', color: 'var(--pulse-muted)' },
+  medium: { label: 'MED', color: 'var(--fintheon-accent)' },
+  low: { label: 'LOW', color: 'var(--fintheon-muted)' },
 };
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -60,7 +60,7 @@ export default function CatalystCard({
 
   const borderColor = selected
     ? sentimentColor
-    : `color-mix(in srgb, var(--pulse-border) ${isHovered ? '50%' : '30%'}, transparent)`;
+    : `color-mix(in srgb, var(--fintheon-border) ${isHovered ? '50%' : '30%'}, transparent)`;
 
   return (
     <div
@@ -80,7 +80,7 @@ export default function CatalystCard({
       style={{
         backdropFilter: 'blur(24px)',
         WebkitBackdropFilter: 'blur(24px)',
-        backgroundColor: 'color-mix(in srgb, var(--pulse-surface) 80%, transparent)',
+        backgroundColor: 'color-mix(in srgb, var(--fintheon-surface) 80%, transparent)',
         border: `1px solid ${borderColor}`,
         boxShadow: selected
           ? `0 4px 24px rgba(0,0,0,0.3), 0 0 12px color-mix(in srgb, ${sentimentColor} 25%, transparent)`
@@ -94,7 +94,7 @@ export default function CatalystCard({
         className="font-semibold leading-tight truncate"
         style={{
           fontSize: compact ? '10px' : '11px',
-          color: 'var(--pulse-text)',
+          color: 'var(--fintheon-text)',
         }}
       >
         {catalyst.title}
@@ -105,7 +105,7 @@ export default function CatalystCard({
           {/* Date */}
           <p
             className="mt-1 truncate"
-            style={{ fontSize: '9px', color: 'var(--pulse-muted)' }}
+            style={{ fontSize: '9px', color: 'var(--fintheon-muted)' }}
           >
             {new Date(catalyst.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
           </p>
@@ -141,8 +141,8 @@ export default function CatalystCard({
               className="rounded px-1 py-0.5 font-mono"
               style={{
                 fontSize: '7px',
-                color: 'var(--pulse-muted)',
-                backgroundColor: 'color-mix(in srgb, var(--pulse-muted) 10%, transparent)',
+                color: 'var(--fintheon-muted)',
+                backgroundColor: 'color-mix(in srgb, var(--fintheon-muted) 10%, transparent)',
               }}
             >
               {SOURCE_LABELS[catalyst.source] || catalyst.source}

@@ -50,7 +50,7 @@ export function VoiceAuroraOrb({ state, compact = false }: VoiceAuroraOrbProps) 
         {state === 'idle' && (
           <div
             className="absolute inset-0 rounded-full bg-[#070704]"
-            style={{ border: '1.5px solid var(--pulse-accent)' }}
+            style={{ border: '1.5px solid var(--fintheon-accent)' }}
           />
         )}
 
@@ -66,23 +66,25 @@ export function VoiceAuroraOrb({ state, compact = false }: VoiceAuroraOrbProps) 
           />
         )}
 
-        {/* === SPEAKING: 5 vertical waveform bars === */}
+        {/* === SPEAKING: 7 dynamic waveform bars with glow === */}
         {state === 'speaking' && (
           <div
             className="absolute inset-0 rounded-full bg-[#070704] overflow-hidden"
-            style={{ border: '1.5px solid #d4c9a8' }}
+            style={{ border: '1.5px solid var(--fintheon-accent)' }}
           >
-            <div className="absolute inset-0 flex items-center justify-center gap-[2px]">
-              {[0, 1, 2, 3, 4].map((i) => (
+            <div className="absolute inset-0" style={{ background: 'radial-gradient(circle, rgba(199,159,74,0.12) 0%, transparent 70%)' }} />
+            <div className="absolute inset-0 flex items-center justify-center gap-[1.5px]">
+              {[0, 1, 2, 3, 4, 5, 6].map((i) => (
                 <div
                   key={i}
                   className="rounded-full"
                   style={{
                     width: '2px',
-                    height: '20%',
-                    backgroundColor: '#d4c9a8',
-                    boxShadow: '0 0 4px rgba(212,201,168,0.4)',
-                    animation: `waveBar 0.8s ease-in-out ${i * 0.12}s infinite`,
+                    height: '15%',
+                    backgroundColor: 'var(--fintheon-accent)',
+                    opacity: 0.7 + (i % 2) * 0.3,
+                    boxShadow: '0 0 6px rgba(199,159,74,0.5)',
+                    animation: `waveBar ${0.6 + (i % 3) * 0.15}s ease-in-out ${i * 0.08}s infinite`,
                   }}
                 />
               ))}
@@ -94,7 +96,7 @@ export function VoiceAuroraOrb({ state, compact = false }: VoiceAuroraOrbProps) 
         {state === 'thinking' && (
           <div
             className="absolute inset-0 rounded-full bg-[#070704] overflow-hidden"
-            style={{ border: '1.5px solid var(--pulse-accent)' }}
+            style={{ border: '1.5px solid var(--fintheon-accent)' }}
           >
             {[0, 0.6, 1.2].map((delay, i) => (
               <div

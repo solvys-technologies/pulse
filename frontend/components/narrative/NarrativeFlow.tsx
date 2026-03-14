@@ -34,7 +34,7 @@ export function NarrativeFlow() {
   }, [snapshot, dispatch]);
 
   return (
-    <div className="h-full flex flex-col" style={{ backgroundColor: 'var(--pulse-bg)' }}>
+    <div className="h-full flex flex-col" style={{ backgroundColor: 'var(--fintheon-bg)' }}>
       <NarrativeToolbar
         state={state}
         dispatch={dispatch}
@@ -48,7 +48,7 @@ export function NarrativeFlow() {
         {/* Coming Soon overlay */}
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center" style={{ backgroundColor: 'rgba(5, 4, 2, 0.92)' }}>
           <div className="text-center space-y-3">
-            <div className="text-[var(--pulse-accent)] text-lg font-semibold tracking-wide">
+            <div className="text-[var(--fintheon-accent)] text-lg font-semibold tracking-wide">
               NarrativeFlow
             </div>
             <div className="text-zinc-500 text-sm">Coming Soon</div>

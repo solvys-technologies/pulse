@@ -1,3 +1,4 @@
+// [claude-code 2026-03-14] Fix brief sort: property-based sort instead of timestamp sort
 // [claude-code 2026-03-03] Phase 3: Notion service — fetches MDB Brief from Harper Messages DB
 // [claude-code 2026-03-03] Extended: Trade Ideas + Daily P&L query functions for Notion poller.
 // [claude-code 2026-03-04] Economic calendar now sourced from Notion DB via alias-based field mapping.
@@ -272,7 +273,7 @@ export async function fetchMDBBrief(overrideType?: BriefType): Promise<MDBBriefI
         property: 'Source',
         select: { equals: 'Harper-Notion' },
       },
-      sorts: [{ timestamp: 'last_edited_time', direction: 'descending' } as any],
+      sorts: [{ timestamp: 'created_time', direction: 'descending' }],
       pageSize: 20,
     });
 
@@ -288,8 +289,19 @@ export async function fetchMDBBrief(overrideType?: BriefType): Promise<MDBBriefI
       return keywords.some((kw) => message.includes(kw) || category.includes(kw));
     });
 
+    if (matchingPages.length === 0 && pages.length > 0) {
+      // No matching brief for this time slot — fall back to most recent brief of any type
+      const fallback = pages[0];
+      const message = getPropText(fallback, 'Message');
+      const category = getPropText(fallback, 'Category');
+      const items: MDBBriefItem[] = [{
+        title: `Latest — ${category || 'Brief'}`,
+        detail: message,
+      }];
+      _briefCache = { items, briefType: currentType, fetchedAt: Date.now() };
+      return items;
+    }
     if (matchingPages.length === 0) {
-      // No matching brief for this time slot — return empty, never show a wrong brief type
       _briefCache = { items: [], briefType: currentType, fetchedAt: Date.now() };
       return [];
     }
@@ -367,7 +379,7 @@ export interface NotionTradeIdea {
   confidence?: string;
   timeframe?: string;
   sourceAgent?: string;
-  openclawDescription?: string;
+  hermesDescription?: string;
   notionUrl: string;
   createdAt: string;
   updatedAt: string;
@@ -481,7 +493,7 @@ export async function queryTradeIdeas(): Promise<NotionTradeIdea[]> {
           confidence,
           timeframe: String(extractPropValue(props['Date']) ?? '') || undefined,
           sourceAgent,
-          openclawDescription: thesis ? thesis.slice(0, 300) : undefined, // Seed with thesis excerpt
+          hermesDescription: thesis ? thesis.slice(0, 300) : undefined, // Seed with thesis excerpt
           notionUrl: page.url ?? '',
           createdAt: page.created_time ?? new Date().toISOString(),
           updatedAt: page.last_edited_time ?? new Date().toISOString(),
