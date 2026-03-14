@@ -288,8 +288,19 @@ export async function fetchMDBBrief(overrideType?: BriefType): Promise<MDBBriefI
       return keywords.some((kw) => message.includes(kw) || category.includes(kw));
     });
 
+    if (matchingPages.length === 0 && pages.length > 0) {
+      // No matching brief for this time slot — fall back to most recent brief of any type
+      const fallback = pages[0];
+      const message = getPropText(fallback, 'Message');
+      const category = getPropText(fallback, 'Category');
+      const items: MDBBriefItem[] = [{
+        title: `Latest — ${category || 'Brief'}`,
+        detail: message,
+      }];
+      _briefCache = { items, briefType: currentType, fetchedAt: Date.now() };
+      return items;
+    }
     if (matchingPages.length === 0) {
-      // No matching brief for this time slot — return empty, never show a wrong brief type
       _briefCache = { items: [], briefType: currentType, fetchedAt: Date.now() };
       return [];
     }

@@ -926,12 +926,12 @@ export class NotionService {
     }
   }
 
-  async getMdbBrief(): Promise<Array<{ title: string; detail: string }>> {
+  async getMdbBrief(): Promise<{ items: Array<{ title: string; detail: string }>; briefType?: string }> {
     try {
-      const res = await this.client.get<{ items: Array<{ title: string; detail: string }> }>('/api/notion/mdb-brief');
-      return res.items ?? [];
+      const res = await this.client.get<{ items: Array<{ title: string; detail: string }>; briefType?: string }>('/api/notion/mdb-brief');
+      return { items: res.items ?? [], briefType: res.briefType };
     } catch {
-      return [];
+      return { items: [] };
     }
   }
 

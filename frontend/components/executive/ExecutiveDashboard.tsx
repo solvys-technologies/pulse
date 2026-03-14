@@ -16,6 +16,16 @@ import { RefreshCw } from 'lucide-react';
 
 const DASHBOARD_PAGES = ['Briefing', 'RiskFlow'];
 
+function briefTypeToLabel(bt: string): string {
+  switch (bt) {
+    case 'MDB': return 'Morning Brief';
+    case 'ADB': return 'Afternoon Brief';
+    case 'PMDB': return 'Post-Market Brief';
+    case 'TOTT': return 'Tale of the Tape';
+    default: return 'Latest Brief';
+  }
+}
+
 export function ExecutiveDashboard() {
   const backend = useBackend();
   const [activePage, setActivePage] = useState(0); // default to Briefing
@@ -42,15 +52,16 @@ export function ExecutiveDashboard() {
   };
   const [briefLabel, setBriefLabel] = useState(getBriefLabel);
 
-  // Daily Brief from Notion — rotates MDB/ADB/PMDB
+  // Daily Brief from Notion — rotates MDB/ADB/PMDB, label from backend
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       try {
-        if (!cancelled) setBriefLabel(getBriefLabel());
-        const items = await backend.notion.getMdbBrief();
+        const res = await backend.notion.getMdbBrief();
         if (cancelled) return;
-        setNtnText(items[0]?.detail ?? '');
+        setNtnText(res.items[0]?.detail ?? '');
+        if (res.briefType) setBriefLabel(briefTypeToLabel(res.briefType));
+        else setBriefLabel(getBriefLabel());
       } catch (error) {
         console.warn('[Dashboard] Brief fetch failed:', error);
       } finally {
@@ -91,9 +102,9 @@ export function ExecutiveDashboard() {
   const refreshBrief = useCallback(async () => {
     setNtnRefreshing(true);
     try {
-      setBriefLabel(getBriefLabel());
-      const items = await backend.notion.getMdbBrief();
-      setNtnText(items[0]?.detail ?? '');
+      const res = await backend.notion.getMdbBrief();
+      setNtnText(res.items[0]?.detail ?? '');
+      if (res.briefType) setBriefLabel(briefTypeToLabel(res.briefType));
     } catch (error) {
       console.warn('[Dashboard] Brief refresh failed:', error);
     } finally {

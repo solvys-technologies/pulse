@@ -70,6 +70,16 @@ function renderInlineBold(text: string): (string | React.ReactElement)[] {
   );
 }
 
+function briefTypeToLabel(bt: string): string {
+  switch (bt) {
+    case 'MDB': return 'Morning Brief';
+    case 'ADB': return 'Afternoon Brief';
+    case 'PMDB': return 'Post-Market Brief';
+    case 'TOTT': return 'Tale of the Tape';
+    default: return 'Latest Brief';
+  }
+}
+
 export function BriefMiniWidget() {
   const backend = useBackend();
   const [briefText, setBriefText] = useState('');
@@ -93,9 +103,10 @@ export function BriefMiniWidget() {
 
   const fetchBrief = useCallback(async () => {
     try {
-      setLabel(getBriefLabel());
-      const items = await backend.notion.getMdbBrief();
-      setBriefText(items[0]?.detail ?? '');
+      const res = await backend.notion.getMdbBrief();
+      setBriefText(res.items[0]?.detail ?? '');
+      if (res.briefType) setLabel(briefTypeToLabel(res.briefType));
+      else setLabel(getBriefLabel());
     } catch {
       // silent
     } finally {
@@ -112,9 +123,9 @@ export function BriefMiniWidget() {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      setLabel(getBriefLabel());
-      const items = await backend.notion.getMdbBrief();
-      setBriefText(items[0]?.detail ?? '');
+      const res = await backend.notion.getMdbBrief();
+      setBriefText(res.items[0]?.detail ?? '');
+      if (res.briefType) setLabel(briefTypeToLabel(res.briefType));
     } catch {
       // silent
     } finally {
